@@ -45,6 +45,7 @@ int main (void) {
         SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     // Main loop
+    // TODO: maybe we want to refactor this loop later
     bool done = false;
     while (!done) {
         SDL_Event event;
