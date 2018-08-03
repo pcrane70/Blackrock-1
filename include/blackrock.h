@@ -20,4 +20,12 @@ typedef int64_t i64;
 #define localPersist    static
 #define global  static
 
+// FIXME: later we will want to move this from here
+typedef struct Player {
+
+    u8 xPos;
+    u8 yPos;
+
+} Player;
+
 #endif

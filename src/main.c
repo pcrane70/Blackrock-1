@@ -2,6 +2,9 @@
 
 #include "console.h"
 
+// FIXME: 
+global Player player;
+
 /*** SCREEN ***/
 
 // TODO: are we cleanning up the console and the screen??
@@ -11,7 +14,7 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     clearConsole (console);
 
     // test
-    putCharAt (console, '@', 10, 10, 0xFFFFFFFF, 0x000000FF);
+    putCharAt (console, '@', player.xPos, player.yPos, 0xFFFFFFFF, 0x000000FF);
 
     // u32 *pixels = (u32 *) calloc (SCREEN_WIDTH * SCREEN_HEIGHT, sizeof (u32));
 
@@ -44,7 +47,11 @@ int main (void) {
     Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS);
 
     // set up the console font
-    setConsoleBitmapFont (console, "../resources/terminal-art.png", '0', 16, 16);
+    setConsoleBitmapFont (console, "../resources/terminal-art.png", 0, 16, 16);
+
+    // FIXME: better player init
+    player.xPos = 10;
+    player.yPos = 10;
 
     // Main loop
     // TODO: maybe we want to refactor this
@@ -56,6 +63,20 @@ int main (void) {
                 done = true;
                 break;
             }
+
+            // Basic Input
+            // Movement with wsad   03/08/2018
+            if (event.type == SDL_KEYDOWN) {
+                SDL_Keycode key = event.key.keysym.sym;
+                switch (key) {
+                    case SDLK_w: player.yPos -= 1; break;
+                    case SDLK_s: player.yPos += 1; break;
+                    case SDLK_a: player.xPos -= 1; break;
+                    case SDLK_d: player.xPos += 1; break;
+                    default: break;
+                }
+            }
+
         }
 
         renderScreen (renderer, screen, console);
