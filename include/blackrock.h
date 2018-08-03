@@ -1,0 +1,23 @@
+#ifndef BLACKROCK_H_
+#define BLACKROCK_H_
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#include <SDL2/SDL.h>
+
+#define SCREEN_WIDTH    1280
+#define SCREEN_HEIGHT   720
+
+typedef uint8_t u8;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int32_t i32;
+typedef int64_t i64;
+
+#define internal    static
+#define localPersist    static
+#define global  static
+
+#endif

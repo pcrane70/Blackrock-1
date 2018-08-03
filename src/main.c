@@ -1,25 +1,21 @@
-#include <stdint.h>
-#include <stdbool.h>
+#include "blackrock.h"
 
-#include <SDL2/SDL.h>
-
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 768
-
-typedef uint8_t u8;
-typedef uint32_t u32;
-typedef uint64_t u64;
-
-typedef int32_t i32;
-typedef int64_t i64;
+#include "console.h"
 
 /*** SCREEN ***/
 
-void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen) {
+// TODO: are we cleanning up the console and the screen??
+// do we want that to happen?
+void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console) {
 
-    u32 *pixels = (u32 *) calloc (SCREEN_WIDTH * SCREEN_HEIGHT, sizeof (u32));
+    clearConsole (console);
 
-    SDL_UpdateTexture (screen, NULL, pixels, SCREEN_WIDTH * sizeof (u32));
+    // test
+    putCharAt (console, '@', 10, 10, 0xFFFFFFFF, 0x000000FF);
+
+    // u32 *pixels = (u32 *) calloc (SCREEN_WIDTH * SCREEN_HEIGHT, sizeof (u32));
+
+    SDL_UpdateTexture (screen, NULL, console->pixels, SCREEN_WIDTH * sizeof (u32));
     SDL_RenderClear (renderer);
     SDL_RenderCopy (renderer, screen, NULL, NULL);
     SDL_RenderPresent (renderer);
@@ -44,6 +40,12 @@ int main (void) {
     SDL_Texture *screen = SDL_CreateTexture (renderer, SDL_PIXELFORMAT_RGBA8888, 
         SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+    // Create our console emulator graphics
+    Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS);
+
+    // set up the console font
+    setConsoleBitmapFont (console, "../resources/terminal-art.png", '0', 16, 16);
+
     // Main loop
     // TODO: maybe we want to refactor this
     bool done = false;
@@ -56,7 +58,7 @@ int main (void) {
             }
         }
 
-        renderScreen (renderer, screen);
+        renderScreen (renderer, screen, console);
     }
 
 
