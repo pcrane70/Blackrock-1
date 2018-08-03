@@ -69,10 +69,14 @@ int main (void) {
             if (event.type == SDL_KEYDOWN) {
                 SDL_Keycode key = event.key.keysym.sym;
                 switch (key) {
-                    case SDLK_w: player.yPos -= 1; break;
-                    case SDLK_s: player.yPos += 1; break;
-                    case SDLK_a: player.xPos -= 1; break;
-                    case SDLK_d: player.xPos += 1; break;
+                    case SDLK_w: 
+                        if (player.yPos > 0) player.yPos -= 1; break;
+                    case SDLK_s: 
+                        if (player.yPos < NUM_ROWS - 1) player.yPos += 1; break;
+                    case SDLK_a: 
+                        if (player.xPos > 0) player.xPos -= 1; break;
+                    case SDLK_d:
+                        if (player.xPos < NUM_COLS - 1) player.xPos += 1; break;
                     default: break;
                 }
             }
