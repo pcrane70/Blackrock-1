@@ -1,9 +1,10 @@
 #include "blackrock.h"
+#include "game.h"
 
 #include "console.h"
 
 // FIXME: 
-global Player player;
+global GameObject *player = NULL;
 
 /*** SCREEN ***/
 
@@ -14,7 +15,8 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     clearConsole (console);
 
     // test
-    putCharAt (console, '@', player.xPos, player.yPos, 0xFFFFFFFF, 0x000000FF);
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    putCharAt (console, '@', playerPos->x, playerPos->y, 0xFFFFFFFF, 0x000000FF);
 
     // u32 *pixels = (u32 *) calloc (SCREEN_WIDTH * SCREEN_HEIGHT, sizeof (u32));
 
@@ -50,8 +52,12 @@ int main (void) {
     setConsoleBitmapFont (console, "../resources/terminal-art.png", 0, 16, 16);
 
     // FIXME: better player init
-    player.xPos = 10;
-    player.yPos = 10;
+    // player.xPos = 10;
+    // player.yPos = 10;
+
+    player = createGameObject ();
+    Position pos = { player->id, 25, 25 };
+    addComponentToGO (player, POSITION, &pos);
 
     // Main loop
     // TODO: maybe we want to refactor this

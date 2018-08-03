@@ -6,8 +6,6 @@
 #define NUM_COLS    80
 #define NUM_ROWS    45
 
-typedef unsigned char asciiChar;
-
 typedef struct {
 
     i32 x; i32 y; i32 w; i32 h;
