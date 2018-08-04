@@ -4,7 +4,7 @@
 #include "console.h"
 
 // FIXME: 
-global GameObject *player = NULL;
+// global GameObject *player = NULL;
 
 /*** SCREEN ***/
 
@@ -15,10 +15,16 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     clearConsole (console);
 
     // test
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    putCharAt (console, '@', playerPos->x, playerPos->y, 0xFFFFFFFF, 0x000000FF);
+    // Position *playerPos = (Position *) getComponent (player, POSITION);
+    // putCharAt (console, '@', playerPos->x, playerPos->y, 0xFFFFFFFF, 0x000000FF);
 
-    // u32 *pixels = (u32 *) calloc (SCREEN_WIDTH * SCREEN_HEIGHT, sizeof (u32));
+    // TODO: is this the most efficient way of doing it?
+    for (u32 i = 1; i < MAX_GO; i++) {
+        if (graphicComps[i].objectId > 0) {
+            Position *p = (Position *) getComponent (&gameObjects[i], POSITION);
+            putCharAt (console, graphicComps[i].glyph, p->x, p->y, graphicComps[i].fgColor, graphicComps[i].bgColor);
+        }
+    }
 
     SDL_UpdateTexture (screen, NULL, console->pixels, SCREEN_WIDTH * sizeof (u32));
     SDL_RenderClear (renderer);
@@ -52,12 +58,18 @@ int main (void) {
     setConsoleBitmapFont (console, "../resources/terminal-art.png", 0, 16, 16);
 
     // FIXME: better player init
-    // player.xPos = 10;
-    // player.yPos = 10;
-
-    player = createGameObject ();
+    GameObject *player = createGameObject ();
     Position pos = { player->id, 25, 25 };
     addComponentToGO (player, POSITION, &pos);
+    Graphics playerGraphics = { player->id, '@', 0xFFFFFFFF, 0x000000FF };
+    addComponentToGO (player, GRAPHICS, &playerGraphics);
+
+    // wall test
+    GameObject *wall = createGameObject ();
+    Position wallPos = { wall->id, 30, 25 };
+    addComponentToGO (wall, POSITION, &wallPos);
+    Graphics wallGraphics = { wall->id, '|', 0xFFFFFFFF, 0x000000FF };
+    addComponentToGO (wall, GRAPHICS, &wallGraphics);
 
     // Main loop
     // TODO: maybe we want to refactor this

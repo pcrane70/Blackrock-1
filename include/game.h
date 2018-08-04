@@ -12,8 +12,8 @@
 typedef enum GameComponent {
 
     POSITION = 0,
-    VISIBILITY,
-    PHYSICAL,
+    GRAPHICS,
+    PHYSICAL,   
     HEALTH, 
     MOVEMENT,
 
@@ -56,6 +56,16 @@ typedef struct Physical {
     bool blocksSight;
 
 } Physical;
+
+
+// TODO: is it better to have an array or a list??
+# define MAX_GO     1000
+
+extern GameObject gameObjects[MAX_GO];
+ 
+// // TODO: do we want this?? is there a better way around??
+extern Position positionComps[MAX_GO];
+extern Graphics graphicComps[MAX_GO];
 
 
 extern GameObject *createGameObject ();

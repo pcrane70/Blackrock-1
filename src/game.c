@@ -12,14 +12,11 @@
 
 /*** Game Object Management **/
 
-// TODO: is it better to have an array or a list??
-# define MAX_GO     1000
-
-global GameObject gameObjects[MAX_GO];
+GameObject gameObjects[MAX_GO];
 
 // TODO: do we want this?? is there a better way around??
-global Position positionComps[MAX_GO];
-
+Position positionComps[MAX_GO];
+Graphics graphicComps[MAX_GO];
 
 // as of 03/08/2018 we identify a free space in gameObjects array if it has an id = 0
 GameObject *createGameObject () {
@@ -60,7 +57,19 @@ void addComponentToGO (GameObject *obj, GameComponent comp, void *compData) {
             pos->x = posData->x;
             pos->y = posData->y;
 
-            obj->components[comp] = &positionComps [obj->id];
+            obj->components[comp] = pos;
+
+            break; }
+        case GRAPHICS: {
+            Graphics *graphics = &graphicComps[obj->id];
+            Graphics *graphicsData = (Graphics *) compData;
+            graphics->objectId = obj->id;
+            graphics->glyph = graphicsData->glyph;
+            graphics->fgColor = graphicsData->fgColor;
+            graphics->bgColor = graphicsData->bgColor;
+
+            obj->components[comp] = graphics;
+
             break; }
 
         default: fprintf (stderr, "Unknown component!\n"); break;
@@ -82,6 +91,7 @@ void destroyGO (GameObject *obj) {
 
     // cleanning up the components in their arrays
     positionComps[obj->id].objectId = 0;
+    graphicComps[obj->id].objectId = 0;
 
     obj->id = 0;
 
