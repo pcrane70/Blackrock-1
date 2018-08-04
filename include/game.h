@@ -9,7 +9,7 @@
 
 #define MAX_COMP_COUNT      20
 
-typedef enum {
+typedef enum GameComponent {
 
     POSITION = 0,
     VISIBILITY,
@@ -60,6 +60,7 @@ typedef struct Physical {
 
 extern GameObject *createGameObject ();
 extern void addComponentToGO (GameObject *, GameComponent, void *);
+void *getComponent (GameObject *, GameComponent);
 extern void destroyGO (GameObject *);
 
 #endif

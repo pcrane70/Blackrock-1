@@ -26,7 +26,7 @@ GameObject *createGameObject () {
 
     // Get an available object space (memory)
     GameObject *go = NULL;
-    for (u32 i = 0; i < MAX_GO; i++) {
+    for (u32 i = 1; i < MAX_GO; i++) {
         if (gameObjects[i].id == 0) {
             // Set up the new GameObject??
             go = &gameObjects[i];
@@ -38,6 +38,11 @@ GameObject *createGameObject () {
     // are we returning a valid GO??
     assert (go != NULL);
 
+    // TODO: do we want this here or in destriyObject??
+    // cleanning up our components in the obj --- 04/08/2018
+    for (u32 i = 0; i < MAX_COMP_COUNT; i++) 
+        go->components[i] = NULL;
+
     return go;
 
 }
@@ -48,16 +53,24 @@ void addComponentToGO (GameObject *obj, GameComponent comp, void *compData) {
     assert (obj->id != 0);
 
     switch (comp) {
-        case POSITION:
-            Position *pos = &positionComps [obj->id];
+        case POSITION: {
+            Position *pos = &positionComps[obj->id];
             Position *posData = (Position *) compData;
             pos->objectId = obj->id;
             pos->x = posData->x;
             pos->y = posData->y;
-            break;
+
+            obj->components[comp] = &positionComps [obj->id];
+            break; }
 
         default: fprintf (stderr, "Unknown component!\n"); break;
     }
+
+}
+
+void *getComponent (GameObject *obj, GameComponent comp) {
+
+    return obj->components[comp];
 
 }
 
@@ -67,7 +80,7 @@ void addComponentToGO (GameObject *obj, GameComponent comp, void *compData) {
 // as of 03/08/2018 we identify a free space in gameObjects array if it has an id = 0
 void destroyGO (GameObject *obj) {
 
-    // TODO: how to clean up components for this object
+    // cleanning up the components in their arrays
     positionComps[obj->id].objectId = 0;
 
     obj->id = 0;
