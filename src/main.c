@@ -63,6 +63,8 @@ int main (void) {
     addComponentToGO (player, POSITION, &pos);
     Graphics playerGraphics = { player->id, '@', 0xFFFFFFFF, 0x000000FF };
     addComponentToGO (player, GRAPHICS, &playerGraphics);
+    Physics physics = { player->id, true, true };
+    addComponentToGO (player, PHYSICS, &physics);
 
     // wall test
     GameObject *wall = createGameObject ();
@@ -70,6 +72,8 @@ int main (void) {
     addComponentToGO (wall, POSITION, &wallPos);
     Graphics wallGraphics = { wall->id, '|', 0xFFFFFFFF, 0x000000FF };
     addComponentToGO (wall, GRAPHICS, &wallGraphics);
+    Physics wallPhysics = { wall->id, true, true };
+    addComponentToGO (wall, PHYSICS, &physics);
 
     // Main loop
     // TODO: maybe we want to refactor this
@@ -86,6 +90,8 @@ int main (void) {
             // Movement with wsad   03/08/2018
             // FIXME: 04/08/2018
             Position *playerPos = (Position *) getComponent (player, POSITION);
+
+            // FIXME: how can we handle collisions??
             if (event.type == SDL_KEYDOWN) {
                 SDL_Keycode key = event.key.keysym.sym;
                 switch (key) {

@@ -17,6 +17,7 @@ GameObject gameObjects[MAX_GO];
 // TODO: do we want this?? is there a better way around??
 Position positionComps[MAX_GO];
 Graphics graphicComps[MAX_GO];
+Physics physicsComps[MAX_GO];
 
 // as of 03/08/2018 we identify a free space in gameObjects array if it has an id = 0
 GameObject *createGameObject () {
@@ -71,6 +72,16 @@ void addComponentToGO (GameObject *obj, GameComponent comp, void *compData) {
             obj->components[comp] = graphics;
 
             break; }
+        case PHYSICS: {
+            Physics *physics = &physicsComps[obj->id];
+            Physics *physicsData = (Physics *) compData;
+            physics->objectId = obj->id;
+            physics->blocksMovement = physicsData->blocksMovement;
+            physics->blocksSight = physicsData->blocksSight;
+
+            obj->components[comp] = physics;
+
+            break; }
 
         default: fprintf (stderr, "Unknown component!\n"); break;
     }
@@ -92,6 +103,7 @@ void destroyGO (GameObject *obj) {
     // cleanning up the components in their arrays
     positionComps[obj->id].objectId = 0;
     graphicComps[obj->id].objectId = 0;
+    physicsComps[obj->id].objectId = 0;
 
     obj->id = 0;
 
