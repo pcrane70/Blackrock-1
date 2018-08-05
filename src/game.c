@@ -7,7 +7,11 @@
 #include "blackrock.h"
 #include "game.h"
 
-// World State
+/*** GAME MANAGER ***/
+
+// WORLD STATE
+
+
 
 
 /*** Game Object Management **/

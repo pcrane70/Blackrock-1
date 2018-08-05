@@ -1,5 +1,8 @@
+#include <time.h>
+
 #include "blackrock.h"
 #include "game.h"
+#include "map.h"
 
 #include "console.h"
 
@@ -38,6 +41,8 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
 
 int main (void) {
 
+    srand ((unsigned) time (NULL));
+
     // SDL SETUP
     SDL_Init (SDL_INIT_VIDEO);
     SDL_Window *window = SDL_CreateWindow ("Blackrock Dungeons",
@@ -57,6 +62,9 @@ int main (void) {
     // set up the console font
     setConsoleBitmapFont (console, "../resources/terminal-art.png", 0, 16, 16);
 
+    // MAP
+    generateMap ();
+
     // FIXME: better player init
     GameObject *player = createGameObject ();
     Position pos = { player->id, 25, 25 };
@@ -65,15 +73,6 @@ int main (void) {
     addComponentToGO (player, GRAPHICS, &playerGraphics);
     Physics physics = { player->id, true, true };
     addComponentToGO (player, PHYSICS, &physics);
-
-    // wall test
-    GameObject *wall = createGameObject ();
-    Position wallPos = { wall->id, 30, 25 };
-    addComponentToGO (wall, POSITION, &wallPos);
-    Graphics wallGraphics = { wall->id, '|', 0xFFFFFFFF, 0x000000FF };
-    addComponentToGO (wall, GRAPHICS, &wallGraphics);
-    Physics wallPhysics = { wall->id, true, true };
-    addComponentToGO (wall, PHYSICS, &physics);
 
     // Main loop
     // TODO: maybe we want to refactor this
