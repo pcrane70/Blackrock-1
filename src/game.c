@@ -16,6 +16,14 @@
 
 /*** Game Object Management **/
 
+// FIXME: take into account that probably we will want a differnt treatment for the walls,
+// because they can scaled so fast and will always be static right?? -- or do we want to be able to break them?
+// if they are always static, we will only have to generate them few times, 
+// we can make a simplier logic than this.
+
+// Also note that we still don't know how do we want the levels to regenerate when we die
+// - do we want a new random level??
+// or the same one and only regenerate the levels when we start a new session??
 GameObject gameObjects[MAX_GO];
 
 // TODO: do we want this?? is there a better way around??
