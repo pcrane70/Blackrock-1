@@ -3,6 +3,8 @@
 #include "game.h"
 #include "console.h"
 
+#include "myUtils.h"
+
 // TODO: how much space do we want to leave for the HUD??
 #define MAP_WIDTH   80
 #define MAP_HEIGHT  40
@@ -58,12 +60,12 @@ void generateMap () {
     // create room data
     while (!roomsDone) {
         // generate a random width/height for a room
-        // TODO: create our own rand function
-        u32 w = (rand () % 17) + 3; 
-        u32 h = (rand () % 17) + 3; 
+        u32 w = (u32) randomInt (4, 12);
+        u32 h = (u32) randomInt (4, 12);
 
-        u32 x = rand () % MAP_WIDTH - w - 1;
-        u32 y = rand () % MAP_HEIGHT - h - 1;
+        // generate random positions
+        u32 x = (u32) randomInt (0, MAP_WIDTH - w - 1);
+        u32 y = (u32) randomInt (0, MAP_HEIGHT - h - 1);
 
         if (carveRoom (x, y, w, h)) {
             Rect rect = { x, y, w, h };
@@ -77,7 +79,7 @@ void generateMap () {
     }
 
     // draw rooms
-
+    
     // join all the rooms with corridors,
     // and make sure that all of them are reachable
 
