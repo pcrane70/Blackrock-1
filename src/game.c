@@ -120,3 +120,10 @@ void destroyGO (GameObject *obj) {
     obj->id = 0;
 
 }
+
+// TODO: 07/08/2018
+// I think we will need to handle the map objects separatly, 
+// because we need to have a way of saving their state to a file,
+// to allow the player to continue player where he has left over.
+
+// Also when creating differnt areas, we need to handle allocating memory in the most efficent way

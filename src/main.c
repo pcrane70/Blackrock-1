@@ -64,21 +64,24 @@ int main (void) {
     // set up the console font
     setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
 
-    // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
-    // so we need to have the map saved in a file and then loaded here
-
-    // FIXME: for now we are testing our map
-    // MAP
-    generateMap ();
-
     // FIXME: better player init
+    // TODO: how do we want to manage our player?
     GameObject *player = createGameObject ();
-    Position pos = { player->id, 25, 25 };
-    addComponentToGO (player, POSITION, &pos);
+    // the position component is handled by the map generator
+    // but this will be differnt for the start menu
+    // Position pos = { player->id, 25, 25 };
+    // addComponentToGO (player, POSITION, &pos);
     Graphics playerGraphics = { player->id, '@', 0xFFFFFFFF, 0x000000FF };
     addComponentToGO (player, GRAPHICS, &playerGraphics);
     Physics physics = { player->id, true, true };
     addComponentToGO (player, PHYSICS, &physics);
+
+    // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
+    // so we need to have the map saved in a file and then loaded here
+
+    // FIXME: for now we are testing our map generation
+    // MAP
+    initWorld (player);
 
     // Main loop
     // TODO: maybe we want to refactor this
@@ -88,6 +91,14 @@ int main (void) {
         while (SDL_PollEvent (&event) != 0) {
             if (event.type == SDL_QUIT) {
                 done = true;
+
+                // FIXME: VERY IMPORTNAT
+                // we don't want to just quit the game...
+                // we ned to have a set of process for freeing the memory of the map, and all the gameObjects
+                // and their components
+                // also we need to check what to save to a file automatticaly 
+                // we don't want just a force quit like this!!!
+
                 break;
             }
 
