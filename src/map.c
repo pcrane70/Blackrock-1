@@ -1,9 +1,13 @@
 /*** MAP ***/
 
+#include <stdbool.h>
+#include <assert.h>
+
 #include "blackrock.h"
 #include "game.h"
 
 #include "room.h"
+#include "map.h"
 
 #include "console.h"
 
@@ -93,16 +97,29 @@ void carveCorridorVer (Point from, Point to) {
 
 /*** DRAWING ***/
 
-// TODO: what color do we want for walls?
-void createWall (u32 x, u32 y) {
+// TODO: we are testing having the walls in a separte array in memory for conviniece
+// for the other systems tha we want to implement in the other gameObjects...
 
-    GameObject *wall = createGameObject ();
-    Position wallPos = { wall->id, x, y };
-    addComponentToGO (wall, POSITION, &wallPos);
-    Graphics wallGraphics = { wall->id, '|', 0xFFFFFFFF, 0x000000FF };
-    addComponentToGO (wall, GRAPHICS, &wallGraphics);
-    Physics wallPhysics = { wall->id, true, true };
-    addComponentToGO (wall, PHYSICS, &wallPhysics);
+Wall walls[MAX_WALLS];
+
+// TODO: what color do we want for walls?
+void createWall (u32 x, u32 y, u32 wallCount) {
+
+    Wall *new = &walls[wallCount];
+
+    // TODO: better error checking here...
+    // are we returning a valid GO??
+    assert (new != NULL);
+
+    new->x = x;
+    new->y = y;
+    new->glyph = '|';
+    new->fgColor = 0xFFFFFFFF;
+    new->bgColor = 0x000000FF;
+    new->blocksMovement = true;
+    new->blocksSight = true;
+
+    // free (new);
 
 }
 
@@ -237,7 +254,7 @@ void generateMap () {
 
 // This function controls the flow of execution on how to generate a new map
 // this primarilly should be called after we have decided to go to the adventure from the main menu (tavern)
-void initWorld (GameObject *player) {
+unsigned int initWorld (GameObject *player) {
 
     // TODO: make sure that we have cleared the last level data
     // clear gameObjects and properly handle memory 
@@ -252,9 +269,10 @@ void initWorld (GameObject *player) {
 
     // draw the map
     fprintf (stdout, "Drawing the map...\n");
+    unsigned int wallCount = 0;
     for (u32 x = 0; x < MAP_WIDTH; x++)
         for (u32 y = 0; y < MAP_HEIGHT; y++)
-            if (mapCells[x][y]) createWall (x, y);
+            if (mapCells[x][y]) createWall (x, y, wallCount), wallCount++;
 
     // TODO: how do we want to initialize other objects or NPCs and enemies??
 
@@ -269,5 +287,7 @@ void initWorld (GameObject *player) {
             break;
         }
     }
+
+    return wallCount;
 
 }

@@ -10,6 +10,7 @@
 
 // FIXME: 
 // global GameObject *player = NULL;
+unsigned int wallCount;
 
 /*** SCREEN ***/
 
@@ -31,6 +32,10 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
             putCharAt (console, graphicComps[i].glyph, p->x, p->y, graphicComps[i].fgColor, graphicComps[i].bgColor);
         }
     }
+
+    // FIXME: we don't want to this every frame!!
+    for (u32 i = 0; i < wallCount; i++)
+        putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
 
     SDL_UpdateTexture (screen, NULL, console->pixels, SCREEN_WIDTH * sizeof (u32));
     SDL_RenderClear (renderer);
@@ -82,7 +87,7 @@ int main (void) {
 
     // FIXME: for now we are testing our map generation
     // MAP
-    initWorld (player);
+    wallCount = initWorld (player);
 
     // Main loop
     // TODO: maybe we want to refactor this

@@ -59,7 +59,7 @@ typedef struct Physical {
 
 
 // TODO: is it better to have an array or a list??
-# define MAX_GO     10000
+# define MAX_GO     1000
 
 extern GameObject gameObjects[MAX_GO];
  
