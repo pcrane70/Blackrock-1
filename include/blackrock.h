@@ -9,6 +9,9 @@
 #define SCREEN_WIDTH    1280
 #define SCREEN_HEIGHT   720
 
+// TODO:
+// 07/08/2018 --> I removed this variables and forget about portability for now
+// we refactor our code to use the standar variable types and see how it goes...
 typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;

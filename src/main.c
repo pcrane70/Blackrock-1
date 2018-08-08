@@ -62,10 +62,14 @@ int main (void) {
     Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS);
 
     // set up the console font
-    setConsoleBitmapFont (console, "../resources/terminal-art.png", 0, 16, 16);
+    setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
 
+    // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
+    // so we need to have the map saved in a file and then loaded here
+
+    // FIXME: for now we are testing our map
     // MAP
-    // generateMap ();
+    generateMap ();
 
     // FIXME: better player init
     GameObject *player = createGameObject ();

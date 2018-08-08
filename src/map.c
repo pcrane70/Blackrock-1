@@ -108,10 +108,12 @@ void createWall (u32 x, u32 y) {
 
 void generateMap () {
 
+    fprintf (stdout, "Generating the map...\n");
+
     // mark all the cells as filled
     for (u32 x = 0; x < MAP_WIDTH; x++) 
         for (u32 y = 0; y < MAP_HEIGHT; y++) 
-            mapCells[true];
+            mapCells[x][y] = true;
 
     // carve out non-overlaping rooms that are randomly placed, 
     // and of random size
@@ -123,6 +125,7 @@ void generateMap () {
     u32 cellsUsed = 0;
     
     // create room data
+    fprintf (stdout, "Generating rooms...\n");
     while (!roomsDone) {
         // generate a random width/height for a room
         u32 w = (u32) randomInt (4, 12);
@@ -143,11 +146,10 @@ void generateMap () {
 
     }
 
-    // TODO: draw rooms
-    
     // This is a simple way of drawing corridors, is this a good way, 
     // or do we need a more advanced system??
     // join all the rooms with corridors
+    fprintf (stdout, "Generating corridors...\n");
     for (u32 r = 1; r < roomCount; r++) {
         Rect from = rooms[r - 1];
         Rect to = rooms[r];
@@ -173,6 +175,12 @@ void generateMap () {
         }
     }
 
-    // and make sure that all of them are reachable
+    // TODO: and make sure that all of them are reachable
+
+    fprintf (stdout, "Drawing the map...\n");
+    for (u32 x = 0; x < MAP_WIDTH; x++)
+        for (u32 y = 0; y < MAP_HEIGHT; y++)
+            if (mapCells[x][y]) createWall (x, y);
+
 
 }
