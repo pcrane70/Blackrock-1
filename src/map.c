@@ -2,6 +2,9 @@
 
 #include "blackrock.h"
 #include "game.h"
+
+#include "room.h"
+
 #include "console.h"
 
 #include "myUtils.h"
@@ -22,10 +25,10 @@ bool mapCells[MAP_WIDTH][MAP_HEIGHT];
 
 /*** OTHER ***/
 
-Point randomRectPoint (Rect rect) {
+Point randomRoomPoint (Room *room) {
 
-    u32 px = (rect.x, (rect.x + rect.w));
-    u32 py = (rect.y, (rect.y + rect.h));
+    u32 px = (room->x, (room->x + room->w));
+    u32 py = (room->y, (room->y + room->h));
 
     Point randPoint = { px, py };
     return randPoint;
@@ -34,7 +37,7 @@ Point randomRectPoint (Rect rect) {
 
 /*** CARVING ***/
 
-bool carveRoom (u32 x, u32 y, u32 w, u32 h) {
+bool carveRoom (unsigned int x, unsigned int y, unsigned int w, unsigned int h) {
 
     // checks if it overlaps another room
     // and also check that their are not to close together
@@ -116,26 +119,36 @@ void generateMap () {
     // carve out non-overlaping rooms that are randomly placed, 
     // and of random size
     bool roomsDone = false;
-    // FIXME: do we want to allocate so much memory like this?
-    Rect rooms[100];
-    u32 roomCount = 0;
 
+
+    // FIXME: do we want to allocate so much memory like this?
+    // 08/08/2018 7:05 --> testing a linked list to allocate this memory
+    // Rect rooms[100];
+    // our list of rooms
+    Room *first = NULL;
+
+    u32 roomCount = 0;
     u32 cellsUsed = 0;
     
     // create room data
     fprintf (stdout, "Generating rooms...\n");
     while (!roomsDone) {
         // generate a random width/height for a room
-        u32 w = (u32) randomInt (4, 12);
-        u32 h = (u32) randomInt (4, 12);
+        unsigned int w = randomInt (4, 12);
+        unsigned int h = randomInt (4, 12);
 
         // generate random positions
-        u32 x = (u32) randomInt (1, MAP_WIDTH - w - 1);
-        u32 y = (u32) randomInt (1, MAP_HEIGHT - h - 1);
+        unsigned int x = randomInt (1, MAP_WIDTH - w - 1);
+        unsigned int y = randomInt (1, MAP_HEIGHT - h - 1);
 
         if (carveRoom (x, y, w, h)) {
-            Rect rect = { x, y, w, h };
-            rooms[roomCount] = rect;
+            // Rect rect = { x, y, w, h };
+            // rooms[roomCount] = rect;
+
+            Room roomData = { x, y, w, h, NULL };
+            if (roomCount == 0) first = createRoomList (first, &roomData);
+            else addRoom (first, &roomData);
+            
             roomCount++;
             cellsUsed += (w * h);
         }
@@ -148,12 +161,51 @@ void generateMap () {
     // or do we need a more advanced system??
     // join all the rooms with corridors
     fprintf (stdout, "Generating corridors...\n");
-    for (u32 r = 1; r < roomCount; r++) {
-        Rect from = rooms[r - 1];
-        Rect to = rooms[r];
+    
+    // creating corridors using arrays...
+    {
+        // for (u32 r = 1; r < roomCount; r++) {
+        //     // Rect from = rooms[r - 1];
+        //     // Rect to = rooms[r];
 
-        Point fromPt = randomRectPoint (from);
-        Point toPt = randomRectPoint (to);
+        //     Room *from;
+        //     Room *to;
+
+        //     Point fromPt = randomRoomPoint (from);
+        //     Point toPt = randomRoomPoint (to);
+
+        //     // simple way of making corridors
+        //     // TODO: do we want a more complex method?
+        //     // think in project prourcopine pathfinding...
+        //     if (randomInt (0, 1) == 0) {
+        //         // move horizontal, then vertical
+        //         Point midPt = { toPt.x, fromPt.y };
+        //         carveCorridorHor (fromPt, midPt);
+        //         carveCorridorVer (midPt, toPt);
+        //     }
+
+        //     else {
+        //         // move vertical, then horizontal
+        //         Point midPt = { fromPt.x, toPt.y };
+        //         carveCorridorVer (fromPt, midPt);
+        //         carveCorridorHor (midPt, toPt);
+        //     }
+        // }
+    }
+    
+    // creating corridors using a list
+    // 08/08/2018 -- 7:55
+    // I think we got it working the same way as the array, but we still need to tweak
+    // how the map generates in general..
+    Room *ptr = first->next, *preptr = first;
+    while (ptr != NULL) {
+        // Rect from = rooms[r - 1];
+        // Rect to = rooms[r];
+        Room *from = preptr;
+        Room *to = ptr;
+
+        Point fromPt = randomRoomPoint (from);
+        Point toPt = randomRoomPoint (to);
 
         // simple way of making corridors
         // TODO: do we want a more complex method?
@@ -171,10 +223,15 @@ void generateMap () {
             carveCorridorVer (fromPt, midPt);
             carveCorridorHor (midPt, toPt);
         }
+
+        preptr = preptr->next;
+        ptr = ptr->next;
     }
 
     // TODO: and make sure that all of them are reachable
 
+    // cleanup the room's list
+    first = deleteList (first);
 
 }
 
