@@ -1,13 +1,10 @@
 /*** MAP ***/
 
+#include "blackrock.h"
 #include "game.h"
 #include "console.h"
 
 #include "myUtils.h"
-
-// TODO: how much space do we want to leave for the HUD??
-#define MAP_WIDTH   80
-#define MAP_HEIGHT  40
 
 // 05/08/2018 -- 16:28
 // TODO: do we really need a coord system for a better programming experience??

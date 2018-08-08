@@ -24,6 +24,7 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     // putCharAt (console, '@', playerPos->x, playerPos->y, 0xFFFFFFFF, 0x000000FF);
 
     // TODO: is this the most efficient way of doing it?
+    // TODO: the logic for fov goes in here!!
     for (u32 i = 1; i < MAX_GO; i++) {
         if (graphicComps[i].objectId > 0) {
             Position *p = (Position *) getComponent (&gameObjects[i], POSITION);

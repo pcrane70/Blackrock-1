@@ -46,7 +46,7 @@ typedef struct Graphics {
     asciiChar glyph;
     u32 fgColor;
     u32 bgColor;
-
+    
 } Graphics;
 
 typedef struct Physical {

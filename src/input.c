@@ -7,6 +7,8 @@
 // Basic Input
 // Movement with wsad   03/08/2018
 
+// TODO: recalculate the fov every time the player moves
+
 void handlePlayerInput (SDL_Event event, GameObject *player) {
 
     // FIXME: 04/08/2018

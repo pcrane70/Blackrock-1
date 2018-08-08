@@ -9,6 +9,10 @@
 #define SCREEN_WIDTH    1280
 #define SCREEN_HEIGHT   720
 
+// TODO: how much space do we want to leave for the HUD??
+#define MAP_WIDTH   80
+#define MAP_HEIGHT  40
+
 // TODO:
 // 07/08/2018 --> I removed this variables and forget about portability for now
 // we refactor our code to use the standar variable types and see how it goes...
