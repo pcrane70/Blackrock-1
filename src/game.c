@@ -6,6 +6,7 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "objectPool.h"
 
 /*** GAME MANAGER ***/
 
@@ -24,38 +25,38 @@
 // Also note that we still don't know how do we want the levels to regenerate when we die
 // - do we want a new random level??
 // or the same one and only regenerate the levels when we start a new session??
-GameObject gameObjects[MAX_GO];
+// GameObject gameObjects[MAX_GO];
 
-// TODO: do we want this?? is there a better way around??
-Position positionComps[MAX_GO];
-Graphics graphicComps[MAX_GO];
-Physics physicsComps[MAX_GO];
+// // TODO: do we want this?? is there a better way around??
+// Position positionComps[MAX_GO];
+// Graphics graphicComps[MAX_GO];
+// Physics physicsComps[MAX_GO];
 
 // as of 03/08/2018 we identify a free space in gameObjects array if it has an id = 0
-GameObject *createGameObject () {
+// GameObject *createGameObject () {
 
-    // Get an available object space (memory)
-    GameObject *go = NULL;
-    for (u32 i = 1; i < MAX_GO; i++) {
-        if (gameObjects[i].id == 0) {
-            // Set up the new GameObject??
-            go = &gameObjects[i];
-            go->id = i;
-            break;
-        }
-    }
+//     // Get an available object space (memory)
+//     GameObject *go = NULL;
+//     for (u32 i = 1; i < MAX_GO; i++) {
+//         if (gameObjects[i].id == 0) {
+//             // Set up the new GameObject??
+//             go = &gameObjects[i];
+//             go->id = i;
+//             break;
+//         }
+//     }
 
-    // are we returning a valid GO??
-    assert (go != NULL);
+//     // are we returning a valid GO??
+//     assert (go != NULL);
 
-    // TODO: do we want this here or in destriyObject??
-    // cleanning up our components in the obj --- 04/08/2018
-    //for (u32 i = 0; i < MAX_COMP_COUNT; i++) 
-      // 1  go->components[i] = NULL;
+//     // TODO: do we want this here or in destriyObject??
+//     // cleanning up our components in the obj --- 04/08/2018
+//     //for (u32 i = 0; i < MAX_COMP_COUNT; i++) 
+//       // 1  go->components[i] = NULL;
 
-    return go;
+//     return go;
 
-}
+// }
 
 // void addComponentToGO (GameObject *obj, GameComponent comp, void *compData) {
 
@@ -100,28 +101,30 @@ GameObject *createGameObject () {
 
 // }
 
-void *getComponent (GameObject *obj, GameComponent comp) {
+// void *getComponent (GameObject *obj, GameComponent comp) {
 
-    return obj->components[comp];
+//     return obj->components[comp];
 
-}
+// }
 
 // TODO: maybe in the future we will want to have a memory management system
 // like an object pool... assuming that all of our objects have the same base!!
 
 // as of 03/08/2018 we identify a free space in gameObjects array if it has an id = 0
-void destroyGO (GameObject *obj) {
+// void destroyGO (GameObject *obj) {
 
-    // cleanning up the components in their arrays
-    positionComps[obj->id].objectId = 0;
-    graphicComps[obj->id].objectId = 0;
-    physicsComps[obj->id].objectId = 0;
+//     // cleanning up the components in their arrays
+//     positionComps[obj->id].objectId = 0;
+//     graphicComps[obj->id].objectId = 0;
+//     physicsComps[obj->id].objectId = 0;
 
-    obj->id = 0;
+//     obj->id = 0;
 
-}
+// }
 
 /*** Using Linked List ***/
+
+// TODO: how do we want to solve the problem of the first GO??
 
 GameObject *createGOList (GameObject *first, GameObject *data) {
 
@@ -132,10 +135,16 @@ GameObject *createGOList (GameObject *first, GameObject *data) {
     // FIXME: error handling
     if (go == NULL) return NULL;
 
-    // FIXME:
-    go->id = data->id;
+    // FIXME: how to assign a unique id to each GO?
+    // go->id = data->id;  
 
-    for (u32 i = 0; i < MAX_COMP_COUNT; i++) go->components[i] = NULL;
+    go->x = data->x;
+    go->y = data->y;
+    go->glyph = data->glyph;
+    go->fgColor = data->fgColor;
+    go->bgColor = data->bgColor;
+    go->blocksMovement = data->blocksMovement;
+    go->blocksSight = data->blocksSight;
 
     if (first == NULL) {
         go->next = NULL;
@@ -155,8 +164,51 @@ GameObject *createGOList (GameObject *first, GameObject *data) {
 
 }
 
+void createGO (GameObject *first, GameObject *data) {
 
+    GameObject *ptr = first;
+    GameObject *go = NULL;
 
+    // First check if we have any object in our pool
+    if (inactive == 0) {
+        // if we don't have any...
+        // create a new go, and assign the values directly
+        go = (GameObject *) malloc (sizeof (GameObject));
+          
+    }
+
+    else {
+        // grab a GO from our Pool...
+        // FIXME: how do we store a reference to the stack top?
+        // GameObject *go = popGO ();
+
+    }
+
+    // FIXME: how to assign a unique id to each GO?
+        // go->id = data->id;
+
+    go->x = data->x;
+    go->y = data->y;
+    go->glyph = data->glyph;
+    go->fgColor = data->fgColor;
+    go->bgColor = data->bgColor;
+    go->blocksMovement = data->blocksMovement;
+    go->blocksSight = data->blocksSight;
+
+    // and add it directly to the end of the GO list
+    while (ptr->next != NULL) ptr = ptr->next;
+
+    ptr->next = go;
+
+}
+
+// This calls the Object pooling to deactive the go and have it in memory 
+// to reuse it when we need it
+void destroyGO (GameObject *first, GameObject *go) {
+
+    
+
+}
 
 
 // TODO: 07/08/2018
