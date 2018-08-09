@@ -278,12 +278,14 @@ unsigned int initWorld (GameObject *player) {
 
     // the last thing is to place our player in a random place
     for (;;) {
-        u32 x = (u32) randomInt (0, MAP_WIDTH);
-        u32 y = (u32) randomInt (0, MAP_HEIGHT);
+        u32 spawnX = (u32) randomInt (0, MAP_WIDTH);
+        u32 spawnY = (u32) randomInt (0, MAP_HEIGHT);
 
-        if (mapCells[x][y] == false) {
-            Position pos = { player->id, x, y };
-            addComponentToGO (player, POSITION, &pos);
+        if (mapCells[spawnX][spawnY] == false) {
+            // Position pos = { player->id, x, y };
+            // addComponentToGO (player, POSITION, &pos);
+            player->x = spawnX;
+            player->y = spawnY;
             break;
         }
     }

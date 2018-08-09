@@ -124,6 +124,14 @@
 
 /*** Using Linked List ***/
 
+// 08/08/2018 -- 22:14
+// we start the program with no objects in the pool
+// TODO: maybe later we will want to have some in memory
+static unsigned int inactive = 0;
+
+// reference to the start of the pool
+static GameObject *pool = NULL;
+
 // TODO: how do we want to solve the problem of the first GO??
 
 GameObject *createGOList (GameObject *first, GameObject *data) {
@@ -164,24 +172,17 @@ GameObject *createGOList (GameObject *first, GameObject *data) {
 
 }
 
-void createGO (GameObject *first, GameObject *data) {
+void createGO (GameObject *data) {
 
-    GameObject *ptr = first;
+    GameObject *ptr = pool;
     GameObject *go = NULL;
 
-    // First check if we have any object in our pool
-    if (inactive == 0) {
-        // if we don't have any...
-        // create a new go, and assign the values directly
-        go = (GameObject *) malloc (sizeof (GameObject));
-          
-    }
-
+    // if our object pool is empty, we create a new object
+    if (inactive == 0) go = (GameObject *) malloc (sizeof (GameObject));
     else {
         // grab a GO from our Pool...
-        // FIXME: how do we store a reference to the stack top?
-        // GameObject *go = popGO ();
-
+        go = popGO (&pool);
+        inactive--;
     }
 
     // FIXME: how to assign a unique id to each GO?
@@ -204,16 +205,13 @@ void createGO (GameObject *first, GameObject *data) {
 
 // This calls the Object pooling to deactive the go and have it in memory 
 // to reuse it when we need it
-void destroyGO (GameObject *first, GameObject *go) {
+void destroyGO (GameObject *go) {
 
-    
+    pushGO (pool, go);
+    inactive++;
 
 }
 
 
-// TODO: 07/08/2018
-// I think we will need to handle the map objects separatly, 
-// because we need to have a way of saving their state to a file,
-// to allow the player to continue player where he has left over.
 
-// Also when creating differnt areas, we need to handle allocating memory in the most efficent way
+// 08/08/2018 --> we now hanlde some GameObjects with a List and a Pool and the map with a differnt method

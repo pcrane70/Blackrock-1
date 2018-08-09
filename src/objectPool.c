@@ -7,14 +7,27 @@
 
 GameObject *popGO (GameObject **top) {
 
-    GameObject *ptr = &top;
+    GameObject *ptr = *top;
     // TODO: better error handling here!!
     if (top == NULL) fprintf (stderr, "Stack underflow!!\n\n");
     else top = &ptr->next;
 
-    // FIXME: tell the global state that we have 1 object less
-    // inactive--;
-
     return ptr;
+
+}
+
+GameObject *pushGO (GameObject *top, GameObject *go) {
+
+    if (top == NULL) {
+        go->next = NULL;
+        top = go;
+    }
+
+    else {
+        go->next = top;
+        top = go;
+    }
+
+    return top;
 
 }

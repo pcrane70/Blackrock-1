@@ -9,7 +9,7 @@
 #include "input.h"
 
 // FIXME: 
-// global GameObject *player = NULL;
+GameObject *player = NULL;
 unsigned int wallCount;
 
 /*** SCREEN ***/
@@ -26,11 +26,18 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
 
     // TODO: is this the most efficient way of doing it?
     // TODO: the logic for fov goes in here!!
-    for (u32 i = 1; i < MAX_GO; i++) {
-        if (graphicComps[i].objectId > 0) {
-            Position *p = (Position *) getComponent (&gameObjects[i], POSITION);
-            putCharAt (console, graphicComps[i].glyph, p->x, p->y, graphicComps[i].fgColor, graphicComps[i].bgColor);
-        }
+    // for (u32 i = 1; i < MAX_GO; i++) {
+    //     if (graphicComps[i].objectId > 0) {
+    //         Position *p = (Position *) getComponent (&gameObjects[i], POSITION);
+    //         putCharAt (console, graphicComps[i].glyph, p->x, p->y, graphicComps[i].fgColor, graphicComps[i].bgColor);
+    //     }
+    // }
+
+    // FIXME: for now, the player is the first element in our list
+    GameObject *ptr = player;
+    while (ptr != NULL) {
+        putCharAt (console, ptr->glyph, ptr->x, ptr->y, ptr->fgColor, ptr->bgColor) ;
+        ptr = ptr->next;
     }
 
     // FIXME: we don't want to this every frame!!
@@ -84,11 +91,8 @@ int main (void) {
 
 
     // TODO: this is only for testing the GO linked list
-    // for now, this is our start of the list
-    GameObject playerData = { 1 };
-    Graphics playerGraphics = { '@', 0xFFFFFFFF, 0x000000FF };
-    GameObject *player = createGOList (player, &playerData);
-
+    GameObject playerData = { .glyph = '@', .fgColor = 0xFFFFFFFF, .bgColor = 0x000000FF };
+    player = createGOList (player, &playerData);
 
     // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
     // so we need to have the map saved in a file and then loaded here

@@ -76,7 +76,7 @@ typedef struct Physical {
 
 typedef struct GameObject {
 
-    u32 id;
+    // u32 id;
 
     u8 x, y;
 
