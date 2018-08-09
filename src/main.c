@@ -34,7 +34,7 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     }
 
     // FIXME: we don't want to this every frame!!
-    for (u32 i = 0; i < wallCount; i++)
+    for (u32 i = 0; i < wallCount; i++) 
         putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
 
     SDL_UpdateTexture (screen, NULL, console->pixels, SCREEN_WIDTH * sizeof (u32));
@@ -72,15 +72,23 @@ int main (void) {
 
     // FIXME: better player init
     // TODO: how do we want to manage our player?
-    GameObject *player = createGameObject ();
-    // the position component is handled by the map generator
-    // but this will be differnt for the start menu
-    // Position pos = { player->id, 25, 25 };
-    // addComponentToGO (player, POSITION, &pos);
-    Graphics playerGraphics = { player->id, '@', 0xFFFFFFFF, 0x000000FF };
-    addComponentToGO (player, GRAPHICS, &playerGraphics);
-    Physics physics = { player->id, true, true };
-    addComponentToGO (player, PHYSICS, &physics);
+    // GameObject *player = createGameObject ();
+    // // the position component is handled by the map generator
+    // // but this will be differnt for the start menu
+    // // Position pos = { player->id, 25, 25 };
+    // // addComponentToGO (player, POSITION, &pos);
+    // Graphics playerGraphics = { player->id, '@', 0xFFFFFFFF, 0x000000FF };
+    // addComponentToGO (player, GRAPHICS, &playerGraphics);
+    // Physics physics = { player->id, true, true };
+    // addComponentToGO (player, PHYSICS, &physics);
+
+
+    // TODO: this is only for testing the GO linked list
+    // for now, this is our start of the list
+    GameObject playerData = { 1 };
+    Graphics playerGraphics = { '@', 0xFFFFFFFF, 0x000000FF };
+    GameObject *player = createGOList (player, &playerData);
+
 
     // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
     // so we need to have the map saved in a file and then loaded here

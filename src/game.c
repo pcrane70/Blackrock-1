@@ -50,55 +50,55 @@ GameObject *createGameObject () {
 
     // TODO: do we want this here or in destriyObject??
     // cleanning up our components in the obj --- 04/08/2018
-    for (u32 i = 0; i < MAX_COMP_COUNT; i++) 
-        go->components[i] = NULL;
+    //for (u32 i = 0; i < MAX_COMP_COUNT; i++) 
+      // 1  go->components[i] = NULL;
 
     return go;
 
 }
 
-void addComponentToGO (GameObject *obj, GameComponent comp, void *compData) {
+// void addComponentToGO (GameObject *obj, GameComponent comp, void *compData) {
 
-    // make sure that we have a valid GO
-    assert (obj->id != 0);
+//     // make sure that we have a valid GO
+//     assert (obj->id != 0);
 
-    switch (comp) {
-        case POSITION: {
-            Position *pos = &positionComps[obj->id];
-            Position *posData = (Position *) compData;
-            pos->objectId = obj->id;
-            pos->x = posData->x;
-            pos->y = posData->y;
+//     switch (comp) {
+//         case POSITION: {
+//             Position *pos = &positionComps[obj->id];
+//             Position *posData = (Position *) compData;
+//             pos->objectId = obj->id;
+//             pos->x = posData->x;
+//             pos->y = posData->y;
 
-            obj->components[comp] = pos;
+//             obj->components[comp] = pos;
 
-            break; }
-        case GRAPHICS: {
-            Graphics *graphics = &graphicComps[obj->id];
-            Graphics *graphicsData = (Graphics *) compData;
-            graphics->objectId = obj->id;
-            graphics->glyph = graphicsData->glyph;
-            graphics->fgColor = graphicsData->fgColor;
-            graphics->bgColor = graphicsData->bgColor;
+//             break; }
+//         case GRAPHICS: {
+//             Graphics *graphics = &graphicComps[obj->id];
+//             Graphics *graphicsData = (Graphics *) compData;
+//             graphics->objectId = obj->id;
+//             graphics->glyph = graphicsData->glyph;
+//             graphics->fgColor = graphicsData->fgColor;
+//             graphics->bgColor = graphicsData->bgColor;
 
-            obj->components[comp] = graphics;
+//             obj->components[comp] = graphics;
 
-            break; }
-        case PHYSICS: {
-            Physics *physics = &physicsComps[obj->id];
-            Physics *physicsData = (Physics *) compData;
-            physics->objectId = obj->id;
-            physics->blocksMovement = physicsData->blocksMovement;
-            physics->blocksSight = physicsData->blocksSight;
+//             break; }
+//         case PHYSICS: {
+//             Physics *physics = &physicsComps[obj->id];
+//             Physics *physicsData = (Physics *) compData;
+//             physics->objectId = obj->id;
+//             physics->blocksMovement = physicsData->blocksMovement;
+//             physics->blocksSight = physicsData->blocksSight;
 
-            obj->components[comp] = physics;
+//             obj->components[comp] = physics;
 
-            break; }
+//             break; }
 
-        default: fprintf (stderr, "Unknown component!\n"); break;
-    }
+//         default: fprintf (stderr, "Unknown component!\n"); break;
+//     }
 
-}
+// }
 
 void *getComponent (GameObject *obj, GameComponent comp) {
 
@@ -120,6 +120,44 @@ void destroyGO (GameObject *obj) {
     obj->id = 0;
 
 }
+
+/*** Using Linked List ***/
+
+GameObject *createGOList (GameObject *first, GameObject *data) {
+
+    GameObject *go, *ptr;
+
+    go = (GameObject *) malloc (sizeof (GameObject));
+
+    // FIXME: error handling
+    if (go == NULL) return NULL;
+
+    // FIXME:
+    go->id = data->id;
+
+    for (u32 i = 0; i < MAX_COMP_COUNT; i++) go->components[i] = NULL;
+
+    if (first == NULL) {
+        go->next = NULL;
+        first = go;
+    }
+
+    else {
+        ptr = first;
+        while (ptr->next != NULL)
+            ptr = ptr->next;
+
+        ptr->next = go;
+        go->next = NULL;
+    }
+
+    return go;
+
+}
+
+
+
+
 
 // TODO: 07/08/2018
 // I think we will need to handle the map objects separatly, 

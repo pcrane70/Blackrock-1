@@ -21,11 +21,24 @@ typedef enum GameComponent {
 
 } GameComponent;
 
+typedef struct Graphics {
+
+    u32 objectId;
+    asciiChar glyph;
+    u32 fgColor;
+    u32 bgColor;
+    
+} Graphics;
+
 // Our Entity
 typedef struct GameObject {
 
-    u32 id;
+    // u32 id;
     void *components [MAX_COMP_COUNT];
+
+    struct Graphics *graphics;
+
+    struct GameObject *next;
 
 } GameObject;
 
@@ -39,15 +52,6 @@ typedef struct Position {
     u8 x, y;
 
 } Position;
-
-typedef struct Graphics {
-
-    u32 objectId;
-    asciiChar glyph;
-    u32 fgColor;
-    u32 bgColor;
-    
-} Graphics;
 
 typedef struct Physical {
 
@@ -73,5 +77,8 @@ extern GameObject *createGameObject ();
 extern void addComponentToGO (GameObject *, GameComponent, void *);
 void *getComponent (GameObject *, GameComponent);
 extern void destroyGO (GameObject *);
+
+// Linked Lists
+extern GameObject *createGOList (GameObject *first, GameObject *data);
 
 #endif
