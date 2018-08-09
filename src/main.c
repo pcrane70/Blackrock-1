@@ -20,18 +20,7 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
 
     clearConsole (console);
 
-    // test
-    // Position *playerPos = (Position *) getComponent (player, POSITION);
-    // putCharAt (console, '@', playerPos->x, playerPos->y, 0xFFFFFFFF, 0x000000FF);
-
-    // TODO: is this the most efficient way of doing it?
     // TODO: the logic for fov goes in here!!
-    // for (u32 i = 1; i < MAX_GO; i++) {
-    //     if (graphicComps[i].objectId > 0) {
-    //         Position *p = (Position *) getComponent (&gameObjects[i], POSITION);
-    //         putCharAt (console, graphicComps[i].glyph, p->x, p->y, graphicComps[i].fgColor, graphicComps[i].bgColor);
-    //     }
-    // }
 
     // FIXME: for now, the player is the first element in our list
     GameObject *ptr = player;
@@ -78,18 +67,6 @@ int main (void) {
     setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
 
     // FIXME: better player init
-    // TODO: how do we want to manage our player?
-    // GameObject *player = createGameObject ();
-    // // the position component is handled by the map generator
-    // // but this will be differnt for the start menu
-    // // Position pos = { player->id, 25, 25 };
-    // // addComponentToGO (player, POSITION, &pos);
-    // Graphics playerGraphics = { player->id, '@', 0xFFFFFFFF, 0x000000FF };
-    // addComponentToGO (player, GRAPHICS, &playerGraphics);
-    // Physics physics = { player->id, true, true };
-    // addComponentToGO (player, PHYSICS, &physics);
-
-
     // TODO: this is only for testing the GO linked list
     GameObject playerData = { .glyph = '@', .fgColor = 0xFFFFFFFF, .bgColor = 0x000000FF };
     player = createGOList (player, &playerData);
@@ -109,14 +86,6 @@ int main (void) {
         while (SDL_PollEvent (&event) != 0) {
             if (event.type == SDL_QUIT) {
                 done = true;
-
-                // FIXME: VERY IMPORTNAT
-                // we don't want to just quit the game...
-                // we ned to have a set of process for freeing the memory of the map, and all the gameObjects
-                // and their components
-                // also we need to check what to save to a file automatticaly 
-                // we don't want just a force quit like this!!!
-
                 break;
             }
 
@@ -127,6 +96,11 @@ int main (void) {
         renderScreen (renderer, screen, console);
     }
 
+    // Cleanup our GameObjects
+    fprintf (stdout, "Cleanning GameObjects...\n");
+    // FIXME:
+    player = cleanGameObjects (player);
+    if (player == NULL) fprintf (stdout, "All GameObjects have been cleared!\n");
 
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);

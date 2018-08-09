@@ -31,3 +31,20 @@ GameObject *pushGO (GameObject *top, GameObject *go) {
     return top;
 
 }
+
+GameObject *clearPool (GameObject *top) {
+
+    GameObject *ptr, *temp;
+    if (top != NULL) {
+        ptr = top;
+        while (ptr != NULL) {
+            temp = top;
+            top = top->next;
+            free (temp);
+            ptr = top;
+        }
+    }
+
+    return NULL;
+
+}
