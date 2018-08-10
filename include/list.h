@@ -28,4 +28,8 @@ typedef struct List {
 #define LIST_NEXT(element) ((element)->next)
 
 
+extern void initList (List *list, void (*destroy)(void *data));
+extern void destroyList (List *);
+extern bool insertAfter (List *list, ListElement *element, void **data);
+
 #endif

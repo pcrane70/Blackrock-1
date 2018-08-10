@@ -1,5 +1,6 @@
 /*** MAP ***/
 
+#include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -11,16 +12,9 @@
 
 #include "console.h"
 
+#include "list.h"
+
 #include "myUtils.h"
-
-// 05/08/2018 -- 16:28
-// TODO: do we really need a coord system for a better programming experience??
-// also think about how do we want to implement open areas later??
-typedef struct {
-
-    u32 x, y;
-
-}  Point;
 
 // TODO: is this the system that we want to go with??
 // if yes, probably allocate inside the map generator, 
@@ -94,6 +88,53 @@ void carveCorridorVer (Point from, Point to) {
 
 }
 
+/*** SEGMENTS ***/ 
+
+void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
+
+    // find all the spans between rooms
+    Point curr = from;
+    bool horizontal = false;
+    i8 step = 1;
+    if (from.y == to.y) {
+        horizontal = true;
+        if (from.x > to.x) step = -1;
+    }
+
+    else if (from.y > to.y) step = -1;
+
+    i8 currRoom = -1;
+    Point lastPoint = from;
+
+    while (curr.x != to.x && curr.y != to.y) {
+        i8 rm = roomWithPoint (curr, firstRoom);
+
+        if (rm != -1 && rm != currRoom) {
+            // we have a new segment
+            Segment *s = (Segment *) malloc (sizeof (Segment));
+            s->start = lastPoint;
+            s->end = curr;
+            s->roomFrom = currRoom;
+            s->roomTo = rm;
+            insertAfter (segments, NULL, s);
+
+            currRoom = rm;
+            lastPoint = curr;
+        }
+
+        // move to the next cell
+        if (horizontal) curr.x += step;
+        else curr.y += step;
+    }
+
+}
+
+void carveSegment (List *segments, List *hallways) {
+
+
+
+}
+
 
 /*** DRAWING ***/
 
@@ -118,8 +159,6 @@ void createWall (u32 x, u32 y, u32 wallCount) {
     new->bgColor = 0x000000FF;
     new->blocksMovement = true;
     new->blocksSight = true;
-
-    // free (new);
 
 }
 
@@ -210,45 +249,78 @@ void generateMap () {
         // }
     }
     
-    // creating corridors using a list
+    // creating corridors using the list of rooms
     // 08/08/2018 -- 7:55
     // I think we got it working the same way as the array, but we still need to tweak
     // how the map generates in general..
+
+    // join all the rooms with corridors
+    List *hallways;
+    initList (&hallways, &free);
+
     Room *ptr = first->next, *preptr = first;
     while (ptr != NULL) {
-        // Rect from = rooms[r - 1];
-        // Rect to = rooms[r];
         Room *from = preptr;
         Room *to = ptr;
 
         Point fromPt = randomRoomPoint (from);
         Point toPt = randomRoomPoint (to);
 
+        List *segments = (List *) malloc (sizeof (List));
+        initList (&segments, &free);
+
         // simple way of making corridors
         // TODO: do we want a more complex method?
         // think in project prourcopine pathfinding...
+        Point midPt;
         if (randomInt (0, 1) == 0) {
             // move horizontal, then vertical
-            Point midPt = { toPt.x, fromPt.y };
-            carveCorridorHor (fromPt, midPt);
-            carveCorridorVer (midPt, toPt);
+            // midPt = { toPt.x, fromPt.y };
+            midPt.x = toPt.x;
+            midPt.y = fromPt.y;
+
+
+            // carveCorridorHor (fromPt, midPt);
+            // carveCorridorVer (midPt, toPt);
         }
 
         else {
             // move vertical, then horizontal
-            Point midPt = { fromPt.x, toPt.y };
-            carveCorridorVer (fromPt, midPt);
-            carveCorridorHor (midPt, toPt);
+            // midPt = { fromPt.x, toPt.y };
+            midPt.x = fromPt.x;
+            midPt.y = toPt.y;
+            // carveCorridorVer (fromPt, midPt);
+            // carveCorridorHor (midPt, toPt);
         }
+
+        // break the hallway into segments
+        getSegments (segments, fromPt, midPt); 
+        getSegments (segments, midPt, toPt);
+
+        // get rid of any segment that connects rooms that are already joined
+        ListElement *ptr = LIST_START (segments);
+        while (ptr != NULL) {
+
+
+            ptr = ptr->next;
+        }
+
+        // carve out new segments and add them to the hallways list
+        carveSegment (segments, hallways);
 
         preptr = preptr->next;
         ptr = ptr->next;
+
+        // clean up lists
+        destroyList (segments);
+        free (segments);
     }
 
-    // TODO: and make sure that all of them are reachable
-
-    // cleanup the room's list
+    // clean up rooms
     first = deleteList (first);
+
+    destroyList (hallways);
+    free (hallways);
 
 }
 
