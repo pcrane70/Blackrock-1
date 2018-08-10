@@ -4,41 +4,67 @@
 
 #include "list.h"
 
-void initList (List *list, void (*destroy)(void *data)) {
+List *initList (void (*destroy)(void *data)) {
 
-    list->size = 0;
-    list->destroy = destroy;
-    list->start = NULL;
-    list->end = NULL;
+    List *list = (List *) malloc (sizeof (List));
+
+    // TODO: how to handle a failed allocation
+    if (list != NULL) {
+        list->size = 0;
+        list->destroy = destroy;
+        list->start = NULL;
+        list->end = NULL;
+    }
+
+    return list;
 
 }
 
-bool removeAfter (List *list, ListElement *element, void **data) {
+void *removeElement (List *list, ListElement *element) {
 
     ListElement *old;
+    void *data = NULL;
 
     if (LIST_SIZE (list) == 0) return false;
 
     if (element == NULL) {
-        *data = list->start->data;
+        data = list->start->data;
         old = list->start;
         list->start = list->start->next;
+        list->start->prev = NULL;
     }
 
     else {
-        if (element->next == NULL) return false;
+        data = element->next->data;
+        old = element;
 
-        *data = element->next->data;
-        old = element->next;
-        element->next = element->next->next;
+        ListElement *prevElement = element->prev;
+        ListElement *nextElement = element->next;
 
-        if (element->next == NULL) list->end = element;
+        if (prevElement != NULL && nextElement != NULL) {
+            prevElement->next = nextElement;
+            nextElement->prev = prevElement;
+        }
+
+        else {
+            // we are at the start of the list
+            if (prevElement == NULL) {
+                if (nextElement != NULL) nextElement->prev = NULL;
+                list->start = nextElement;
+            }
+
+            // we are at the end of the list
+            if (nextElement == NULL) {
+                if (prevElement != NULL) nextElement->next = NULL;
+                list->end = prevElement;
+            }
+        }
     }
 
     free (old);
     list->size--;
 
-    return true;
+    return data;
 
 }
 

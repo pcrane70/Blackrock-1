@@ -33,6 +33,23 @@ Point randomRoomPoint (Room *room) {
 
 }
 
+i32 roomWithPoint (Point pt, Room *first) {
+
+    i32 retVal = 0;
+    Room *ptr = first;
+    while (ptr != NULL) {
+        if ((ptr->x <= pt.x) && ((ptr->x + ptr->w) > pt.x) &&
+        (ptr->y <= pt.y) && ((ptr->y + ptr->h) > pt.y))
+            return retVal;
+
+        ptr = ptr->next;
+        retVal++;
+    }
+
+    return -1;
+
+}
+
 /*** CARVING ***/
 
 bool carveRoom (unsigned int x, unsigned int y, unsigned int w, unsigned int h) {
@@ -107,6 +124,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
     Point lastPoint = from;
 
     while (curr.x != to.x && curr.y != to.y) {
+        // FIXME: how do we want to handle a -1 for whatever reason?
         i8 rm = roomWithPoint (curr, firstRoom);
 
         if (rm != -1 && rm != currRoom) {
@@ -116,7 +134,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
             s->end = curr;
             s->roomFrom = currRoom;
             s->roomTo = rm;
-            insertAfter (segments, NULL, s);
+            insertAfter (segments, NULL, &s);
 
             currRoom = rm;
             lastPoint = curr;
@@ -181,7 +199,7 @@ void generateMap () {
     // 08/08/2018 7:05 --> testing a linked list to allocate this memory
     // Rect rooms[100];
     // our list of rooms
-    Room *first = NULL;
+    Room *firstRoom = NULL;
 
     u32 roomCount = 0;
     u32 cellsUsed = 0;
@@ -202,8 +220,8 @@ void generateMap () {
             // rooms[roomCount] = rect;
 
             Room roomData = { x, y, w, h, NULL };
-            if (roomCount == 0) first = createRoomList (first, &roomData);
-            else addRoom (first, &roomData);
+            if (roomCount == 0) firstRoom = createRoomList (firstRoom, &roomData);
+            else addRoom (firstRoom, &roomData);
             
             roomCount++;
             cellsUsed += (w * h);
@@ -255,10 +273,9 @@ void generateMap () {
     // how the map generates in general..
 
     // join all the rooms with corridors
-    List *hallways;
-    initList (&hallways, &free);
+    List *hallways = initList (free);
 
-    Room *ptr = first->next, *preptr = first;
+    Room *ptr = firstRoom->next, *preptr = firstRoom;
     while (ptr != NULL) {
         Room *from = preptr;
         Room *to = ptr;
@@ -266,8 +283,7 @@ void generateMap () {
         Point fromPt = randomRoomPoint (from);
         Point toPt = randomRoomPoint (to);
 
-        List *segments = (List *) malloc (sizeof (List));
-        initList (&segments, &free);
+        List *segments = initList (free);
 
         // simple way of making corridors
         // TODO: do we want a more complex method?
@@ -294,16 +310,17 @@ void generateMap () {
         }
 
         // break the hallway into segments
-        getSegments (segments, fromPt, midPt); 
-        getSegments (segments, midPt, toPt);
+        getSegments (segments, fromPt, midPt, firstRoom); 
+        getSegments (segments, midPt, toPt, firstRoom);
 
         // get rid of any segment that connects rooms that are already joined
         ListElement *ptr = LIST_START (segments);
-        while (ptr != NULL) {
+        // List *uniqueSegments = initList ()
+        // while (ptr != NULL) {
 
 
-            ptr = ptr->next;
-        }
+        //     ptr = ptr->next;
+        // }
 
         // carve out new segments and add them to the hallways list
         carveSegment (segments, hallways);
@@ -317,7 +334,7 @@ void generateMap () {
     }
 
     // clean up rooms
-    first = deleteList (first);
+    firstRoom = deleteList (firstRoom);
 
     destroyList (hallways);
     free (hallways);

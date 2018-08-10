@@ -4,6 +4,7 @@
 typedef struct ListElement {
 
     void *data;
+    struct ListElement *prev;
     struct ListElement *next;
 
 } ListElement;
@@ -28,7 +29,8 @@ typedef struct List {
 #define LIST_NEXT(element) ((element)->next)
 
 
-extern void initList (List *list, void (*destroy)(void *data));
+extern List *initList (void (*destroy)(void *data));
+extern void *removeElement (List *list, ListElement *element);
 extern void destroyList (List *);
 extern bool insertAfter (List *list, ListElement *element, void **data);
 
