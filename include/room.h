@@ -1,10 +1,12 @@
 #ifndef ROOM_H
 #define ROOM_H
 
+#include "blackrock.h"
+
 typedef struct Room {
 
-    unsigned int x, y;
-    unsigned int w, h;
+    u32 x, y;
+    u32 w, h;
 
     struct Room *next;
 

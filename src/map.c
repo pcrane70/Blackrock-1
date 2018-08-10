@@ -25,13 +25,13 @@ bool mapCells[MAP_WIDTH][MAP_HEIGHT];
 
 Point randomRoomPoint (Room *room) {
 
-    // u32 px = (rand () % (room->w - 1)) + room->x;
-    // u32 py = (rand () % (room->h - 1)) + room->y;
+    u32 px = (u32) (rand () % (room->w - 1)) + room->x;
+    u32 py = (u32) (rand () % (room->h - 1)) + room->y;
 
-    u32 px = randomInt (room->x, (room->x + room->w - 1));
-    u32 py = randomInt (room->y, (room->y + room->h - 1));
+    // u32 px = randomInt (room->x, (room->x + room->w - 1));
+    // u32 py = randomInt (room->y, (room->y + room->h - 1));
 
-    Point randPoint = { px, py };
+    Point randPoint = { 10, 10 };
     return randPoint;
 
 }
@@ -40,6 +40,7 @@ i32 roomWithPoint (Point pt, Room *first) {
 
     i32 retVal = 0;
     Room *ptr = first;
+    if (ptr = NULL) fprintf (stderr, "\nPassing a NLL rooms list!\n");
     while (ptr != NULL) {
         if ((ptr->x <= pt.x) && ((ptr->x + ptr->w) > pt.x) &&
         (ptr->y <= pt.y) && ((ptr->y + ptr->h) > pt.y))
@@ -70,6 +71,8 @@ bool carveRoom (u32 x, u32 y, u32 w, u32 h) {
 
 }
 
+static int test = 0;
+
 void carveCorridorHor (Point from, Point to) {
 
     u32 first, last;
@@ -85,6 +88,8 @@ void carveCorridorHor (Point from, Point to) {
 
     for (u32 x = first; x <= last; x++) 
         mapCells[x][from.y] = false;
+
+    // test++;
 
 }
 
@@ -104,17 +109,21 @@ void carveCorridorVer (Point from, Point to) {
     for (u32 y = first; y <= last; y++)
         mapCells[from.x][y] = false;
 
+    // test++;
+
 }
 
 /*** SEGMENTS ***/ 
 
 void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
+    if (firstRoom == NULL) fprintf (stderr, "\nPassing a NULL room list!\n");
+
     bool usingWayPoint = false;
     Point waypoint = to;
     if (from.x != to.x && from.y != to.y) {
         usingWayPoint = true;
-        if (randomInt (0, 1) == 0) {
+        if (rand() % 2 == 0) {
             waypoint.x = to.x;
             waypoint.y = from.y;
         }
@@ -241,9 +250,10 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
 }
 
-void carveSegment (List *hallways) {
+void carveSegments (List *hallways) {
 
     ListElement *ptr = LIST_START (hallways);
+    if (ptr == NULL) fprintf (stdout, "\nHallways list is empty!\n");
     while (ptr != NULL) {
         Segment *seg = (Segment *) ptr->data;
 
@@ -268,6 +278,8 @@ void carveSegment (List *hallways) {
             if (p1.x == p2.x) carveCorridorVer (p1, p2);
             else carveCorridorHor (p1, p2);
         }
+
+        test++;
     }
 
 }
@@ -291,7 +303,7 @@ void createWall (u32 x, u32 y, u32 wallCount) {
 
     new->x = x;
     new->y = y;
-    new->glyph = '|';
+    new->glyph = '#';
     new->fgColor = 0xFFFFFFFF;
     new->bgColor = 0x000000FF;
     new->blocksMovement = true;
@@ -309,35 +321,24 @@ void generateMap () {
         for (u32 y = 0; y < MAP_HEIGHT; y++) 
             mapCells[x][y] = true;
 
-    // carve out non-overlaping rooms that are randomly placed, 
-    // and of random size
+    // carve out non-overlaping rooms that are randomly placed, and of random size
     bool roomsDone = false;
-
-
-    // FIXME: do we want to allocate so much memory like this?
-    // 08/08/2018 7:05 --> testing a linked list to allocate this memory
-    // Rect rooms[100];
-    // our list of rooms
     Room *firstRoom = NULL;
-
-    u32 roomCount = 0;
+    unsigned int roomCount = 0;
     u32 cellsUsed = 0;
     
     // create room data
     fprintf (stdout, "Generating rooms...\n");
     while (!roomsDone) {
         // generate a random width/height for a room
-        unsigned int w = randomInt (5, 12);
-        unsigned int h = randomInt (5, 12);
+        u32 w = (u32) randomInt (5, 12);
+        u32 h = (u32) randomInt (5, 12);
 
         // generate random positions
-        unsigned int x = randomInt (1, MAP_WIDTH - w - 1);
-        unsigned int y = randomInt (1, MAP_HEIGHT - h - 1);
+        u32 x = (u32) randomInt (1, MAP_WIDTH - w - 1);
+        u32 y = (u32) randomInt (1, MAP_HEIGHT - h - 1);
 
         if (carveRoom (x, y, w, h)) {
-            // Rect rect = { x, y, w, h };
-            // rooms[roomCount] = rect;
-
             Room roomData = { x, y, w, h, NULL };
             if (roomCount == 0) firstRoom = createRoomList (firstRoom, &roomData);
             else addRoom (firstRoom, &roomData);
@@ -354,102 +355,74 @@ void generateMap () {
     // or do we need a more advanced system??
     // join all the rooms with corridors
     fprintf (stdout, "Generating corridors...\n");
+    
+    // creating corridors using the list of rooms
+    // 08/08/2018 -- 7:55
+    // I think we got it working the same way as the array, but we still need to tweak
+    // how the map generates in general..
 
-    // FIXME: 09/08/2018 -- 23:20 -- corridors still not working good
+    List *hallways = initList (free);
 
-    {
+    Room *ptr = firstRoom->next, *preptr = firstRoom;
+    while (ptr != NULL) {
+        Room *from = preptr;
+        Room *to = ptr;
 
-        /* 
-            
-        // creating corridors using the list of rooms
-        // 08/08/2018 -- 7:55
-        // I think we got it working the same way as the array, but we still need to tweak
-        // how the map generates in general..
+        Point fromPt = randomRoomPoint (from);
+        Point toPt = randomRoomPoint (to);
 
-        // join all the rooms with corridors 
-        List *hallways = initList (free);
+        List *segments = initList (free);
 
-        Room *ptr = firstRoom->next, *preptr = firstRoom;
-        while (ptr != NULL) {
-            Room *from = preptr;
-            Room *to = ptr;
+        // break the proposed hallway into segments
+        getSegments (segments, fromPt, toPt, firstRoom);
 
-            Point fromPt = randomRoomPoint (from);
-            Point toPt = randomRoomPoint (to);
+        // traverse the segment's list and skip adding any segments
+        // that join rooms that are already joined
 
-            List *segments = initList (free);
+        ListElement *e = LIST_START (segments);
+        if (e == NULL) fprintf (stderr, "\nSegment List start is NULL!!\n");
 
-            // simple way of making corridors
-            // TODO: do we want a more complex method?
-            // think in project prourcopine pathfinding...
-            Point midPt;
-            if (randomInt (0, 1) == 0) {
-                // move horizontal, then vertical
-                // midPt = { toPt.x, fromPt.y };
-                midPt.x = toPt.x;
-                midPt.y = fromPt.y;
+        for (ListElement *e = LIST_START (segments); e != NULL; e = e->next) {
+            i32 rm1 = ((Segment *) (e->data))->roomFrom;
+            i32 rm2 = ((Segment *) (e->data))->roomTo;
 
-
-                // carveCorridorHor (fromPt, midPt);
-                // carveCorridorVer (midPt, toPt);
-            }
-
+            Segment *uSeg = NULL;
+            if (hallways->size == 0) uSeg = (Segment *) e->data;
             else {
-                // move vertical, then horizontal
-                // midPt = { fromPt.x, toPt.y };
-                midPt.x = fromPt.x;
-                midPt.y = toPt.y;
-                // carveCorridorVer (fromPt, midPt);
-                // carveCorridorHor (midPt, toPt);
-            }
-
-            // break the hallway into segments
-            getSegments (segments, fromPt, midPt, firstRoom); 
-            getSegments (segments, midPt, toPt, firstRoom);
-
-            // get rid of any segment that connects rooms that are already joined
-            ListElement *ptr = LIST_START (segments);
-            while (ptr != NULL) {
-                i32 rm1 = ((Segment *) (ptr->data))->roomFrom;
-                i32 rm2 = ((Segment *) (ptr->data))->roomTo;
-
-                bool foundMatch;
-                ListElement *uSeg = NULL;
-                ListElement *hallElement = LIST_START (hallways);
-                while (hallElement != NULL) {
-                    if (((((Segment *) (hallElement->data))->roomFrom == rm1) && 
-                        (((Segment *) (hallElement->data))->roomTo == rm2)) ||
-                        ((((Segment *) (hallElement->data))->roomTo == rm1) && 
-                        (((Segment *) (hallElement->data))->roomFrom == rm2))) {
-                            uSeg = hallElement;
-                            break;
+                bool unique = true;
+                for (ListElement *h = LIST_START (hallways); h != NULL; h = h->next) {
+                    Segment *seg = (Segment *) (h->data);
+                    if (((seg->roomFrom == rm1) && (seg->roomTo == rm2)) ||
+                    ((seg->roomTo == rm1) && (seg->roomFrom == rm2))) {
+                        unique = false;
+                        break;
                     }
                 }
 
-                if (uSeg != NULL) insertAfter (hallways, NULL, uSeg);
-
-                ptr = ptr->next;
+                if (unique) uSeg = (Segment *) e->data;
             }
 
-            // continue looping through the rooms
-            preptr = preptr->next;
-            ptr = ptr->next;
+            if (uSeg != NULL) {
+                Segment *segCopy = (Segment *) malloc (sizeof (Segment));
+                memcpy (segCopy, uSeg, sizeof (Segment));
+                insertAfter (hallways, NULL, segCopy);
+            }
+        }    
 
-            // clean up lists
-            destroyList (segments);
-        }
+        // clean up lists
+        destroyList (segments);
 
-        // carve out new segments and add them to the hallways list
-        carveSegment (hallways);
+        // continue looping through the rooms
+        preptr = preptr->next;
+        ptr = ptr->next;
+    }
 
-        */
+    // carve out new segments and add them to the hallways list
+    carveSegments (hallways);
 
-    } 
-
-    // clean up rooms
+    // cleanning up 
     firstRoom = deleteList (firstRoom);
-
-    // destroyList (hallways);
+    destroyList (hallways);
 
 }
 
@@ -467,6 +440,8 @@ unsigned int initWorld (GameObject *player) {
     // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
     // to generate rooms and for generating caves or open fiels
     generateMap ();
+
+    fprintf (stdout, "\n\nTest: %i\n\n", test);
 
     // draw the map
     fprintf (stdout, "Drawing the map...\n");
