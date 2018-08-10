@@ -72,11 +72,12 @@ void destroyList (List *list) {
 
     void *data;
 
-    while (LIST_SIZE (list) > 0) 
-        if (removeAfter (list, NULL, (void **) data) && list->destroy != NULL)
-            list->destroy (data);
+    while (LIST_SIZE (list) > 0) {
+        data = removeElement (list, NULL);
+        if (data != NULL && list->destroy != NULL) list->destroy (data);
+    }
 
-    memset (list, 0, sizeof (List));
+    free (list);
 
 }
 

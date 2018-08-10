@@ -107,7 +107,8 @@ void carveCorridorVer (Point from, Point to) {
 
 /*** SEGMENTS ***/ 
 
-void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
+// FIXME:
+/* void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
     // find all the spans between rooms
     Point curr = from;
@@ -125,7 +126,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
     while (curr.x != to.x && curr.y != to.y) {
         // FIXME: how do we want to handle a -1 for whatever reason?
-        i8 rm = roomWithPoint (curr, firstRoom);
+        i32 rm = roomWithPoint (curr, firstRoom);
 
         if (rm != -1 && rm != currRoom) {
             // we have a new segment
@@ -145,11 +146,20 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
         else curr.y += step;
     }
 
-}
+} */
 
-void carveSegment (List *segments, List *hallways) {
+void carveSegment (List *hallways) {
 
+    ListElement *ptr = LIST_START (hallways);
+    while (ptr != NULL) {
+        Point p1 = ((Segment *) (ptr->data))->start;
+        Point p2 = ((Segment *) (ptr->data))->end;
 
+        if (p1.x == p2.x) carveCorridorVer (p1, p2);
+        else carveCorridorHor (p1, p2);
+
+        ptr = ptr->next;
+    }
 
 }
 
@@ -208,8 +218,8 @@ void generateMap () {
     fprintf (stdout, "Generating rooms...\n");
     while (!roomsDone) {
         // generate a random width/height for a room
-        unsigned int w = randomInt (4, 12);
-        unsigned int h = randomInt (4, 12);
+        unsigned int w = randomInt (5, 12);
+        unsigned int h = randomInt (5, 12);
 
         // generate random positions
         unsigned int x = randomInt (1, MAP_WIDTH - w - 1);
@@ -235,109 +245,102 @@ void generateMap () {
     // or do we need a more advanced system??
     // join all the rooms with corridors
     fprintf (stdout, "Generating corridors...\n");
-    
-    // creating corridors using arrays...
+
+    // FIXME: 09/08/2018 -- 23:20 -- corridors still not working good
+
     {
-        // for (u32 r = 1; r < roomCount; r++) {
-        //     // Rect from = rooms[r - 1];
-        //     // Rect to = rooms[r];
 
-        //     Room *from;
-        //     Room *to;
+        /* 
+            
+        // creating corridors using the list of rooms
+        // 08/08/2018 -- 7:55
+        // I think we got it working the same way as the array, but we still need to tweak
+        // how the map generates in general..
 
-        //     Point fromPt = randomRoomPoint (from);
-        //     Point toPt = randomRoomPoint (to);
+        // join all the rooms with corridors 
+        List *hallways = initList (free);
 
-        //     // simple way of making corridors
-        //     // TODO: do we want a more complex method?
-        //     // think in project prourcopine pathfinding...
-        //     if (randomInt (0, 1) == 0) {
-        //         // move horizontal, then vertical
-        //         Point midPt = { toPt.x, fromPt.y };
-        //         carveCorridorHor (fromPt, midPt);
-        //         carveCorridorVer (midPt, toPt);
-        //     }
+        Room *ptr = firstRoom->next, *preptr = firstRoom;
+        while (ptr != NULL) {
+            Room *from = preptr;
+            Room *to = ptr;
 
-        //     else {
-        //         // move vertical, then horizontal
-        //         Point midPt = { fromPt.x, toPt.y };
-        //         carveCorridorVer (fromPt, midPt);
-        //         carveCorridorHor (midPt, toPt);
-        //     }
-        // }
-    }
-    
-    // creating corridors using the list of rooms
-    // 08/08/2018 -- 7:55
-    // I think we got it working the same way as the array, but we still need to tweak
-    // how the map generates in general..
+            Point fromPt = randomRoomPoint (from);
+            Point toPt = randomRoomPoint (to);
 
-    // join all the rooms with corridors
-    List *hallways = initList (free);
+            List *segments = initList (free);
 
-    Room *ptr = firstRoom->next, *preptr = firstRoom;
-    while (ptr != NULL) {
-        Room *from = preptr;
-        Room *to = ptr;
-
-        Point fromPt = randomRoomPoint (from);
-        Point toPt = randomRoomPoint (to);
-
-        List *segments = initList (free);
-
-        // simple way of making corridors
-        // TODO: do we want a more complex method?
-        // think in project prourcopine pathfinding...
-        Point midPt;
-        if (randomInt (0, 1) == 0) {
-            // move horizontal, then vertical
-            // midPt = { toPt.x, fromPt.y };
-            midPt.x = toPt.x;
-            midPt.y = fromPt.y;
+            // simple way of making corridors
+            // TODO: do we want a more complex method?
+            // think in project prourcopine pathfinding...
+            Point midPt;
+            if (randomInt (0, 1) == 0) {
+                // move horizontal, then vertical
+                // midPt = { toPt.x, fromPt.y };
+                midPt.x = toPt.x;
+                midPt.y = fromPt.y;
 
 
-            // carveCorridorHor (fromPt, midPt);
-            // carveCorridorVer (midPt, toPt);
+                // carveCorridorHor (fromPt, midPt);
+                // carveCorridorVer (midPt, toPt);
+            }
+
+            else {
+                // move vertical, then horizontal
+                // midPt = { fromPt.x, toPt.y };
+                midPt.x = fromPt.x;
+                midPt.y = toPt.y;
+                // carveCorridorVer (fromPt, midPt);
+                // carveCorridorHor (midPt, toPt);
+            }
+
+            // break the hallway into segments
+            getSegments (segments, fromPt, midPt, firstRoom); 
+            getSegments (segments, midPt, toPt, firstRoom);
+
+            // get rid of any segment that connects rooms that are already joined
+            ListElement *ptr = LIST_START (segments);
+            while (ptr != NULL) {
+                i32 rm1 = ((Segment *) (ptr->data))->roomFrom;
+                i32 rm2 = ((Segment *) (ptr->data))->roomTo;
+
+                bool foundMatch;
+                ListElement *uSeg = NULL;
+                ListElement *hallElement = LIST_START (hallways);
+                while (hallElement != NULL) {
+                    if (((((Segment *) (hallElement->data))->roomFrom == rm1) && 
+                        (((Segment *) (hallElement->data))->roomTo == rm2)) ||
+                        ((((Segment *) (hallElement->data))->roomTo == rm1) && 
+                        (((Segment *) (hallElement->data))->roomFrom == rm2))) {
+                            uSeg = hallElement;
+                            break;
+                    }
+                }
+
+                if (uSeg != NULL) insertAfter (hallways, NULL, uSeg);
+
+                ptr = ptr->next;
+            }
+
+            // continue looping through the rooms
+            preptr = preptr->next;
+            ptr = ptr->next;
+
+            // clean up lists
+            destroyList (segments);
         }
-
-        else {
-            // move vertical, then horizontal
-            // midPt = { fromPt.x, toPt.y };
-            midPt.x = fromPt.x;
-            midPt.y = toPt.y;
-            // carveCorridorVer (fromPt, midPt);
-            // carveCorridorHor (midPt, toPt);
-        }
-
-        // break the hallway into segments
-        getSegments (segments, fromPt, midPt, firstRoom); 
-        getSegments (segments, midPt, toPt, firstRoom);
-
-        // get rid of any segment that connects rooms that are already joined
-        ListElement *ptr = LIST_START (segments);
-        // List *uniqueSegments = initList ()
-        // while (ptr != NULL) {
-
-
-        //     ptr = ptr->next;
-        // }
 
         // carve out new segments and add them to the hallways list
-        carveSegment (segments, hallways);
+        carveSegment (hallways);
 
-        preptr = preptr->next;
-        ptr = ptr->next;
+        */
 
-        // clean up lists
-        destroyList (segments);
-        free (segments);
-    }
+    } 
 
     // clean up rooms
     firstRoom = deleteList (firstRoom);
 
-    destroyList (hallways);
-    free (hallways);
+    // destroyList (hallways);
 
 }
 
