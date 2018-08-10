@@ -32,7 +32,7 @@ typedef struct List {
 extern List *initList (void (*destroy)(void *data));
 extern void *removeElement (List *list, ListElement *element);
 extern void destroyList (List *list);
-// FIXME:
-// extern bool insertAfter (List *list, ListElement *element, void **data);
+extern bool insertAfter (List *list, ListElement *element, void *data);
+
 
 #endif

@@ -4,7 +4,7 @@
 // 05/08/2018 -- 16:28
 // TODO: do we really need a coord system for a better programming experience??
 // also think about how do we want to implement open areas later??
-typedef struct {
+typedef struct Point {
 
     u32 x, y;
 
@@ -12,8 +12,9 @@ typedef struct {
 
 typedef struct Segment {
 
-    Point start, end;
-    i8 roomFrom, roomTo;
+    Point start, mid, end;
+    i32 roomFrom, roomTo;
+    bool hasWayPoint;
 
 } Segment;
 

@@ -25,17 +25,17 @@ void *removeElement (List *list, ListElement *element) {
     ListElement *old;
     void *data = NULL;
 
-    if (LIST_SIZE (list) == 0) return false;
+    if (LIST_SIZE (list) == 0) return NULL;
 
     if (element == NULL) {
         data = list->start->data;
         old = list->start;
         list->start = list->start->next;
-        list->start->prev = NULL;
+        if (list->start != NULL) list->start->prev = NULL;
     }
 
     else {
-        data = element->next->data;
+        data = element->data;
         old = element;
 
         ListElement *prevElement = element->prev;
@@ -55,7 +55,7 @@ void *removeElement (List *list, ListElement *element) {
 
             // we are at the end of the list
             if (nextElement == NULL) {
-                if (prevElement != NULL) nextElement->next = NULL;
+                if (prevElement != NULL) prevElement->next = NULL;
                 list->end = prevElement;
             }
         }
@@ -81,7 +81,7 @@ void destroyList (List *list) {
 
 }
 
-bool insertAfter (List *list, ListElement *element, void **data) {
+bool insertAfter (List *list, ListElement *element, void *data) {
 
     ListElement *new;
     if ((new = (ListElement *) malloc (sizeof (ListElement))) == NULL) 
@@ -91,15 +91,18 @@ bool insertAfter (List *list, ListElement *element, void **data) {
 
     if (element == NULL) {
         if (LIST_SIZE (list) == 0) list->end = new;
-
-        new->next = list->start;
-        list->start = new;
+        else list->start->prev = new;
+       
+       new->next = list->start;
+       new->prev = NULL;
+       list->start = new;
     }
 
     else {
         if (element->next == NULL) list->end = new;
 
         new->next = element->next;
+        new->prev = element;
         element->next = new;
     }
 

@@ -25,8 +25,11 @@ bool mapCells[MAP_WIDTH][MAP_HEIGHT];
 
 Point randomRoomPoint (Room *room) {
 
-    u32 px = (room->x, (room->x + room->w));
-    u32 py = (room->y, (room->y + room->h));
+    // u32 px = (rand () % (room->w - 1)) + room->x;
+    // u32 py = (rand () % (room->h - 1)) + room->y;
+
+    u32 px = randomInt (room->x, (room->x + room->w - 1));
+    u32 py = randomInt (room->y, (room->y + room->h - 1));
 
     Point randPoint = { px, py };
     return randPoint;
@@ -52,12 +55,10 @@ i32 roomWithPoint (Point pt, Room *first) {
 
 /*** CARVING ***/
 
-bool carveRoom (unsigned int x, unsigned int y, unsigned int w, unsigned int h) {
+bool carveRoom (u32 x, u32 y, u32 w, u32 h) {
 
-    // checks if it overlaps another room
-    // and also check that their are not to close together
-    for (u8 i = x; i < x + (w + 1); i++) 
-        for (u8 j = y; j < y + (h + 1); j++)
+    for (u8 i = x - 1; i < x + (w + 1); i++) 
+        for (u8 j = y - 1; j < y + (h + 1); j++)
             if (mapCells[i][j] == false) return false;
 
     // carve the room
@@ -107,58 +108,166 @@ void carveCorridorVer (Point from, Point to) {
 
 /*** SEGMENTS ***/ 
 
-// FIXME:
-/* void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
+void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
-    // find all the spans between rooms
+    bool usingWayPoint = false;
+    Point waypoint = to;
+    if (from.x != to.x && from.y != to.y) {
+        usingWayPoint = true;
+        if (randomInt (0, 1) == 0) {
+            waypoint.x = to.x;
+            waypoint.y = from.y;
+        }
+
+        else {
+            waypoint.x = from.x;
+            waypoint.y = to.y;
+        }
+    }
+
     Point curr = from;
     bool horizontal = false;
     i8 step = 1;
-    if (from.y == to.y) {
+    if (from.y == waypoint.y) {
         horizontal = true;
-        if (from.x > to.x) step = -1;
+        if (from.x > waypoint.x) step = -1;
     }
 
-    else if (from.y > to.y) step = -1;
+    else if (from.y > waypoint.y) step = -1;
 
-    i8 currRoom = -1;
+    i32 currRoom = roomWithPoint (curr, firstRoom);
     Point lastPoint = from;
-
-    while (curr.x != to.x && curr.y != to.y) {
-        // FIXME: how do we want to handle a -1 for whatever reason?
+    bool done = false;
+    Segment *turnSegment = NULL;
+    while (!done) {
         i32 rm = roomWithPoint (curr, firstRoom);
+        if (usingWayPoint && curr.x == waypoint.x && curr.y == waypoint.y) {
+            // check if we are in a room
+            if (rm != -1) {
+                if (rm != currRoom) {
+                    // we have a new segment between currRoom and rm
+                    Segment *s = (Segment *) malloc (sizeof (Segment));
+                    s->start = lastPoint;
+                    s->end = curr;
+                    s->roomFrom = currRoom;
+                    s->roomTo = rm;
+                    s->hasWayPoint = false;
+                    insertAfter (segments, NULL, s);
 
-        if (rm != -1 && rm != currRoom) {
-            // we have a new segment
-            Segment *s = (Segment *) malloc (sizeof (Segment));
-            s->start = lastPoint;
-            s->end = curr;
-            s->roomFrom = currRoom;
-            s->roomTo = rm;
-            insertAfter (segments, NULL, &s);
+                    currRoom = rm;
+                }
 
-            currRoom = rm;
-            lastPoint = curr;
+                else lastPoint = waypoint;
+            }
+
+            else {
+                turnSegment = (Segment *) malloc (sizeof (Segment));
+                turnSegment->start = lastPoint;
+                turnSegment->mid = curr;
+                turnSegment->hasWayPoint = true;
+                turnSegment->roomFrom = currRoom;
+            }
+
+            from = curr;
+            horizontal = false;
+            step = 1;
+            if (from.y == to.y) {
+                horizontal = true;
+                if (from.x > to.x) step = -1;
+            }
+
+            else if (from.y > to.y) step = -1;
+
+            if (horizontal) curr.x += step;
+            else curr.y += step;
         }
 
-        // move to the next cell
-        if (horizontal) curr.x += step;
-        else curr.y += step;
+        else if (curr.x == to.x && curr.y == to.y) {
+            // we have hit our end point... 
+            // check if we are inside another room or in the same one
+            if (rm != currRoom) {
+                if (turnSegment != NULL) {
+                    // we already have a partial segment, so now complete it
+                    turnSegment->end = curr;
+                    turnSegment->roomTo = rm;
+                    insertAfter (segments, NULL, turnSegment);
+                    turnSegment = NULL;
+                }
+
+                else {
+                    // we have a new segment between currRoom and rm
+                    Segment *s = (Segment *) malloc (sizeof (Segment));
+                    s->start = lastPoint;
+                    s->end = curr;
+                    s->roomFrom = currRoom;
+                    s->roomTo = rm;
+                    s->hasWayPoint = false;
+                    insertAfter (segments, NULL, s);
+                }
+            }
+
+            done = true;
+        }
+
+        else {
+            if (rm != -1 && rm != currRoom) {
+                if (turnSegment != NULL) {
+                    // complete the partial segment
+                    turnSegment->end = curr;
+                    turnSegment->roomTo = rm;
+                    insertAfter (segments, NULL, turnSegment);
+                    turnSegment = NULL;
+                }
+
+                else {
+                    // we have a new segment 
+                    Segment *s = (Segment *) malloc (sizeof (Segment));
+                    s->start = lastPoint;
+                    s->end = curr;
+                    s->roomFrom = currRoom;
+                    s->roomTo = rm;
+                    s->hasWayPoint = false;
+                    insertAfter (segments, NULL, s);
+                }
+
+                currRoom = rm;
+                lastPoint = curr;
+            }
+
+            if (horizontal) curr.x += step;
+            else curr.y += step;
+        }
     }
 
-} */
+}
 
 void carveSegment (List *hallways) {
 
     ListElement *ptr = LIST_START (hallways);
     while (ptr != NULL) {
-        Point p1 = ((Segment *) (ptr->data))->start;
-        Point p2 = ((Segment *) (ptr->data))->end;
+        Segment *seg = (Segment *) ptr->data;
 
-        if (p1.x == p2.x) carveCorridorVer (p1, p2);
-        else carveCorridorHor (p1, p2);
+        if (seg->hasWayPoint) {
+            Point p1 = seg->start;
+            Point p2 = seg->mid;
 
-        ptr = ptr->next;
+            if (p1.x == p2.x) carveCorridorVer (p1, p2);
+            else carveCorridorHor (p1, p2);
+
+            p1 = seg->mid;
+            p2 = seg->end;
+
+            if (p1.x == p2.x) carveCorridorVer (p1, p2);
+            else carveCorridorHor (p1, p2);
+        }
+
+        else {
+            Point p1 = seg->start;
+            Point p2 = seg->end;
+
+            if (p1.x == p2.x) carveCorridorVer (p1, p2);
+            else carveCorridorHor (p1, p2);
+        }
     }
 
 }
