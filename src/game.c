@@ -8,9 +8,22 @@
 
 #include "blackrock.h"
 #include "game.h"
+
+#include "list.h"
 #include "objectPool.h"
 
 /*** WORLD STATE ***/
+
+void initWorld (void) {
+
+    gameObjects = initList (free);
+    positions = initList (free);
+    graphics = initList (free);
+    physics = initList (free);
+
+    // TODO: what other things do we want to init here?
+
+}
 
 
 /*** Game Object Management **/
@@ -30,77 +43,71 @@ static unsigned int inactive = 0;
 // reference to the start of the pool
 static GameObject *pool = NULL;
 
-// TODO: how do we want to solve the problem of the first GO??
+// 11/08/2018 -- we will assign a new id to each new GO starting at 0
+static unsigned int id = 0;
 
-GameObject *createGOList (GameObject *first, GameObject *data) {
+// Adds an object to our GO list
+GameObject *createGO () {
 
-    GameObject *go, *ptr;
-
-    go = (GameObject *) malloc (sizeof (GameObject));
-
-    // FIXME: error handling
-    if (go == NULL) return NULL;
-
-    // FIXME: how to assign a unique id to each GO?
-    // go->id = data->id;  
-
-    go->x = data->x;
-    go->y = data->y;
-    go->glyph = data->glyph;
-    go->fgColor = data->fgColor;
-    go->bgColor = data->bgColor;
-    go->blocksMovement = data->blocksMovement;
-    go->blocksSight = data->blocksSight;
-
-    if (first == NULL) {
-        go->next = NULL;
-        first = go;
-    }
-
-    else {
-        ptr = first;
-        while (ptr->next != NULL)
-            ptr = ptr->next;
-
-        ptr->next = go;
-        go->next = NULL;
-    }
-
-    return go;
+    // TODO:
 
 }
 
-void createGO (GameObject *data) {
+void addComponent (GameObject *go, GameComponent type, void *data) {
 
-    GameObject *ptr = pool;
-    GameObject *go = NULL;
+    // TODO: check for a valid GO
+    // TODO: how do we handle if the data is NULL?
 
-    // if our object pool is empty, we create a new object
-    if (inactive == 0) go = (GameObject *) malloc (sizeof (GameObject));
-    else {
-        // grab a GO from our Pool...
-        go = popGO (&pool);
-        inactive--;
+    // TODO: object pooling for components
+
+    switch (type) {
+        case POSITION: {
+            if (getComponent (go, type) != NULL) return;
+            Position *newPos = (Position *) malloc (sizeof (Position));
+            Position *posData = (Position *) data;
+            newPos->objectId = go->id;
+            newPos->x = posData->x;
+            newPos->y = posData->y;
+            newPos->layer = posData->layer;
+            insertAfter (positions, NULL, newPos);
+        }
+        case GRAPHICS: {
+            if (getComponent (go, type) != NULL) return;
+            Graphics *newGraphics = (Graphics *) malloc (sizeof (Graphics));
+            Graphics *graphicsData = (Graphics *) data;
+            newGraphics->objectId = go->id;
+            newGraphics->glyph = graphicsData->glyph;
+            newGraphics->fgColor = graphicsData->fgColor;
+            newGraphics->bgColor = graphicsData->bgColor;
+            insertAfter (graphics, NULL, newGraphics);
+        }
+        case PHYSICS: {
+            if (getComponent (go, type) != NULL) return;
+            Physics *newPhys = (Physics *) malloc (sizeof (Physics));
+            Physics *physData = (Physics *) data;
+            newPhys->objectId = go->id;
+            newPhys->blocksSight = physData->blocksSight;
+            newPhys->blocksMovement = physData->blocksMovement;
+            insertAfter (graphics, NULL, newPhys);
+        }
+
+        // We have an invalid GameComponent type
+        // TODO: how to handle this??
+        default: return;
     }
-
-    // FIXME: how to assign a unique id to each GO?
-        // go->id = data->id;
-
-    go->x = data->x;
-    go->y = data->y;
-    go->glyph = data->glyph;
-    go->fgColor = data->fgColor;
-    go->bgColor = data->bgColor;
-    go->blocksMovement = data->blocksMovement;
-    go->blocksSight = data->blocksSight;
-
-    // and add it directly to the end of the GO list
-    while (ptr->next != NULL) ptr = ptr->next;
-
-    ptr->next = go;
 
 }
 
+void *getComponent (GameObject *go, GameComponent type) {
+
+    // TODO: check if this works properlly
+    void *retVal = go->components[type];
+    if (retVal == NULL) return NULL;
+    else return retVal;
+
+}
+
+// FIXME:
 // This calls the Object pooling to deactive the go and have it in memory 
 // to reuse it when we need it
 void destroyGO (GameObject *go) {
@@ -110,23 +117,7 @@ void destroyGO (GameObject *go) {
 
 }
 
-GameObject *deleteGOList (GameObject *first) {
-
-    GameObject *ptr, *temp;
-    if (first != NULL) {
-        ptr = first;
-        while (ptr != NULL) {
-            temp = first;
-            first = first->next;
-            free (temp);
-            ptr = first;
-        }
-    }
-
-    return NULL;
-
-}
-
+// FIXME:
 GameObject *cleanGameObjects (GameObject *first) {
 
     // cleanup the pool

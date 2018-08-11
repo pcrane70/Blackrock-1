@@ -3,32 +3,102 @@
 
 #include "blackrock.h"
 
-// 08/08/2018
-// Creating a new representation of GameObject that will be used with a linked list
-// lets test if this is a better way of handling the GOs
+#include "map.h"    // for Point
 
+#include "list.h"
+
+
+// 11/08/2018
+// Getting back to an ECS but we will try to use linked lists and make a more efficient system
+
+typedef enum GameComponent {
+
+    POSITION = 0,
+    GRAPHICS,
+    PHYSICS,
+    HEALTH, 
+    MOVEMENT,
+    COMBAT, 
+    EQUIPMENT, 
+    TREASURE,
+    ANIMATION,
+
+    COMP_COUNT
+
+} GameComponent;
+
+// Entity
+// TODO: do we want graphics and position to be already a part of the Go?
 typedef struct GameObject {
+    
+    i32 id;
+    void *components[COMP_COUNT];
 
-    // u32 id;
+} GameObject;
 
+
+/*** COMPONENTS ***/
+
+#define UNSERT_LAYER    0
+#define GROUND_LAYER    1
+#define MID_LAYER       2
+#define AIR_LAYER       3
+#define TOP_LAYER       4
+
+typedef struct Position {
+
+    i32 objectId;
     u8 x, y;
+    u8 layer;   
 
+} Position;
+
+typedef struct Graphics {
+
+    i32 objectId;
     asciiChar glyph;
     u32 fgColor;
     u32 bgColor;
 
+} Graphics;
+
+typedef struct Physics {
+
+    i32 objectId;
     bool blocksMovement;
     bool blocksSight;
 
-    struct GameObject *next;
+} Physics;
 
-} GameObject;
+typedef struct Movement {
 
-// Linked Lists
-extern GameObject *createGOList (GameObject *first, GameObject *data);
-extern void createGO (GameObject *data);
-extern void destroyGO (GameObject *go);
-extern GameObject *cleanGameObjects (GameObject *first);
+    i32 objectId;
+    i32 speed;
+    i32 frecuency;
+    i32 ticksUntilNextMov;
+    Point destination;
+    bool hasDestination;
+    bool chasingPlayer;
+    i32 turnsSincePlayerSeen;
+
+} Movement;
+
+
+/*** PLAYER ***/
+
+static GameObject *player = NULL;
+// TODO: player name??
+
+
+/*** OUR LISTS ***/
+
+static List *gameObjects;
+static List *positions;
+static List *graphics;
+static List *physics;
+
+
+extern void initWorld (void);
 
 
 #endif

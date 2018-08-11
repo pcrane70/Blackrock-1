@@ -22,12 +22,10 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
 
     // TODO: the logic for fov goes in here!!
 
-    // FIXME: for now, the player is the first element in our list
-    GameObject *ptr = player;
-    while (ptr != NULL) {
-        putCharAt (console, ptr->glyph, ptr->x, ptr->y, ptr->fgColor, ptr->bgColor) ;
-        ptr = ptr->next;
-    }
+    // while (ptr != NULL) {
+    //     putCharAt (console, ptr->glyph, ptr->x, ptr->y, ptr->fgColor, ptr->bgColor) ;
+    //     ptr = ptr->next;
+    // }
 
     // FIXME: we don't want to this every frame!!
     for (u32 i = 0; i < wallCount; i++) 
