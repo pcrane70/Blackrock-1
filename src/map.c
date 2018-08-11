@@ -14,7 +14,7 @@
 
 #include "list.h"
 
-#include "myUtils.h"
+#include "utils/myUtils.h"
 
 // TODO: is this the system that we want to go with??
 // if yes, probably allocate inside the map generator, 

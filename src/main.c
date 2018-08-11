@@ -65,7 +65,8 @@ void initSDL (SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *screen) {
 void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
     // Cleanup our GameObjects and Pools
-    // fprintf (stdout, "Cleanning GameObjects...\n");
+    fprintf (stdout, "Cleanning GameObjects...\n");
+    free (player);
     // if (cleanUpGame () == 0) fprintf (stdout, "All GameObjects have been cleared!\n");
     // else fprintf (stderr, "Error cleanning GOs!! Quiting anyway...\n");
 

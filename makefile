@@ -4,8 +4,8 @@ CFLAGS = -I $(IDIR) `sdl2-config --cflags --libs` -lm
 IDIR = ./include/
 SRCDIR = ./src/
 
-SOURCES = $(SRCDIR)*.c
-		  # \ $(SRCDIR)utils/*.c
+SOURCES = $(SRCDIR)*.c \
+		  $(SRCDIR)utils/*.c
 
 all: blackrock #run #clean
 
