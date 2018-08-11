@@ -31,4 +31,7 @@ typedef unsigned char asciiChar;
 #define global  static
 
 
+global GameObject *player = NULL;
+
+
 #endif

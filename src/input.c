@@ -17,15 +17,19 @@ void handlePlayerInput (SDL_Event event, GameObject *player) {
     // FIXME: how can we handle collisions??
     if (event.type == SDL_KEYDOWN) {
         SDL_Keycode key = event.key.keysym.sym;
+
+        // TODO: make this an internal variable in this file
+        Position *playerPos = getComponent (player, POSITION);
+
         switch (key) {
             case SDLK_w: 
-                if (player->y > 0) player->y -= 1; break;
+                if (playerPos->y > 0) playerPos->y -= 1; break;
             case SDLK_s: 
-                if (player->y < NUM_ROWS - 1) player->y += 1; break;
+                if (playerPos->y < NUM_ROWS - 1) player->y += 1; break;
             case SDLK_a: 
-                if (player->x > 0) player->x -= 1; break;
+                if (playerPos->x > 0) playerPos->x -= 1; break;
             case SDLK_d:
-                if (player->x < NUM_COLS - 1) player->x += 1; break;
+                if (playerPos->x < NUM_COLS - 1) playerPos->x += 1; break;
             default: break;
         }
     }

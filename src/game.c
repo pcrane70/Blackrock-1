@@ -28,6 +28,27 @@ void initWorld (void) {
 
 /*** Game Object Management **/
 
+// because the player is an special GO, we want to initialize him differently
+GameObject *initPlayer (void) {
+
+    GameObject *go = (GameObject *) malloc (sizeof (GameObject));
+    go->id = 0;
+
+    // This is just a placeholder until it spawns in the world
+    Position pos = { 0, 0, 0 };
+    addComponent (go, POSITION, &pos);
+
+    Graphics g = { 0, '@', 0xFFFFFFFF, 0x000000FF };
+    addComponent (go, GRAPHICS, &g);
+
+    Physics phys = { 0, true, true };
+    addComponent (go, PHYSICS, &phys);
+
+    return go;
+
+}
+
+
 // 08/08/2018 --> we now handle some GameObjects with a llist and a Pool;
 // the map is managed using an array
 
@@ -43,8 +64,9 @@ static unsigned int inactive = 0;
 // reference to the start of the pool
 static GameObject *pool = NULL;
 
-// 11/08/2018 -- we will assign a new id to each new GO starting at 0
-static unsigned int id = 0;
+// 11/08/2018 -- we will assign a new id to each new GO starting at 1
+// id = 0 is the player 
+static unsigned int id = 1;
 
 // Adds an object to our GO list
 GameObject *createGO () {
@@ -118,13 +140,13 @@ void destroyGO (GameObject *go) {
 }
 
 // FIXME:
-GameObject *cleanGameObjects (GameObject *first) {
+unsigned int cleanUpGame (void) {
 
-    // cleanup the pool
-    pool = clearPool (pool);
-    if (pool == NULL) fprintf (stdout, "\nPool has been cleared.\n");
+    // // cleanup the pool
+    // pool = clearPool (pool);
+    // if (pool == NULL) fprintf (stdout, "\nPool has been cleared.\n");
 
-    return deleteGOList (first);
+    // return deleteGOList (first);
 
 }
 

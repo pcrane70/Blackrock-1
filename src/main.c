@@ -8,8 +8,10 @@
 
 #include "input.h"
 
-// FIXME: 
-GameObject *player = NULL;
+
+#define FPS_LIMIT   20
+
+
 unsigned int wallCount;
 
 /*** SCREEN ***/
@@ -38,73 +40,105 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
 
 }
 
+/*** SET UP ***/
 
-/*** THREAD ***/
+// SDL SETUP
+void initSDL (SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *screen) {
 
-int main (void) {
-
-    srand ((unsigned) time (NULL));
-
-    // SDL SETUP
     SDL_Init (SDL_INIT_VIDEO);
-    SDL_Window *window = SDL_CreateWindow ("Blackrock Dungeons",
+    window = SDL_CreateWindow ("Blackrock Dungeons",
          SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 
-    SDL_Renderer *renderer = SDL_CreateRenderer (window, 0, SDL_RENDERER_SOFTWARE);
+    renderer = SDL_CreateRenderer (window, 0, SDL_RENDERER_SOFTWARE);
 
     SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     SDL_RenderSetLogicalSize (renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    SDL_Texture *screen = SDL_CreateTexture (renderer, SDL_PIXELFORMAT_RGBA8888, 
+    screen = SDL_CreateTexture (renderer, SDL_PIXELFORMAT_RGBA8888, 
         SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Create our console emulator graphics
-    Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS);
+}
 
-    // set up the console font
-    setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
 
-    // FIXME: better player init
-    // TODO: this is only for testing the GO linked list
-    GameObject playerData = { .glyph = '@', .fgColor = 0xFFFFFFFF, .bgColor = 0x000000FF };
-    player = createGOList (player, &playerData);
+/*** CLEAN UP ***/
 
-    // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
-    // so we need to have the map saved in a file and then loaded here
+void cleanUp (SDL_Renderer *renderer, SDL_Texture *screen) {
 
-    // FIXME: for now we are testing our map generation
-    // MAP
-    wallCount = initWorld (player);
-
-    // Main loop
-    // TODO: maybe we want to refactor this
-    bool done = false;
-    while (!done) {
-        SDL_Event event;
-        while (SDL_PollEvent (&event) != 0) {
-            if (event.type == SDL_QUIT) {
-                done = true;
-                break;
-            }
-
-            handlePlayerInput (event, player);
-
-        }
-
-        renderScreen (renderer, screen, console);
-    }
-
-    // Cleanup our GameObjects
+    // Cleanup our GameObjects and Pools
     fprintf (stdout, "Cleanning GameObjects...\n");
-    // FIXME:
-    player = cleanGameObjects (player);
-    if (player == NULL) fprintf (stdout, "All GameObjects have been cleared!\n");
+    if (cleanUpGame () == 0) fprintf (stdout, "All GameObjects have been cleared!\n");
+    else fprintf (stderr, "Error cleanning GOs!! Quiting anyway...\n");
 
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);
     SDL_DestroyWindow (window);
 
     SDL_Quit ();
+
+}
+
+
+/*** MAIN THREAD ***/
+
+int main (void) {
+
+    srand ((unsigned) time (NULL));
+
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+    SDL_Texture *screen = NULL;
+    initSDL (window, renderer, screen);
+
+    // Create our console emulator graphics
+    Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS);
+    // set up the console font
+    setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
+
+    // FIXME: The player is a global variable, 
+    // but when we have an init screen, we don't want to initilize him here!!!
+    player = initPlayer ();
+
+    // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
+    // so we need to have the map saved in a file and then loaded here
+
+    // FIXME: for now we are testing our map generation
+    // MAP
+    // wallCount = initWorld (player);
+
+    // Main loop
+    bool running = true;
+    SDL_Event event;
+    // TODO: display an fps counter if we give a debug option
+    u32 timePerFrame;
+    u32 frameStart;
+    i32 sleepTime;
+    while (running) {
+        timePerFrame = 1000 / FPS_LIMIT;
+        u32 frameStart = 0;
+        
+        while (SDL_PollEvent (&event) != 0) {
+
+            frameStart = SDL_GetTicks ();
+
+            if (event.type == SDL_QUIT) {
+                running = false;
+                break;
+            }
+
+            // TODO: later we will want the input to be handle diffrently
+            handlePlayerInput (event, player);
+
+        }
+
+        // TODO: if we are in game, update that, else we are in a menu or something else
+        renderScreen (renderer, screen, console);
+
+        // Limit the FPS
+        sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
+        if (sleepTime > 0) SDL_Delay (sleepTime);
+    }
+
+    cleanUp (renderer, window);
 
     return 0;
 

@@ -97,8 +97,21 @@ static List *positions;
 static List *graphics;
 static List *physics;
 
-
+// Wolrd State
 extern void initWorld (void);
+
+// Player
+extern GameObject *initPlayer (void);
+
+
+/*** Game Objects ***/
+
+extern GameObject *createGO (void);
+void *getComponent (GameObject *, GameComponent);
+
+
+// Cleanning Up!
+extern unsigned int cleanUpGame (void);
 
 
 #endif
