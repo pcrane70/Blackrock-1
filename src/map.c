@@ -439,7 +439,7 @@ void generateMap () {
 
 // This function controls the flow of execution on how to generate a new map
 // this primarilly should be called after we have decided to go to the adventure from the main menu (tavern)
-unsigned int initWorld (GameObject *player) {
+unsigned int initMap () {
 
     // TODO: make sure that we have cleared the last level data
     // clear gameObjects and properly handle memory 
@@ -469,10 +469,9 @@ unsigned int initWorld (GameObject *player) {
         u32 spawnY = (u32) randomInt (0, MAP_HEIGHT);
 
         if (mapCells[spawnX][spawnY] == false) {
-            // Position pos = { player->id, x, y };
-            // addComponentToGO (player, POSITION, &pos);
-            player->x = spawnX;
-            player->y = spawnY;
+            // Position *playerPos = (Position *) getComponent (player, POSITION);
+            // playerPos->x = spawnX;
+            // playerPos->y = spawnY;
             break;
         }
     }

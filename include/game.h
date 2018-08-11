@@ -29,7 +29,7 @@ typedef enum GameComponent {
 
 // Entity
 // TODO: do we want graphics and position to be already a part of the Go?
-typedef struct GameObject {
+typedef struct {
     
     i32 id;
     void *components[COMP_COUNT];
@@ -84,12 +84,6 @@ typedef struct Movement {
 } Movement;
 
 
-/*** PLAYER ***/
-
-static GameObject *player = NULL;
-// TODO: player name??
-
-
 /*** OUR LISTS ***/
 
 static List *gameObjects;
@@ -100,7 +94,11 @@ static List *physics;
 // Wolrd State
 extern void initWorld (void);
 
-// Player
+
+/*** PLAYER ***/
+
+// TODO: player name??
+global GameObject *player = NULL;
 extern GameObject *initPlayer (void);
 
 
@@ -108,6 +106,7 @@ extern GameObject *initPlayer (void);
 
 extern GameObject *createGO (void);
 void *getComponent (GameObject *, GameComponent);
+void addComponent (GameObject *go, GameComponent type, void *data);
 
 
 // Cleanning Up!

@@ -1,6 +1,8 @@
 #ifndef MAP_H_
 #define MAP_H_
 
+#include "game.h"
+
 // 05/08/2018 -- 16:28
 // TODO: do we really need a coord system for a better programming experience??
 // also think about how do we want to implement open areas later??
@@ -41,6 +43,6 @@ typedef struct Wall {
 
 extern Wall walls[MAX_WALLS];
 
-extern unsigned int initWorld (GameObject *player);
+// extern unsigned int initMap (GameObject *);
 
 #endif

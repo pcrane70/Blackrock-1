@@ -25,7 +25,7 @@ void handlePlayerInput (SDL_Event event, GameObject *player) {
             case SDLK_w: 
                 if (playerPos->y > 0) playerPos->y -= 1; break;
             case SDLK_s: 
-                if (playerPos->y < NUM_ROWS - 1) player->y += 1; break;
+                if (playerPos->y < NUM_ROWS - 1) playerPos->y += 1; break;
             case SDLK_a: 
                 if (playerPos->x > 0) playerPos->x -= 1; break;
             case SDLK_d:

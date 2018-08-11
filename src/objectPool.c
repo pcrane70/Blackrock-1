@@ -5,46 +5,48 @@
 
 #include "game.h"
 
-GameObject *popGO (GameObject **top) {
+// 11/08/2018 -- object pool will be on hold for now...
 
-    GameObject *ptr = *top;
-    // TODO: better error handling here!!
-    if (top == NULL) fprintf (stderr, "Stack underflow!!\n\n");
-    else top = &ptr->next;
+// GameObject *popGO (GameObject **top) {
 
-    return ptr;
+//     GameObject *ptr = *top;
+//     // TODO: better error handling here!!
+//     if (top == NULL) fprintf (stderr, "Stack underflow!!\n\n");
+//     else top = &ptr->next;
 
-}
+//     return ptr;
 
-GameObject *pushGO (GameObject *top, GameObject *go) {
+// }
 
-    if (top == NULL) {
-        go->next = NULL;
-        top = go;
-    }
+// GameObject *pushGO (GameObject *top, GameObject *go) {
 
-    else {
-        go->next = top;
-        top = go;
-    }
+//     if (top == NULL) {
+//         go->next = NULL;
+//         top = go;
+//     }
 
-    return top;
+//     else {
+//         go->next = top;
+//         top = go;
+//     }
 
-}
+//     return top;
 
-GameObject *clearPool (GameObject *top) {
+// }
 
-    GameObject *ptr, *temp;
-    if (top != NULL) {
-        ptr = top;
-        while (ptr != NULL) {
-            temp = top;
-            top = top->next;
-            free (temp);
-            ptr = top;
-        }
-    }
+// GameObject *clearPool (GameObject *top) {
 
-    return NULL;
+//     GameObject *ptr, *temp;
+//     if (top != NULL) {
+//         ptr = top;
+//         while (ptr != NULL) {
+//             temp = top;
+//             top = top->next;
+//             free (temp);
+//             ptr = top;
+//         }
+//     }
 
-}
+//     return NULL;
+
+// }

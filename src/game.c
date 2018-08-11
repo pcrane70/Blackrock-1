@@ -134,8 +134,8 @@ void *getComponent (GameObject *go, GameComponent type) {
 // to reuse it when we need it
 void destroyGO (GameObject *go) {
 
-    pushGO (pool, go);
-    inactive++;
+    // pushGO (pool, go);
+    // inactive++;
 
 }
 
@@ -146,7 +146,11 @@ unsigned int cleanUpGame (void) {
     // pool = clearPool (pool);
     // if (pool == NULL) fprintf (stdout, "\nPool has been cleared.\n");
 
-    // return deleteGOList (first);
+    // clean up our lists
+    destroyList (gameObjects);
+    destroyList (positions);
+    destroyList (graphics);
+    destroyList (physics);
 
 }
 

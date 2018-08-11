@@ -30,8 +30,8 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     // }
 
     // FIXME: we don't want to this every frame!!
-    for (u32 i = 0; i < wallCount; i++) 
-        putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
+    // for (u32 i = 0; i < wallCount; i++) 
+    //     putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
 
     SDL_UpdateTexture (screen, NULL, console->pixels, SCREEN_WIDTH * sizeof (u32));
     SDL_RenderClear (renderer);
@@ -62,12 +62,12 @@ void initSDL (SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *screen) {
 
 /*** CLEAN UP ***/
 
-void cleanUp (SDL_Renderer *renderer, SDL_Texture *screen) {
+void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
     // Cleanup our GameObjects and Pools
-    fprintf (stdout, "Cleanning GameObjects...\n");
-    if (cleanUpGame () == 0) fprintf (stdout, "All GameObjects have been cleared!\n");
-    else fprintf (stderr, "Error cleanning GOs!! Quiting anyway...\n");
+    // fprintf (stdout, "Cleanning GameObjects...\n");
+    // if (cleanUpGame () == 0) fprintf (stdout, "All GameObjects have been cleared!\n");
+    // else fprintf (stderr, "Error cleanning GOs!! Quiting anyway...\n");
 
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);
@@ -96,7 +96,7 @@ int main (void) {
 
     // FIXME: The player is a global variable, 
     // but when we have an init screen, we don't want to initilize him here!!!
-    player = initPlayer ();
+    // player = initPlayer ();
 
     // TODO: at the start of the game we plan to create an initial menu that is in a type of tavern
     // so we need to have the map saved in a file and then loaded here
@@ -138,7 +138,7 @@ int main (void) {
         if (sleepTime > 0) SDL_Delay (sleepTime);
     }
 
-    cleanUp (renderer, window);
+    cleanUp (window, renderer);
 
     return 0;
 
