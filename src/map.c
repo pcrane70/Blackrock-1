@@ -31,7 +31,7 @@ Point randomRoomPoint (Room *room) {
     // u32 px = randomInt (room->x, (room->x + room->w - 1));
     // u32 py = randomInt (room->y, (room->y + room->h - 1));
 
-    Point randPoint = { 10, 10 };
+    Point randPoint = { px, py };
     return randPoint;
 
 }
@@ -161,7 +161,9 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    insertAfter (segments, NULL, s);
+                    if (insertAfter (segments, NULL, s) == false)
+                        fprintf (stderr, "\nError inserting in list!\n");
+                    else fprintf (stdout, "\nA new segment has been added!\n");
 
                     currRoom = rm;
                 }
@@ -199,7 +201,9 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     // we already have a partial segment, so now complete it
                     turnSegment->end = curr;
                     turnSegment->roomTo = rm;
-                    insertAfter (segments, NULL, turnSegment);
+                    if (insertAfter (segments, NULL, turnSegment) == false)
+                        fprintf (stderr, "\nError inserting in list!\n");
+                    else fprintf (stdout, "\nA new segment has been added!\n");
                     turnSegment = NULL;
                 }
 
@@ -211,7 +215,9 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    insertAfter (segments, NULL, s);
+                    if (insertAfter (segments, NULL, s) == false)
+                        fprintf (stderr, "\nError inserting in list!\n");
+                    else fprintf (stdout, "\nA new segment has been added!\n");
                 }
             }
 
@@ -224,7 +230,9 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     // complete the partial segment
                     turnSegment->end = curr;
                     turnSegment->roomTo = rm;
-                    insertAfter (segments, NULL, turnSegment);
+                    if (insertAfter (segments, NULL, turnSegment) == false)
+                        fprintf (stderr, "\nError inserting in list!\n");
+                    else fprintf (stdout, "\nA new segment has been added!\n");
                     turnSegment = NULL;
                 }
 
@@ -236,7 +244,9 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    insertAfter (segments, NULL, s);
+                    if (insertAfter (segments, NULL, s) == false) 
+                        fprintf (stderr, "\nError inserting in list!\n");
+                    else fprintf (stdout, "\nA new segment has been added!\n");
                 }
 
                 currRoom = rm;
@@ -362,6 +372,7 @@ void generateMap () {
     // how the map generates in general..
 
     List *hallways = initList (free);
+    if (hallways == NULL) fprintf (stderr, "Error creating list!!\n");
 
     Room *ptr = firstRoom->next, *preptr = firstRoom;
     while (ptr != NULL) {

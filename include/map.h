@@ -6,7 +6,7 @@
 // also think about how do we want to implement open areas later??
 typedef struct Point {
 
-    u32 x, y;
+    i32 x, y;
 
 }  Point;
 
