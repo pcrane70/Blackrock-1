@@ -3,8 +3,8 @@
 
 typedef struct ListElement {
 
-    void *data;
     struct ListElement *prev;
+    void *data;
     struct ListElement *next;
 
 } ListElement;
@@ -30,9 +30,13 @@ typedef struct List {
 
 
 extern List *initList (void (*destroy)(void *data));
-extern void *removeElement (List *list, ListElement *element);
-extern void destroyList (List *list);
-extern bool insertAfter (List *list, ListElement *element, void *data);
+extern void *removeElement (List *, ListElement *);
+extern void destroyList (List *);
+extern bool insertAfter (List *, ListElement *, void *data);
+
+// SEARCHING
+extern bool isInList (List *, void *data);
+ListElement *getListElement (List *, void *data);
 
 
 #endif

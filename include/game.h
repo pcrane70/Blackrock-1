@@ -86,10 +86,10 @@ typedef struct Movement {
 
 /*** OUR LISTS ***/
 
-static List *gameObjects;
-static List *positions;
-static List *graphics;
-static List *physics;
+global List *gameObjects;
+global List *positions;
+global List *graphics;
+global List *physics;
 
 // Wolrd State
 extern void initWorld (void);

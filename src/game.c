@@ -34,6 +34,9 @@ GameObject *initPlayer (void) {
     GameObject *go = (GameObject *) malloc (sizeof (GameObject));
     go->id = 0;
 
+    for (short unsigned int i = 0; i < COMP_COUNT; i++)
+        go->components[i] = NULL;
+
     // This is just a placeholder until it spawns in the world
     Position pos = { 0, 0, 0 };
     addComponent (go, POSITION, &pos);
@@ -66,19 +69,30 @@ static GameObject *pool = NULL;
 
 // 11/08/2018 -- we will assign a new id to each new GO starting at 1
 // id = 0 is the player 
-static unsigned int id = 1;
+static unsigned int newId = 1;
 
 // Adds an object to our GO list
 GameObject *createGO () {
 
-    // TODO:
+    GameObject *go = (GameObject *) malloc (sizeof (GameObject));
+    if (go != NULL) {
+        go->id = newId;
+        newId++;
+        for (short unsigned int i = 0; i < COMP_COUNT; i++) go->components[i] = NULL;
+        insertAfter (gameObjects, LIST_END (gameObjects), go);
+    }
+    
+    return go;
 
 }
 
 void addComponent (GameObject *go, GameComponent type, void *data) {
 
-    // TODO: check for a valid GO
-    // TODO: how do we handle if the data is NULL?
+    // check for a valid GO
+    if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
+
+    // if data is NULL for any reason, just don't do anything
+    if (data == NULL) return;
 
     // TODO: object pooling for components
 
@@ -113,10 +127,22 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             insertAfter (graphics, NULL, newPhys);
         }
 
-        // We have an invalid GameComponent type
-        // TODO: how to handle this??
+        // We have an invalid GameComponent type, so don't do anything
         default: return;
     }
+
+}
+
+
+// TODO: do we need this? and if so, can it be a good idea to merge it with the addcomponent?
+void updateComponent (GameObject *go, GameComponent type, void *data) {
+
+    // check for a valid GO
+    if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
+
+    // if data is NULL for any reason, just don't do anything
+    if (data == NULL) return;
+
 
 }
 
@@ -133,6 +159,20 @@ void *getComponent (GameObject *go, GameComponent type) {
 // This calls the Object pooling to deactive the go and have it in memory 
 // to reuse it when we need it
 void destroyGO (GameObject *go) {
+
+    ListElement *e = NULL;
+
+    // get the game object to remove and then send it to the its pool
+    if ((e = getListElement (gameObjects, go)) != NULL) {
+        GameObject *removed = removeElement (gameObjects, e);
+        // TODO: send to the GO pool
+    }
+
+    // get rid of all the components and send them to the pool   
+    for (short unsigned int i = 0; i < COMP_COUNT; i++) {
+        
+    }
+
 
     // pushGO (pool, go);
     // inactive++;
