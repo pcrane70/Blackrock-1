@@ -120,16 +120,17 @@ void *removeElement (List *list, ListElement *element) {
 
 } */
 
+// FIXME:
 void destroyList (List *list) {
 
-    void *data;
+    // void *data;
 
-    while (LIST_SIZE (list) > 0) {
-        data = destroyElement (list, NULL);
-        if (data != NULL && list->destroy != NULL) list->destroy (data);
-    }
+    // while (LIST_SIZE (list) > 0) {
+    //     data = destroyElement (list, NULL);
+    //     if (data != NULL && list->destroy != NULL) list->destroy (data);
+    // }
 
-    free (list);
+    // free (list);
 
 }
 

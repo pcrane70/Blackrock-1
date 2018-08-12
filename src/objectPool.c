@@ -10,7 +10,6 @@
 
 // 11/08/2018 -- object pool will be on hold for now...
 
-
 // TODO: add the avility to init a pool with some members
 Pool *initPool (void) {
 
@@ -40,37 +39,35 @@ void push (Pool *pool, void *data) {
 void *pop (Pool *pool) {
 
     void *data;
-    if (POOL_SIZE (pool) == 0) {
 
+    if (POOL_SIZE (pool) == 0) {
+        fprintf (stderr, "\nStack underflow!!\n");
+        return NULL;
     }
+
+    data = pool->top->data;
+
+    pool->top = pool->top->next;
+    pool->size--;
+
+    return data;
 
 }
 
-// GameObject *popGO (GameObject **top) {
+void clearPool (Pool *pool) {
 
-//     GameObject *ptr = *top;
-//     // TODO: better error handling here!!
-//     if (top == NULL) fprintf (stderr, "Stack underflow!!\n\n");
-//     else top = &ptr->next;
+    PoolMember *ptr, *temp;
+    void *data;
+    if ((POOL_TOP (pool) != NULL) && (POOL_SIZE (pool) != 0)) {
+        ptr = POOL_TOP (pool);
+        while (ptr != NULL) {
+            temp = pool->top;
+            data = pool->top->data;
+            free (data);
+            pool->top = pool->top->next;
+            free (temp);
+            ptr = pool->top;
+        }
+    }
 
-//     return ptr;
-
-// }
-
-
-// GameObject *clearPool (GameObject *top) {
-
-//     GameObject *ptr, *temp;
-//     if (top != NULL) {
-//         ptr = top;
-//         while (ptr != NULL) {
-//             temp = top;
-//             top = top->next;
-//             free (temp);
-//             ptr = top;
-//         }
-//     }
-
-//     return NULL;
-
-// }
+}

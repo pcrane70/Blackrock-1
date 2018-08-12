@@ -4,7 +4,7 @@
 typedef struct PoolMember {
 
     void *data;
-    struct ListElement *next;
+    struct PoolMember *next;
 
 } PoolMember;
 
@@ -13,7 +13,7 @@ typedef struct Pool {
 
     unsigned int size;
 
-    ListElement *top;
+    PoolMember *top;
 
 } Pool;
 
@@ -26,6 +26,8 @@ typedef struct Pool {
 
 
 extern Pool *initPool (void);
-extern void push (Pool *, void *);
+extern void push (Pool *, void *data);
+extern void *pop (Pool *);
+extern void clearPool (Pool *);
 
 #endif
