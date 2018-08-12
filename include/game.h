@@ -6,6 +6,7 @@
 #include "map.h"    // for Point
 
 #include "list.h"
+#include "objectPool.h"
 
 
 // 11/08/2018
@@ -90,6 +91,15 @@ global List *gameObjects;
 global List *positions;
 global List *graphics;
 global List *physics;
+
+
+/*** OUR POOLS ***/
+
+global Pool *goPool;
+global Pool *posPool;
+global Pool *graphicsPool;
+global Pool *physPool;
+
 
 // Wolrd State
 extern void initWorld (void);

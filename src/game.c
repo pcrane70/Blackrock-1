@@ -21,6 +21,12 @@ void initWorld (void) {
     graphics = initList (free);
     physics = initList (free);
 
+    // init our pools
+    goPool = initPool ();
+    posPool = initPool ();
+    graphicsPool = initPool ();
+    physPool = initPool ();
+
     // TODO: what other things do we want to init here?
 
 }
@@ -71,10 +77,15 @@ static GameObject *pool = NULL;
 // id = 0 is the player 
 static unsigned int newId = 1;
 
-// Adds an object to our GO list
+
 GameObject *createGO () {
 
-    GameObject *go = (GameObject *) malloc (sizeof (GameObject));
+    GameObject *go = NULL;
+
+    // first check if there is an available one in the pool
+    if (POOL_SIZE (goPool) > 0) go = pop (goPool);
+    else go = (GameObject *) malloc (sizeof (GameObject));
+
     if (go != NULL) {
         go->id = newId;
         newId++;
@@ -99,7 +110,12 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
     switch (type) {
         case POSITION: {
             if (getComponent (go, type) != NULL) return;
-            Position *newPos = (Position *) malloc (sizeof (Position));
+
+            Position *newPos = NULL;
+
+            if ((POOL_SIZE (posPool) > 0)) newPos = pop (posPool);
+            else newPos = (Position *) malloc (sizeof (Position));
+
             Position *posData = (Position *) data;
             newPos->objectId = go->id;
             newPos->x = posData->x;
@@ -109,7 +125,12 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
         }
         case GRAPHICS: {
             if (getComponent (go, type) != NULL) return;
-            Graphics *newGraphics = (Graphics *) malloc (sizeof (Graphics));
+
+            Graphics *newGraphics = NULL;
+
+            if ((POOL_SIZE (graphicsPool) > 0)) newGraphics = pop (graphicsPool);
+            else newGraphics = (Graphics *) malloc (sizeof (Graphics));
+
             Graphics *graphicsData = (Graphics *) data;
             newGraphics->objectId = go->id;
             newGraphics->glyph = graphicsData->glyph;
@@ -119,7 +140,12 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
         }
         case PHYSICS: {
             if (getComponent (go, type) != NULL) return;
-            Physics *newPhys = (Physics *) malloc (sizeof (Physics));
+
+            Physics *newPhys = NULL;
+
+            if ((POOL_SIZE (physPool) > 0)) newPhys = pop (physPool);
+            else newPhys = (Physics *) malloc (sizeof (Physics));
+
             Physics *physData = (Physics *) data;
             newPhys->objectId = go->id;
             newPhys->blocksSight = physData->blocksSight;
@@ -155,42 +181,54 @@ void *getComponent (GameObject *go, GameComponent type) {
 
 }
 
-// FIXME:
 // This calls the Object pooling to deactive the go and have it in memory 
 // to reuse it when we need it
 void destroyGO (GameObject *go) {
 
     ListElement *e = NULL;
+    void *removed = NULL;
 
     // get the game object to remove and then send it to the its pool
     if ((e = getListElement (gameObjects, go)) != NULL) {
-        GameObject *removed = removeElement (gameObjects, e);
-        // TODO: send to the GO pool
+        removed = removeElement (gameObjects, e);
+        // clean the go components
+        for (short unsigned int i = 0; i < COMP_COUNT; i++)
+            go->components[i] = NULL;
+
+        // send to the GO pool
+        push (goPool, removed);
     }
 
-    // get rid of all the components and send them to the pool   
-    for (short unsigned int i = 0; i < COMP_COUNT; i++) {
-        
+    if ((e = getListElement (positions, go->components[POSITION])) != NULL) {
+        removed = removeElement (positions, e);
+        push (posPool, removed);
     }
 
+    if ((e = getListElement (graphics, go->components[GRAPHICS])) != NULL) {
+        removed = removeElement (graphics, e);
+        push (graphicsPool, removed);
+    }
 
-    // pushGO (pool, go);
-    // inactive++;
+    if ((e = getListElement (physics, go->components[PHYSICS])) != NULL) {
+        removed = removeElement (physics, e);
+        push (physPool, removed);
+    }
 
 }
 
-// FIXME:
 unsigned int cleanUpGame (void) {
-
-    // // cleanup the pool
-    // pool = clearPool (pool);
-    // if (pool == NULL) fprintf (stdout, "\nPool has been cleared.\n");
 
     // clean up our lists
     destroyList (gameObjects);
     destroyList (positions);
     destroyList (graphics);
     destroyList (physics);
+
+    // cleanup the pools
+    clearPool (goPool);
+    clearPool (posPool);
+    clearPool (graphicsPool);
+    clearPool (physPool);
 
 }
 

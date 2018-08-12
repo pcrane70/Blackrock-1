@@ -33,6 +33,7 @@ void push (Pool *pool, void *data) {
     else new->next = pool->top;
 
     pool->top = new;
+    pool->size++;
 
 }
 
