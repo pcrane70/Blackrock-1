@@ -68,11 +68,11 @@ void initGame (void) {
 
     // TODO: this can be a good place to check if we have a save file of a map and load thhat from disk
 
-    // currentLevel = (Level *) malloc (sizeof (Level));
-    // currentLevel->levelNum = 1;
-    // currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
-    // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
-    //     currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
+    currentLevel = (Level *) malloc (sizeof (Level));
+    currentLevel->levelNum = 1;
+    currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
+    for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+        currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
 
     // generate a random world froms scratch
     // TODO: maybe later we want to specify some parameters based on difficulty?
@@ -81,16 +81,16 @@ void initGame (void) {
 
     // after we have allocated the new level, generate the map
     // this is used to render the walls to the screen... but maybe it is not a perfect system
-    // initMap (currentLevel->mapCells);
+    initMap (currentLevel->mapCells);
 
     // TODO: after the map has been init, place all the objects, NPCs and enemies, etc
 
 
     // finally, we have a map full with monsters, so we can place the player and we are done 
-    // Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    // Position *playerPos = (Position *) getComponent (player, POSITION);
-    // playerPos->x = (u8) playerSpawnPos.x;
-    // playerPos->y = (u8) playerSpawnPos.y;
+    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    playerPos->x = (u8) playerSpawnPos.x;
+    playerPos->y = (u8) playerSpawnPos.y;
 
      fprintf (stdout, "Done initializing game!\n");
 
@@ -333,4 +333,32 @@ void cleanUpGame (void) {
 /*** LEVEL MANAGER ***/
 
 
+/*** MOVEMENT ***/
+
+bool canMove (Position pos) {
+
+    bool move = true;
+
+    // first check the if we are inside the map bounds
+    if ((pos.x >= 0) && (pos.x < MAP_WIDTH) && (pos.y >= 0) && (pos.y < MAP_HEIGHT)) {
+        // check for level elements (like walls)
+        if (currentLevel->mapCells[pos.x][pos.y] == true) move = false;
+
+        // check for any other entity, like monsters
+        // for (ListElement *e = LIST_START (positions); e != NULL; e = e->next) {
+        //     Position *p = (Position *) LIST_DATA (e);
+        //     if (p->x == pos.x && p->y == pos.y) {
+        //         // FIXME: how do we get the component associated with this motherfoca??
+        //         // physics *phys = (Physics *) 
+        //         move = false;
+        //         break;
+        //     }
+        // }
+    }   
+
+    else move = false;
+
+    return move;
+
+}
 

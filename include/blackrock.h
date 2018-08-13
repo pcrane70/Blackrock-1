@@ -13,6 +13,9 @@
 #define MAP_WIDTH   80
 #define MAP_HEIGHT  40
 
+#define NUM_COLS    80
+#define NUM_ROWS    45
+
 // TODO:
 // 07/08/2018 --> I removed this variables and forget about portability for now
 // we refactor our code to use the standar variable types and see how it goes...

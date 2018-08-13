@@ -136,6 +136,11 @@ global Level *currentLevel;
 extern unsigned int wallCount;
 
 
+/*** MOVEMENT ***/
+
+extern bool canMove (Position);
+
+
 // Cleanning Up!
 extern void cleanUpGame (void);
 

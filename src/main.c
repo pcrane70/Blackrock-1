@@ -43,8 +43,8 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     // }
 
     // FIXME: we don't want to this every frame!!
-    // for (unsigned int i = 0; i < wallCount; i++) 
-    //     putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
+    for (unsigned int i = 0; i < wallCount; i++) 
+        putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
 
     SDL_UpdateTexture (screen, NULL, console->pixels, SCREEN_WIDTH * sizeof (u32));
     SDL_RenderClear (renderer);

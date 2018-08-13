@@ -2,32 +2,38 @@
 
 #include "game.h"
 
-#include "console.h"
-
 // Basic Input
 // Movement with wsad   03/08/2018
 
 // TODO: recalculate the fov every time the player moves
 
+Position *playerPos = NULL;
+Position newPos;
+
 void handlePlayerInput (SDL_Event event) {
 
-    // FIXME: 04/08/2018
-    // TODO: make this an internal variable in this file
-    Position *playerPos = (Position *) getComponent (player, POSITION);
+    playerPos = (Position *) getComponent (player, POSITION);
 
-    // FIXME: how can we handle collisions??
     if (event.type == SDL_KEYDOWN) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
             case SDLK_w: 
-                if (playerPos->y > 0) playerPos->y -= 1; break;
+                newPos.x = playerPos->x;
+                newPos.y = playerPos->y - 1;
+                if (canMove (newPos)) playerPos->y = newPos.y; break;
             case SDLK_s: 
-                if (playerPos->y < NUM_ROWS - 1) playerPos->y += 1; break;
+                newPos.x = playerPos->x;
+                newPos.y = playerPos->y + 1;
+                if (canMove (newPos)) playerPos->y = newPos.y; break;
             case SDLK_a: 
-                if (playerPos->x > 0) playerPos->x -= 1; break;
+                newPos.x = playerPos->x - 1;
+                newPos.y = playerPos->y;
+                if (canMove (newPos)) playerPos->x = newPos.x; break;
             case SDLK_d:
-                if (playerPos->x < NUM_COLS - 1) playerPos->x += 1; break;
+                newPos.x = playerPos->x + 1;
+                newPos.y = playerPos->y;
+                if (canMove (newPos)) playerPos->x = newPos.x; break;
             default: break;
         }
     }
