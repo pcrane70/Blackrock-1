@@ -62,6 +62,15 @@ Console *initConsole (i32 width, i32 height, i32 rowCount, i32 colCount) {
 
 }
 
+void destroyConsole (Console *console) {
+
+    free (console->pixels);
+    free (console->cells);
+
+    free (console);
+
+}
+
 void setConsoleBitmapFont (Console *console, char *filename, asciiChar firstCharInAtlas, int charWidth, int charHeight) {
 
     // load image data

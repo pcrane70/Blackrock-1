@@ -52,5 +52,6 @@ extern void clearConsole (Console *console);
 extern Console *initConsole (i32, i32, i32, i32);
 extern void setConsoleBitmapFont (Console *, char *, asciiChar, int, int);
 extern void putCharAt (Console *, asciiChar, i32 cellX, i32 cellY, u32 fgColor, u32 bgColor);
+extern void destroyConsole (Console *);
 
 #endif 

@@ -87,29 +87,29 @@ typedef struct Movement {
 
 /*** OUR LISTS ***/
 
-global List *gameObjects;
-global List *positions;
-global List *graphics;
-global List *physics;
-
+extern List *gameObjects;
+extern List *positions;
+extern List *graphics;
+extern List *physics;
 
 /*** OUR POOLS ***/
 
-global Pool *goPool;
-global Pool *posPool;
-global Pool *graphicsPool;
-global Pool *physPool;
+extern Pool *goPool;
+extern Pool *posPool;
+extern Pool *graphicsPool;
+extern Pool *physPool;
 
 
-// Wolrd State
-extern void initWorld (void);
+/*** GAME STATE ***/
+
+extern void initGame (void);
 
 
 /*** PLAYER ***/
 
 // TODO: player name??
-global GameObject *player = NULL;
-extern GameObject *initPlayer (void);
+// global GameObject *player = NULL;
+extern GameObject *player;
 
 
 /*** Game Objects ***/
@@ -133,9 +133,11 @@ typedef struct {
 
 global Level *currentLevel;
 
+extern unsigned int wallCount;
+
 
 // Cleanning Up!
-extern unsigned int cleanUpGame (void);
+extern void cleanUpGame (void);
 
 
 #endif

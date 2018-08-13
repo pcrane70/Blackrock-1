@@ -9,17 +9,15 @@
 
 // TODO: recalculate the fov every time the player moves
 
-void handlePlayerInput (SDL_Event event, GameObject *player) {
+void handlePlayerInput (SDL_Event event) {
 
     // FIXME: 04/08/2018
-    // Position *playerPos = (Position *) getComponent (player, POSITION);
+    // TODO: make this an internal variable in this file
+    Position *playerPos = (Position *) getComponent (player, POSITION);
 
     // FIXME: how can we handle collisions??
     if (event.type == SDL_KEYDOWN) {
         SDL_Keycode key = event.key.keysym.sym;
-
-        // TODO: make this an internal variable in this file
-        Position *playerPos = getComponent (player, POSITION);
 
         switch (key) {
             case SDLK_w: 

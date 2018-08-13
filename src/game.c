@@ -15,6 +15,18 @@
 
 /*** WORLD STATE ***/
 
+List *gameObjects = NULL;
+List *positions = NULL;
+List *graphics = NULL;
+List *physics = NULL;
+
+Pool *goPool = NULL;
+Pool *posPool = NULL;
+Pool *graphicsPool = NULL;
+Pool *physPool = NULL;
+
+GameObject *player = NULL;
+
 // Inits the wolrd, this will be all the 'physical part' that takes place in a world
 void initWorld (void) {
 
@@ -38,11 +50,11 @@ void initWorld (void) {
 // This should be called only once when we init run the app
 void initGame (void) {
 
+    initWorld ();
+
     GameObject *initPlayer (void);
     player = initPlayer ();
     // TODO: player name
-
-    initWorld ();
 
     // TODO:
     // aftwe we have initialize our structures and allocated the memory,
@@ -50,23 +62,37 @@ void initGame (void) {
 
     // FIXME: as of 12/08/2018 -- 19:43 -- we don't have the tavern ready, so we will go
     // straigth into the dungeon...
-    currentLevel = (Level *) malloc (sizeof (Level));
-    currentLevel->levelNum = 1;
-    currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
-    for (short unsigned int i = 0; i < MAP_WIDTH; i++)
-        currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
+
+    // TODO: make sure that we have cleared the last level data
+    // clear gameObjects and properly handle memory 
+
+    // TODO: this can be a good place to check if we have a save file of a map and load thhat from disk
+
+    // currentLevel = (Level *) malloc (sizeof (Level));
+    // currentLevel->levelNum = 1;
+    // currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
+    // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+    //     currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
+
+    // generate a random world froms scratch
+    // TODO: maybe later we want to specify some parameters based on difficulty?
+    // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
+    // to generate rooms and for generating caves or open fiels
 
     // after we have allocated the new level, generate the map
-    // TODO: maybe use this number in the renderer, as we have done in early versions...
-    unsigned int wallCount = initMap ();
+    // this is used to render the walls to the screen... but maybe it is not a perfect system
+    // initMap (currentLevel->mapCells);
 
     // TODO: after the map has been init, place all the objects, NPCs and enemies, etc
 
 
-    // FIXME:
     // finally, we have a map full with monsters, so we can place the player and we are done 
     // Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+    // Position *playerPos = (Position *) getComponent (player, POSITION);
+    // playerPos->x = (u8) playerSpawnPos.x;
+    // playerPos->y = (u8) playerSpawnPos.y;
 
+     fprintf (stdout, "Done initializing game!\n");
 
 }
 
@@ -84,7 +110,7 @@ GameObject *initPlayer (void) {
         go->components[i] = NULL;
 
     // This is just a placeholder until it spawns in the world
-    Position pos = { 0, 0, 0 };
+    Position pos = { .x = 0, .y = 0, .layer = TOP_LAYER };
     addComponent (go, POSITION, &pos);
 
     Graphics g = { 0, '@', 0xFFFFFFFF, 0x000000FF };
@@ -145,8 +171,6 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
     // if data is NULL for any reason, just don't do anything
     if (data == NULL) return;
 
-    // TODO: object pooling for components
-
     switch (type) {
         case POSITION: {
             if (getComponent (go, type) != NULL) return;
@@ -161,6 +185,8 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPos->x = posData->x;
             newPos->y = posData->y;
             newPos->layer = posData->layer;
+
+            go->components[type] = newPos;
             insertAfter (positions, NULL, newPos);
         }
         case GRAPHICS: {
@@ -176,6 +202,8 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newGraphics->glyph = graphicsData->glyph;
             newGraphics->fgColor = graphicsData->fgColor;
             newGraphics->bgColor = graphicsData->bgColor;
+
+            go->components[type] = newGraphics;
             insertAfter (graphics, NULL, newGraphics);
         }
         case PHYSICS: {
@@ -190,17 +218,18 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPhys->objectId = go->id;
             newPhys->blocksSight = physData->blocksSight;
             newPhys->blocksMovement = physData->blocksMovement;
+
+            go->components[type] = newPhys;
             insertAfter (graphics, NULL, newPhys);
         }
 
         // We have an invalid GameComponent type, so don't do anything
-        default: return;
+        default: break;
     }
 
 }
 
 
-// TODO: do we need this? and if so, can it be a good idea to merge it with the addcomponent?
 void updateComponent (GameObject *go, GameComponent type, void *data) {
 
     // check for a valid GO
@@ -209,6 +238,34 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
     // if data is NULL for any reason, just don't do anything
     if (data == NULL) return;
 
+    switch (type) {
+        case POSITION: {
+            Position *posComp = (Position *) getComponent (go, type);
+            if (posComp == NULL) return;
+            Position *posData = (Position *) data;
+            posComp->x = posData->x;
+            posComp->y = posData->y;
+            posComp->layer = posData->layer;
+        }
+        case GRAPHICS: {
+            Graphics *graphicsComp = (Graphics *) getComponent (go, type);
+            if (graphicsComp == NULL) return;
+            Graphics *graphicsData = (Graphics *) data;
+            graphicsComp->glyph = graphicsData->glyph;
+            graphicsComp->fgColor = graphicsData->fgColor;
+            graphicsComp->bgColor = graphicsComp->bgColor;
+        }
+        case PHYSICS: {
+            Physics *physComp = (Physics *) getComponent (go, type);
+            if (physComp == NULL) return;
+            Physics *physData = (Physics *) data;
+            physComp->blocksMovement = physData->blocksMovement;
+            physComp->blocksSight = physData->blocksSight;
+        }
+
+        // We have an invalid GameComponent type, so don't do anything
+        default: break;
+    }
 
 }
 
@@ -256,7 +313,7 @@ void destroyGO (GameObject *go) {
 
 }
 
-unsigned int cleanUpGame (void) {
+void cleanUpGame (void) {
 
     // clean up our lists
     destroyList (gameObjects);
@@ -265,10 +322,10 @@ unsigned int cleanUpGame (void) {
     destroyList (physics);
 
     // cleanup the pools
-    clearPool (goPool);
-    clearPool (posPool);
-    clearPool (graphicsPool);
-    clearPool (physPool);
+    // clearPool (goPool);
+    // clearPool (posPool);
+    // clearPool (graphicsPool);
+    // clearPool (physPool);
 
 }
 

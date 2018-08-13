@@ -1,5 +1,8 @@
 /*** MAP ***/
 
+// This code handles the algorithms for generating random map levels and nothing more
+// we will eventually handle the creation of random dungeons, caves and forests and maybe other scenes
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -16,12 +19,27 @@
 
 #include "utils/myUtils.h"
 
-// TODO: is this the system that we want to go with??
-// if yes, probably allocate inside the map generator, 
-// we will not want this hanging out later
-bool mapCells[MAP_WIDTH][MAP_HEIGHT];
 
 /*** OTHER ***/
+
+Point getFreeSpot (bool **mapCells) {
+
+    Point freeSpot;
+
+    for (;;) {
+        u32 freeX = (u32) randomInt (0, MAP_WIDTH);
+        u32 freeY = (u32) randomInt (0, MAP_HEIGHT);
+
+        if (mapCells[freeX][freeY] == false) {
+            freeSpot.x = freeX;
+            freeSpot.y = freeY;
+            break;
+        }
+    }
+
+    return freeSpot;
+
+}
 
 Point randomRoomPoint (Room *room) {
 
@@ -56,7 +74,7 @@ i32 roomWithPoint (Point pt, Room *first) {
 
 /*** CARVING ***/
 
-bool carveRoom (u32 x, u32 y, u32 w, u32 h) {
+bool carveRoom (u32 x, u32 y, u32 w, u32 h, bool **mapCells) {
 
     for (u8 i = x - 1; i < x + (w + 1); i++) 
         for (u8 j = y - 1; j < y + (h + 1); j++)
@@ -73,7 +91,7 @@ bool carveRoom (u32 x, u32 y, u32 w, u32 h) {
 
 static int test = 0;
 
-void carveCorridorHor (Point from, Point to) {
+void carveCorridorHor (Point from, Point to, bool **mapCells) {
 
     u32 first, last;
     if (from.x < to.x) {
@@ -93,7 +111,7 @@ void carveCorridorHor (Point from, Point to) {
 
 }
 
-void carveCorridorVer (Point from, Point to) {
+void carveCorridorVer (Point from, Point to, bool **mapCells) {
 
     u32 first, last;
     if (from.y < to.y) {
@@ -260,7 +278,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
 }
 
-void carveSegments (List *hallways) {
+void carveSegments (List *hallways, bool **mapCells) {
 
     ListElement *ptr = LIST_START (hallways);
     if (ptr == NULL) fprintf (stdout, "\nHallways list is empty!\n");
@@ -271,22 +289,22 @@ void carveSegments (List *hallways) {
             Point p1 = seg->start;
             Point p2 = seg->mid;
 
-            if (p1.x == p2.x) carveCorridorVer (p1, p2);
-            else carveCorridorHor (p1, p2);
+            if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
+            else carveCorridorHor (p1, p2, mapCells);
 
             p1 = seg->mid;
             p2 = seg->end;
 
-            if (p1.x == p2.x) carveCorridorVer (p1, p2);
-            else carveCorridorHor (p1, p2);
+            if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
+            else carveCorridorHor (p1, p2, mapCells);
         }
 
         else {
             Point p1 = seg->start;
             Point p2 = seg->end;
 
-            if (p1.x == p2.x) carveCorridorVer (p1, p2);
-            else carveCorridorHor (p1, p2);
+            if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
+            else carveCorridorHor (p1, p2, mapCells);
         }
 
         test++;
@@ -297,19 +315,15 @@ void carveSegments (List *hallways) {
 
 /*** DRAWING ***/
 
-// TODO: we are testing having the walls in a separte array in memory for conviniece
-// for the other systems tha we want to implement in the other gameObjects...
-
 Wall walls[MAX_WALLS];
 
 // TODO: what color do we want for walls?
-void createWall (u32 x, u32 y, u32 wallCount) {
+void createWall (u32 x, u32 y) {
 
     Wall *new = &walls[wallCount];
 
     // TODO: better error checking here...
     // are we returning a valid GO??
-    assert (new != NULL);
 
     new->x = x;
     new->y = y;
@@ -321,15 +335,11 @@ void createWall (u32 x, u32 y, u32 wallCount) {
 
 }
 
+
+/*** GENERATION ***/
+
 // Controls the algorithms for generating random levels with the desired data
-void generateMap () {
-
-    fprintf (stdout, "Generating the map...\n");
-
-    // mark all the cells as filled
-    for (u32 x = 0; x < MAP_WIDTH; x++) 
-        for (u32 y = 0; y < MAP_HEIGHT; y++) 
-            mapCells[x][y] = true;
+void generateMap (bool **mapCells) {
 
     // carve out non-overlaping rooms that are randomly placed, and of random size
     bool roomsDone = false;
@@ -348,7 +358,7 @@ void generateMap () {
         u32 x = (u32) randomInt (1, MAP_WIDTH - w - 1);
         u32 y = (u32) randomInt (1, MAP_HEIGHT - h - 1);
 
-        if (carveRoom (x, y, w, h)) {
+        if (carveRoom (x, y, w, h, mapCells)) {
             Room roomData = { x, y, w, h, NULL };
             if (roomCount == 0) firstRoom = createRoomList (firstRoom, &roomData);
             else addRoom (firstRoom, &roomData);
@@ -429,7 +439,7 @@ void generateMap () {
     }
 
     // carve out new segments and add them to the hallways list
-    carveSegments (hallways);
+    carveSegments (hallways, mapCells);
 
     // cleanning up 
     firstRoom = deleteList (firstRoom);
@@ -437,52 +447,29 @@ void generateMap () {
 
 }
 
-// This function controls the flow of execution on how to generate a new map
-// this primarilly should be called after we have decided to go to the adventure from the main menu (tavern)
-unsigned int initMap (void) {
+/*** THREAD ***/
 
-    // TODO: make sure that we have cleared the last level data
-    // clear gameObjects and properly handle memory 
+unsigned int wallCount = 0;
 
-    // TODO: this can be a good place to check if we have a save file of a map and load thhat from disk
+void initMap (bool **mapCells) {
 
-    // generate a random world froms scratch
-    // TODO: maybe later we want to specify some parameters based on difficulty?
-    // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
-    // to generate rooms and for generating caves or open fiels
-    generateMap ();
+    // mark all the cells as filled
+    for (u32 x = 0; x < MAP_WIDTH; x++) 
+        for (u32 y = 0; y < MAP_HEIGHT; y++) 
+            mapCells[x][y] = true;
+
+    fprintf (stdout, "Generating the map...\n");
+    generateMap (mapCells);
 
     fprintf (stdout, "\n\nTest: %i\n\n", test);
 
     // draw the map
     fprintf (stdout, "Drawing the map...\n");
-    unsigned int wallCount = 0;
+    // unsigned int wallCount = 0;
     for (u32 x = 0; x < MAP_WIDTH; x++)
         for (u32 y = 0; y < MAP_HEIGHT; y++)
-            if (mapCells[x][y]) createWall (x, y, wallCount), wallCount++;
+            if (mapCells[x][y]) createWall (x, y), wallCount++;
 
-    
-    return wallCount;
-
-}
-
-/*** OTHER ***/
-
-Point getFreeSpot (bool **mapCells) {
-
-    Point freeSpot;
-
-    for (;;) {
-        u32 freeX = (u32) randomInt (0, MAP_WIDTH);
-        u32 freeY = (u32) randomInt (0, MAP_HEIGHT);
-
-        if (mapCells[freeX][freeY] == false) {
-            freeSpot.x = freeX;
-            freeSpot.y = freeY;
-            break;
-        }
-    }
-
-    return freeSpot;
+    fprintf (stdout, "Done creating the map!\n");
 
 }
