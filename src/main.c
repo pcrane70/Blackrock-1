@@ -26,6 +26,7 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
     // TODO: the logic for fov goes in here!!
 
     // render the player
+    // TODO: do we want the player to have its own structure??
     Position *playerPos = (Position *) getComponent (player, POSITION);
     Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
     putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);

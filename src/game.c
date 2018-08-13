@@ -362,3 +362,13 @@ bool canMove (Position pos) {
 
 }
 
+
+/*** UPDATING ***/
+
+// we will have the game update every time the player moves...
+void updateGame () {
+
+
+
+}
+
