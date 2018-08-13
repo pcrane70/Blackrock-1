@@ -19,11 +19,13 @@ List *gameObjects = NULL;
 List *positions = NULL;
 List *graphics = NULL;
 List *physics = NULL;
+List *movement = NULL;
 
 Pool *goPool = NULL;
 Pool *posPool = NULL;
 Pool *graphicsPool = NULL;
 Pool *physPool = NULL;
+Pool *movePool = NULL;
 
 GameObject *player = NULL;
 
@@ -34,12 +36,14 @@ void initWorld (void) {
     positions = initList (free);
     graphics = initList (free);
     physics = initList (free);
+    movement = initList (free);
 
     // init our pools
     goPool = initPool ();
     posPool = initPool ();
     graphicsPool = initPool ();
     physPool = initPool ();
+    movePool = initPool ();
 
     // TODO: what other things do we want to init here?
 
@@ -223,6 +227,25 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             insertAfter (graphics, NULL, newPhys);
         }
 
+        case MOVEMENT: {
+            if (getComponent (go, type) != NULL) return;
+
+            Movement *newMove = NULL;
+
+            if ((POOL_SIZE (movePool) > 0)) newMove = pop (movePool);
+            else newMove = (Movement *) malloc (sizeof (Movement));
+
+            Movement *movData = (Movement *) data;
+            newMove->speed = movData->speed;
+            newMove->frecuency = movData->frecuency;
+            newMove->ticksUntilNextMov = movData->ticksUntilNextMov;
+            newMove->chasingPlayer = movData->chasingPlayer;
+            newMove->turnsSincePlayerSeen = movData->turnsSincePlayerSeen;
+
+            go->components[type] = newMove;
+            insertAfter (movement, NULL, newMove);
+        }
+
         // We have an invalid GameComponent type, so don't do anything
         default: break;
     }
@@ -261,6 +284,17 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
             Physics *physData = (Physics *) data;
             physComp->blocksMovement = physData->blocksMovement;
             physComp->blocksSight = physData->blocksSight;
+        }
+
+        case MOVEMENT: {
+            Movement *movComp = (Movement *) getComponent (go, type);
+            if (movComp == NULL) return;
+            Movement *movData = (Movement *) data;
+            movComp->speed = movData->speed;
+            movComp->frecuency = movData->frecuency;
+            movComp->ticksUntilNextMov = movData->ticksUntilNextMov;
+            movComp->chasingPlayer = movData->chasingPlayer;
+            movComp->turnsSincePlayerSeen = movData->turnsSincePlayerSeen;
         }
 
         // We have an invalid GameComponent type, so don't do anything
@@ -311,6 +345,11 @@ void destroyGO (GameObject *go) {
         push (physPool, removed);
     }
 
+    if ((e = getListElement (movement, go->components[MOVEMENT])) != NULL) {
+        removed = removeElement (movement, e);
+        push (movePool, removed);
+    }
+
 }
 
 void cleanUpGame (void) {
@@ -320,12 +359,14 @@ void cleanUpGame (void) {
     destroyList (positions);
     destroyList (graphics);
     destroyList (physics);
+    destroyList (movement);
 
     // cleanup the pools
     clearPool (goPool);
     clearPool (posPool);
     clearPool (graphicsPool);
     clearPool (physPool);
+    clearPool (movePool);
 
 }
 
@@ -362,13 +403,30 @@ bool canMove (Position pos) {
 
 }
 
+void generateTargetMap (i32 targetX, i32 targetY) {
 
-/*** UPDATING ***/
+
+}
+
+void updateMovement () {
+
+
+
+}
+
+
+/*** MANAGER ***/
 
 // we will have the game update every time the player moves...
 void updateGame () {
 
+    if (playerTookTurn) {
+        Position *playerPos = (Position *) getComponent (player, POSITION);
+        generateTargetMap (playerPos->x, playerPos->y);
+        updateMovement ();
+    }
 
+    // recalculate the fov
 
 }
 
