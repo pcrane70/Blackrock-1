@@ -35,6 +35,7 @@ extern void destroyList (List *);
 extern bool insertAfter (List *, ListElement *, void *data);
 
 // SEARCHING
+extern void *searchList (List *, void *data);
 extern bool isInList (List *, void *data);
 ListElement *getListElement (List *, void *data);
 

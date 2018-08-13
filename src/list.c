@@ -1,6 +1,11 @@
+/*** This is a custom implementation of a list ***/
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+
+#include "blackrock.h"  // for i32 def
+#include "game.h"   // for componnt types
 
 #include "list.h"
 
@@ -165,6 +170,33 @@ bool insertAfter (List *list, ListElement *element, void *data) {
 }
 
 /*** TRAVERSING --- SEARCHING ***/
+
+void *searchById (List *list, GameComponent type, i32 id) {
+
+    ListElement *ptr = LIST_START (list);
+    while (ptr != NULL) { 
+        
+        //if (ptr->data == data) return ptr->data;
+        ptr = ptr->next;
+    }
+
+    // not found
+    return NULL;
+
+}
+
+void *searchList (List *list, void *data) {
+
+    ListElement *ptr = LIST_START (list);
+    while (ptr != NULL) {
+        if (ptr->data == data) return ptr->data;
+        ptr = ptr->next;
+    }
+
+    // not found
+    return NULL;
+
+}
 
 bool isInList (List *list, void *data) {
 

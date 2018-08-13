@@ -67,6 +67,11 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer, Console *console) {
 
     // clean up single structs
     destroyConsole (console);
+    for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+        free (currentLevel->mapCells[i]);
+
+    free (currentLevel->mapCells);
+    
     free (currentLevel);
     free (player);
 

@@ -236,6 +236,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             else newMove = (Movement *) malloc (sizeof (Movement));
 
             Movement *movData = (Movement *) data;
+            newMove->objectId = go->id;
             newMove->speed = movData->speed;
             newMove->frecuency = movData->frecuency;
             newMove->ticksUntilNextMov = movData->ticksUntilNextMov;
@@ -383,6 +384,7 @@ bool canMove (Position pos) {
     // first check the if we are inside the map bounds
     if ((pos.x >= 0) && (pos.x < MAP_WIDTH) && (pos.y >= 0) && (pos.y < MAP_HEIGHT)) {
         // check for level elements (like walls)
+        // FIXME: 
         if (currentLevel->mapCells[pos.x][pos.y] == true) move = false;
 
         // check for any other entity, like monsters
@@ -403,14 +405,84 @@ bool canMove (Position pos) {
 
 }
 
+#define UNSET   999
+
+static i32 **dmap = NULL;
+
+// 13/08/2018 -- simple representation of a Dijkstra's map, maybe later we will want a more complex map 
+// or implement a more advance system
 void generateTargetMap (i32 targetX, i32 targetY) {
 
+    if (dmap != NULL) {
+        for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+            free (dmap[i]);
+
+        free (dmap);
+    } 
+
+    dmap = (i32 **) calloc (MAP_WIDTH, sizeof (i32 *));
+    for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+        dmap[i] = (i32 *) calloc (MAP_HEIGHT, sizeof (i32));
+
+    for (short unsigned int x = 0; x < MAP_WIDTH; x++)
+        for (short unsigned int y = 0; y < MAP_HEIGHT; y++)
+            dmap[x][y] = UNSET;
+
+    dmap[targetX][targetY] = 0;
+
+    bool changesMade = true;
+    while (changesMade) {
+        changesMade = false;
+
+        for (short unsigned int x = 0; x < MAP_WIDTH; x++) {
+            for (short unsigned int y = 0; y < MAP_HEIGHT; y++) {
+                i32 currCellValue = dmap[x][y];
+                // check cells around and update them if necessary
+                if (currCellValue != UNSET) {
+                    if ((!isWall (x + 1, y)) && (dmap[x + 1][y] > currCellValue + 1)) {
+                        dmap[x + 1][y] = currCellValue + 1;
+                        changesMade = true;
+                    }
+
+                    if ((!isWall (x - 1, y)) && (dmap[x - 1][y] > currCellValue + 1)) {
+                        dmap[x - 1][y] = currCellValue + 1;
+                        changesMade = true;
+                    }
+
+                    if ((!isWall (x, y - 1)) && (dmap[x][y - 1] > currCellValue + 1)) {
+                        dmap[x][y - 1] = currCellValue + 1;
+                        changesMade = true;
+                    }
+
+                    if ((!isWall (x, y + 1)) && (dmap[x][y + 1] > currCellValue + 1)) {
+                        dmap[x][y + 1] = currCellValue + 1;
+                        changesMade = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // targetMap = dmap;
 
 }
 
+// simple movement update for our entities based on the Dijkstra's map
+// TODO: maybe we can create a more advanced system based on a state machine??
+// TODO: this is a good place for multi-threading... I am so excited ofr that!!!
 void updateMovement () {
 
+    for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
+        Movement *mv = (Movement *) LIST_DATA (e);
 
+        // determine if we are going to move this tick
+        mv->ticksUntilNextMov -= 1;
+        if (mv->ticksUntilNextMov <= 0) {
+            // FIXME:
+            // Position *p = (Position *) searchList (positions, )
+        }
+
+    }
 
 }
 
