@@ -439,7 +439,7 @@ void generateMap () {
 
 // This function controls the flow of execution on how to generate a new map
 // this primarilly should be called after we have decided to go to the adventure from the main menu (tavern)
-unsigned int initMap () {
+unsigned int initMap (void) {
 
     // TODO: make sure that we have cleared the last level data
     // clear gameObjects and properly handle memory 
@@ -461,21 +461,28 @@ unsigned int initMap () {
         for (u32 y = 0; y < MAP_HEIGHT; y++)
             if (mapCells[x][y]) createWall (x, y, wallCount), wallCount++;
 
-    // TODO: how do we want to initialize other objects or NPCs and enemies??
+    
+    return wallCount;
 
-    // the last thing is to place our player in a random place
+}
+
+/*** OTHER ***/
+
+Point getFreeSpot (bool **mapCells) {
+
+    Point freeSpot;
+
     for (;;) {
-        u32 spawnX = (u32) randomInt (0, MAP_WIDTH);
-        u32 spawnY = (u32) randomInt (0, MAP_HEIGHT);
+        u32 freeX = (u32) randomInt (0, MAP_WIDTH);
+        u32 freeY = (u32) randomInt (0, MAP_HEIGHT);
 
-        if (mapCells[spawnX][spawnY] == false) {
-            // Position *playerPos = (Position *) getComponent (player, POSITION);
-            // playerPos->x = spawnX;
-            // playerPos->y = spawnY;
+        if (mapCells[freeX][freeY] == false) {
+            freeSpot.x = freeX;
+            freeSpot.y = freeY;
             break;
         }
     }
 
-    return wallCount;
+    return freeSpot;
 
 }

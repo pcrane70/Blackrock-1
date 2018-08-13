@@ -119,6 +119,21 @@ void *getComponent (GameObject *, GameComponent);
 void addComponent (GameObject *go, GameComponent type, void *data);
 
 
+/*** LEVEL MANAGER ***/
+
+typedef struct {
+
+    unsigned int levelNum;
+
+    // 12/08/2018 -- 19:34 -- we will only worry for now for generating levels inside the dungeons
+    // later we will want to generate levels in caves or forests, etc
+    bool **mapCells;
+
+} Level;
+
+global Level *currentLevel;
+
+
 // Cleanning Up!
 extern unsigned int cleanUpGame (void);
 

@@ -66,9 +66,14 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
     // Cleanup our GameObjects and Pools
     fprintf (stdout, "Cleanning GameObjects...\n");
-    free (player);
+    
+    // FIXME: cleanup data structures
     // if (cleanUpGame () == 0) fprintf (stdout, "All GameObjects have been cleared!\n");
     // else fprintf (stderr, "Error cleanning GOs!! Quiting anyway...\n");
+
+    // clean up single structs
+    free (currentLevel);
+    free (player);
 
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);

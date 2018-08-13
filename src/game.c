@@ -8,12 +8,14 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "map.h"
 
 #include "list.h"
 #include "objectPool.h"
 
 /*** WORLD STATE ***/
 
+// Inits the wolrd, this will be all the 'physical part' that takes place in a world
 void initWorld (void) {
 
     gameObjects = initList (free);
@@ -30,6 +32,44 @@ void initWorld (void) {
     // TODO: what other things do we want to init here?
 
 }
+
+// Inits the global state of the game
+// Inits all the data and structures for an initial game
+// This should be called only once when we init run the app
+void initGame (void) {
+
+    GameObject *initPlayer (void);
+    player = initPlayer ();
+    // TODO: player name
+
+    initWorld ();
+
+    // TODO:
+    // aftwe we have initialize our structures and allocated the memory,
+    // we will want to load the in game menu (tavern)
+
+    // FIXME: as of 12/08/2018 -- 19:43 -- we don't have the tavern ready, so we will go
+    // straigth into the dungeon...
+    currentLevel = (Level *) malloc (sizeof (Level));
+    currentLevel->levelNum = 1;
+    currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
+    for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+        currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
+
+    // after we have allocated the new level, generate the map
+    // TODO: maybe use this number in the renderer, as we have done in early versions...
+    unsigned int wallCount = initMap ();
+
+    // TODO: after the map has been init, place all the objects, NPCs and enemies, etc
+
+
+    // FIXME:
+    // finally, we have a map full with monsters, so we can place the player and we are done 
+    // Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+
+
+}
+
 
 
 /*** Game Object Management **/
@@ -231,4 +271,9 @@ unsigned int cleanUpGame (void) {
     clearPool (physPool);
 
 }
+
+
+/*** LEVEL MANAGER ***/
+
+
 

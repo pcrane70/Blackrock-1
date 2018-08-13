@@ -41,8 +41,8 @@ typedef struct Wall {
 
 } Wall;
 
-extern Wall walls[MAX_WALLS];
 
-// extern unsigned int initMap (GameObject *);
+extern unsigned int initMap (void);
+extern Point getFreeSpot (bool **mapCells);
 
 #endif
