@@ -322,10 +322,10 @@ void cleanUpGame (void) {
     destroyList (physics);
 
     // cleanup the pools
-    // clearPool (goPool);
-    // clearPool (posPool);
-    // clearPool (graphicsPool);
-    // clearPool (physPool);
+    clearPool (goPool);
+    clearPool (posPool);
+    clearPool (graphicsPool);
+    clearPool (physPool);
 
 }
 

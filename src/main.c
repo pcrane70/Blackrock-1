@@ -101,8 +101,6 @@ int main (void) {
     // set up the console font
     setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
 
-    // putCharAt (console, '@', 20, 20, 0xFFFFFFFF, 0X000000FF);  
-
     // FIXME: 12/08/2018 -- 20:31 -- this is only for tetsing purposes
     initGame ();
     fprintf (stdout, "Number of walls: %i\n", wallCount);
