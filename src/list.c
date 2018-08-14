@@ -171,19 +171,19 @@ bool insertAfter (List *list, ListElement *element, void *data) {
 
 /*** TRAVERSING --- SEARCHING ***/
 
-void *searchById (List *list, GameComponent type, i32 id) {
+// void *searchById (List *list, GameComponent type, i32 id) {
 
-    ListElement *ptr = LIST_START (list);
-    while (ptr != NULL) { 
+//     ListElement *ptr = LIST_START (list);
+//     while (ptr != NULL) { 
         
-        //if (ptr->data == data) return ptr->data;
-        ptr = ptr->next;
-    }
+//         //if (ptr->data == data) return ptr->data;
+//         ptr = ptr->next;
+//     }
 
-    // not found
-    return NULL;
+//     // not found
+//     return NULL;
 
-}
+// }
 
 void *searchList (List *list, void *data) {
 
