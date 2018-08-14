@@ -13,7 +13,7 @@
 #include "list.h"
 #include "objectPool.h"
 
-#include "myUtils.h"
+#include "utils/myUtils.h"
 
 
 /*** WORLD STATE ***/
@@ -380,6 +380,12 @@ void cleanUpGame (void) {
 
 /*** MOVEMENT ***/
 
+bool isWall (short unsigned int x, short unsigned int y) {
+
+
+
+}
+
 bool canMove (Position pos) {
 
     bool move = true;
@@ -505,11 +511,11 @@ void updateMovement () {
             // }
 
             // the player is not visible, so check for turns
-            else {
-                chase = mv->chasingPlayer;
-                mv->turnsSincePlayerSeen += 1;
-                if (mv->turnsSincePlayerSeen > 5) mv->chasingPlayer = false;
-            }
+            // else {
+            //     chase = mv->chasingPlayer;
+            //     mv->turnsSincePlayerSeen += 1;
+            //     if (mv->turnsSincePlayerSeen > 5) mv->chasingPlayer = false;
+            // }
 
             i32 speedCounter = mv->speed;
             while (speedCounter > 0) {
@@ -572,7 +578,7 @@ void updateMovement () {
                 // check if we can move to the new pos
                 if (canMove (newPos)) {
                     // FIXME:
-                    updateComponent ();
+                    // updateComponent ();
                     mv->ticksUntilNextMov = mv->frecuency;
                 }
 
@@ -592,11 +598,11 @@ void updateMovement () {
 // we will have the game update every time the player moves...
 void updateGame () {
 
-    if (playerTookTurn) {
-        Position *playerPos = (Position *) getComponent (player, POSITION);
-        generateTargetMap (playerPos->x, playerPos->y);
-        updateMovement ();
-    }
+    // if (playerTookTurn) {
+    //     Position *playerPos = (Position *) getComponent (player, POSITION);
+    //     generateTargetMap (playerPos->x, playerPos->y);
+    //     updateMovement ();
+    // }
 
     // recalculate the fov
 

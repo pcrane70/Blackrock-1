@@ -9,30 +9,46 @@
 
 #include "blackrock.h"
 
-#define FOV_DISTANCE    5
+#define FOV_DISTANCE    8
 
-void calculateFov (short unsigned int x, short unsigned int y, short unsigned int **fovmap) {
+typedef struct FovCell {
+
+    u32 x, y;
+
+} FovCell;
+
+typedef struct Shadow {
+
+    float startSlope;
+    float endSlope;
+
+} Shadow;
+
+static u8 shadoCount = 0;
+
+void calculateFov (short unsigned int xPos, short unsigned int yPos, short unsigned int **fovmap) {
 
     // default state
     // FIXME: does this work properly?
     memset (fovmap, 0, sizeof (fovmap));
 
-    // cast visibility in our 4 directions
-    short unsigned int x1 = 0;
-    if (x >= FOV_DISTANCE) x1 = x - FOV_DISTANCE;
+    // mark the position as visible
+    fovmap[xPos][yPos] = 1;
 
-    short unsigned int x2 = x + FOV_DISTANCE;
-    if (x2 >= MAP_WIDTH) x2 = MAP_WIDTH - 1;
+    // loop through all 8 sectors around the pos
+    // for (short unsigned int i = 1; i <= 8; i++) {
+    //     bool prevBlocking = false;
+    //     shadoCount = 0;
+    //     float shadowStart = 0.0;
+    //     float shadowEnd = 0.0;
 
-    short unsigned int y1 = 0;
-    if (y >= FOV_DISTANCE) y1 = y - FOV_DISTANCE;
-
-    short unsigned int y2 = y + FOV_DISTANCE;
-    if (y2 >= MAP_HEIGHT) y2 = MAP_HEIGHT - 1;
-
-    // apply the visibility to the fov map
-    for (short unsigned int fx = x1; fx <= x2; fx++)
-        for (short unsigned int fy = y1; fy <= y2; fy++)
-            fovmap[fx][fy] = 10;
+    //     for (short unsigned int cellY = 1; cellY < FOV_DISTANCE; cellY++) {
+    //         prevBlocking = false;
+    //         for (short unsigned int cellX = 0; cellX <= cellY; cellX++) {
+    //             // translate cellX, cellY to map coordinates
+    //             FovCell heroCell = { posX, posY };
+    //         }
+    //     }
+    // }
 
 }

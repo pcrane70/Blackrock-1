@@ -58,11 +58,11 @@ i32 roomWithPoint (Point pt, Room *first) {
 
     i32 retVal = 0;
     Room *ptr = first;
-    if (ptr = NULL) fprintf (stderr, "\nPassing a NLL rooms list!\n");
+    if (ptr == NULL) fprintf (stderr, "\nPassing a NULL rooms list!\n");
     while (ptr != NULL) {
         if ((ptr->x <= pt.x) && ((ptr->x + ptr->w) > pt.x) &&
-        (ptr->y <= pt.y) && ((ptr->y + ptr->h) > pt.y))
-            return retVal;
+        (ptr->y <= pt.y) && ((ptr->y + ptr->h) > pt.y)) 
+            return retVal;            
 
         ptr = ptr->next;
         retVal++;
@@ -89,8 +89,6 @@ bool carveRoom (u32 x, u32 y, u32 w, u32 h, bool **mapCells) {
 
 }
 
-static int test = 0;
-
 void carveCorridorHor (Point from, Point to, bool **mapCells) {
 
     u32 first, last;
@@ -106,8 +104,6 @@ void carveCorridorHor (Point from, Point to, bool **mapCells) {
 
     for (u32 x = first; x <= last; x++) 
         mapCells[x][from.y] = false;
-
-    // test++;
 
 }
 
@@ -126,8 +122,6 @@ void carveCorridorVer (Point from, Point to, bool **mapCells) {
 
     for (u32 y = first; y <= last; y++)
         mapCells[from.x][y] = false;
-
-    // test++;
 
 }
 
@@ -179,10 +173,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    if (insertAfter (segments, NULL, s) == false)
-                        fprintf (stderr, "\nError inserting in list!\n");
-                    else fprintf (stdout, "\nA new segment has been added!\n");
-
+                    insertAfter (segments, NULL, s);
                     currRoom = rm;
                 }
 
@@ -219,9 +210,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     // we already have a partial segment, so now complete it
                     turnSegment->end = curr;
                     turnSegment->roomTo = rm;
-                    if (insertAfter (segments, NULL, turnSegment) == false)
-                        fprintf (stderr, "\nError inserting in list!\n");
-                    else fprintf (stdout, "\nA new segment has been added!\n");
+                    insertAfter (segments, NULL, turnSegment);
                     turnSegment = NULL;
                 }
 
@@ -233,9 +222,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    if (insertAfter (segments, NULL, s) == false)
-                        fprintf (stderr, "\nError inserting in list!\n");
-                    else fprintf (stdout, "\nA new segment has been added!\n");
+                    insertAfter (segments, NULL, s);
                 }
             }
 
@@ -248,9 +235,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     // complete the partial segment
                     turnSegment->end = curr;
                     turnSegment->roomTo = rm;
-                    if (insertAfter (segments, NULL, turnSegment) == false)
-                        fprintf (stderr, "\nError inserting in list!\n");
-                    else fprintf (stdout, "\nA new segment has been added!\n");
+                    insertAfter (segments, NULL, turnSegment);
                     turnSegment = NULL;
                 }
 
@@ -262,9 +247,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    if (insertAfter (segments, NULL, s) == false) 
-                        fprintf (stderr, "\nError inserting in list!\n");
-                    else fprintf (stdout, "\nA new segment has been added!\n");
+                    insertAfter (segments, NULL, s);
                 }
 
                 currRoom = rm;
@@ -307,7 +290,7 @@ void carveSegments (List *hallways, bool **mapCells) {
             else carveCorridorHor (p1, p2, mapCells);
         }
 
-        test++;
+        ptr = ptr->next;
     }
 
 }
@@ -380,75 +363,65 @@ void generateMap (bool **mapCells) {
     // 08/08/2018 -- 7:55
     // I think we got it working the same way as the array, but we still need to tweak
     // how the map generates in general..
+    List *hallways = initList (free);
+    if (hallways == NULL) fprintf (stderr, "Error creating list!!\n");
 
-    /* 
-    {
-        List *hallways = initList (free);
-        if (hallways == NULL) fprintf (stderr, "Error creating list!!\n");
+    Room *ptr = firstRoom->next, *preptr = firstRoom;
+    while (ptr != NULL) {
+        Room *from = preptr;
+        Room *to = ptr;
 
-        Room *ptr = firstRoom->next, *preptr = firstRoom;
-        while (ptr != NULL) {
-            Room *from = preptr;
-            Room *to = ptr;
+        Point fromPt = randomRoomPoint (from);
+        Point toPt = randomRoomPoint (to);
 
-            Point fromPt = randomRoomPoint (from);
-            Point toPt = randomRoomPoint (to);
+        List *segments = initList (free);
 
-            List *segments = initList (free);
+        // break the proposed hallway into segments
+        getSegments (segments, fromPt, toPt, firstRoom);
 
-            // break the proposed hallway into segments
-            getSegments (segments, fromPt, toPt, firstRoom);
+        // traverse the segment's list and skip adding any segments
+        // that join rooms that are already joined
+        for (ListElement *e = LIST_START (segments); e != NULL; e = e->next) {
+            i32 rm1 = ((Segment *) (e->data))->roomFrom;
+            i32 rm2 = ((Segment *) (e->data))->roomTo;
 
-            // traverse the segment's list and skip adding any segments
-            // that join rooms that are already joined
-
-            ListElement *e = LIST_START (segments);
-            if (e == NULL) fprintf (stderr, "\nSegment List start is NULL!!\n");
-
-            for (ListElement *e = LIST_START (segments); e != NULL; e = e->next) {
-                i32 rm1 = ((Segment *) (e->data))->roomFrom;
-                i32 rm2 = ((Segment *) (e->data))->roomTo;
-
-                Segment *uSeg = NULL;
-                if (hallways->size == 0) uSeg = (Segment *) e->data;
-                else {
-                    bool unique = true;
-                    for (ListElement *h = LIST_START (hallways); h != NULL; h = h->next) {
-                        Segment *seg = (Segment *) (h->data);
-                        if (((seg->roomFrom == rm1) && (seg->roomTo == rm2)) ||
-                        ((seg->roomTo == rm1) && (seg->roomFrom == rm2))) {
-                            unique = false;
-                            break;
-                        }
+            Segment *uSeg = NULL;
+            if (hallways->size == 0) uSeg = (Segment *) e->data;
+            else {
+                bool unique = true;
+                for (ListElement *h = LIST_START (hallways); h != NULL; h = h->next) {
+                    Segment *seg = (Segment *) (h->data);
+                    if (((seg->roomFrom == rm1) && (seg->roomTo == rm2)) ||
+                    ((seg->roomTo == rm1) && (seg->roomFrom == rm2))) {
+                        unique = false;
+                        break;
                     }
-
-                    if (unique) uSeg = (Segment *) e->data;
                 }
 
-                if (uSeg != NULL) {
-                    Segment *segCopy = (Segment *) malloc (sizeof (Segment));
-                    memcpy (segCopy, uSeg, sizeof (Segment));
-                    insertAfter (hallways, NULL, segCopy);
-                }
-            }    
+                if (unique) uSeg = (Segment *) e->data;
+            }
 
-            // clean up lists
-            destroyList (segments);
+            if (uSeg != NULL) {
+                Segment *segCopy = (Segment *) malloc (sizeof (Segment));
+                memcpy (segCopy, uSeg, sizeof (Segment));
+                insertAfter (hallways, NULL, segCopy);
+            }
+        }    
 
-            // continue looping through the rooms
-            preptr = preptr->next;
-            ptr = ptr->next;
-        }
+        // clean up lists
+        destroyList (segments);
 
-        // carve out new segments and add them to the hallways list
-        carveSegments (hallways, mapCells);
-    } */
+        // continue looping through the rooms
+        preptr = preptr->next;
+        ptr = ptr->next;
+    }
 
-    
+    // carve out new segments and add them to the hallways list
+    carveSegments (hallways, mapCells);
 
     // cleanning up 
     firstRoom = deleteList (firstRoom);
-    // destroyList (hallways);
+    destroyList (hallways);
 
 }
 
@@ -467,8 +440,6 @@ void initMap (bool **mapCells) {
 
     fprintf (stdout, "Generating the map...\n");
     generateMap (mapCells);
-
-    fprintf (stdout, "\n\nTest: %i\n\n", test);
 
     // draw the map
     fprintf (stdout, "Drawing the map...\n");

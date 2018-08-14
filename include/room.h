@@ -5,8 +5,8 @@
 
 typedef struct Room {
 
-    u32 x, y;
-    u32 w, h;
+    i32 x, y;
+    i32 w, h;
 
     struct Room *next;
 
