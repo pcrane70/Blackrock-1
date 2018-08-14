@@ -173,7 +173,7 @@ GameObject *createGO () {
 void addComponent (GameObject *go, GameComponent type, void *data) {
 
     // check for a valid GO
-    if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
+    if ((go != NULL) && (isInList (gameObjects, go) == false)) return;
 
     // if data is NULL for any reason, just don't do anything
     if (data == NULL) return;
