@@ -32,6 +32,9 @@ Pool *movePool = NULL;
 
 GameObject *player = NULL;
 
+// FOV
+static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
+
 // Inits the wolrd, this will be all the 'physical part' that takes place in a world
 void initWorld (void) {
 
@@ -506,84 +509,91 @@ void updateMovement () {
             // a monster should only move towards the player if it has seen him
             // and should chase him if we has been in the monster fov in the last 5 turns   
             bool chase = false;
-            // if (visible) {
-            //     // FIXME:
-            // }
+            // player is visible
+            if (fovMap[pos->x][pos->y] > 0) {
+                chase = true;
+                mv->chasingPlayer = true;
+                mv->turnsSincePlayerSeen = 0;
+            }
 
-            // the player is not visible, so check for turns
-            // else {
-            //     chase = mv->chasingPlayer;
-            //     mv->turnsSincePlayerSeen += 1;
-            //     if (mv->turnsSincePlayerSeen > 5) mv->chasingPlayer = false;
-            // }
+            // player is not visible, but see if we can still chase him...
+            else {
+                chase = mv->chasingPlayer;
+                mv->turnsSincePlayerSeen += 1;
+                if (mv->turnsSincePlayerSeen > 5) mv->chasingPlayer = false;
+            }
 
             i32 speedCounter = mv->speed;
             while (speedCounter > 0) {
-                // TODO: determine if we are in combat range with the player
-                // if () {}
-                // else: 
+                // determine if we are in combat range with the player
+                // TODO: add combat here!
+                if ((fovMap[pos->x][pos->y] > 0) && (dmap[pos->x][pos->y] == 1)) {}
                 // we are out of combat range, so get a new pos;
-                if (chase) {
-                    Position moves[4];
-                    unsigned int moveCounter = 0;
-                    i32 currTargetValue = dmap[pos->x][pos->y];
-                    if (dmap[pos->x - 1][pos->y] < currTargetValue) {
-                        Position np = newPos;
-                        np.x -= 1;
-                        moves[moveCounter] = np;
-                        moveCounter++;
-                    }
-
-                    if (dmap[pos->x][pos->y - 1] < currTargetValue) {
-                        Position np = newPos;
-                        np.y--;
-                        moves[moveCounter] = np;
-                        moveCounter++;
-                    }
-
-                    if (dmap[pos->x + 1][pos->y] < currTargetValue) {
-                        Position np = newPos;
-                        np.x += 1;
-                        moves[moveCounter] = np;
-                        moveCounter++;
-                    }
-
-                    if (dmap[pos->x][pos->y + 1] < currTargetValue) {
-                        Position np = newPos;
-                        np.y += 1;
-                        moves[moveCounter] = np;
-                        moveCounter++;
-                    }
-
-                    // pick a random potential pos
-                    if (moveCounter > 0) {
-                        u32 moveIdx = (u32) randomInt (0, moveCounter);
-                        newPos = moves[moveIdx];
-                    }
-
-                }
-
-                // if we are not chasing the player, we are in patrol state, so move randomly
                 else {
-                    u32 dir = (u32) randomInt (0, 4);
-                    switch (dir) {
-                        case 0: newPos.x -= 1; break;
-                        case 1: newPos.y -= 1; break;
-                        case 2: newPos.x += 1; break;
-                        case 3: newPos.y += 1; break;
-                        default: break;
+                    if (chase) {
+                        Position moves[4];
+                        unsigned int moveCounter = 0;
+                        i32 currTargetValue = dmap[pos->x][pos->y];
+                        if (dmap[pos->x - 1][pos->y] < currTargetValue) {
+                            Position np = newPos;
+                            np.x -= 1;
+                            moves[moveCounter] = np;
+                            moveCounter++;
+                        }
+
+                        if (dmap[pos->x][pos->y - 1] < currTargetValue) {
+                            Position np = newPos;
+                            np.y--;
+                            moves[moveCounter] = np;
+                            moveCounter++;
+                        }
+
+                        if (dmap[pos->x + 1][pos->y] < currTargetValue) {
+                            Position np = newPos;
+                            np.x += 1;
+                            moves[moveCounter] = np;
+                            moveCounter++;
+                        }
+
+                        if (dmap[pos->x][pos->y + 1] < currTargetValue) {
+                            Position np = newPos;
+                            np.y += 1;
+                            moves[moveCounter] = np;
+                            moveCounter++;
+                        }
+
+                        // pick a random potential pos
+                        if (moveCounter > 0) {
+                            u32 moveIdx = (u32) randomInt (0, moveCounter);
+                            newPos = moves[moveIdx];
+                        }
+
                     }
+
+                    // if we are not chasing the player, we are in patrol state, so move randomly
+                    else {
+                        u32 dir = (u32) randomInt (0, 4);
+                        switch (dir) {
+                            case 0: newPos.x -= 1; break;
+                            case 1: newPos.y -= 1; break;
+                            case 2: newPos.x += 1; break;
+                            case 3: newPos.y += 1; break;
+                            default: break;
+                        }
+                    }
+
+                    // check if we can move to the new pos
+                    if (canMove (newPos)) {
+                        // Updating the entity position in an odd way
+                        pos->x = newPos.x;
+                        pos->y = newPos.y;
+                        mv->ticksUntilNextMov = mv->frecuency;
+                    }
+
+                    else mv->ticksUntilNextMov += 1;
                 }
 
-                // check if we can move to the new pos
-                if (canMove (newPos)) {
-                    // FIXME:
-                    // updateComponent ();
-                    mv->ticksUntilNextMov = mv->frecuency;
-                }
-
-                else mv->ticksUntilNextMov += 1;
-
+                speedCounter -= 1;
             }
 
         }
