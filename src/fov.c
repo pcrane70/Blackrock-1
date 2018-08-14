@@ -63,23 +63,23 @@ float lineSlopeBetween (float x1, float y1, float x2, float y2) {
 FovCell mapCellForLocalCell (u8 sector, FovCell heroMapCell, FovCell cellToTranslate) {
 
     switch (sector) {
-        case 1: FovCell mapCell = { heroMapCell.x + cellToTranslate.x, heroMapCell.y - cellToTranslate.y };
-        return mapCell; break;
-        case 2: FovCell mapCell = { heroMapCell.x + cellToTranslate.y, heroMapCell.y - cellToTranslate.x };
-        return mapCell; break;
-        case 3: FovCell mapCell = { heroMapCell.x + cellToTranslate.y, heroMapCell.y + cellToTranslate.x };
-        return mapCell; break;
-        case 4: FovCell mapCell = { heroMapCell.x + cellToTranslate.x, heroMapCell.y + cellToTranslate.y };
-        return mapCell; break;
-        case 5: FovCell mapCell = { heroMapCell.x - cellToTranslate.x, heroMapCell.y + cellToTranslate.y };
-        return mapCell; break;
-        case 6: FovCell mapCell = { heroMapCell.x - cellToTranslate.y, heroMapCell.y + cellToTranslate.x };
-        return mapCell; break;
-        case 7: FovCell mapCell = { heroMapCell.x - cellToTranslate.y, heroMapCell.y - cellToTranslate.x };
-        return mapCell; break;
-        case 8: FovCell mapCell = { heroMapCell.x - cellToTranslate.x, heroMapCell.y - cellToTranslate.y };
-        return mapCell; break;
-        default: FovCell c = { 0, 0 }; return c; break;
+        case 1: { FovCell mapCell = { heroMapCell.x + cellToTranslate.x, heroMapCell.y - cellToTranslate.y };
+        return mapCell; } break;
+        case 2: { FovCell mapCell = { heroMapCell.x + cellToTranslate.y, heroMapCell.y - cellToTranslate.x };
+        return mapCell; } break;
+        case 3: { FovCell mapCell = { heroMapCell.x + cellToTranslate.y, heroMapCell.y + cellToTranslate.x };
+        return mapCell; } break;
+        case 4: { FovCell mapCell = { heroMapCell.x + cellToTranslate.x, heroMapCell.y + cellToTranslate.y };
+        return mapCell; } break;
+        case 5: { FovCell mapCell = { heroMapCell.x - cellToTranslate.x, heroMapCell.y + cellToTranslate.y };
+        return mapCell; } break;
+        case 6: { FovCell mapCell = { heroMapCell.x - cellToTranslate.y, heroMapCell.y + cellToTranslate.x };
+        return mapCell; } break;
+        case 7: { FovCell mapCell = { heroMapCell.x - cellToTranslate.y, heroMapCell.y - cellToTranslate.x };
+        return mapCell; } break;
+        case 8: { FovCell mapCell = { heroMapCell.x - cellToTranslate.x, heroMapCell.y - cellToTranslate.y };
+        return mapCell; } break;
+        default: { FovCell c = { 0, 0 }; return c; } break;
     }
 
 }
@@ -105,7 +105,7 @@ float distnaceBetween (u32 x1, u32 y1, u32 x2, u32 y2) {
 
 }
 
-void calculateFov (short unsigned int xPos, short unsigned int yPos, short unsigned int **fovmap) {
+void calculateFov (u32 xPos, u32 yPos, u32 (*fovmap)[MAP_HEIGHT]) {
 
     // default state
     // FIXME: does this work properly?

@@ -30,10 +30,13 @@ Pool *graphicsPool = NULL;
 Pool *physPool = NULL;
 Pool *movePool = NULL;
 
+// PLayer
 GameObject *player = NULL;
+static bool playerTookTurn = false;
 
 // FOV
 static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
+static bool recalculateFov = false;
 
 // Inits the wolrd, this will be all the 'physical part' that takes place in a world
 void initWorld (void) {
@@ -605,16 +608,23 @@ void updateMovement () {
 
 /*** MANAGER ***/
 
+extern void calculateFov (u32 xPos, u32 yPos, u32 (*fovmap)[MAP_HEIGHT]);
+
 // we will have the game update every time the player moves...
 void updateGame () {
 
-    // if (playerTookTurn) {
-    //     Position *playerPos = (Position *) getComponent (player, POSITION);
-    //     generateTargetMap (playerPos->x, playerPos->y);
-    //     updateMovement ();
-    // }
+    if (playerTookTurn) {
+        Position *playerPos = (Position *) getComponent (player, POSITION);
+        generateTargetMap (playerPos->x, playerPos->y);
+        updateMovement ();
+    }
 
     // recalculate the fov
+    if (recalculateFov) {
+        Position *playerPos = (Position *) getComponent (player, POSITION);
+        calculateFov (playerPos->x, playerPos->y, fovMap);
+        recalculateFov = false;
+    }
 
 }
 
