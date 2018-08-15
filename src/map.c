@@ -299,14 +299,12 @@ void carveSegments (List *hallways, bool **mapCells) {
 /*** DRAWING ***/
 
 Wall walls[MAX_WALLS];
+// Wall walls[MAP_WIDTH][MAP_HEIGHT];
 
 // TODO: what color do we want for walls?
 void createWall (u32 x, u32 y) {
 
-    Wall *new = &walls[wallCount];
-
-    // TODO: better error checking here...
-    // are we returning a valid GO??
+    Wall *new = &walls[wallCount]; 
 
     new->x = x;
     new->y = y;

@@ -133,6 +133,9 @@ typedef struct {
     // later we will want to generate levels in caves or forests, etc
     bool **mapCells;
 
+    // 15/08/2018 -- 7:42
+    // Wall ***walls;
+
 } Level;
 
 global Level *currentLevel;

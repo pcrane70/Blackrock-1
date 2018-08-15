@@ -87,6 +87,10 @@ void initGame (void) {
     for (short unsigned int i = 0; i < MAP_WIDTH; i++)
         currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
 
+    // currentLevel->walls = (Wall **) calloc (MAP_WIDTH, sizeof (Wall *));
+    // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+    //     currentLevel->walls[i] = (Wall *) calloc (MAP_HEIGHT, sizeof (Wall));
+
     // generate a random world froms scratch
     // TODO: maybe later we want to specify some parameters based on difficulty?
     // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
@@ -406,11 +410,7 @@ void cleanUpGame (void) {
 
 /*** MOVEMENT ***/
 
-bool isWall (short unsigned int x, short unsigned int y) {
-
-
-
-}
+bool isWall (u32 x, u32 y) { return (currentLevel->mapCells[x][y]); }
 
 bool canMove (Position pos) {
 

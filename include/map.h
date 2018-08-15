@@ -43,8 +43,9 @@ typedef struct Wall {
 
 // TODO: we are testing having the walls in a separte array in memory for conviniece
 // for the other systems tha we want to implement in the other gameObjects...
-extern Wall walls[MAX_WALLS];
+// extern Wall walls[MAP_WIDTH][MAP_HEIGHT];
 
+extern Wall walls[MAX_WALLS];
 
 extern void initMap (bool **mapCells);
 extern Point getFreeSpot (bool **mapCells);
