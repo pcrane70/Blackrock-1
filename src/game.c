@@ -32,7 +32,7 @@ Pool *movePool = NULL;
 
 // PLayer
 GameObject *player = NULL;
-static bool playerTookTurn = false;
+bool playerTookTurn = false;
 
 // FOV
 static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -98,14 +98,28 @@ void initGame (void) {
 
     // TODO: after the map has been init, place all the objects, NPCs and enemies, etc
 
+    fprintf (stdout, "Creating monsters...\n");
+    // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave
+    void createMonster (GameObject *);
+    for (short unsigned int i = 0; i < 2; i++) {
+        GameObject *monster = createGO ();
+        createMonster (monster);
+        // spawn in a random position
+        Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
+        Position *monsterPos = (Position *) getComponent (monster, POSITION);
+        monsterPos->x = (u8) monsterSpawnPos.x;
+        monsterPos->y = (u8) monsterSpawnPos.y;
+        fprintf (stdout, "Created a new monster!\n");
+    }
 
     // finally, we have a map full with monsters, so we can place the player and we are done 
+    fprintf (stdout, "Spawning the player...\n");
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
     Position *playerPos = (Position *) getComponent (player, POSITION);
     playerPos->x = (u8) playerSpawnPos.x;
     playerPos->y = (u8) playerSpawnPos.y;
 
-     fprintf (stdout, "Done initializing game!\n");
+    fprintf (stdout, "Done initializing game!\n");
 
 }
 
@@ -179,7 +193,10 @@ GameObject *createGO () {
 void addComponent (GameObject *go, GameComponent type, void *data) {
 
     // check for a valid GO
-    if ((go != NULL) && (isInList (gameObjects, go) == false)) return;
+    // FIXME: isInList not working properly...
+    // if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
+
+    if (go == NULL) return;
 
     // if data is NULL for any reason, just don't do anything
     if (data == NULL) return;
@@ -266,7 +283,10 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 void updateComponent (GameObject *go, GameComponent type, void *data) {
 
     // check for a valid GO
-    if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
+    // FIXME: isInList not working properly...
+    // if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
+
+    if (go == NULL) return;
 
     // if data is NULL for any reason, just don't do anything
     if (data == NULL) return;
@@ -606,17 +626,40 @@ void updateMovement () {
 }
 
 
+// 14/08/2018 -- 23:02 -- test function to spawn some monsters to test their behaivour
+void createMonster (GameObject *go) {
+
+    // This is just a placeholder until it spawns in the world
+    Position pos = { .x = 0, .y = 0, .layer = TOP_LAYER };
+    addComponent (go, POSITION, &pos);
+
+    Graphics g = { 0, 'M', 0xFFFFFFFF, 0x000000FF };
+    addComponent (go, GRAPHICS, &g);
+
+    // TODO: what physics do we want our monsters to have?
+    // Physics phys = { 0, true, true };
+    // addComponent (go, PHYSICS, &phys);
+
+    Movement mv = { .speed = 1, .frecuency = 1, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
+    addComponent (go, MOVEMENT, &mv);
+
+}
+
+
 /*** MANAGER ***/
 
 extern void calculateFov (u32 xPos, u32 yPos, u32 (*fovmap)[MAP_HEIGHT]);
 
 // we will have the game update every time the player moves...
-void updateGame () {
+void updateGame (void) {
 
     if (playerTookTurn) {
+        // fprintf (stdout, "Updating game!\n");
         Position *playerPos = (Position *) getComponent (player, POSITION);
         generateTargetMap (playerPos->x, playerPos->y);
         updateMovement ();
+
+        playerTookTurn = false;
     }
 
     // recalculate the fov

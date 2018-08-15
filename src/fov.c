@@ -86,14 +86,14 @@ FovCell mapCellForLocalCell (u8 sector, FovCell heroMapCell, FovCell cellToTrans
 
 bool cellBlocksSight (u32 x, u32 y) {
 
-    List *gos = gosAtPosition (x, y);
-    if (gos != NULL) {
-        for (ListElement *e = LIST_START (gos); e != NULL; e = e->next) {
-            GameObject *go = (GameObject *) LIST_DATA (e);
-            Physics *phys = (Physics *) getComponent (go, PHYSICS);
-            if (phys->blocksSight) return true;
-        }
-    }
+    // List *gos = gosAtPosition (x, y);
+    // if (gos != NULL) {
+    //     for (ListElement *e = LIST_START (gos); e != NULL; e = e->next) {
+    //         GameObject *go = (GameObject *) LIST_DATA (e);
+    //         Physics *phys = (Physics *) getComponent (go, PHYSICS);
+    //         if (phys->blocksSight) return true;
+    //     }
+    // }
 
     return false;
 

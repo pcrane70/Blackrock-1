@@ -104,6 +104,10 @@ extern Pool *physPool;
 
 extern void initGame (void);
 
+extern bool playerTookTurn;
+
+extern void updateGame (void);
+
 
 /*** PLAYER ***/
 

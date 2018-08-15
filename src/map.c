@@ -27,8 +27,8 @@ Point getFreeSpot (bool **mapCells) {
     Point freeSpot;
 
     for (;;) {
-        u32 freeX = (u32) randomInt (0, MAP_WIDTH);
-        u32 freeY = (u32) randomInt (0, MAP_HEIGHT);
+        u32 freeX = (u32) randomInt (0, MAP_WIDTH - 1);
+        u32 freeY = (u32) randomInt (0, MAP_HEIGHT - 1);
 
         if (mapCells[freeX][freeY] == false) {
             freeSpot.x = freeX;

@@ -33,15 +33,15 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console
 
     // TODO:
     // render the go with graphics
-    // GameObject *go = NULL;
-    // Position *p = NULL;
-    // Graphics *g = NULL;
-    // for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
-    //     go = (GameObject *) ptr->data;
-    //     p = (Position *) getComponent (go, POSITION);
-    //     g = (Graphics *) getComponent (go, GRAPHICS);
-    //     putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
-    // }
+    GameObject *go = NULL;
+    Position *p = NULL;
+    Graphics *g = NULL;
+    for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
+        go = (GameObject *) ptr->data;
+        p = (Position *) getComponent (go, POSITION);
+        g = (Graphics *) getComponent (go, GRAPHICS);
+        putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+    }
 
     // FIXME: we don't want to this every frame!!
     for (unsigned int i = 0; i < wallCount; i++) 
@@ -119,6 +119,7 @@ int main (void) {
     u32 timePerFrame;
     u32 frameStart;
     i32 sleepTime;
+    fprintf (stdout, "Starting main loop\n");
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
         frameStart = 0;
@@ -136,6 +137,9 @@ int main (void) {
             handlePlayerInput (event, player);
 
         }
+
+        // if we are inside the game (dungeon, etc)...
+        updateGame ();
 
         // TODO: if we are in game, update that, else we are in a menu or something else
         renderScreen (renderer, screen, console);

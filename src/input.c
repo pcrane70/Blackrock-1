@@ -21,19 +21,23 @@ void handlePlayerInput (SDL_Event event) {
             case SDLK_w: 
                 newPos.x = playerPos->x;
                 newPos.y = playerPos->y - 1;
-                if (canMove (newPos)) playerPos->y = newPos.y; break;
+                if (canMove (newPos)) playerPos->y = newPos.y;
+                playerTookTurn = true; break;
             case SDLK_s: 
                 newPos.x = playerPos->x;
                 newPos.y = playerPos->y + 1;
-                if (canMove (newPos)) playerPos->y = newPos.y; break;
+                if (canMove (newPos)) playerPos->y = newPos.y;
+                playerTookTurn = true; break;
             case SDLK_a: 
                 newPos.x = playerPos->x - 1;
                 newPos.y = playerPos->y;
-                if (canMove (newPos)) playerPos->x = newPos.x; break;
+                if (canMove (newPos)) playerPos->x = newPos.x;
+                playerTookTurn = true; break;
             case SDLK_d:
                 newPos.x = playerPos->x + 1;
                 newPos.y = playerPos->y;
-                if (canMove (newPos)) playerPos->x = newPos.x; break;
+                if (canMove (newPos)) playerPos->x = newPos.x;
+                playerTookTurn = true; break;
             default: break;
         }
     }
