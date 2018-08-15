@@ -19,7 +19,8 @@ typedef enum GameComponent {
     PHYSICS,
     HEALTH, 
     MOVEMENT,
-    COMBAT, 
+    COMBAT,
+    ITEM, 
     EQUIPMENT, 
     TREASURE,
     ANIMATION,
@@ -83,6 +84,17 @@ typedef struct Movement {
     i32 turnsSincePlayerSeen;
 
 } Movement;
+
+typedef struct Item {
+
+    i32 objectId;
+    i32 quantity;
+    i32 weight;
+    i32 lifetime;
+    char *slot;
+    bool isEquipped;
+
+} Item;
 
 
 /*** OUR LISTS ***/

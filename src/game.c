@@ -23,16 +23,21 @@ List *positions = NULL;
 List *graphics = NULL;
 List *physics = NULL;
 List *movement = NULL;
+List *items = NULL;
 
 Pool *goPool = NULL;
 Pool *posPool = NULL;
 Pool *graphicsPool = NULL;
 Pool *physPool = NULL;
 Pool *movePool = NULL;
+Pool *itemsPool = NULL;
 
 // PLayer
 GameObject *player = NULL;
 bool playerTookTurn = false;
+// This is the player's inventory
+static List *inventory = NULL;
+static i32 maxWeight = 20;
 
 // FOV
 static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -46,6 +51,7 @@ void initWorld (void) {
     graphics = initList (free);
     physics = initList (free);
     movement = initList (free);
+    items = initList (free);
 
     // init our pools
     goPool = initPool ();
@@ -53,6 +59,7 @@ void initWorld (void) {
     graphicsPool = initPool ();
     physPool = initPool ();
     movePool = initPool ();
+    itemsPool = initPool ();
 
     // TODO: what other things do we want to init here?
 
@@ -113,8 +120,17 @@ void initGame (void) {
         Position *monsterPos = (Position *) getComponent (monster, POSITION);
         monsterPos->x = (u8) monsterSpawnPos.x;
         monsterPos->y = (u8) monsterSpawnPos.y;
+        // TODO: mark the spawnPos as filled
         fprintf (stdout, "Created a new monster!\n");
     }
+
+    // 15/08/2018 -- 18:09 -- lets sprinckle some items trough the level and see how they behave
+    void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
+     asciiChar glyph, u32 fgColor, i32 quantity, i32 weight, i32 lifetime);
+    for (short unsigned int i = 0; i < 2; i++) {
+        Point spawnPos = getFreeSpot (currentLevel->mapCells);
+        createItem ("Test Item", spawnPos.x, spawnPos.y, MID_LAYER, 'I', 0xFFFFFFFF, 1, 1, 20);
+    }   
 
     // finally, we have a map full with monsters, so we can place the player and we are done 
     fprintf (stdout, "Spawning the player...\n");
@@ -222,7 +238,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             go->components[type] = newPos;
             insertAfter (positions, NULL, newPos);
-        }
+        } break;
         case GRAPHICS: {
             if (getComponent (go, type) != NULL) return;
 
@@ -239,7 +255,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             go->components[type] = newGraphics;
             insertAfter (graphics, NULL, newGraphics);
-        }
+        } break;
         case PHYSICS: {
             if (getComponent (go, type) != NULL) return;
 
@@ -255,8 +271,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             go->components[type] = newPhys;
             insertAfter (graphics, NULL, newPhys);
-        }
-
+        } break;
         case MOVEMENT: {
             if (getComponent (go, type) != NULL) return;
 
@@ -275,7 +290,26 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             go->components[type] = newMove;
             insertAfter (movement, NULL, newMove);
-        }
+        } break;
+        case ITEM: {
+            if (getComponent (go, type) != NULL) return;
+
+            Item *newItem = NULL;
+
+            if ((POOL_SIZE (itemsPool) > 0)) newItem = pop (itemsPool);
+            else newItem = (Item *) malloc (sizeof (Item));
+
+            Item *itemData = (Item *) data;
+            newItem->objectId = go->id;
+            newItem->slot = itemData->slot;
+            newItem->weight = itemData->weight;
+            newItem->quantity = itemData->quantity;
+            newItem->lifetime = itemData->lifetime;
+            newItem->isEquipped = false;
+
+            go->components[type] = newItem;
+            insertAfter (items, NULL, newItem);
+        } break;
 
         // We have an invalid GameComponent type, so don't do anything
         default: break;
@@ -303,7 +337,7 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
             posComp->x = posData->x;
             posComp->y = posData->y;
             posComp->layer = posData->layer;
-        }
+        } break;
         case GRAPHICS: {
             Graphics *graphicsComp = (Graphics *) getComponent (go, type);
             if (graphicsComp == NULL) return;
@@ -311,15 +345,14 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
             graphicsComp->glyph = graphicsData->glyph;
             graphicsComp->fgColor = graphicsData->fgColor;
             graphicsComp->bgColor = graphicsComp->bgColor;
-        }
+        } break;
         case PHYSICS: {
             Physics *physComp = (Physics *) getComponent (go, type);
             if (physComp == NULL) return;
             Physics *physData = (Physics *) data;
             physComp->blocksMovement = physData->blocksMovement;
             physComp->blocksSight = physData->blocksSight;
-        }
-
+        } break;
         case MOVEMENT: {
             Movement *movComp = (Movement *) getComponent (go, type);
             if (movComp == NULL) return;
@@ -329,7 +362,18 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
             movComp->ticksUntilNextMov = movData->ticksUntilNextMov;
             movComp->chasingPlayer = movData->chasingPlayer;
             movComp->turnsSincePlayerSeen = movData->turnsSincePlayerSeen;
-        }
+        } break;
+        case ITEM: {
+            Item *itemComp = (Item *) getComponent (go, type);
+            if (itemComp == NULL) return;
+            Item *itemData = (Item *) data;
+            itemComp->objectId = go->id;
+            itemComp->slot = itemData->slot;
+            itemComp->weight = itemData->weight;
+            itemComp->quantity = itemData->quantity;
+            itemComp->lifetime = itemData->lifetime;
+            itemComp->isEquipped = itemData->isEquipped;
+        } break;
 
         // We have an invalid GameComponent type, so don't do anything
         default: break;
@@ -394,6 +438,7 @@ void cleanUpGame (void) {
     destroyList (graphics);
     destroyList (physics);
     destroyList (movement);
+    destroyList (items);
 
     // cleanup the pools
     clearPool (goPool);
@@ -401,11 +446,38 @@ void cleanUpGame (void) {
     clearPool (graphicsPool);
     clearPool (physPool);
     clearPool (movePool);
+    clearPool (itemsPool);
 
 }
 
 
 /*** LEVEL MANAGER ***/
+
+// We are testing how do we want to create items in the level
+// TODO: how do we want to manage lifetim - durability?
+// TODO: later we will need to add some combat parametres
+// FIXME: how do we want to manage the name?
+void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
+     asciiChar glyph, u32 fgColor, i32 quantity, i32 weight, i32 lifetime) {
+
+    GameObject *item = createGO ();
+
+    Position pos = { .x = xPos, .y = yPos, .layer = layer };
+    addComponent (item, POSITION, &pos);
+    Graphics g = { .glyph = glyph, .fgColor = fgColor, .bgColor = 0x000000FF };
+    addComponent (item, GRAPHICS, &g);
+    Physics phys = { .blocksMovement = false, .blocksSight = false };
+    addComponent (item, PHYSICS, &phys);
+    Item i = { .quantity = quantity, .weight = weight, .isEquipped = false, .lifetime = lifetime };
+    addComponent (item, ITEM, &i);
+        
+}
+
+// TODO:
+/*** INVENTORY ***/
+
+// we want to press I and open a new window that shows our inventory
+// TODO: maybe if we press the letter c, we can get a window showing our current equipment
 
 
 /*** MOVEMENT ***/
