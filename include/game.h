@@ -85,6 +85,50 @@ typedef struct Movement {
 
 } Movement;
 
+
+// TODO: what stats do we want to have here?
+
+/*** WOW Stats
+ * 
+ *  general stats
+ *  - health -- based
+ *  - movement speed
+ *  - power -> like mana -> and power regen for this
+ *  
+ *  
+ *  item stats
+ *  - durability
+ *  - repair cost
+ *  - weapon dps
+ * 
+ *  attack stats
+ *  - damage
+ *  - attack power
+ *  - attack speed
+ *  - spellpower -- this may only apply to mages, etc
+ *  - critical strike
+ * 
+ *  defense stats
+ *  - armor -- this is based on equipment
+ *  - doge 
+ *  - parry
+ *  - block
+ * 
+ * ***/
+
+
+typedef struct Combat  {
+
+	i32 objectId;
+	i32 hitChance;			
+	i32 toHitModifier;
+	i32 attack;				// attack = damage inflicted per hit
+	i32 attackModifier;		// based on weapons/items
+	i32 defense;			// defense = damage absorbed before HP is affected
+	i32 defenseModifier;	// based on armor/items
+
+} Combat;
+
 typedef struct Item {
 
     i32 objectId;
@@ -119,7 +163,6 @@ extern void initGame (void);
 extern bool playerTookTurn;
 
 extern void updateGame (void);
-
 
 /*** PLAYER ***/
 

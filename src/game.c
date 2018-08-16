@@ -23,6 +23,7 @@ List *positions = NULL;
 List *graphics = NULL;
 List *physics = NULL;
 List *movement = NULL;
+List *combat = NULL;
 List *items = NULL;
 
 Pool *goPool = NULL;
@@ -30,6 +31,7 @@ Pool *posPool = NULL;
 Pool *graphicsPool = NULL;
 Pool *physPool = NULL;
 Pool *movePool = NULL;
+Pool *combatPool = NULL;
 Pool *itemsPool = NULL;
 
 // PLayer
@@ -51,6 +53,7 @@ void initWorld (void) {
     graphics = initList (free);
     physics = initList (free);
     movement = initList (free);
+    combat = initList (free);
     items = initList (free);
 
     // init our pools
@@ -59,6 +62,7 @@ void initWorld (void) {
     graphicsPool = initPool ();
     physPool = initPool ();
     movePool = initPool ();
+    combatPool = initPool ();
     itemsPool = initPool ();
 
     // TODO: what other things do we want to init here?
@@ -716,6 +720,11 @@ void createMonster (GameObject *go) {
     addComponent (go, MOVEMENT, &mv);
 
 }
+
+
+/*** COMBAT ***/
+
+
 
 
 /*** MANAGER ***/
