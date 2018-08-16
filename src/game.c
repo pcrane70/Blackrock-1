@@ -170,6 +170,10 @@ GameObject *initPlayer (void) {
     Physics phys = { 0, true, true };
     addComponent (go, PHYSICS, &phys);
 
+    // TODO: add combat component 
+    // we need to have a file where we can read the stats we have saved
+    // also we need to take into account that every class has different stats
+
     return go;
 
 }
@@ -220,10 +224,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
     // FIXME: isInList not working properly...
     // if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
 
-    if (go == NULL) return;
-
-    // if data is NULL for any reason, just don't do anything
-    if (data == NULL) return;
+    if (go == NULL || data == NULL) return;
 
     switch (type) {
         case POSITION: {
@@ -295,6 +296,22 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             go->components[type] = newMove;
             insertAfter (movement, NULL, newMove);
         } break;
+        case COMBAT: {
+            if (getComponent (go, type) != NULL) return;
+
+            Combat *newCombat = NULL;
+
+            if ((POOL_SIZE (combatPool) > 0)) newCombat = pop (combatPool);
+            else newCombat = (Combat *) malloc (sizeof (Combat));
+
+            Combat *combatData = (Combat *) data;
+            newCombat->baseStats = combatData->baseStats;
+            newCombat->attack = combatData->attack;
+            newCombat->defense = combatData->defense;
+
+            go->components[type] = newCombat;
+            insertAfter (combat, NULL, newCombat);
+        } break;
         case ITEM: {
             if (getComponent (go, type) != NULL) return;
 
@@ -305,6 +322,8 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Item *itemData = (Item *) data;
             newItem->objectId = go->id;
+            newItem->type = itemData->type;
+            newItem->dps = itemData->dps;
             newItem->slot = itemData->slot;
             newItem->weight = itemData->weight;
             newItem->quantity = itemData->quantity;
@@ -328,10 +347,7 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
     // FIXME: isInList not working properly...
     // if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
 
-    if (go == NULL) return;
-
-    // if data is NULL for any reason, just don't do anything
-    if (data == NULL) return;
+    if (go == NULL || data == NULL) return;
 
     switch (type) {
         case POSITION: {
@@ -367,11 +383,21 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
             movComp->chasingPlayer = movData->chasingPlayer;
             movComp->turnsSincePlayerSeen = movData->turnsSincePlayerSeen;
         } break;
+        case COMBAT: {
+            Combat *cComp = (Combat *) getComponent (go, type);
+            if (cComp == NULL) return;
+            Combat *cData = (Combat *) data;
+            cComp->baseStats = cData->baseStats;
+            cComp->attack = cData->attack;
+            cComp->defense = cData->defense;
+        } break;
         case ITEM: {
             Item *itemComp = (Item *) getComponent (go, type);
             if (itemComp == NULL) return;
             Item *itemData = (Item *) data;
             itemComp->objectId = go->id;
+            itemComp->type = itemData->type;
+            itemComp->dps = itemData->dps;
             itemComp->slot = itemData->slot;
             itemComp->weight = itemData->weight;
             itemComp->quantity = itemData->quantity;
@@ -703,6 +729,7 @@ void updateMovement () {
 
 
 // 14/08/2018 -- 23:02 -- test function to spawn some monsters to test their behaivour
+// TODO: how do we want to retrieve all the data for combat and stats?
 void createMonster (GameObject *go) {
 
     // This is just a placeholder until it spawns in the world

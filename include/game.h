@@ -85,56 +85,57 @@ typedef struct Movement {
 
 } Movement;
 
+// This are the general stats for every living entity
+typedef struct Stats {
 
-// TODO: what stats do we want to have here?
+    u32 health;   // base health
+    u32 power;  // this represents the mana or whatever
+    u32 powerRegen; // regen power/(ticks or turns)
+    u32 strenght; // this modifies the damage dealt 
 
-/*** WOW Stats
- * 
- *  general stats
- *  - health -- based
- *  - movement speed
- *  - power -> like mana -> and power regen for this
- *  
- *  
- *  item stats
- *  - durability
- *  - repair cost
- *  - weapon dps
- * 
- *  attack stats
- *  - damage
- *  - attack power
- *  - attack speed
- *  - spellpower -- this may only apply to mages, etc
- *  - critical strike
- * 
- *  defense stats
- *  - armor -- this is based on equipment
- *  - doge 
- *  - parry
- *  - block
- * 
- * ***/
+} Stats;
 
+typedef struct Attack {
+
+    u32 hitchance;
+    u32 attackPower;    // an ogre has a higher attack power than a kobolde
+    u32 damage;     // based on attack power, weapon, class, etc.
+    u32 attackSpeed;    // how many hits per turn
+    u32 spellPower;     // similar to attack power but for mages, etc
+    u32 criticalStrike;     // chance to hit a critical (2x more powerful than normal)
+
+} Attack;
+
+typedef struct Defense {
+
+    u32 armor;  // based on level, class, and equipment
+    u32 dodge;  // dodge chance -> everyone can dodge
+    u32 parry;  // parry chance -> only works with certain weapons and classes
+    u32 block;  // block chance -> this only works with a certain class than can handle shields
+
+} Defense;
 
 typedef struct Combat  {
 
-	i32 objectId;
-	i32 hitChance;			
-	i32 toHitModifier;
-	i32 attack;				// attack = damage inflicted per hit
-	i32 attackModifier;		// based on weapons/items
-	i32 defense;			// defense = damage absorbed before HP is affected
-	i32 defenseModifier;	// based on armor/items
+	i32 objectId;	
+    Stats baseStats;	
+    Attack attack;
+    Defense defense;
 
 } Combat;
 
+// TODO: how can we handle consumables?
+// TODO: how can we handle crafting?
 typedef struct Item {
 
     i32 objectId;
-    i32 quantity;
-    i32 weight;
+    // char *name;  // TODO: do we want the name here?
+    i32 type;   // epic, rare, common, rubish, etc.
+    i32 quantity;   // this is used to handle stacks
+    i32 weight;     // we have a max weight that we can carry based on our class, genre, etc
     i32 lifetime;
+    // the dps + the attack power give the damage that we dealth in a hit
+    u32 dps;    // maybe we want to be able to hit with everythig that we have on hand
     char *slot;
     bool isEquipped;
 
