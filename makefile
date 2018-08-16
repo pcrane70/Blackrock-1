@@ -5,7 +5,8 @@ IDIR = ./include/
 SRCDIR = ./src/
 
 SOURCES = $(SRCDIR)*.c \
-		  $(SRCDIR)utils/*.c
+		  $(SRCDIR)utils/*.c \
+		  $(SRCDIR)ui/*.c
 
 all: blackrock #run #clean
 

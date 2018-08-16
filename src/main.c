@@ -5,7 +5,7 @@
 #include "game.h"
 #include "map.h"    // we are only accesing the walls array with this
 
-#include "console.h"
+#include "ui/console.h"
 
 #include "input.h"
 

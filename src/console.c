@@ -12,7 +12,7 @@
 #define STBI_ONLY_PNG
 #include "utils/stb_image.h"
 
-#include "console.h"
+#include "ui/console.h"
 
 // Helper macros for working with pixel colors
 #define RED(c) ((c & 0xff000000) >> 24)

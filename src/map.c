@@ -13,7 +13,7 @@
 #include "room.h"
 #include "map.h"
 
-#include "console.h"
+#include "ui/console.h"
 
 #include "list.h"
 
