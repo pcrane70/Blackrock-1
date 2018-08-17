@@ -7,7 +7,7 @@
 
 #include "list.h"
 
-// TODO: do we want to merge the console logic here?
+
 struct UIScreen;
 typedef struct UIScreen UIScreen;
 
@@ -29,6 +29,9 @@ struct UIScreen {
     UIEventHandler handle_event;
 
 };
+
+
+extern UIScreen *activeScene;
 
 
 #endif

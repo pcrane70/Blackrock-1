@@ -114,7 +114,7 @@ int main (void) {
     setUpSDL (&window, &renderer, &screen);
 
     // Create our console emulator graphics
-    Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS);
+    Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS, 0x000000FF, true);
     // set up the console font
     setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
 

@@ -38,11 +38,11 @@ void fill (u32 *pixels, u32 pixelsPerRow, Rect *destRect, u32 color) {
 void clearConsole (Console *console) {
 
     Rect rect = { 0, 0, console->width, console->height };
-    fill (console->pixels, console->width, &rect, 0x000000ff);
+    fill (console->pixels, console->width, &rect, console->bgColor);
 
 }
 
-Console *initConsole (i32 width, i32 height, i32 rowCount, i32 colCount) {
+Console *initConsole (i32 width, i32 height, i32 rowCount, i32 colCount, u32 bgColor, bool colorize) {
 
     Console *console = (Console *) malloc (sizeof (Console));
 
@@ -55,6 +55,9 @@ Console *initConsole (i32 width, i32 height, i32 rowCount, i32 colCount) {
     console->cellWidth = width / colCount;
     console->cellHeight = height / rowCount;
 
+    console->bgColor = bgColor;
+    console->colorize = colorize;
+
     console->font = NULL;
     console->cells = (Cell *) calloc (rowCount * colCount, sizeof (Cell));
 
@@ -64,10 +67,10 @@ Console *initConsole (i32 width, i32 height, i32 rowCount, i32 colCount) {
 
 void destroyConsole (Console *console) {
 
-    free (console->pixels);
-    free (console->cells);
+    if (console->pixels) free (console->pixels);
+    if (console->cells) free (console->cells);
 
-    free (console);
+    if (console) free (console);
 
 }
 
@@ -246,5 +249,40 @@ void putCharAt (Console *console, asciiChar c,
 
 }
 
+void putStringAt (Console *con, char *string, i32 x, i32 y, u32 fgColor, u32 bgColor) {
 
+    i32 len = strlen (string);
+    for (i32 i = 0; i < len; i++)
+        putCharAt (con, (asciiChar) string[i], x + i, y, fgColor, bgColor);
+
+}
+
+void putStringAtRect (Console *con, char *string, Rect rect, bool wrap, u32 fgColor, u32 bgColor) {
+
+    u32 len = strlen (string);
+    i32 x = rect.x;
+    i32 x2 = x + rect.w;
+    i32 y = rect.y;
+    i32 y2 = y + rect.h;
+
+    for (u32 i = 0; i < len; i++) {
+        bool shoudPut = true;
+        if (x >= x2) {
+            if (wrap) {
+                x = rect.x;
+                y += 1;
+            }
+
+            else shoudPut = false;
+        }
+
+        if (y >= y2) shoudPut = false;
+
+        if (shoudPut) {
+            putCharAt (con, (asciiChar) string[i], x, y, fgColor, bgColor);
+            x++;
+        }
+    }
+
+}
 
