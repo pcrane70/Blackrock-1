@@ -97,7 +97,7 @@ typedef struct Stats {
 
 typedef struct Attack {
 
-    u32 hitchance;
+    u32 hitchance;      // chance to not miss the target
     u32 attackPower;    // an ogre has a higher attack power than a kobolde
     u32 damage;     // based on attack power, weapon, class, etc.
     u32 attackSpeed;    // how many hits per turn
@@ -202,6 +202,11 @@ extern unsigned int wallCount;
 /*** MOVEMENT ***/
 
 extern bool canMove (Position);
+
+
+/*** ITEMS ***/
+
+extern void getItem ();
 
 
 // Cleanning Up!

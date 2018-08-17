@@ -77,8 +77,7 @@ void toggleInventory (UIScreen *screen) {
 //             // TODO: thi is used as a master key to have interaction with various items
 //             // case SDLK_e: break;
 
-//             // TODO: pickup an item
-//             // case SDLK_g: break;
+//             // case SDLK_g: getItem (); break;
 
 //             // TODO: drop an item
 //             // case SDLK_d: break;

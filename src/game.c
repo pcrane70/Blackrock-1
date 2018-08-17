@@ -39,7 +39,8 @@ GameObject *player = NULL;
 bool playerTookTurn = false;
 // This is the player's inventory
 static List *inventory = NULL;
-static i32 maxWeight = 20;
+// TODO: we might wanna vary this value based on the race, class and strenght
+static i32 maxWeight = 20;  // the max weight the player can carry
 
 // FOV
 static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -173,6 +174,9 @@ GameObject *initPlayer (void) {
     // TODO: add combat component 
     // we need to have a file where we can read the stats we have saved
     // also we need to take into account that every class has different stats
+
+    // init the player inventory
+    inventory = initList (free);
 
     return go;
 
@@ -340,7 +344,6 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
 }
 
-
 void updateComponent (GameObject *go, GameComponent type, void *data) {
 
     // check for a valid GO
@@ -406,6 +409,23 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
         } break;
 
         // We have an invalid GameComponent type, so don't do anything
+        default: break;
+    }
+
+}
+
+void removeComponent (GameObject *go, GameComponent type) {
+
+    if (go == NULL) return;
+
+    switch (type) {
+        case POSITION: {
+            Position *posComp = (Position *) getComponent (go, type);
+            if (posComp == NULL) return;
+            push (posPool, posComp);
+            go->components[type] = NULL;
+        } break;
+
         default: break;
     }
 
@@ -503,12 +523,140 @@ void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
         
 }
 
-// TODO:
-/*** INVENTORY ***/
+/*** ITEMS ***/
 
-// we want to press I and open a new window that shows our inventory
-// TODO: maybe if we press the letter c, we can get a window showing our current equipment
+List *getObjectsAtPos (u32 x, u32 y) {
 
+    // FIXME:
+
+}
+
+// check how much the player is carrying in its inventory and equipment
+u32 getCarriedWeight () {
+
+    u32 weight = 0;
+    GameObject *go = NULL;
+    Item *item = NULL;
+    for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+        go = (GameObject *) LIST_DATA (e);
+        item = (Item *) getComponent (go, ITEM);
+        weight += (item->weight * item->quantity);
+    }
+
+    return weight;
+
+}
+
+// An item is everithing a character can pickup and manipulate.
+// It can be miscellaneous, a weapon, or a piece of equipment
+
+// Function to get/pickup a nearby item
+// As of 16/08/2018:
+// The character must be on the same coord as the item to be able to pick it up
+void getItem () {
+
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    // get a list of objects nearby the player
+    List *objects = getObjectsAtPos (playerPos->x, playerPos->y);
+
+    // FIXME: we can only pickup an item each time
+    GameObject *itemGO;
+    Item *item = NULL;
+    for (ListElement *e = LIST_START (objects); e != NULL; e = e->next) {
+        itemGO = (GameObject *) LIST_DATA (e);
+        // we have a valid item to pickup
+        if ((item = (Item *) getComponent (itemGO, ITEM)) != NULL) break;
+    }
+
+    // check if we can actually pickup the item
+    if ((getCarriedWeight () + item->weight) <= maxWeight) {
+        // add the item to the inventory
+        insertAfter (inventory, NULL, itemGO);
+        // remove the item from the map
+        removeComponent (itemGO, POSITION);
+
+        // TODO: write a message to the log and give feedback to the player
+
+        playerTookTurn = true;
+    }
+
+    else {
+        // TODO: display a message that we can NOT pickup the item
+    }
+
+}
+
+// TODO: how do we select which item to drop?
+void dropItem (GameObject *go) {
+
+    if (go == NULL) return;
+
+    // check if we can drop the item at the current position
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    List *objects = getObjectsAtPos (playerPos->x, playerPos->y);
+    bool canBeDropped = true;
+    for (ListElement *e = LIST_START (objects); e != NULL; e = e->next) {
+        // 16/08/2018 -- 20:16 -- for now if there is already an item in that spot,
+        // you can NOT drop it
+        Item *i = (Item *) getComponent ((GameObject *) e->data, ITEM);
+        if (i != NULL) {
+            canBeDropped = false;
+            break;
+        } 
+    }
+
+    if (canBeDropped) {
+        Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
+        addComponent (go, POSITION, &pos);
+
+        // FIXME: unequip item
+        Item *item = (Item *) getComponent (go, ITEM);
+        if (item->isEquipped) {}
+
+        // remove from the inventory
+        ListElement *e = getListElement (inventory, go);
+        if (e != NULL) 
+            removeElement (inventory, e);
+
+        // TODO: feedback to the player
+    }
+
+    else {
+        // TODO: give feedback to the player that the item can NOT be dropped
+    }
+
+}
+
+// FIXME: how do we select which item to equip?
+// equips an item, but only if it as a piece of equipment
+// TODO: how do we unequip an item?
+void equipItem (GameObject *go) {
+
+    if (go == NULL) return;
+
+    // TODO: check that the item can be equipped, if its is a weapon or a piece of armor
+
+    Item *item = (Item *) getComponent (go, ITEM);
+    if (item != NULL) {
+        // TODO: how do we check which pice of armor it is??
+        // TODO: unequip the item in the corresponding equipment slot
+
+        // equip the item
+        item->isEquipped = !item->isEquipped;
+
+        // TODO: update the player stats based on the new item
+        // Combat *itemCombat = (Combat *) getComponent (item, COMBAT);
+        // Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
+        
+    }
+
+}
+
+// TODO: consumables
+
+// TODO: crafting
+
+// TODO: what other actions maybe want for items?
 
 /*** MOVEMENT ***/
 
@@ -751,7 +899,43 @@ void createMonster (GameObject *go) {
 
 /*** COMBAT ***/
 
+void attack (GameObject *attacker, GameObject *defender) {
 
+    Combat *att = (Combat *) getComponent (attacker, COMBAT);
+    Combat *def = (Combat *) getComponent (defender, COMBAT);
+
+    // TODO: how do we check for attack speed?
+    // check for the attack hit chance
+    u32 hitRoll = (u32) randomInt (1, 100);
+    if (hitRoll <= att->attack.hitchance) {
+        u32 damage = 0;
+
+        // first get the weapon dps
+        // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
+        // FIXME: we need to get what ever the charcter is wielding
+
+        // generate the attack based on the attacked modifiers
+        // TODO: check for independent class modifiers, for example:
+        // check for attackPower for knights and spellPower for mages
+
+        // take into account the base attack power
+        // if it has a melee weapon, take into account the strenght
+
+        // take a roll to decide if we can hit a critical
+
+        // then deal the calculated damage to the defender with all the information needed
+        // and calculate the % of damage taken 
+
+        // check for the defenders health 
+
+        // write to the log the combat as it happens...
+    }
+
+    // The attcker missed the target
+    // TODO: write that to the log...
+    else {}
+
+}
 
 
 /*** MANAGER ***/
