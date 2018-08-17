@@ -6,7 +6,7 @@
 #include "game.h"
 
 #include "ui/ui.h"
-#include "console.h"
+#include "ui/console.h"
 
 #include "list.h"
 
@@ -32,11 +32,8 @@ static void renderMap (Console *console) {
 
 }
 
-static void rednderStats () {
-
-
-
-}
+// TODO: 
+static void rednderStats () {}
 
 // FIXME: where do we want to put these?
 // This will store the log messages
@@ -133,14 +130,8 @@ void toggleInventory (UIScreen *screen) {
 // Position *playerPos = NULL;
 // Position newPos;
 
-static void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
-
-
-}
-
-
-// // TODO: maybe later we will want to move using the numpad insted to allow diagonal movement
-// void  (SDL_Event event) {
+// TODO: maybe later we will want to move using the numpad insted to allow diagonal movement
+void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
 //     playerPos = (Position *) getComponent (player, POSITION);
 
@@ -200,4 +191,4 @@ static void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 //         }
 //     }
 
-// }
+}

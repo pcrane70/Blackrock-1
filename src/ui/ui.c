@@ -56,6 +56,43 @@ void destroyView (UIView *view) {
 
 void drawRect (Console *con, Rect *rect, u32 color, i32 borderWidth, u32 borderColor) {
 
-    
+    char c;
+    for (u32 y = rect->y; y < rect->y + rect->h; y++) {
+        for (i32 x = rect->x; x < rect->x + rect->w; x++) {
+            c = ' ';
+            if (borderWidth > 0) {
+                // sides
+                if ((x == rect->x) || (x == rect->x = rect->w - 1))
+                    c = (borderWidth == 1) ? 179 : 186;
+
+                // top
+                if (y == rect->y) {
+                    // top left corner
+                    if (x == rect->x) c = (borderWidth == 1) ? 218 : 201;
+
+                    // top right corner
+                    else if (x == rect->x + rect->w - 1)
+                        c = (borderWidth == 1) ? 191 : 187;
+
+                    // top border
+                    else c = (borderWidth == 1) ? 196 : 205;
+                }
+
+                // bottom 
+                if (y == rect->y + rect->h - 1) {
+                    // bottom left corner
+                    if (x == rect->x) c = (borderWidth == 1) ? 192 : 200;
+
+                    // bottom right corner
+                    else if (x == rect->x + rect->w - 1)
+                        c = (borderWidth == 1) ? 217 : 188;
+
+                    else c = (borderWidth == 1) ? 196 : 205;
+                }
+            }
+
+            putCharAt (con, c, x, y, borderColor, color);
+        }
+    }
 
 }
