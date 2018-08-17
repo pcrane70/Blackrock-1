@@ -83,6 +83,24 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer, Console *console) {
 
 }
 
+/*** SET UP ***/
+
+void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **screen) {
+
+    SDL_Init (SDL_INIT_VIDEO);
+    *window = SDL_CreateWindow ("Blackrock Dungeons",
+         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+
+    *renderer = SDL_CreateRenderer (*window, 0, SDL_RENDERER_SOFTWARE);
+
+    SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+    SDL_RenderSetLogicalSize (*renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    *screen = SDL_CreateTexture (*renderer, SDL_PIXELFORMAT_RGBA8888, 
+        SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+}
+
 
 /*** MAIN THREAD ***/
 
@@ -90,17 +108,10 @@ int main (void) {
 
     srand ((unsigned) time (NULL));
 
-    SDL_Init (SDL_INIT_VIDEO);
-    SDL_Window *window = SDL_CreateWindow ("Blackrock Dungeons",
-         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
-
-    SDL_Renderer *renderer = SDL_CreateRenderer (window, 0, SDL_RENDERER_SOFTWARE);
-
-    SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-    SDL_RenderSetLogicalSize (renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    SDL_Texture *screen = SDL_CreateTexture (renderer, SDL_PIXELFORMAT_RGBA8888, 
-        SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+    SDL_Texture *screen = NULL;
+    setUpSDL (&window, &renderer, &screen);
 
     // Create our console emulator graphics
     Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS);
