@@ -658,6 +658,36 @@ void equipItem (GameObject *go) {
 
 // TODO: what other actions maybe want for items?
 
+// only reduce lifetime of weapons, and equipment
+// TODO: I think we will want to add the ability to repair your items in a shop,
+// but only if they are above 0, if you don't repair your items soon enough, 
+// you will lose them
+void updateLifeTime () {
+
+    GameObject *go = NULL;
+    Item *item = NULL;
+    for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+        go = (GameObject *) LIST_DATA (e);
+        item = (Item *) getComponent (go, ITEM);
+        // FIXME: only for weapons and armor
+        item->lifetime--;
+
+        if (item->lifetime <= 0) {
+            bool wasEquipped = false;
+            if (item->isEquipped) {
+                wasEquipped = true;
+                // FIXME: unequip item
+            }
+
+            // remove from inventory
+            // FIXME:
+
+            // TODO: give feedback to the player with messages in the log
+        }
+    }
+
+}
+
 /*** MOVEMENT ***/
 
 bool isWall (u32 x, u32 y) { return (currentLevel->mapCells[x][y]); }
