@@ -40,7 +40,7 @@ Pool *itemsPool = NULL;
 GameObject *player = NULL;
 bool playerTookTurn = false;
 // This is the player's inventory
-static List *inventory = NULL;
+List *inventory = NULL;
 // TODO: we might wanna vary this value based on the race, class and strenght
 static i32 maxWeight = 20;  // the max weight the player can carry
 
@@ -943,7 +943,7 @@ void createMonster (GameObject *go) {
 
 /*** COMBAT ***/
 
-void attack (GameObject *attacker, GameObject *defender) {
+void fight (GameObject *attacker, GameObject *defender) {
 
     Combat *att = (Combat *) getComponent (attacker, COMBAT);
     Combat *def = (Combat *) getComponent (defender, COMBAT);

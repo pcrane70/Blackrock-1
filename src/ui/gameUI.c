@@ -5,6 +5,7 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "map.h"    // for walls array
 
 #include "ui/ui.h"
 #include "ui/console.h"
@@ -22,6 +23,11 @@
 #define INVENTORY_TOP		7
 #define INVENTORY_WIDTH		40
 #define INVENTORY_HEIGHT	30
+
+// TODO: maybe in the future we acn add more graphics, but for now we are sticking with
+// only ascii chars
+// In linux we have to take the path from the makefile 
+char* tileset = "./resources/terminal-art.png";  
 
 
 /*** UI ***/
@@ -136,13 +142,9 @@ UIScreen *gameScene () {
     List *igViews = initList (NULL);
 
     UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
-    char *tileset;
     bool colorize = true;
     u32 bgColor;
 
-    // TODO: maybe in the future we acn add more graphics, but for now we are sticking with
-    // only ascii chars
-    tileset = "./resources/terminal-art.png";  // In linux we have to take the path from the makefile 
     colorize = true;
     bgColor = 0x000000FF;
 
@@ -171,12 +173,59 @@ UIScreen *gameScene () {
 
 UIView *inventoryView = NULL;
 
-void toggleInventory (UIScreen *screen) {
+static void renderInventory (Console *console) {
+
+    UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
+    drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
+
+    // TODO: do we want a background image??
+
+    // list the inventory items
+    if (LIST_SIZE (inventory) == 0) {
+        // FIXME: change text color and position
+        putStringAt (console, "Inventory is empty!", 5, 10, 0x333333FF, 0x00000000);
+        return;
+    }
+
+    GameObject *go = NULL;
+    Graphics *graphics = NULL;
+    Item *item = NULL;
+    for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+        go = (GameObject *) e->data;
+        graphics = (Graphics *) getComponent (go, GRAPHICS);
+        item = (Item *) getComponent (go, ITEM);
+        if (graphics != NULL && item != NULL) {
+            // FIXME:
+        }
+    }
+
+}
+
+void hideInventory (UIScreen *screen) {
+
+    if (inventoryView != NULL) {
+        ListElement *inv = getListElement (screen->views, inventoryView);
+        destroyView ((UIView *) removeElement (screen->views, inv));
+        inventoryView = NULL;
+    }
+
+}
+
+void showInventory (UIScreen *screen) {
 
     if (inventoryView == NULL) {
-       Rect inventoryRect = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        // FIXME: 
-       // inventoryView = 
+        UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
+        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
+        insertAfter (screen->views, LIST_END (screen->views), inventoryView);
     }
+
+}
+
+void toggleInventory () {
+
+    // TODO: how do we check that is the correct view?
+
+    if (inventoryView == NULL) showInventory (activeScene);
+    else hideInventory (activeScene);
 
 }

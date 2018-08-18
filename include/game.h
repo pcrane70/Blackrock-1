@@ -171,6 +171,8 @@ extern void updateGame (void);
 // global GameObject *player = NULL;
 extern GameObject *player;
 
+extern List *inventory;
+
 
 /*** Game Objects ***/
 

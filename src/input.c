@@ -53,8 +53,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             // TODO: drop an item
             // case SDLK_d: break;
 
-            // TODO: toggle inventory
-            // case SDLK_i: break;
+            case SDLK_i: toggleInventory (); break;
 
             // TODO: equip an item
             // case SDLK_q: break;

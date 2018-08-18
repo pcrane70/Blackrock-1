@@ -21,6 +21,12 @@ extern List *messageLog;
 // create a new message in the log
 extern void logMessage (char *msg, u32 color);
 
+
+/*** INVENTORY ***/
+
+extern void toggleInventory (void);
+
+
 // THIS SHOULD ONLY BE CALLED FROM THE UI CONTROLLER
 extern UIScreen *gameScene (void);
 
