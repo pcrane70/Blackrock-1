@@ -26,9 +26,32 @@
 
 // Game
 
+// FIXME:
 static void renderMap (Console *console) {
 
+    // TODO: the logic for fov goes in here!!
 
+    // render the player
+    // TODO: do we want the player to have its own structure??
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
+    putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
+
+    // TODO:
+    // render the go with graphics
+    GameObject *go = NULL;
+    Position *p = NULL;
+    Graphics *g = NULL;
+    for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
+        go = (GameObject *) ptr->data;
+        p = (Position *) getComponent (go, POSITION);
+        g = (Graphics *) getComponent (go, GRAPHICS);
+        putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+    }
+
+    // FIXME: we don't want to this every frame!!
+    for (unsigned int i = 0; i < wallCount; i++) 
+        putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
 
 }
 
@@ -121,74 +144,5 @@ void toggleInventory (UIScreen *screen) {
         // FIXME: 
        // inventoryView = 
     }
-
-}
-
-
-/*** INPUT ***/
-
-// Position *playerPos = NULL;
-// Position newPos;
-
-// TODO: maybe later we will want to move using the numpad insted to allow diagonal movement
-void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
-
-//     playerPos = (Position *) getComponent (player, POSITION);
-
-//     if (event.type == SDL_KEYDOWN) {
-//         SDL_Keycode key = event.key.keysym.sym;
-
-//         switch (key) {
-//             // Movement
-//             // TODO: how do we want to handle combat logic?
-//             case SDLK_w: 
-//                 newPos.x = playerPos->x;
-//                 newPos.y = playerPos->y - 1;
-//                 if (canMove (newPos)) playerPos->y = newPos.y;
-//                 playerTookTurn = true; break;
-//             case SDLK_s: 
-//                 newPos.x = playerPos->x;
-//                 newPos.y = playerPos->y + 1;
-//                 if (canMove (newPos)) playerPos->y = newPos.y;
-//                 playerTookTurn = true; break;
-//             case SDLK_a: 
-//                 newPos.x = playerPos->x - 1;
-//                 newPos.y = playerPos->y;
-//                 if (canMove (newPos)) playerPos->x = newPos.x;
-//                 playerTookTurn = true; break;
-//             case SDLK_d:
-//                 newPos.x = playerPos->x + 1;
-//                 newPos.y = playerPos->y;
-//                 if (canMove (newPos)) playerPos->x = newPos.x;
-//                 playerTookTurn = true; break;
-
-//             // TODO: thi is used as a master key to have interaction with various items
-//             // case SDLK_e: break;
-
-//             // case SDLK_g: getItem (); break;
-
-//             // TODO: drop an item
-//             // case SDLK_d: break;
-
-//             // TODO: toggle inventory
-//             // case SDLK_i: break;
-
-//             // TODO: equip an item
-//             // case SDLK_q: break;
-
-//             // TODO: toggle character equipment
-//             // case SDLK_c: break;
-
-//             // TODO: player rests?
-//             // case SDLK_z: break;
-
-//             // TODO: toggle pause menu
-//             // case SDLK_p: break;
-
-//             //TODO: what other things do we want?
-
-//             default: break;
-//         }
-//     }
 
 }

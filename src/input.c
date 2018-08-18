@@ -2,6 +2,9 @@
 
 #include "game.h"
 
+#include "ui/ui.h"
+#include "ui/gameUI.h"
+
 // Basic Input
 // Movement with wsad   03/08/2018
 
@@ -10,7 +13,8 @@
 Position *playerPos = NULL;
 Position newPos;
 
-void handlePlayerInput (SDL_Event event) {
+// TODO: maybe later we will want to move using the numpad insted to allow diagonal movement
+void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
     playerPos = (Position *) getComponent (player, POSITION);
 
@@ -18,6 +22,8 @@ void handlePlayerInput (SDL_Event event) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
+            // Movement
+            // TODO: how do we want to handle combat logic?
             case SDLK_w: 
                 newPos.x = playerPos->x;
                 newPos.y = playerPos->y - 1;
@@ -38,9 +44,34 @@ void handlePlayerInput (SDL_Event event) {
                 newPos.y = playerPos->y;
                 if (canMove (newPos)) playerPos->x = newPos.x;
                 playerTookTurn = true; break;
+
+            // TODO: thi is used as a master key to have interaction with various items
+            // case SDLK_e: break;
+
+            // case SDLK_g: getItem (); break;
+
+            // TODO: drop an item
+            // case SDLK_d: break;
+
+            // TODO: toggle inventory
+            // case SDLK_i: break;
+
+            // TODO: equip an item
+            // case SDLK_q: break;
+
+            // TODO: toggle character equipment
+            // case SDLK_c: break;
+
+            // TODO: player rests?
+            // case SDLK_z: break;
+
+            // TODO: toggle pause menu
+            // case SDLK_p: break;
+
+            //TODO: what other things do we want?
+
             default: break;
         }
     }
 
 }
-

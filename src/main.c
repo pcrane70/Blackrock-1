@@ -8,6 +8,7 @@
 #include "ui/console.h"
 
 #include "ui/ui.h"
+#include "ui/gameUI.h"
 
 #include "input.h"
 
@@ -30,37 +31,6 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene)
         v->render (v->console);
         SDL_UpdateTexture (screen, v->pixelRect, v->console->pixels, v->pixelRect->w * sizeof (u32));
     }
-
-
-    // old rendering...
-    {
-        // clearConsole (console);
-
-        // TODO: the logic for fov goes in here!!
-
-        // render the player
-        // TODO: do we want the player to have its own structure??
-        // Position *playerPos = (Position *) getComponent (player, POSITION);
-        // Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
-        // putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
-
-        // TODO:
-        // render the go with graphics
-        // GameObject *go = NULL;
-        // Position *p = NULL;
-        // Graphics *g = NULL;
-        // for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
-        //     go = (GameObject *) ptr->data;
-        //     p = (Position *) getComponent (go, POSITION);
-        //     g = (Graphics *) getComponent (go, GRAPHICS);
-        //     putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
-        // }
-
-        // FIXME: we don't want to this every frame!!
-        // for (unsigned int i = 0; i < wallCount; i++) 
-        //     putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
-    }
-
 
     SDL_RenderClear (renderer);
     SDL_RenderCopy (renderer, screen, NULL, NULL);
@@ -147,6 +117,10 @@ int main (void) {
     i32 sleepTime;
     UIScreen *screenForInput;
     fprintf (stdout, "Starting main loop\n");
+
+    // FIXME: manually setting the active screen to be the in game scree
+    setActiveScene (gameScene ());
+
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
         frameStart = 0;
