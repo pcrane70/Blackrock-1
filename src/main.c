@@ -7,6 +7,8 @@
 
 #include "ui/console.h"
 
+#include "ui/ui.h"
+
 #include "input.h"
 
 
@@ -17,37 +19,49 @@
 
 // TODO: are we cleanning up the console and the screen??
 // do we want that to happen?
-void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, Console *console) {
+void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
 
     unsigned int test = 0;
 
-    clearConsole (console);
-
-    // TODO: the logic for fov goes in here!!
-
-    // render the player
-    // TODO: do we want the player to have its own structure??
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
-    putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
-
-    // TODO:
-    // render the go with graphics
-    GameObject *go = NULL;
-    Position *p = NULL;
-    Graphics *g = NULL;
-    for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
-        go = (GameObject *) ptr->data;
-        p = (Position *) getComponent (go, POSITION);
-        g = (Graphics *) getComponent (go, GRAPHICS);
-        putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+    // render the views from back to front for the current screen
+    for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
+        UIView *v = (UIView *) LIST_DATA (e);
+        clearConsole (v->console);
+        v->render (v->console);
+        SDL_UpdateTexture (screen, v->pixelRect, v->console->pixels, v->pixelRect->w * sizeof (u32));
     }
 
-    // FIXME: we don't want to this every frame!!
-    for (unsigned int i = 0; i < wallCount; i++) 
-        putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
 
-    SDL_UpdateTexture (screen, NULL, console->pixels, SCREEN_WIDTH * sizeof (u32));
+    // old rendering...
+    {
+        // clearConsole (console);
+
+        // TODO: the logic for fov goes in here!!
+
+        // render the player
+        // TODO: do we want the player to have its own structure??
+        // Position *playerPos = (Position *) getComponent (player, POSITION);
+        // Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
+        // putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
+
+        // TODO:
+        // render the go with graphics
+        // GameObject *go = NULL;
+        // Position *p = NULL;
+        // Graphics *g = NULL;
+        // for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
+        //     go = (GameObject *) ptr->data;
+        //     p = (Position *) getComponent (go, POSITION);
+        //     g = (Graphics *) getComponent (go, GRAPHICS);
+        //     putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+        // }
+
+        // FIXME: we don't want to this every frame!!
+        // for (unsigned int i = 0; i < wallCount; i++) 
+        //     putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
+    }
+
+
     SDL_RenderClear (renderer);
     SDL_RenderCopy (renderer, screen, NULL, NULL);
     SDL_RenderPresent (renderer);
@@ -125,11 +139,13 @@ int main (void) {
 
     // Main loop
     bool running = true;
+    bool inGame = true;     // are we in the dungeon?
     SDL_Event event;
     // TODO: display an fps counter if we give a debug option
     u32 timePerFrame;
     u32 frameStart;
     i32 sleepTime;
+    UIScreen *screenForInput;
     fprintf (stdout, "Starting main loop\n");
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
@@ -139,21 +155,22 @@ int main (void) {
 
             frameStart = SDL_GetTicks ();
 
-            if (event.type == SDL_QUIT) {
-                running = false;
-                break;
-            }
+            if (event.type == SDL_QUIT) running = false;
 
             // TODO: later we will want the input to be handle diffrently
-            handlePlayerInput (event, player);
+            // handlePlayerInput (event, player);
 
+            // TODO: how can we have a more eficient event handler?
+            // handle the event in the correct screen
+            screenForInput = activeScene;
+            screenForInput->handleEvent (screenForInput, event);
         }
 
         // if we are inside the game (dungeon, etc)...
-        updateGame ();
+        if (inGame) updateGame ();
 
-        // TODO: if we are in game, update that, else we are in a menu or something else
-        renderScreen (renderer, screen, console);
+        // render the correct screen
+        renderScreen (renderer, screen, activeScene);
 
         // Limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);

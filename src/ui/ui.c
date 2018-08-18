@@ -20,12 +20,12 @@ void setActiveScene (UIScreen *screen) {
 
 /*** UI ***/
 
-UIView *newView (Rect pixelRect, u32 colCount, u32 rowCount, 
+UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
      UIRenderFunction renderFunc) {
 
     UIView *view = (UIView *) malloc (sizeof (UIView));
-    Rect *rect = (Rect *) malloc (sizeof (Rect));
+    UIRect *rect = (UIRect *) malloc (sizeof (Rect));
 
     memcpy (rect, &pixelRect, sizeof (Rect));
 
@@ -62,7 +62,7 @@ void drawRect (Console *con, Rect *rect, u32 color, i32 borderWidth, u32 borderC
             c = ' ';
             if (borderWidth > 0) {
                 // sides
-                if ((x == rect->x) || (x == rect->x = rect->w - 1))
+                if ((x == rect->x) || (x == rect->x + rect->w - 1))
                     c = (borderWidth == 1) ? 179 : 186;
 
                 // top

@@ -78,7 +78,7 @@ UIScreen *gameScene () {
 
     List *igViews = initList (NULL);
 
-    Rect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
+    UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
     char *tileset;
     bool colorize = true;
     u32 bgColor;
@@ -92,11 +92,11 @@ UIScreen *gameScene () {
     UIView *mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
     insertAfter (igViews, NULL, mapView);
 
-    Rect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
+    UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
     UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
     insertAfter (igViews, NULL, statsView);
 
-    Rect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
+    UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
     UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
     insertAfter (igViews, NULL, logView);
 

@@ -7,33 +7,33 @@
 
 #include "list.h"
 
+typedef SDL_Rect UIRect;
 
 struct UIScreen;
-typedef struct UIScreen UIScreen;
 
 typedef void (*UIRenderFunction)(Console *);
 typedef void (*UIEventHandler)(struct UIScreen *, SDL_Event);
 
-typedef struct {
+typedef struct UIView {
 
     Console *console;
-    Rect *pixelRect;
+    UIRect *pixelRect;
     UIRenderFunction render;
 
 } UIView;
 
-struct UIScreen {
+typedef struct UIScreen {
 
     List *views;
     UIView *activeView;
     UIEventHandler handleEvent;
 
-};
+} UIScreen;
 
 
 extern UIScreen *activeScene;
 
-extern UIView *newView (Rect pixelRect, u32 colCount, u32 rowCount, 
+extern UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
      UIRenderFunction renderFunc);
 
