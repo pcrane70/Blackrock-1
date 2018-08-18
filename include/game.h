@@ -88,10 +88,10 @@ typedef struct Movement {
 // This are the general stats for every living entity
 typedef struct Stats {
 
-    u32 health;   // base health
+    i32 health;   // base health
     u32 power;  // this represents the mana or whatever
     u32 powerRegen; // regen power/(ticks or turns)
-    u32 strenght; // this modifies the damage dealt 
+    u32 strength; // this modifies the damage dealt 
 
 } Stats;
 
@@ -138,6 +138,8 @@ typedef struct Item {
     u32 dps;    // maybe we want to be able to hit with everythig that we have on hand
     char *slot;
     bool isEquipped;
+    // FIXME: 18/08/2018 -- 18:20
+    bool wielding;
 
 } Item;
 

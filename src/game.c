@@ -952,32 +952,82 @@ void fight (GameObject *attacker, GameObject *defender) {
     // check for the attack hit chance
     u32 hitRoll = (u32) randomInt (1, 100);
     if (hitRoll <= att->attack.hitchance) {
-        u32 damage = 0;
-
         // first get the weapon dps
         // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
-        // FIXME: we need to get what ever the charcter is wielding
+        // FIXME: we need a better way to get what ever the charcter is wielding
+        GameObject *go = NULL;
+        Item *i = NULL;
+        Item *weapon = NULL;
+        for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+            go = (GameObject *) e->data;
+            i = (Item *) getComponent (go, ITEM);
+            if (i->wielding == true) {
+                weapon = i;
+                break;
+            } 
+        }
 
         // generate the attack based on the attacked modifiers
         // TODO: check for independent class modifiers, for example:
         // check for attackPower for knights and spellPower for mages
+        u32 damage = weapon->dps;   // base damage
 
+        // add modifiers
         // take into account the base attack power
         // if it has a melee weapon, take into account the strenght
+        damage += (att->baseStats.strength + att->attack.attackPower);
 
         // take a roll to decide if we can hit a critical
+        u32 critical = (u32) randomInt (1, 100);
+        if (critical <= att->attack.criticalStrike) damage << 1;    // doubles the damage
 
         // then deal the calculated damage to the defender with all the information needed
         // and calculate the % of damage taken 
+        // TODO: calculate the defense modifiers
+        def->baseStats.health -= damage;
+
+        // TODO: create stings
 
         // check for the defenders health 
+        if (def->baseStats.health <= 0) {
+            if (defender == player) {
+                logMessage ("You have died!!", 0xCC0000FF);
+                // TODO: player death animation?
+                // FIXME: trigger game over
+            }
 
-        // write to the log the combat as it happens...
+            else {
+                // TODO: maybe add a better visial feedback
+                Graphics *gra = (Graphics *) getComponent (defender, GRAPHICS);
+                gra->glyph = '%';
+                gra->fgColor = 0x990000FF;
+
+                Position *pos = (Position *) getComponent (defender, POSITION);
+                pos->layer = MID_LAYER; // we want the player to be able to wall over it
+
+                Physics *phys = (Physics *) getComponent (defender, PHYSICS);
+                phys->blocksMovement = false;
+                phys->blocksSight = false;
+
+                // TODO: don't remove the death body until we move to the next level
+
+                removeComponent (defender, MOVEMENT);
+
+                // FIXME: custom strings
+                logMessage ("You killed the monster!", 0xFF9900FF);
+            }
+        }
+
     }
 
     // The attcker missed the target
-    // TODO: write that to the log...
-    else {}
+    else {
+        if (attacker == player) logMessage ("Your attack misses.", 0xCCCCCCFF);
+
+        else {
+            // FIXME:
+        }
+    }
 
 }
 
