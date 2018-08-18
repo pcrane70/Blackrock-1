@@ -40,7 +40,7 @@ extern UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount,
 
 extern void destroyView (UIView *view);
 
-extern void drawRect (Console *con, Rect *rect, u32 color, i32 borderWidth, u32 borderColor);
+extern void drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor);
 
 
 #endif

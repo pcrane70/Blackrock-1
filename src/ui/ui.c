@@ -54,7 +54,7 @@ void destroyView (UIView *view) {
 
 }
 
-void drawRect (Console *con, Rect *rect, u32 color, i32 borderWidth, u32 borderColor) {
+void drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor) {
 
     char c;
     for (u32 y = rect->y; y < rect->y + rect->h; y++) {

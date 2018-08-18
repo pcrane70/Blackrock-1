@@ -57,8 +57,25 @@ static void renderMap (Console *console) {
 
 }
 
-// TODO: 
-static void rednderStats () {}
+static void rednderStats (Console *console) {
+
+    UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
+    drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
+
+    // FIXME: player name
+    // TODO: change the color depending on the player class
+    putStringAt (console, "ermiry", 0, 0, 0xFFFFFFFF, 0x00000000);
+
+    // FIXME:
+    // player health
+    putCharAt (console, 'H', 0, 1, 0xFF990099, 0x00000000);
+    putCharAt (console, 'P', 1, 1, 0xFF990099, 0x00000000);
+    i32 leftX = 3;
+    i32 barWidth = 16;
+
+    // TODO: what other stats do we want to render?
+
+}
 
 List *messageLog = NULL;
 
@@ -87,7 +104,7 @@ void logMessage (char *msg, u32 color) {
 
 static void renderLog (Console *console) {
 
-    Rect rect = { 0, 0, LOG_WIDTH, LOG_HEIGHT };
+    UIRect rect = { 0, 0, LOG_WIDTH, LOG_HEIGHT };
     drawRect (console, &rect, 0x191919FF, 0, 0xFF990099);
 
     if (messageLog == NULL) return; // we don't have any messages to display
