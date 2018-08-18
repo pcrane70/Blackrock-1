@@ -15,6 +15,8 @@
 
 #include "utils/myUtils.h"
 
+#include "ui/gameUI.h"  // for the message log
+
 
 /*** WORLD STATE ***/
 
@@ -65,6 +67,14 @@ void initWorld (void) {
     movePool = initPool ();
     combatPool = initPool ();
     itemsPool = initPool ();
+
+    // init the message log
+    if (messageLog != NULL) {
+        destroyList (messageLog);
+        messageLog = NULL;
+    }
+
+    messageLog = initList (free);
 
     // TODO: what other things do we want to init here?
 
@@ -145,10 +155,9 @@ void initGame (void) {
     playerPos->y = (u8) playerSpawnPos.y;
 
     fprintf (stdout, "Done initializing game!\n");
+    logMessage ("Done initializing game!", 0xFFFFFFFF);
 
 }
-
-
 
 /*** Game Object Management **/
 
@@ -497,6 +506,11 @@ void cleanUpGame (void) {
     clearPool (physPool);
     clearPool (movePool);
     clearPool (itemsPool);
+
+    // cleanup the message log
+    destroyList (messageLog);
+
+    // TODO: what other things do we want to destroy?
 
 }
 

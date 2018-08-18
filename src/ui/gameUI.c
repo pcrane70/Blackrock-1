@@ -1,14 +1,16 @@
 /*** This file handles the in game UI and the input for playing the game ***/
 
 #include <SDL2/SDL.h>
+#include <string.h>     // for message functions
 
 #include "blackrock.h"
 #include "game.h"
 
 #include "ui/ui.h"
 #include "ui/console.h"
+#include "ui/gameUI.h"
 
-#include "list.h"
+#include "list.h"       // for messages
 
 #define STATS_WIDTH		20
 #define STATS_HEIGHT 	5
@@ -58,16 +60,30 @@ static void renderMap (Console *console) {
 // TODO: 
 static void rednderStats () {}
 
-// FIXME: where do we want to put these?
-// This will store the log messages
-typedef struct Message {
-
-    char *msg;
-    u32 fgColor;
-
-} Message;
-
 List *messageLog = NULL;
+
+// create a new message in the log
+void logMessage (char *msg, u32 color) {
+
+    Message *m = (Message *) malloc (sizeof (Message));
+
+    if (m != NULL) {
+        m->msg = (char *) calloc (strlen (msg) + 1, sizeof (char));
+        // TODO: change this for my own function...
+        strcpy (m->msg, msg);
+    }
+
+    else m->msg = "";
+
+    m->fgColor = color;
+
+    // add message to the log
+    insertAfter (messageLog, LIST_END (messageLog), m);
+
+    // TODO: how many messages do we want to keep?
+    if (LIST_SIZE (messageLog) > 20) removeElement (messageLog, NULL);  // remove the oldest message
+
+}
 
 static void renderLog (Console *console) {
 
@@ -99,6 +115,7 @@ static void renderLog (Console *console) {
  
 UIScreen *gameScene () {
 
+    // FIXME: are we cleanning up this?
     List *igViews = initList (NULL);
 
     UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
