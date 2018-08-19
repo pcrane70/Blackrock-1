@@ -23,27 +23,46 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
         switch (key) {
             // Movement
-            // TODO: how do we want to handle combat logic?
             case SDLK_w: 
                 newPos.x = playerPos->x;
                 newPos.y = playerPos->y - 1;
-                if (canMove (newPos)) playerPos->y = newPos.y;
-                playerTookTurn = true; break;
+                if (canMove (newPos)) {
+                    recalculateFov = true;
+                    playerPos->y = newPos.y;
+                } 
+                else {
+                    // check what is blocking the movement
+
+                }
+                playerTookTurn = true; 
+                break;
             case SDLK_s: 
                 newPos.x = playerPos->x;
                 newPos.y = playerPos->y + 1;
-                if (canMove (newPos)) playerPos->y = newPos.y;
-                playerTookTurn = true; break;
+                if (canMove (newPos)) {
+                    recalculateFov = true;
+                    playerPos->y = newPos.y;
+                } 
+                playerTookTurn = true;
+                break;
             case SDLK_a: 
                 newPos.x = playerPos->x - 1;
                 newPos.y = playerPos->y;
-                if (canMove (newPos)) playerPos->x = newPos.x;
-                playerTookTurn = true; break;
+                if (canMove (newPos)) {
+                    recalculateFov = true;
+                    playerPos->x = newPos.x;
+                } 
+                playerTookTurn = true; 
+                break;
             case SDLK_d:
                 newPos.x = playerPos->x + 1;
                 newPos.y = playerPos->y;
-                if (canMove (newPos)) playerPos->x = newPos.x;
-                playerTookTurn = true; break;
+                if (canMove (newPos)) {
+                    recalculateFov = true;
+                    playerPos->x = newPos.x;
+                } 
+                playerTookTurn = true;
+                break;
 
             // TODO: thi is used as a master key to have interaction with various items
             // case SDLK_e: break;

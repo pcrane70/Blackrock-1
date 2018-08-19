@@ -42,10 +42,10 @@ typedef struct {
 
 /*** COMPONENTS ***/
 
-#define UNSERT_LAYER    0
+#define UNSET_LAYER     0
 #define GROUND_LAYER    1
-#define MID_LAYER       2
-#define AIR_LAYER       3
+#define LOWER_LAYER     2
+#define MID_LAYER       3
 #define TOP_LAYER       4
 
 typedef struct Position {
@@ -62,6 +62,9 @@ typedef struct Graphics {
     asciiChar glyph;
     u32 fgColor;
     u32 bgColor;
+    bool hasBeenSeen;
+    bool visibleOutsideFov;
+    char *name;     // 19/08/2018 -- 16:47
 
 } Graphics;
 
@@ -130,7 +133,7 @@ typedef struct Combat  {
 typedef struct Item {
 
     i32 objectId;
-    // char *name;  // TODO: do we want the name here?
+    // char *name;  // 19/08/2018 -- 17:01 -- name is in the graphics comp
     i32 type;   // epic, rare, common, rubish, etc.
     i32 quantity;   // this is used to handle stacks
     i32 weight;     // we have a max weight that we can carry based on our class, genre, etc
@@ -229,6 +232,7 @@ extern unsigned int wallCount;
 /*** MOVEMENT ***/
 
 extern bool canMove (Position);
+extern bool recalculateFov;
 
 
 /*** ITEMS ***/

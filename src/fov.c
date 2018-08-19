@@ -29,6 +29,7 @@ static u8 shadoCount = 0;
 static Shadow knownShadows[10];
 static u8 shadowCount = 0;
 
+
 /*** SHADOWS ***/
 
 void addShadow (Shadow s) {

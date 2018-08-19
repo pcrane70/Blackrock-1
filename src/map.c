@@ -308,9 +308,9 @@ void createWall (u32 x, u32 y) {
 
     new->x = x;
     new->y = y;
-    new->glyph = '#';
-    new->fgColor = 0xFFFFFFFF;
-    new->bgColor = 0x000000FF;
+    // new->glyph = '#';
+    // new->visibleOutsideFov = true;
+    new->hasBeenSeen = false;
     new->blocksMovement = true;
     new->blocksSight = true;
 

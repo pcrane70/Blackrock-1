@@ -20,6 +20,9 @@
 #include "config.h"     // for getting the data
 
 
+// TODO: define fixed messages colors
+
+
 /*** WORLD STATE ***/
 
 // Components
@@ -52,8 +55,8 @@ Config *monsterConfig = NULL;
 
 
 // FOV
-static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
-static bool recalculateFov = false;
+u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
+bool recalculateFov = false;
 
 extern void die (void);
 
@@ -227,7 +230,6 @@ GameObject *initPlayer (void) {
 
 }
 
-
 // 08/08/2018 --> we now handle some GameObjects with a llist and a Pool;
 // the map is managed using an array
 
@@ -246,7 +248,6 @@ static GameObject *pool = NULL;
 // 11/08/2018 -- we will assign a new id to each new GO starting at 1
 // id = 0 is the player 
 static unsigned int newId = 1;
-
 
 GameObject *createGO () {
 
@@ -303,6 +304,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Graphics *graphicsData = (Graphics *) data;
             newGraphics->objectId = go->id;
+            newGraphics->name = graphicsData->name;
             newGraphics->glyph = graphicsData->glyph;
             newGraphics->fgColor = graphicsData->fgColor;
             newGraphics->bgColor = graphicsData->bgColor;
@@ -506,6 +508,12 @@ void *getComponent (GameObject *go, GameComponent type) {
 
 }
 
+List *getObjectsAtPos (u32 x, u32 y) {
+
+    // FIXME:
+
+}
+
 // This calls the Object pooling to deactive the go and have it in memory 
 // to reuse it when we need it
 void destroyGO (GameObject *go) {
@@ -599,21 +607,13 @@ void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
 
 /*** ITEMS ***/
 
-List *getObjectsAtPos (u32 x, u32 y) {
-
-    // FIXME:
-
-}
-
 // check how much the player is carrying in its inventory and equipment
 u32 getCarriedWeight () {
 
     u32 weight = 0;
-    GameObject *go = NULL;
     Item *item = NULL;
     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        go = (GameObject *) LIST_DATA (e);
-        item = (Item *) getComponent (go, ITEM);
+        item = (Item *) getComponent ((GameObject *) LIST_DATA (e), ITEM);
         weight += (item->weight * item->quantity);
     }
 
@@ -772,19 +772,19 @@ bool canMove (Position pos) {
     // first check the if we are inside the map bounds
     if ((pos.x >= 0) && (pos.x < MAP_WIDTH) && (pos.y >= 0) && (pos.y < MAP_HEIGHT)) {
         // check for level elements (like walls)
-        // FIXME: 
         if (currentLevel->mapCells[pos.x][pos.y] == true) move = false;
 
         // check for any other entity, like monsters
-        // for (ListElement *e = LIST_START (positions); e != NULL; e = e->next) {
-        //     Position *p = (Position *) LIST_DATA (e);
-        //     if (p->x == pos.x && p->y == pos.y) {
-        //         // FIXME: how do we get the component associated with this motherfoca??
-        //         // physics *phys = (Physics *) 
-        //         move = false;
-        //         break;
-        //     }
-        // }
+        GameObject *go = NULL;
+        Position *p = NULL;
+        for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+            go = (GameObject *) e->data;
+            p = (Position *) getComponent (go, POSITION);
+            if (p->x == pos.x && p->y == pos.y) {
+                if (((Physics *) getComponent (go, PHYSICS))->blocksMovement) move = false;
+                break;
+            }
+        }
     }   
 
     else move = false;
@@ -989,20 +989,18 @@ void createMonster (GameObject *go) {
     ConfigEntity *monEntity = NULL;
     if ((monEntity = getEntityWithId (monsterConfig, (u8) randomInt (1, 2))) != NULL) {
         // This is just a placeholder until it spawns in the world
-        Position pos = { .x = 0, .y = 0, .layer = TOP_LAYER };
+        Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
         addComponent (go, POSITION, &pos);
-
-        // FIXME: how do we handle the names?
 
         asciiChar glyph = atoi (getEntityValue (monEntity, "glyph"));
         u32 color = xtoi (getEntityValue (monEntity, "color"));
 
-        Graphics g = { 0, glyph, color, 0x000000FF };
+        char *name = getEntityValue (monEntity, "name");
+        Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
         addComponent (go, GRAPHICS, &g);
 
-        // TODO: what physics do we want our monsters to have?
-        // Physics phys = { 0, true, true };
-        // addComponent (go, PHYSICS, &phys);
+        Physics phys = { 0, true, true };
+        addComponent (go, PHYSICS, &phys);
 
         Movement mv = { .speed = 1, .frecuency = 1, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
         addComponent (go, MOVEMENT, &mv);
@@ -1053,17 +1051,32 @@ void fight (GameObject *attacker, GameObject *defender) {
 
         // then deal the calculated damage to the defender with all the information needed
         // and calculate the % of damage taken 
-        // TODO: calculate the defense modifiers
+        // FIXME: calculate the defense modifiers
         def->baseStats.health -= damage;
 
-        // TODO: create stings
+        // TODO: create better strings for parry, etc
+
+        if (attacker == player) {
+            Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
+            char *str = createString ("You hit the %s for %i damage.", g->name, damage);
+            logMessage (str, 0xCCCCCCFF);
+            free (str);
+        }
+
+        else {
+            Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
+            char *str = createString ("The %s hits you for %i damage!", g->name, damage);
+            logMessage (str, 0xCCCCCCFF);
+            free (str);
+        }
 
         // check for the defenders health 
         if (def->baseStats.health <= 0) {
             if (defender == player) {
                 logMessage ("You have died!!", 0xCC0000FF);
                 // TODO: player death animation?
-                // FIXME: trigger game over
+                void gameOver (void);
+                gameOver ();
             }
 
             else {
@@ -1073,7 +1086,7 @@ void fight (GameObject *attacker, GameObject *defender) {
                 gra->fgColor = 0x990000FF;
 
                 Position *pos = (Position *) getComponent (defender, POSITION);
-                pos->layer = MID_LAYER; // we want the player to be able to wall over it
+                pos->layer = MID_LAYER; // we want the player to be able to walk over it
 
                 Physics *phys = (Physics *) getComponent (defender, PHYSICS);
                 phys->blocksMovement = false;
@@ -1083,8 +1096,10 @@ void fight (GameObject *attacker, GameObject *defender) {
 
                 removeComponent (defender, MOVEMENT);
 
-                // FIXME: custom strings
-                logMessage ("You killed the monster!", 0xFF9900FF);
+                Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
+                char *str = createString ("You killed the %s.", g->name);
+                logMessage (str, 0xFF9900FF)   ;
+                free (str);
             }
         }
 
@@ -1095,7 +1110,10 @@ void fight (GameObject *attacker, GameObject *defender) {
         if (attacker == player) logMessage ("Your attack misses.", 0xCCCCCCFF);
 
         else {
-            // FIXME:
+            Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
+            char *str = createString ("The %s misses you.", g->name);
+            logMessage (str, 0xCCCCCCFF);
+            free (str);
         }
     }
 
@@ -1127,3 +1145,10 @@ void updateGame (void) {
 
 }
 
+// As of 9/08/2018 -- 17:00 -- we only asks the player if he wants to play again
+// TODO: maybe later we can first display a screen with a score and then ask him to play again
+void gameOver (void) {
+
+
+
+}

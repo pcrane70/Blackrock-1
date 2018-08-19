@@ -3,6 +3,14 @@
 
 #include "blackrock.h"
 
+// Helper macros for working with pixel colors
+#define RED(c) ((c & 0xff000000) >> 24)
+#define GREEN(c) ((c & 0x00ff0000) >> 16)
+#define BLUE(c) ((c & 0x0000ff00) >> 8)
+#define ALPHA(c) (c & 0xff)
+
+#define COLOR_FROM_RGBA(r, g, b, a) ((r << 24) | (g << 16) | (b << 8) | a)
+
 typedef struct {
 
     i32 x; i32 y; i32 w; i32 h;

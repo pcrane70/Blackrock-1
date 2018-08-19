@@ -36,32 +36,68 @@ char* tileset = "./resources/terminal-art.png";
 
 Player *playerComp;
 
-// FIXME:
+u8 layerRendered[MAP_WIDTH][MAP_HEIGHT];
+extern u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
+
+u32 wallsFgColor = 0xFFFFFFFF;
+u32 wallsBgColor = 0x000000FF;
+u32 wallsFadedColor;
+asciiChar wallGlyph = '#';  // 19/08/2018 -- 18:00 -- we are assuming that are walls are the same
+
 static void renderMap (Console *console) {
 
-    // TODO: the logic for fov goes in here!!
-
     // render the player
-    // TODO: do we want the player to have its own structure??
     Position *playerPos = (Position *) getComponent (player, POSITION);
     Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
     putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
 
-    // TODO:
-    // render the go with graphics
+    // setup the layer rendering
+    
+    for (u32 x = 0; x < MAP_WIDTH; x++)
+        for (u32 y = 0; y < MAP_HEIGHT; y ++)   
+            layerRendered[x][y] = UNSET_LAYER;
+
+    // render the gos with graphics
     GameObject *go = NULL;
     Position *p = NULL;
     Graphics *g = NULL;
-    for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
-        go = (GameObject *) ptr->data;
-        p = (Position *) getComponent (go, POSITION);
-        g = (Graphics *) getComponent (go, GRAPHICS);
-        putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
-    }
+    u32 fullColor;
+    u32 fadedColor;
+    for (int layer = GROUND_LAYER; layer <= TOP_LAYER; layer++) {
+        for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
+            go = (GameObject *) ptr->data;
+            p = (Position *) getComponent (go, POSITION);
+            if (p != NULL && p->layer == layer) {
+                g = getComponent (go, GRAPHICS);
+                if (fovMap[p->x][p->y] > 0) {
+                    g->hasBeenSeen = true;
+                    putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+                    layerRendered[p->x][p->y] = p->layer;
+                }
 
-    // FIXME: we don't want to this every frame!!
-    for (unsigned int i = 0; i < wallCount; i++) 
-        putCharAt (console, walls[i].glyph, walls[i].x, walls[i].y, walls[i].fgColor, walls[i].bgColor);
+                else if (g->visibleOutsideFov && g->hasBeenSeen) {
+                    fullColor = g->fgColor;
+                    fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
+                    putCharAt (console, g->glyph, p->x, p->y, fadedColor, 0x000000FF);
+                    layerRendered[p->x][p->y] = p->layer;
+                }
+            }
+            
+        }
+    }    
+
+    // 19/08/2018 -- 17:53 -- we are assuming all walls are visible outside fov
+    for (unsigned int i = 0; i < wallCount; i++) {
+        if (fovMap[walls[i].x][walls[i].y] > 0) {
+            walls[i].hasBeenSeen = true;
+            putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
+        }
+
+        else if (walls[i].hasBeenSeen) 
+            putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFadedColor, wallsBgColor);
+        
+    }
+        
 
 }
 
@@ -264,6 +300,8 @@ UIScreen *gameScene () {
     inGameScreen->handleEvent = hanldeGameEvent;
 
     playerComp = (Player *) getComponent (player, PLAYER);
+
+    wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 
     return inGameScreen;
 

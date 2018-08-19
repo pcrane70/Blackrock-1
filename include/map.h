@@ -23,17 +23,16 @@ typedef struct Segment {
 // TODO: lets try with this number...
 #define MAX_WALLS   2000
 
+// 19/08/2018 -- 17:51 -- we are not adding layers to the wall beacuse we render them
+// slightly differently
 typedef struct Wall {
-
-    // FIXME: do we need an id?
-    // u32 id;
 
     u8 x, y; // position
 
     // graphics
-    asciiChar glyph;
-    u32 fgColor;
-    u32 bgColor;
+    // asciiChar glyph;
+    bool hasBeenSeen;
+    // bool visibleOutsideFov;  
 
     // physics
     bool blocksMovement;
