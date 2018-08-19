@@ -14,29 +14,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "blackrock.h"
+
 #include "list.h"
 
-#define CONFIG_MAX_LINE_LEN     128
-
-typedef struct ConfigKeyValuePair {
-
-    char *key;
-    char *value;
-
-} ConfigKeyValuePair;
-
-typedef struct ConfigEntity {
-
-    char *name;
-    List *keyValuePairs;
-
-} ConfigEntity;
-
-typedef struct Config {
-
-    List *entities;
-
-} Config;
+#include "config.h"
 
 
 /*** PARSE THE FILE ***/
@@ -108,7 +90,7 @@ Config *parseConfigFile (char *filename) {
 }
 
 
-/*** RETURN THE PARSE DATA ***/
+/*** RETURN DATA ***/
 
 // get a value for a given key in an entity
 char *getEntityValue (ConfigEntity *entity, char *key) {
@@ -119,5 +101,52 @@ char *getEntityValue (ConfigEntity *entity, char *key) {
     }
 
     return NULL;
+
+}
+
+ConfigEntity *getEntityWithId (Config *cfg, u8 id) {
+
+    ConfigEntity *entity = NULL;
+    for (ListElement *e = LIST_START (cfg->entities); e != NULL; e = e->next) {
+        entity = (ConfigEntity *) e->data;
+        u8 eId = atoi (getEntityValue (entity, "id"));
+        if (eId == id) return entity;
+    }
+
+    return NULL;
+
+}
+
+/*** Add DATA ***/
+
+// add a new key-value pair to the entity
+void setEntityValue (ConfigEntity *entity, char *key, char *value) {
+
+    if (entity->keyValuePairs == NULL) entity->keyValuePairs = initList (free);
+
+    ConfigKeyValuePair *kv = (ConfigKeyValuePair *) malloc (sizeof (ConfigKeyValuePair));
+    kv->key = strdup (key);
+    kv->value = strdup (value);
+
+    insertAfter (entity->keyValuePairs, LIST_END (entity->keyValuePairs), kv);
+
+}
+
+void writeConfigFile (char *filename, Config *config) {
+
+    FILE *configFile = fopen (filename, "w+");
+    if (configFile == NULL) return;
+
+    for (ListElement *e = LIST_START (config->entities); e != NULL; e = e->next) {
+        ConfigEntity *entity = (ConfigEntity *) e->data;
+        fprintf (configFile, "[%s]\n", entity->name);
+
+        for (ListElement *le = LIST_START (entity->keyValuePairs); le != NULL; le = le->next) {
+            ConfigKeyValuePair *kv = (ConfigKeyValuePair *) le->data;
+            fprintf (configFile, "%s=%s\n", kv->key, kv->value);
+        }
+    } 
+
+    fclose (configFile);
 
 }

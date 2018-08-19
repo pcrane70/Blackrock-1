@@ -17,9 +17,12 @@
 
 #include "ui/gameUI.h"  // for the message log
 
+#include "config.h"     // for getting the data
+
 
 /*** WORLD STATE ***/
 
+// Components
 List *gameObjects = NULL;
 List *positions = NULL;
 List *graphics = NULL;
@@ -28,6 +31,7 @@ List *movement = NULL;
 List *combat = NULL;
 List *items = NULL;
 
+// Pools
 Pool *goPool = NULL;
 Pool *posPool = NULL;
 Pool *graphicsPool = NULL;
@@ -36,13 +40,17 @@ Pool *movePool = NULL;
 Pool *combatPool = NULL;
 Pool *itemsPool = NULL;
 
-// PLayer
+// Player
 GameObject *player = NULL;
 bool playerTookTurn = false;
 // This is the player's inventory
 List *inventory = NULL;
 // TODO: we might wanna vary this value based on the race, class and strenght
 static i32 maxWeight = 20;  // the max weight the player can carry
+
+// Config
+static Config *monsterConfig = NULL;
+
 
 // FOV
 static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -77,6 +85,11 @@ void initWorld (void) {
     messageLog = initList (free);
 
     // TODO: what other things do we want to init here?
+
+    // getting the data
+    monsterConfig = parseConfigFile ("./data/monster.cfg");
+    // TODO: do we need an appearance probability?
+
 
 }
 
@@ -127,7 +140,7 @@ void initGame (void) {
     fprintf (stdout, "Creating monsters...\n");
     // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave
     void createMonster (GameObject *);
-    for (short unsigned int i = 0; i < 2; i++) {
+    for (short unsigned int i = 0; i < 10; i++) {
         GameObject *monster = createGO ();
         createMonster (monster);
         // spawn in a random position
@@ -155,8 +168,8 @@ void initGame (void) {
     playerPos->y = (u8) playerSpawnPos.y;
 
     fprintf (stdout, "Done initializing game!\n");
-    logMessage ("Done initializing game!", 0xFFFFFFFF);
-
+    logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
+    
 }
 
 /*** Game Object Management **/
@@ -924,19 +937,30 @@ void updateMovement () {
 // TODO: how do we want to retrieve all the data for combat and stats?
 void createMonster (GameObject *go) {
 
-    // This is just a placeholder until it spawns in the world
-    Position pos = { .x = 0, .y = 0, .layer = TOP_LAYER };
-    addComponent (go, POSITION, &pos);
+    // FIXME: do we want appearance prob for monsters??
 
-    Graphics g = { 0, 'M', 0xFFFFFFFF, 0x000000FF };
-    addComponent (go, GRAPHICS, &g);
+    // FIXME: this is just for testing -- 18/08/2018 -- 21:35
+    ConfigEntity *monEntity = NULL;
+    if ((monEntity = getEntityWithId (monsterConfig, (u8) randomInt (1, 2))) != NULL) {
+        // This is just a placeholder until it spawns in the world
+        Position pos = { .x = 0, .y = 0, .layer = TOP_LAYER };
+        addComponent (go, POSITION, &pos);
 
-    // TODO: what physics do we want our monsters to have?
-    // Physics phys = { 0, true, true };
-    // addComponent (go, PHYSICS, &phys);
+        // FIXME: how do we handle the names?
 
-    Movement mv = { .speed = 1, .frecuency = 1, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
-    addComponent (go, MOVEMENT, &mv);
+        asciiChar glyph = atoi (getEntityValue (monEntity, "glyph"));
+        u32 color = xtoi (getEntityValue (monEntity, "color"));
+
+        Graphics g = { 0, glyph, color, 0x000000FF };
+        addComponent (go, GRAPHICS, &g);
+
+        // TODO: what physics do we want our monsters to have?
+        // Physics phys = { 0, true, true };
+        // addComponent (go, PHYSICS, &phys);
+
+        Movement mv = { .speed = 1, .frecuency = 1, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
+        addComponent (go, MOVEMENT, &mv);
+    }
 
 }
 
