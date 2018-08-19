@@ -42,19 +42,20 @@ Pool *itemsPool = NULL;
 
 // Player
 GameObject *player = NULL;
+Player *playerComp = NULL;  // for accessibility
 bool playerTookTurn = false;
-// This is the player's inventory
-List *inventory = NULL;
-// TODO: we might wanna vary this value based on the race, class and strenght
-static i32 maxWeight = 20;  // the max weight the player can carry
 
-// Config
-static Config *monsterConfig = NULL;
+// Configs
+Config *playerConfig = NULL;
+Config *classesConfig = NULL;
+Config *monsterConfig = NULL;
 
 
 // FOV
 static u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 static bool recalculateFov = false;
+
+extern void die (void);
 
 // Inits the wolrd, this will be all the 'physical part' that takes place in a world
 void initWorld (void) {
@@ -77,19 +78,25 @@ void initWorld (void) {
     itemsPool = initPool ();
 
     // init the message log
-    if (messageLog != NULL) {
-        destroyList (messageLog);
-        messageLog = NULL;
-    }
-
     messageLog = initList (free);
 
-    // TODO: what other things do we want to init here?
-
     // getting the data
+    playerConfig = parseConfigFile ("./data/player.cfg");
+    if (playerConfig == NULL) {
+        fprintf (stderr, "Critical Error! No player config!\n");
+        die ();
+    }
+    classesConfig = parseConfigFile ("./data/classes.cfg");
+    if (classesConfig == NULL) {
+        fprintf (stderr, "Critical Error! No classes config!\n");
+        die ();
+    }
     monsterConfig = parseConfigFile ("./data/monster.cfg");
+    if (playerConfig == NULL) {
+        fprintf (stderr, "Critical Error! No monster config!\n");
+        die ();
+    }
     // TODO: do we need an appearance probability?
-
 
 }
 
@@ -102,7 +109,7 @@ void initGame (void) {
 
     GameObject *initPlayer (void);
     player = initPlayer ();
-    // TODO: player name
+    playerComp = (Player *) getComponent (player, PLAYER);
 
     // TODO:
     // aftwe we have initialize our structures and allocated the memory,
@@ -180,25 +187,41 @@ GameObject *initPlayer (void) {
     GameObject *go = (GameObject *) malloc (sizeof (GameObject));
     go->id = 0;
 
-    for (short unsigned int i = 0; i < COMP_COUNT; i++)
-        go->components[i] = NULL;
+    for (short unsigned int i = 0; i < COMP_COUNT; i++) go->components[i] = NULL;
 
     // This is just a placeholder until it spawns in the world
     Position pos = { .x = 0, .y = 0, .layer = TOP_LAYER };
     addComponent (go, POSITION, &pos);
 
-    Graphics g = { 0, '@', 0xFFFFFFFF, 0x000000FF };
-    addComponent (go, GRAPHICS, &g);
+    ConfigEntity *playerEntity = getEntityWithId (playerConfig, 1);
 
     Physics phys = { 0, true, true };
     addComponent (go, PHYSICS, &phys);
 
+    Player p;
+    p.name = getEntityValue (playerEntity, "name");
+    p.genre = atoi (getEntityValue (playerEntity, "genre"));
+    p.level = atoi (getEntityValue (playerEntity, "level"));
+
+    // get class
+    CharClass cClass = atoi (getEntityValue (playerEntity, "class"));
+    p.cClass = cClass;
+
+    ConfigEntity *classEntity = getEntityWithId (classesConfig, p.cClass);
+    p.color = xtoi (getEntityValue (classEntity, "color"));
+    p.maxWeight = atoi (getEntityValue (classEntity, "maxWeight"));
+
+    addComponent (go, PLAYER, &p);
+
+    // As of 18/08/2018 -- 23-21 -- the color of the glyph is based on the class
+    asciiChar glyph = atoi (getEntityValue (playerEntity, "glyph"));
+    Graphics g = { 0, glyph, p.color, 0x000000FF };
+    addComponent (go, GRAPHICS, &g);
+
     // TODO: add combat component 
+    // TODO: modify the combat component based on the class
     // we need to have a file where we can read the stats we have saved
     // also we need to take into account that every class has different stats
-
-    // init the player inventory
-    inventory = initList (free);
 
     return go;
 
@@ -359,6 +382,20 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             go->components[type] = newItem;
             insertAfter (items, NULL, newItem);
         } break;
+        case PLAYER: {
+            if (getComponent (go, type) != NULL) return;
+            Player *newPlayer = (Player *) malloc (sizeof (Player));
+            Player *playerData = (Player *) data;
+            newPlayer->name = playerData->name;
+            newPlayer->cClass = playerData->cClass;
+            newPlayer->genre = playerData->genre;
+            newPlayer->inventory = initList (free);
+            newPlayer->level = playerData->level;
+            newPlayer->maxWeight = playerData->maxWeight;
+
+            go->components[type] = newPlayer;
+            // TODO: maybe in multiplayer we will need a list of items
+        } break;
 
         // We have an invalid GameComponent type, so don't do anything
         default: break;
@@ -428,6 +465,13 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
             itemComp->quantity = itemData->quantity;
             itemComp->lifetime = itemData->lifetime;
             itemComp->isEquipped = itemData->isEquipped;
+        } break;
+        case PLAYER: {
+            Player *playerComp = (Player *) getComponent (go, type);
+            if (playerComp == NULL) return;
+            Player *playerData = (Player *) data;
+            playerComp->level = playerData->level;
+            playerComp->maxWeight = playerData->maxWeight;
         } break;
 
         // We have an invalid GameComponent type, so don't do anything
@@ -523,7 +567,10 @@ void cleanUpGame (void) {
     // cleanup the message log
     destroyList (messageLog);
 
-    // TODO: what other things do we want to destroy?
+    // clean up the player
+    Player *playerComp = (Player *) getComponent (player, PLAYER);
+    destroyList (playerComp->inventory);
+    free (playerComp);
 
 }
 
@@ -564,7 +611,7 @@ u32 getCarriedWeight () {
     u32 weight = 0;
     GameObject *go = NULL;
     Item *item = NULL;
-    for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
         go = (GameObject *) LIST_DATA (e);
         item = (Item *) getComponent (go, ITEM);
         weight += (item->weight * item->quantity);
@@ -596,20 +643,20 @@ void getItem () {
     }
 
     // check if we can actually pickup the item
-    if ((getCarriedWeight () + item->weight) <= maxWeight) {
-        // add the item to the inventory
-        insertAfter (inventory, NULL, itemGO);
-        // remove the item from the map
-        removeComponent (itemGO, POSITION);
+    // if ((getCarriedWeight () + item->weight) <= maxWeight) {
+    //     // add the item to the inventory
+    //     insertAfter (inventory, NULL, itemGO);
+    //     // remove the item from the map
+    //     removeComponent (itemGO, POSITION);
 
-        // TODO: write a message to the log and give feedback to the player
+    //     // TODO: write a message to the log and give feedback to the player
 
-        playerTookTurn = true;
-    }
+    //     playerTookTurn = true;
+    // }
 
-    else {
-        // TODO: display a message that we can NOT pickup the item
-    }
+    // else {
+    //     // TODO: display a message that we can NOT pickup the item
+    // }
 
 }
 
@@ -641,9 +688,8 @@ void dropItem (GameObject *go) {
         if (item->isEquipped) {}
 
         // remove from the inventory
-        ListElement *e = getListElement (inventory, go);
-        if (e != NULL) 
-            removeElement (inventory, e);
+        ListElement *e = getListElement (playerComp->inventory, go);
+        if (e != NULL) removeElement (playerComp->inventory, e);
 
         // TODO: feedback to the player
     }
@@ -693,7 +739,7 @@ void updateLifeTime () {
 
     GameObject *go = NULL;
     Item *item = NULL;
-    for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
         go = (GameObject *) LIST_DATA (e);
         item = (Item *) getComponent (go, ITEM);
         // FIXME: only for weapons and armor
@@ -982,7 +1028,7 @@ void fight (GameObject *attacker, GameObject *defender) {
         GameObject *go = NULL;
         Item *i = NULL;
         Item *weapon = NULL;
-        for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+        for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
             go = (GameObject *) e->data;
             i = (Item *) getComponent (go, ITEM);
             if (i->wielding == true) {

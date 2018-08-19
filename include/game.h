@@ -24,6 +24,7 @@ typedef enum GameComponent {
     EQUIPMENT, 
     TREASURE,
     ANIMATION,
+    PLAYER,
 
     COMP_COUNT
 
@@ -88,7 +89,8 @@ typedef struct Movement {
 // This are the general stats for every living entity
 typedef struct Stats {
 
-    i32 health;   // base health
+    i32 maxHealth;   // base health
+    i32 health;
     u32 power;  // this represents the mana or whatever
     u32 powerRegen; // regen power/(ticks or turns)
     u32 strength; // this modifies the damage dealt 
@@ -99,7 +101,6 @@ typedef struct Attack {
 
     u32 hitchance;      // chance to not miss the target
     u32 attackPower;    // an ogre has a higher attack power than a kobolde
-    u32 damage;     // based on attack power, weapon, class, etc.
     u32 attackSpeed;    // how many hits per turn
     u32 spellPower;     // similar to attack power but for mages, etc
     u32 criticalStrike;     // chance to hit a critical (2x more powerful than normal)
@@ -167,13 +168,35 @@ extern bool playerTookTurn;
 
 extern void updateGame (void);
 
+
 /*** PLAYER ***/
 
-// TODO: player name??
-// global GameObject *player = NULL;
-extern GameObject *player;
+typedef enum CharClass {
 
-extern List *inventory;
+    WARRIOR = 1,
+    PALADIN,
+    ROGUE,
+    PRIEST,
+    DEATH_KNIGHT,
+    MAGE
+
+} CharClass;
+
+// As of 18/08/2018 -- 23:00 -- we will treat this as an independent component, not as a list
+typedef struct Player {
+
+    char *name;
+    CharClass cClass;
+    u32 color;  // for accessibility
+    u8 genre;     // 0 female, 1 male
+    List *inventory;
+    u32 level;
+    u32 maxWeight;
+    // TODO: races
+
+} Player;
+
+extern GameObject *player;
 
 
 /*** Game Objects ***/

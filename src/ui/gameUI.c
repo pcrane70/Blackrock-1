@@ -34,6 +34,8 @@ char* tileset = "./resources/terminal-art.png";
 
 // Game
 
+Player *playerComp;
+
 // FIXME:
 static void renderMap (Console *console) {
 
@@ -68,9 +70,7 @@ static void rednderStats (Console *console) {
     UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
     drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
 
-    // FIXME: player name
-    // TODO: change the color depending on the player class
-    putStringAt (console, "ermiry", 0, 0, 0xFFFFFFFF, 0x00000000);
+    putStringAt (console, playerComp->name, 0, 0, 0xFFFFFFFF, 0x00000000);
 
     // FIXME:
     // player health
@@ -183,7 +183,7 @@ static void renderInventory (Console *console) {
     // TODO: do we want a background image??
 
     // list the inventory items
-    if (LIST_SIZE (inventory) == 0) {
+    if (LIST_SIZE (playerComp->inventory) == 0) {
         // FIXME: change text color and position
         putStringAt (console, "Inventory is empty!", 5, 10, 0x333333FF, 0x00000000);
         return;
@@ -192,7 +192,7 @@ static void renderInventory (Console *console) {
     GameObject *go = NULL;
     Graphics *graphics = NULL;
     Item *item = NULL;
-    for (ListElement *e = LIST_START (inventory); e != NULL; e = e->next) {
+    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
         go = (GameObject *) e->data;
         graphics = (Graphics *) getComponent (go, GRAPHICS);
         item = (Item *) getComponent (go, ITEM);
@@ -262,6 +262,8 @@ UIScreen *gameScene () {
     inGameScreen->activeView = mapView;
     void hanldeGameEvent (UIScreen *, SDL_Event);
     inGameScreen->handleEvent = hanldeGameEvent;
+
+    playerComp = (Player *) getComponent (player, PLAYER);
 
     return inGameScreen;
 

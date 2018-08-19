@@ -15,6 +15,9 @@
 
 #define FPS_LIMIT   20
 
+bool running;
+void die (void) { running = false; };
+
 
 /*** SCREEN ***/
 
@@ -108,7 +111,7 @@ int main (void) {
 
 
     // Main loop
-    bool running = true;
+    running = true;
     bool inGame = true;     // are we in the dungeon?
     SDL_Event event;
     // TODO: display an fps counter if we give a debug option
