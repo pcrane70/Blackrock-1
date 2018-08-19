@@ -83,6 +83,8 @@ static void rednderStats (Console *console) {
 
 }
 
+/*** MESSAGE LOG ***/
+
 List *messageLog = NULL;
 
 // create a new message in the log
@@ -135,41 +137,41 @@ static void renderLog (Console *console) {
     }
 
 }
- 
-UIScreen *gameScene () {
 
-    // FIXME: are we cleanning up this?
-    List *igViews = initList (NULL);
 
-    UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
-    bool colorize = true;
-    u32 bgColor;
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-    colorize = true;
-    bgColor = 0x000000FF;
+char *createString (const char *stringWithFormat, ...) {
 
-    UIView *mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
-    insertAfter (igViews, NULL, mapView);
+    char *fmt;
 
-    UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
-    UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
-    insertAfter (igViews, NULL, statsView);
+    if (stringWithFormat != NULL) fmt = strdup (stringWithFormat);
+    else fmt = strdup ("");
 
-    UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
-    UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
-    insertAfter (igViews, NULL, logView);
+    va_list argp;
+    va_start (argp, stringWithFormat);
+    char oneChar[1];
+    int len = vsnprintf (oneChar, 1, fmt, argp);
+    if (len < 1) return NULL;
+    va_end (argp);
 
-    UIScreen *inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
-    inGameScreen->views = igViews;
-    inGameScreen->activeView = mapView;
-    void hanldeGameEvent (UIScreen *, SDL_Event);
-    inGameScreen->handleEvent = hanldeGameEvent;
+    char *str = (char *) calloc (len + 1, sizeof (char));
+    if (!str) return NULL;
 
-    return inGameScreen;
+    va_start (argp, stringWithFormat);
+    vsnprintf (str, len + 1, fmt, argp);
+    va_end (argp);
+
+    free (fmt);
+
+    return str;
 
 }
+ 
 
-// Inventory
+/*** INVENTORY ***/
 
 UIView *inventoryView = NULL;
 
@@ -227,5 +229,40 @@ void toggleInventory () {
 
     if (inventoryView == NULL) showInventory (activeScene);
     else hideInventory (activeScene);
+
+}
+
+/*** INIT GAME SCREEN ***/
+
+UIScreen *gameScene () {
+
+    // FIXME: are we cleanning up this?
+    List *igViews = initList (NULL);
+
+    UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
+    bool colorize = true;
+    u32 bgColor;
+
+    colorize = true;
+    bgColor = 0x000000FF;
+
+    UIView *mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
+    insertAfter (igViews, NULL, mapView);
+
+    UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
+    UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
+    insertAfter (igViews, NULL, statsView);
+
+    UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
+    UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
+    insertAfter (igViews, NULL, logView);
+
+    UIScreen *inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    inGameScreen->views = igViews;
+    inGameScreen->activeView = mapView;
+    void hanldeGameEvent (UIScreen *, SDL_Event);
+    inGameScreen->handleEvent = hanldeGameEvent;
+
+    return inGameScreen;
 
 }

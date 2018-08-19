@@ -20,6 +20,7 @@ extern List *messageLog;
 
 // create a new message in the log
 extern void logMessage (char *msg, u32 color);
+extern char *createString (const char *stringWithFormat, ...);
 
 
 /*** INVENTORY ***/
