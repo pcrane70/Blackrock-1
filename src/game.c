@@ -19,8 +19,8 @@
 
 #include "config.h"     // for getting the data
 
-
-// TODO: define fixed messages colors
+#define SUCCESS_COLOR   0x009900FF
+#define WARNING_COLOR   0x990000FF
 
 
 /*** WORLD STATE ***/
@@ -697,7 +697,7 @@ u32 getCarriedWeight (void) {
     Item *item = NULL;
     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
         item = (Item *) getComponent ((GameObject *) LIST_DATA (e), ITEM);
-        weight += (item->weight * item->quantity);
+        if (item != NULL) weight += (item->weight * item->quantity);
     }
 
     return weight;
@@ -736,14 +736,14 @@ void getItem (void) {
             Graphics *g = (Graphics *) getComponent (itemGO, GRAPHICS);
             if (g != NULL) {
                 char *msg = createString ("You picked up the %s.", g->name);
-                logMessage (msg, 0x009900FF);
+                logMessage (msg, SUCCESS_COLOR);
                 free (msg);
             }
 
             playerTookTurn = true;
         }
 
-        else logMessage ("You are carrying to much already!", 0x990000FF);
+        else logMessage ("You are carrying to much already!", WARNING_COLOR);
     }
 
     free (objects);
@@ -769,6 +769,8 @@ void dropItem (GameObject *go) {
         } 
     }
 
+    Graphics *g = (Graphics *) getComponent (go, GRAPHICS);
+
     if (canBeDropped) {
         Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
         addComponent (go, POSITION, &pos);
@@ -778,15 +780,28 @@ void dropItem (GameObject *go) {
         if (item->isEquipped) {}
 
         // remove from the inventory
+        // FIXME:
         ListElement *e = getListElement (playerComp->inventory, go);
         if (e != NULL) removeElement (playerComp->inventory, e);
 
-        // TODO: feedback to the player
+        if (g != NULL) {
+            char *msg = createString ("You dropped the %s.", g->name);
+            logMessage (msg, SUCCESS_COLOR);
+            free (msg);
+        }
+        else logMessage ("You dropped the item.", SUCCESS_COLOR);
     }
 
     else {
-        // TODO: give feedback to the player that the item can NOT be dropped
+        if (g != NULL) {
+            char *msg = createString ("Can't drop the %s here.", g->name);
+            logMessage (msg, WARNING_COLOR);
+            free (msg);
+        }
+        else logMessage ("Can't drop the item here.", WARNING_COLOR);
     }
+
+    free (objects);
 
 }
 
