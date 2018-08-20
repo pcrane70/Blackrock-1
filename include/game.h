@@ -134,7 +134,8 @@ typedef struct Item {
 
     i32 objectId;
     // char *name;  // 19/08/2018 -- 17:01 -- name is in the graphics comp
-    i32 type;   // epic, rare, common, rubish, etc.
+    u32 type;   // consumable, weapon, etc?
+    i32 rarity;   // epic, rare, common, rubish, etc.
     i32 quantity;   // this is used to handle stacks
     i32 weight;     // we have a max weight that we can carry based on our class, genre, etc
     i32 lifetime;
@@ -237,7 +238,8 @@ extern bool recalculateFov;
 
 /*** ITEMS ***/
 
-extern void getItem ();
+extern void getItem (void);
+extern u32 getCarriedWeight (void);
 
 /*** COMBAT ***/
 

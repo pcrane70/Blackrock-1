@@ -153,6 +153,7 @@ void logMessage (char *msg, u32 color) {
 
 }
 
+// TODO: add scrolling
 static void renderLog (Console *console) {
 
     UIRect rect = { 0, 0, LOG_WIDTH, LOG_HEIGHT };
@@ -218,6 +219,7 @@ char *createString (const char *stringWithFormat, ...) {
 
 UIView *inventoryView = NULL;
 
+// FIXME: better color for inventory
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
@@ -226,23 +228,32 @@ static void renderInventory (Console *console) {
     // TODO: do we want a background image??
 
     // list the inventory items
-    if (LIST_SIZE (playerComp->inventory) == 0) {
-        // FIXME: change text color and position
-        putStringAt (console, "Inventory is empty!", 5, 10, 0x333333FF, 0x00000000);
-        return;
+    // FIXME: change text color and position
+    if (LIST_SIZE (playerComp->inventory) == 0) 
+        putStringAt (console, "Inventory is empty!", 11, 10, 0x333333FF, 0x00000000);
+
+    // As of 20/08/2018 -- 03:55 -- I plan to have the equipment and the inventory
+    // in separate views, like in WOW
+    else {
+        // Graphics *graphics = NULL;
+        // Item *item = NULL;
+        // for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+        //     graphics = (Graphics *) getComponent ((GameObject *) e->data, GRAPHICS);
+        //     item = (Item *) getComponent ((GameObject *) e->data, ITEM);
+        //     if (graphics != NULL && item != NULL) {
+        //         // FIXME:
+        //     }
+        // }
     }
 
-    GameObject *go = NULL;
-    Graphics *graphics = NULL;
-    Item *item = NULL;
-    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        go = (GameObject *) e->data;
-        graphics = (Graphics *) getComponent (go, GRAPHICS);
-        item = (Item *) getComponent (go, ITEM);
-        if (graphics != NULL && item != NULL) {
-            // FIXME:
-        }
-    }
+    // FIXME: CHANGE TO BETTER COLORS!!
+    // Render additional info
+    char *weightInfo = createString ("Carrying: %i - Max: %i", getCarriedWeight (),
+        ((Player *) getComponent (player, PLAYER))->maxWeight);
+    putStringAt (console, weightInfo, 9, 23, 0x000044FF, 0x00000000);
+    putStringAt (console, "[Up/Down] to slect item", 5, 25, 0x333333FF, 0x00000000);
+    putStringAt (console, "[Spc] to (un)equip, [D] to drop", 5, 26, 0x333333FF, 0x00000000);
+    free (weightInfo);
 
 }
 
@@ -266,9 +277,7 @@ void showInventory (UIScreen *screen) {
 
 }
 
-void toggleInventory () {
-
-    // TODO: how do we check that is the correct view?
+void toggleInventory (void) {
 
     if (inventoryView == NULL) showInventory (activeScene);
     else hideInventory (activeScene);
@@ -277,9 +286,8 @@ void toggleInventory () {
 
 /*** INIT GAME SCREEN ***/
 
-UIScreen *gameScene () {
+UIScreen *gameScene (void) {
 
-    // FIXME: are we cleanning up this?
     List *igViews = initList (NULL);
 
     UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
@@ -310,6 +318,9 @@ UIScreen *gameScene () {
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 
+    // free (igViews);
+
+    // FIXME: are we cleanning up this?
     return inGameScreen;
 
 }

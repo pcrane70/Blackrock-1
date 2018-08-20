@@ -86,7 +86,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             // TODO: thi is used as a master key to have interaction with various items
             // case SDLK_e: break;
 
-            // case SDLK_g: getItem (); break;
+            case SDLK_g: getItem (); break;
 
             // TODO: drop an item
             // case SDLK_d: break;

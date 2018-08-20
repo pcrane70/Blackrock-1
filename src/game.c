@@ -52,6 +52,7 @@ bool playerTookTurn = false;
 Config *playerConfig = NULL;
 Config *classesConfig = NULL;
 Config *monsterConfig = NULL;
+Config *itemsConfig = NULL;
 
 
 // FOV
@@ -95,11 +96,17 @@ void initWorld (void) {
         die ();
     }
     monsterConfig = parseConfigFile ("./data/monster.cfg");
-    if (playerConfig == NULL) {
+    if (monsterConfig == NULL) {
         fprintf (stderr, "Critical Error! No monster config!\n");
         die ();
     }
-    // TODO: do we need an appearance probability?
+    // TODO: do we need an appearance probability? 
+
+    itemsConfig = parseConfigFile (".data/items.cfg");
+    if (itemsConfig == NULL) {
+        fprintf (stderr, "Critical Error! No items config!\n");
+        die ();
+    }
 
 }
 
@@ -184,6 +191,7 @@ void initGame (void) {
 
 /*** Game Object Management **/
 
+// TODO: check for a save file to retrive the information freom there instead
 // because the player is an special GO, we want to initialize him differently
 GameObject *initPlayer (void) {
 
@@ -599,8 +607,7 @@ void cleanUpGame (void) {
     destroyList (messageLog);
 
     // clean up the player
-    Player *playerComp = (Player *) getComponent (player, PLAYER);
-    destroyList (playerComp->inventory);
+    destroyList (((Player *) getComponent (player, PLAYER))->inventory);
     free (playerComp);
 
 }
@@ -631,7 +638,7 @@ void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
 /*** ITEMS ***/
 
 // check how much the player is carrying in its inventory and equipment
-u32 getCarriedWeight () {
+u32 getCarriedWeight (void) {
 
     u32 weight = 0;
     Item *item = NULL;
@@ -650,14 +657,14 @@ u32 getCarriedWeight () {
 // Function to get/pickup a nearby item
 // As of 16/08/2018:
 // The character must be on the same coord as the item to be able to pick it up
-void getItem () {
+void getItem (void) {
 
     Position *playerPos = (Position *) getComponent (player, POSITION);
     // get a list of objects nearby the player
     List *objects = getObjectsAtPos (playerPos->x, playerPos->y);
 
-    // FIXME: we can only pickup an item each time
-    GameObject *itemGO;
+    // we only pick one item each time
+    GameObject *itemGO = NULL;
     Item *item = NULL;
     for (ListElement *e = LIST_START (objects); e != NULL; e = e->next) {
         itemGO = (GameObject *) LIST_DATA (e);
@@ -666,20 +673,27 @@ void getItem () {
     }
 
     // check if we can actually pickup the item
-    // if ((getCarriedWeight () + item->weight) <= maxWeight) {
-    //     // add the item to the inventory
-    //     insertAfter (inventory, NULL, itemGO);
-    //     // remove the item from the map
-    //     removeComponent (itemGO, POSITION);
+    if (itemGO != NULL && item != NULL) {
+        if ((getCarriedWeight () + item->weight) <= ((Player *) getComponent (player, PLAYER))->maxWeight) {
+            // add the item to the inventory
+            insertAfter (((Player *) getComponent (player, PLAYER))->inventory, NULL, itemGO);
+            // remove the item from the map
+            removeComponent (itemGO, POSITION);
 
-    //     // TODO: write a message to the log and give feedback to the player
+            Graphics *g = (Graphics *) getComponent (itemGO, GRAPHICS);
+            if (g != NULL) {
+                char *msg = createString ("You picked up the %s.", g->name);
+                logMessage (msg, 0x009900FF);
+                free (msg);
+            }
 
-    //     playerTookTurn = true;
-    // }
+            playerTookTurn = true;
+        }
 
-    // else {
-    //     // TODO: display a message that we can NOT pickup the item
-    // }
+        else logMessage ("You are carrying to much already!", 0x990000FF);
+    }
+
+    free (objects);
 
 }
 
