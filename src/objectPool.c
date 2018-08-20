@@ -26,6 +26,8 @@ Pool *initPool (void) {
 
 void push (Pool *pool, void *data) {
 
+    if (data == NULL) return;
+
     PoolMember *new = (PoolMember *) malloc (sizeof (PoolMember));
     new->data = data;
 

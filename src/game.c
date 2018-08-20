@@ -503,7 +503,6 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
 
 }
 
-// FIXME:
 void removeComponent (GameObject *go, GameComponent type) {
 
     if (go == NULL) return;
@@ -512,7 +511,28 @@ void removeComponent (GameObject *go, GameComponent type) {
         case POSITION: {
             Position *posComp = (Position *) getComponent (go, type);
             if (posComp == NULL) return;
-            push (posPool, posComp);
+            ListElement *e = getListElement (positions, posComp);
+            void *posData = NULL;
+            if (e != NULL) posData = removeElement (positions, e);
+            push (posPool, posData);
+            go->components[type] = NULL;
+        } break;
+        case GRAPHICS: {
+            Graphics *graComp = (Graphics *) getComponent (go, type);
+            if (graComp == NULL) return;
+            ListElement *e = getListElement (graphics, graComp);
+            void *graData = NULL;
+            if (e != NULL) graData = removeElement (graphics, e);
+            push (graphicsPool, graData);
+            go->components[type] = NULL;
+        } break;
+        case PHYSICS: {
+            Physics *physComp = (Physics *) getComponent (go, type);
+            if (physComp == NULL) return;
+            ListElement *e = getListElement (physics, physComp);
+            void *physData = NULL;
+            if (e != NULL) physData = removeElement (physics, e);
+            push (physPool, physData);
             go->components[type] = NULL;
         } break;
         case MOVEMENT: {
@@ -524,6 +544,24 @@ void removeComponent (GameObject *go, GameComponent type) {
             push (movePool, moveData);
             go->components[type] = NULL;
         } break;
+        case COMBAT: {
+            Combat *combatComp = (Combat *) getComponent (go, type);
+            if (combatComp == NULL) return;
+            ListElement *e = getListElement (combat, combatComp);
+            void *combatData = NULL;
+            if (e != NULL) combatData = removeElement (combat, e);
+            push (combatPool, combatData);
+            go->components[type] = NULL;
+        } break;
+        case ITEM: {
+            Item *itemComp = (Item *) getComponent (go, type);
+            if (itemComp == NULL) return;
+            ListElement *e = getListElement (items, itemComp);
+            void *itemData = NULL;
+            if (e != NULL) itemData = removeElement (items, e);
+            push (itemsPool, itemData);
+            go->components[type] = NULL;
+        } break;
 
         default: break;
     }
@@ -532,7 +570,6 @@ void removeComponent (GameObject *go, GameComponent type) {
 
 void *getComponent (GameObject *go, GameComponent type) {
 
-    // TODO: check if this works properlly
     void *retVal = go->components[type];
     if (retVal == NULL) return NULL;
     else return retVal;
@@ -559,38 +596,15 @@ List *getObjectsAtPos (u32 x, u32 y) {
 // to reuse it when we need it
 void destroyGO (GameObject *go) {
 
-    ListElement *e = NULL;
-    void *removed = NULL;
+    // remove all of the gos components
+    for (short unsigned int i = 0; i < COMP_COUNT; i++) 
+        removeComponent (go, i);
 
-    // get the game object to remove and then send it to the its pool
-    if ((e = getListElement (gameObjects, go)) != NULL) {
-        removed = removeElement (gameObjects, e);
-        // clean the go components
-        for (short unsigned int i = 0; i < COMP_COUNT; i++)
-            go->components[i] = NULL;
-
-        // send to the GO pool
-        push (goPool, removed);
-    }
-
-    if ((e = getListElement (positions, go->components[POSITION])) != NULL) {
-        removed = removeElement (positions, e);
-        push (posPool, removed);
-    }
-
-    if ((e = getListElement (graphics, go->components[GRAPHICS])) != NULL) {
-        removed = removeElement (graphics, e);
-        push (graphicsPool, removed);
-    }
-
-    if ((e = getListElement (physics, go->components[PHYSICS])) != NULL) {
-        removed = removeElement (physics, e);
-        push (physPool, removed);
-    }
-
-    if ((e = getListElement (movement, go->components[MOVEMENT])) != NULL) {
-        removed = removeElement (movement, e);
-        push (movePool, removed);
+    // now send the go to the pool
+    ListElement *e = getListElement (gameObjects, go);
+    if (e != NULL) {
+        void *data = removeElement (gameObjects, e);
+        push (goPool, data);
     }
 
 }
@@ -603,6 +617,7 @@ void cleanUpGame (void) {
     destroyList (graphics);
     destroyList (physics);
     destroyList (movement);
+    destroyList (combat);
     destroyList (items);
 
     // cleanup the pools
@@ -611,6 +626,7 @@ void cleanUpGame (void) {
     clearPool (graphicsPool);
     clearPool (physPool);
     clearPool (movePool);
+    clearPool (combatPool);
     clearPool (itemsPool);
 
     // cleanup the message log
