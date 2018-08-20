@@ -6,6 +6,11 @@
 
 #include "ui/ui.h"
 
+// TODO: maybe in the future we acn add more graphics, but for now we are sticking with
+// only ascii chars
+// In linux we have to take the path from the makefile 
+char *tileset = "./resources/terminal-art.png";  
+
 
 /*** SCENE MANAGER ***/
 

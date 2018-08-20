@@ -10,7 +10,26 @@
 // Basic Input
 // Movement with wsad   03/08/2018
 
-// TODO: recalculate the fov every time the player moves
+extern bool inGame;
+
+void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
+
+    if (event.type == SDL_KEYDOWN) {
+        SDL_Keycode key = event.key.keysym.sym;
+
+        switch (key) {
+            case SDLK_n: 
+                initGame ();
+                setActiveScene (gameScene ());
+                inGame = true;
+                break;
+
+            default: break;
+        }
+
+    }
+
+}
 
 void resolveCombat (Position newPos) {
 

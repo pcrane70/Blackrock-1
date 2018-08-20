@@ -1,9 +1,11 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include "blackrock.h"
-#include "game.h"
+#include <SDL2/SDL.h>
 
-extern void handlePlayerInput (SDL_Event, GameObject *);
+#include "ui/ui.h"
+
+extern void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event);
+extern void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event);
 
 #endif

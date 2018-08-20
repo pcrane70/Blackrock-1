@@ -15,7 +15,10 @@
 
 #define FPS_LIMIT   20
 
-bool running;
+bool running = false;
+bool inGame = false;
+bool wasInGame = false;
+
 void die (void) { running = false; };
 
 
@@ -44,24 +47,24 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene)
 
 /*** CLEAN UP ***/
 
-void cleanUp (SDL_Window *window, SDL_Renderer *renderer, Console *console) {
+void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
-    // Cleanup our GameObjects and Pools
-    fprintf (stdout, "Cleanning GameObjects...\n");
-    
-    // cleanup data structures
-    cleanUpGame ();
-
+    // FIXME: move this to game.c
+    if (wasInGame) {
+         // Cleanup our GameObjects and Pools
+        fprintf (stdout, "Cleanning GameObjects...\n");
+        cleanUpGame ();
+        free (currentLevel);
+        free (player);
+    }
+   
     // clean up single structs
-    destroyConsole (console);
+    // destroyConsole (console);
     // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
     //     free (currentLevel->mapCells[i]);
 
     // free (currentLevel->mapCells);
     
-    free (currentLevel);
-    free (player);
-
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);
     SDL_DestroyWindow (window);
@@ -100,19 +103,7 @@ int main (void) {
     SDL_Texture *screen = NULL;
     setUpSDL (&window, &renderer, &screen);
 
-    // Create our console emulator graphics
-    Console *console = initConsole (SCREEN_WIDTH, SCREEN_HEIGHT, NUM_ROWS, NUM_COLS, 0x000000FF, true);
-    // set up the console font
-    setConsoleBitmapFont (console, "./resources/terminal-art.png", 0, 16, 16);
-
-    // FIXME: 12/08/2018 -- 20:31 -- this is only for tetsing purposes
-    initGame ();
-    fprintf (stdout, "Number of walls: %i\n", wallCount);
-
-
-    // Main loop
     running = true;
-    bool inGame = true;     // are we in the dungeon?
     SDL_Event event;
     // TODO: display an fps counter if we give a debug option
     u32 timePerFrame;
@@ -121,8 +112,8 @@ int main (void) {
     UIScreen *screenForInput;
     fprintf (stdout, "Starting main loop\n");
 
-    // FIXME: manually setting the active screen to be the in game scree
-    setActiveScene (gameScene ());
+    extern UIScreen *menuScene (void);
+    setActiveScene (menuScene ());
 
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
@@ -133,9 +124,6 @@ int main (void) {
             frameStart = SDL_GetTicks ();
 
             if (event.type == SDL_QUIT) running = false;
-
-            // TODO: later we will want the input to be handle diffrently
-            // handlePlayerInput (event, player);
 
             // TODO: how can we have a more eficient event handler?
             // handle the event in the correct screen
@@ -154,7 +142,7 @@ int main (void) {
         if (sleepTime > 0) SDL_Delay (sleepTime);
     }
 
-    cleanUp (window, renderer, console);
+    cleanUp (window, renderer);
 
     return 0;
 

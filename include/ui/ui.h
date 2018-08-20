@@ -43,4 +43,7 @@ extern void destroyView (UIView *view);
 extern void drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor);
 
 
+extern char *tileset;
+
+
 #endif

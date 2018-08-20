@@ -1,6 +1,5 @@
 /*** This file handles the in game UI and the input for playing the game ***/
 
-#include <SDL2/SDL.h>
 #include <string.h>     // for message functions
 
 #include "blackrock.h"
@@ -10,6 +9,8 @@
 #include "ui/ui.h"
 #include "ui/console.h"
 #include "ui/gameUI.h"
+
+#include "input.h"
 
 #include "list.h"       // for messages
 
@@ -23,12 +24,6 @@
 #define INVENTORY_TOP		7
 #define INVENTORY_WIDTH		40
 #define INVENTORY_HEIGHT	30
-
-// TODO: maybe in the future we acn add more graphics, but for now we are sticking with
-// only ascii chars
-// In linux we have to take the path from the makefile 
-char* tileset = "./resources/terminal-art.png";  
-
 
 /*** UI ***/
 
@@ -286,6 +281,9 @@ void toggleInventory (void) {
 
 /*** INIT GAME SCREEN ***/
 
+extern bool inGame;
+extern bool wasInGame;
+
 UIScreen *gameScene (void) {
 
     List *igViews = initList (NULL);
@@ -311,12 +309,14 @@ UIScreen *gameScene (void) {
     UIScreen *inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
     inGameScreen->views = igViews;
     inGameScreen->activeView = mapView;
-    void hanldeGameEvent (UIScreen *, SDL_Event);
     inGameScreen->handleEvent = hanldeGameEvent;
 
     playerComp = (Player *) getComponent (player, PLAYER);
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
+
+    inGame = true;
+    wasInGame = true;
 
     // free (igViews);
 

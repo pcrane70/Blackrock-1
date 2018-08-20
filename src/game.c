@@ -102,7 +102,7 @@ void initWorld (void) {
     }
     // TODO: do we need an appearance probability? 
 
-    itemsConfig = parseConfigFile (".data/items.cfg");
+    itemsConfig = parseConfigFile ("./data/items.cfg");
     if (itemsConfig == NULL) {
         fprintf (stderr, "Critical Error! No items config!\n");
         die ();
@@ -503,6 +503,7 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
 
 }
 
+// FIXME:
 void removeComponent (GameObject *go, GameComponent type) {
 
     if (go == NULL) return;
@@ -512,6 +513,15 @@ void removeComponent (GameObject *go, GameComponent type) {
             Position *posComp = (Position *) getComponent (go, type);
             if (posComp == NULL) return;
             push (posPool, posComp);
+            go->components[type] = NULL;
+        } break;
+        case MOVEMENT: {
+            Movement *moveComp = (Movement *) getComponent (go, type);
+            if (moveComp == NULL) return;
+            ListElement *e = getListElement (movement, moveComp);
+            void *moveData = NULL;
+            if (e != NULL) moveData = removeElement (movement, e);
+            push (movePool, moveData);
             go->components[type] = NULL;
         } break;
 
