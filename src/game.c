@@ -1036,7 +1036,7 @@ void createMonster (GameObject *go) {
 
     // FIXME: this is just for testing -- 18/08/2018 -- 21:35
     ConfigEntity *monEntity = NULL;
-    if ((monEntity = getEntityWithId (monsterConfig, (u8) randomInt (1, 2))) != NULL) {
+    if ((monEntity = getEntityWithId (monsterConfig, (u8) randomInt (1, 9))) != NULL) {
         // This is just a placeholder until it spawns in the world
         Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
         addComponent (go, POSITION, &pos);
