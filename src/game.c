@@ -45,6 +45,7 @@ Pool *itemsPool = NULL;
 
 // Player
 GameObject *player = NULL;
+// TODO: as of 0/08/2018 -- 17:14 -- we don't support items stacks in the inventory
 Player *playerComp = NULL;  // for accessibility
 bool playerTookTurn = false;
 
@@ -156,10 +157,9 @@ void initGame (void) {
 
     fprintf (stdout, "Creating monsters...\n");
     // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave
-    void createMonster (GameObject *);
+    GameObject *createMonster (void);
     for (short unsigned int i = 0; i < 10; i++) {
-        GameObject *monster = createGO ();
-        createMonster (monster);
+        GameObject *monster = createMonster ();
         // spawn in a random position
         Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
         Position *monsterPos = (Position *) getComponent (monster, POSITION);
@@ -170,12 +170,16 @@ void initGame (void) {
     }
 
     // 15/08/2018 -- 18:09 -- lets sprinckle some items trough the level and see how they behave
-    void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
-     asciiChar glyph, u32 fgColor, i32 quantity, i32 weight, i32 lifetime);
-    for (short unsigned int i = 0; i < 2; i++) {
-        Point spawnPos = getFreeSpot (currentLevel->mapCells);
-        createItem ("Test Item", spawnPos.x, spawnPos.y, MID_LAYER, 'I', 0xFFFFFFFF, 1, 1, 20);
-    }   
+    // void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
+    //  asciiChar glyph, u32 fgColor, i32 quantity, i32 weight, i32 lifetime);
+    // for (short unsigned int i = 0; i < 2; i++) {
+    //     Point spawnPos = getFreeSpot (currentLevel->mapCells);
+    //     createItem ("Test Item", spawnPos.x, spawnPos.y, MID_LAYER, 'I', 0xFFFFFFFF, 1, 1, 20);
+    // }  
+
+    // FIXME:
+    // 20/08/2018 -- 17:24 -- our items are broken until we have a config file
+    GameObject *createItem (u8);
 
     // finally, we have a map full with monsters, so we can place the player and we are done 
     fprintf (stdout, "Spawning the player...\n");
@@ -186,6 +190,8 @@ void initGame (void) {
 
     fprintf (stdout, "Done initializing game!\n");
     logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
+
+    fprintf (stdout, "Game Objects: %i\n", LIST_SIZE (gameObjects));
     
 }
 
@@ -270,7 +276,7 @@ static GameObject *pool = NULL;
 // id = 0 is the player 
 static unsigned int newId = 1;
 
-GameObject *createGO () {
+GameObject *createGO (void) {
 
     GameObject *go = NULL;
 
@@ -290,10 +296,6 @@ GameObject *createGO () {
 }
 
 void addComponent (GameObject *go, GameComponent type, void *data) {
-
-    // check for a valid GO
-    // FIXME: isInList not working properly...
-    // if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
 
     if (go == NULL || data == NULL) return;
 
@@ -395,11 +397,13 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             Item *itemData = (Item *) data;
             newItem->objectId = go->id;
             newItem->type = itemData->type;
+            newItem->rarity = itemData->rarity;
             newItem->dps = itemData->dps;
             newItem->slot = itemData->slot;
             newItem->weight = itemData->weight;
             newItem->quantity = itemData->quantity;
-            newItem->lifetime = itemData->lifetime;
+            newItem->maxLifetime = itemData->maxLifetime;
+            newItem->lifetime = newItem->maxLifetime;
             newItem->isEquipped = false;
 
             go->components[type] = newItem;
@@ -427,10 +431,6 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 }
 
 void updateComponent (GameObject *go, GameComponent type, void *data) {
-
-    // check for a valid GO
-    // FIXME: isInList not working properly...
-    // if ((go != NULL) && (isInList (gameObjects, go) != false)) return;
 
     if (go == NULL || data == NULL) return;
 
@@ -641,24 +641,51 @@ void cleanUpGame (void) {
 
 /*** LEVEL MANAGER ***/
 
-// We are testing how do we want to create items in the level
-// TODO: how do we want to manage lifetim - durability?
-// TODO: later we will need to add some combat parametres
-// FIXME: how do we want to manage the name?
-void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
-     asciiChar glyph, u32 fgColor, i32 quantity, i32 weight, i32 lifetime) {
+// 20/08/2018 -- 17:05 -- Testing this new function for creating items
+GameObject *createItem (u8 itemId) {
 
+    ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
+    if (itemEntity == NULL) return NULL;
+
+    // we have a valid item, so create it...
     GameObject *item = createGO ();
 
-    Position pos = { .x = xPos, .y = yPos, .layer = layer };
+    // this is just a placeholder
+    Position pos = { .x = 0, .y = 0, .layer = LOWER_LAYER };
     addComponent (item, POSITION, &pos);
-    Graphics g = { .glyph = glyph, .fgColor = fgColor, .bgColor = 0x000000FF };
+
+    asciiChar glyph = atoi (getEntityValue (itemEntity, "glyph"));
+    u32 color = xtoi (getEntityValue (itemEntity, "color"));
+    char *name = getEntityValue (itemEntity, "name");
+    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addComponent (item, GRAPHICS, &g);
+
     Physics phys = { .blocksMovement = false, .blocksSight = false };
     addComponent (item, PHYSICS, &phys);
-    Item i = { .quantity = quantity, .weight = weight, .isEquipped = false, .lifetime = lifetime };
+
+    // FIXME:
+    Item i;
+    // i.type = atoi (getEntityValue (itemEntity, "type"));
+    // i.rarity = atoi (getEntityValue (itemEntity, "rarity"));
+    // i.quantity = atoi (getEntityValue (itemEntity, "quantity"));
+    // i.weight = atoi (getEntityValue (itemEntity, "weight"));
+    // i.maxLifetime = atoi (getEntityValue (itemEntity, "max_life"));
+    // i.dps = atoi (getEntityValue (itemEntity, "dps"));
+
+    i.type = 1;
+    i.rarity = 1;
+    i.quantity = 1;
+    i.weight = 1;
+    i.maxLifetime = 100;
+    i.dps = 10;
+
+    // FIXME:!!!!!!!
+    i.slot = NULL;
+
     addComponent (item, ITEM, &i);
         
+    return item;
+
 }
 
 /*** ITEMS ***/
@@ -1045,43 +1072,68 @@ void updateMovement () {
 
 
 // 14/08/2018 -- 23:02 -- test function to spawn some monsters to test their behaivour
-// TODO: how do we want to retrieve all the data for combat and stats?
-void createMonster (GameObject *go) {
+GameObject *createMonster (void) {
+
+    GameObject *monster = NULL;
 
     // FIXME: do we want appearance prob for monsters??
 
-    // FIXME: this is just for testing -- 18/08/2018 -- 21:35
     ConfigEntity *monEntity = NULL;
+    // FIXME: this is just for testing -- 18/08/2018 -- 21:35
     if ((monEntity = getEntityWithId (monsterConfig, (u8) randomInt (1, 9))) != NULL) {
+        monster = createGO ();
+
         // This is just a placeholder until it spawns in the world
         Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
-        addComponent (go, POSITION, &pos);
+        addComponent (monster, POSITION, &pos);
 
         asciiChar glyph = atoi (getEntityValue (monEntity, "glyph"));
         u32 color = xtoi (getEntityValue (monEntity, "color"));
-
         char *name = getEntityValue (monEntity, "name");
         Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-        addComponent (go, GRAPHICS, &g);
+        addComponent (monster, GRAPHICS, &g);
 
         Physics phys = { 0, true, true };
-        addComponent (go, PHYSICS, &phys);
+        addComponent (monster, PHYSICS, &phys);
 
+        // FIXME:
+        // u32 speed = atoi (getEntityValue (monEntity, "mv_speed"));
+        // u32 frecuency = atoi (getEntityValue (monEntity, "mv_frequency"));
         Movement mv = { .speed = 1, .frecuency = 1, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
-        addComponent (go, MOVEMENT, &mv);
+        addComponent (monster, MOVEMENT, &mv);
 
         // FIXME:
         Combat c;
-        c.baseStats.maxHealth = 100;
-        c.baseStats.strength = 10;
 
+        // c.baseStats.maxHealth = atoi (getEntityValue (monEntity, "maxHP"));
+        // c.baseStats.strength = atoi (getEntityValue (monEntity, "strength"));
+        // c.attack.hitchance = atoi (getEntityValue (monEntity, "hitchance"));
+        // c.attack.attackPower = atoi (getEntityValue (monEntity, "attack_power"));
+        // c.attack.spellPower = atoi (getEntityValue (monEntity, "spell_power"));
+        // c.attack.attackSpeed = atoi (getEntityValue (monEntity, "attack_speed"));
+        // c.attack.criticalStrike = atoi (getEntityValue (monEntity, "critical"));
+        // c.defense.armor = atoi (getEntityValue (monEntity, "armor"));
+        // c.defense.dodge = atoi (getEntityValue (monEntity, "dodge"));
+        // c.defense.parry = atoi (getEntityValue (monEntity, "parry"));
+        // c.defense.block = atoi (getEntityValue (monEntity, "block"));
+
+        c.baseStats.maxHealth = 100;
+        c.baseStats.health = c.baseStats.maxHealth;
+        c.baseStats.strength = 10;
+        c.attack.hitchance = 50;
+        c.attack.attackPower = 10;
+        c.attack.spellPower = 0;
+        c.attack.attackSpeed = 1;
+        c.attack.criticalStrike = 50;
         c.defense.armor = 10;
         c.defense.block = 0;
         c.defense.dodge = 0;
         c.defense.parry = 0;
 
-        addComponent (go, COMBAT, &c);
+        addComponent (monster, COMBAT, &c);
     }
+
+    return monster;
 
 }
 
@@ -1206,10 +1258,10 @@ extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 void updateGame (void) {
 
     if (playerTookTurn) {
-        // fprintf (stdout, "Updating game!\n");
         Position *playerPos = (Position *) getComponent (player, POSITION);
         generateTargetMap (playerPos->x, playerPos->y);
         updateMovement ();
+        // TODO: update lifetime
 
         playerTookTurn = false;
     }

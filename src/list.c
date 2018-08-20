@@ -202,7 +202,10 @@ bool isInList (List *list, void *data) {
 
     ListElement *ptr = LIST_START (list);
     while (ptr != NULL) {
-        if (ptr->data == data) return true;
+        if (ptr->data == data) {
+            fprintf (stdout, "Is in list\n");
+            return true;
+        } 
         ptr = ptr->next;
     }
 
