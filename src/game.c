@@ -508,9 +508,21 @@ void *getComponent (GameObject *go, GameComponent type) {
 
 }
 
+// TESTING 19/08/2018 -- 19:04
+// FIXME: HOW CAN WE MANAGE THE WALLS!!!!???
 List *getObjectsAtPos (u32 x, u32 y) {
 
-    // FIXME:
+    // Position *pos = NULL;
+    // List *retVal = initList (free);
+    // for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+    //     pos = (Position *) getComponent ((GameObject *) e->data, POSITION);
+    //     if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
+    // }
+
+    // if (LIST_SIZE (retVal) > 0) return retVal;
+    // else return NULL;
+
+    return NULL;
 
 }
 
@@ -871,6 +883,8 @@ Position *getPos (i32 id) {
 // simple movement update for our entities based on the Dijkstra's map
 // TODO: maybe we can create a more advanced system based on a state machine??
 // TODO: this is a good place for multi-threading... I am so excited ofr that!!!
+// TODO: maybe a more efficient way is to only update the movement of the
+// enemies that are in a close range?
 void updateMovement () {
 
     for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
@@ -1122,7 +1136,7 @@ void fight (GameObject *attacker, GameObject *defender) {
 
 /*** MANAGER ***/
 
-extern void calculateFov (u32 xPos, u32 yPos, u32 (*fovmap)[MAP_HEIGHT]);
+extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 // we will have the game update every time the player moves...
 void updateGame (void) {

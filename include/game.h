@@ -205,9 +205,9 @@ extern GameObject *player;
 /*** Game Objects ***/
 
 extern GameObject *createGO (void);
-void *getComponent (GameObject *, GameComponent);
-void addComponent (GameObject *go, GameComponent type, void *data);
-
+extern void *getComponent (GameObject *, GameComponent);
+extern void addComponent (GameObject *go, GameComponent type, void *data);
+extern List *getObjectsAtPos (u32 x, u32 y);
 
 /*** LEVEL MANAGER ***/
 

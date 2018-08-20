@@ -87,15 +87,17 @@ FovCell mapCellForLocalCell (u8 sector, FovCell heroMapCell, FovCell cellToTrans
 
 bool cellBlocksSight (u32 x, u32 y) {
 
-    // List *gos = gosAtPosition (x, y);
-    // if (gos != NULL) {
-    //     for (ListElement *e = LIST_START (gos); e != NULL; e = e->next) {
-    //         GameObject *go = (GameObject *) LIST_DATA (e);
-    //         Physics *phys = (Physics *) getComponent (go, PHYSICS);
-    //         if (phys->blocksSight) return true;
-    //     }
-    // }
+    List *gos = getObjectsAtPos (x, y);
+    if (gos != NULL) {
+        for (ListElement *e = LIST_START (gos); e != NULL; e = e->next) {
+            if (((Physics *) getComponent ((GameObject *) LIST_DATA (e), PHYSICS))->blocksSight) {
+                free (gos);
+                return true;
+            } 
+        }
+    }
 
+    free (gos);
     return false;
 
 }
@@ -106,25 +108,27 @@ float distnaceBetween (u32 x1, u32 y1, u32 x2, u32 y2) {
 
 }
 
-void calculateFov (u32 xPos, u32 yPos, u32 (*fovmap)[MAP_HEIGHT]) {
+void calculateFov (u32 xPos, u32 yPos, u32 fovmap[MAP_WIDTH][MAP_HEIGHT]) {
 
     // default state
-    // FIXME: does this work properly?
-    memset (fovmap, 0, sizeof (fovmap));
+    // memset (fovmap, 0, sizeof (fovmap));
+    for (u32 x = 0; x < MAP_WIDTH; x++)
+        for (u32 y = 0; y < MAP_HEIGHT; y++)
+            fovmap[x][y] = 0;
 
     // mark the position as visible
     fovmap[xPos][yPos] = 1;
 
     // loop through all 8 sectors around the pos
-    for (short unsigned int i = 1; i <= 8; i++) {
+    for (u8 i = 1; i <= 8; i++) {
         bool prevBlocking = false;
         shadoCount = 0;
         float shadowStart = 0.0;
         float shadowEnd = 0.0;
 
-        for (short unsigned int cellY = 1; cellY < FOV_DISTANCE; cellY++) {
+        for (u32 cellY = 1; cellY < FOV_DISTANCE; cellY++) {
             prevBlocking = false;
-            for (short unsigned int cellX = 0; cellX <= cellY; cellX++) {
+            for (u32 cellX = 0; cellX <= cellY; cellX++) {
                 // translate cellX, cellY to map coordinates
                 FovCell heroCell = { xPos, yPos };
                 FovCell cellToTranslate = { cellX, cellY };

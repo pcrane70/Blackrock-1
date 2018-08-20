@@ -69,36 +69,43 @@ static void renderMap (Console *console) {
             p = (Position *) getComponent (go, POSITION);
             if (p != NULL && p->layer == layer) {
                 g = getComponent (go, GRAPHICS);
-                if (fovMap[p->x][p->y] > 0) {
-                    g->hasBeenSeen = true;
-                    putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
-                    layerRendered[p->x][p->y] = p->layer;
-                }
+                // FIXME: FOV
+                // if (fovMap[p->x][p->y] > 0) {
+                //     g->hasBeenSeen = true;
+                //     putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+                //     layerRendered[p->x][p->y] = p->layer;
+                // }
 
-                else if (g->visibleOutsideFov && g->hasBeenSeen) {
-                    fullColor = g->fgColor;
-                    fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
-                    putCharAt (console, g->glyph, p->x, p->y, fadedColor, 0x000000FF);
-                    layerRendered[p->x][p->y] = p->layer;
-                }
+                // else if (g->visibleOutsideFov && g->hasBeenSeen) {
+                //     fullColor = g->fgColor;
+                //     fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
+                //     putCharAt (console, g->glyph, p->x, p->y, fadedColor, 0x000000FF);
+                //     layerRendered[p->x][p->y] = p->layer;
+                // }
+
+                putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+                layerRendered[p->x][p->y] = p->layer;
             }
             
         }
     }    
 
+    // FIXME: FOV
     // 19/08/2018 -- 17:53 -- we are assuming all walls are visible outside fov
-    for (unsigned int i = 0; i < wallCount; i++) {
-        if (fovMap[walls[i].x][walls[i].y] > 0) {
-            walls[i].hasBeenSeen = true;
-            putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
-        }
+    // for (unsigned int i = 0; i < wallCount; i++) {
+    //     if (fovMap[walls[i].x][walls[i].y] > 0) {
+    //         walls[i].hasBeenSeen = true;
+    //         putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
+    //     }
 
-        else if (walls[i].hasBeenSeen) 
-            putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFadedColor, wallsBgColor);
+    //     else if (walls[i].hasBeenSeen) 
+    //         putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFadedColor, wallsBgColor);
         
-    }
-        
+    // }
 
+    for (short unsigned int i = 0; i < wallCount; i++) 
+        putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
+        
 }
 
 static void rednderStats (Console *console) {

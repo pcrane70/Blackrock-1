@@ -27,7 +27,7 @@ typedef struct Segment {
 // slightly differently
 typedef struct Wall {
 
-    u8 x, y; // position
+    u32 x, y; // position
 
     // graphics
     // asciiChar glyph;
