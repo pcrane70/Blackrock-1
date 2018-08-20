@@ -239,6 +239,10 @@ extern bool recalculateFov;
 
 extern void getItem ();
 
+/*** COMBAT ***/
+
+extern void fight (GameObject *attacker, GameObject *defender);
+
 
 // Cleanning Up!
 extern void cleanUpGame (void);

@@ -2,6 +2,8 @@
 
 #include "game.h"
 
+#include "list.h"
+
 #include "ui/ui.h"
 #include "ui/gameUI.h"
 
@@ -9,6 +11,23 @@
 // Movement with wsad   03/08/2018
 
 // TODO: recalculate the fov every time the player moves
+
+void resolveCombat (Position newPos) {
+
+    // check what is blocking the movement
+    List *blockers = getObjectsAtPos (newPos.x, newPos.y);
+    if (blockers == NULL || LIST_SIZE (blockers) <= 0) return;
+    for (ListElement *e = LIST_START (blockers); e != NULL; e= e->next) {
+        Combat *c = (Combat *) getComponent ((GameObject *) e->data, COMBAT);
+        if (c != NULL) {
+            fight (player, (GameObject *) e->data);
+            break;
+        }
+    }
+
+    free (blockers);
+
+}
 
 Position *playerPos = NULL;
 Position newPos;
@@ -30,10 +49,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                     recalculateFov = true;
                     playerPos->y = newPos.y;
                 } 
-                else {
-                    // check what is blocking the movement
-
-                }
+                else resolveCombat (newPos);
                 playerTookTurn = true; 
                 break;
             case SDLK_s: 
@@ -43,6 +59,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                     recalculateFov = true;
                     playerPos->y = newPos.y;
                 } 
+                else resolveCombat (newPos);
                 playerTookTurn = true;
                 break;
             case SDLK_a: 
@@ -52,6 +69,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                     recalculateFov = true;
                     playerPos->x = newPos.x;
                 } 
+                else resolveCombat (newPos);
                 playerTookTurn = true; 
                 break;
             case SDLK_d:
@@ -61,6 +79,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                     recalculateFov = true;
                     playerPos->x = newPos.x;
                 } 
+                else resolveCombat (newPos);
                 playerTookTurn = true;
                 break;
 

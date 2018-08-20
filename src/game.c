@@ -209,11 +209,10 @@ GameObject *initPlayer (void) {
     // get class
     CharClass cClass = atoi (getEntityValue (playerEntity, "class"));
     p.cClass = cClass;
-
     ConfigEntity *classEntity = getEntityWithId (classesConfig, p.cClass);
     p.color = xtoi (getEntityValue (classEntity, "color"));
-    p.maxWeight = atoi (getEntityValue (classEntity, "maxWeight"));
 
+    p.maxWeight = atoi (getEntityValue (playerEntity, "maxWeight")) + atoi (getEntityValue (classEntity, "weightMod"));
     addComponent (go, PLAYER, &p);
 
     // As of 18/08/2018 -- 23-21 -- the color of the glyph is based on the class
@@ -221,10 +220,24 @@ GameObject *initPlayer (void) {
     Graphics g = { 0, glyph, p.color, 0x000000FF };
     addComponent (go, GRAPHICS, &g);
 
-    // TODO: add combat component 
     // TODO: modify the combat component based on the class
     // we need to have a file where we can read the stats we have saved
     // also we need to take into account that every class has different stats
+    Combat c;
+    c.baseStats.maxHealth = atoi (getEntityValue (playerEntity, "maxHealth"));
+    c.baseStats.strength = atoi (getEntityValue (playerEntity, "strength"));
+    c.attack.hitchance = 70;    // FIXME:
+    c.attack.attackPower = 10;
+    c.attack.spellPower = 0;
+    c.attack.criticalStrike = 20;
+
+    // FIXME: add defense
+    c.defense.armor = 10;
+    c.defense.block = 0;
+    c.defense.dodge = 0;
+    c.defense.parry = 0;
+
+    addComponent (go, COMBAT, &c);
 
     return go;
 
@@ -512,17 +525,15 @@ void *getComponent (GameObject *go, GameComponent type) {
 // FIXME: HOW CAN WE MANAGE THE WALLS!!!!???
 List *getObjectsAtPos (u32 x, u32 y) {
 
-    // Position *pos = NULL;
-    // List *retVal = initList (free);
-    // for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
-    //     pos = (Position *) getComponent ((GameObject *) e->data, POSITION);
-    //     if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
-    // }
+    Position *pos = NULL;
+    List *retVal = initList (free);
+    for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+        pos = (Position *) getComponent ((GameObject *) e->data, POSITION);
+        if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
+    }
 
-    // if (LIST_SIZE (retVal) > 0) return retVal;
-    // else return NULL;
-
-    return NULL;
+    if (LIST_SIZE (retVal) > 0) return retVal;
+    else return NULL;
 
 }
 
@@ -1018,6 +1029,18 @@ void createMonster (GameObject *go) {
 
         Movement mv = { .speed = 1, .frecuency = 1, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
         addComponent (go, MOVEMENT, &mv);
+
+        // FIXME:
+        Combat c;
+        c.baseStats.maxHealth = 100;
+        c.baseStats.strength = 10;
+
+        c.defense.armor = 10;
+        c.defense.block = 0;
+        c.defense.dodge = 0;
+        c.defense.parry = 0;
+
+        addComponent (go, COMBAT, &c);
     }
 
 }
@@ -1037,22 +1060,23 @@ void fight (GameObject *attacker, GameObject *defender) {
         // first get the weapon dps
         // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
         // FIXME: we need a better way to get what ever the charcter is wielding
-        GameObject *go = NULL;
-        Item *i = NULL;
-        Item *weapon = NULL;
-        for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-            go = (GameObject *) e->data;
-            i = (Item *) getComponent (go, ITEM);
-            if (i->wielding == true) {
-                weapon = i;
-                break;
-            } 
-        }
+        // GameObject *go = NULL;
+        // Item *i = NULL;
+        // Item *weapon = NULL;
+        // for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+        //     go = (GameObject *) e->data;
+        //     i = (Item *) getComponent (go, ITEM);
+        //     if (i->wielding == true) {
+        //         weapon = i;
+        //         break;
+        //     } 
+        // }
 
         // generate the attack based on the attacked modifiers
         // TODO: check for independent class modifiers, for example:
         // check for attackPower for knights and spellPower for mages
-        u32 damage = weapon->dps;   // base damage
+        // u32 damage = weapon->dps;   // base damage
+        u32 damage = 10;
 
         // add modifiers
         // take into account the base attack power
