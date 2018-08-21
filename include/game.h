@@ -21,9 +21,7 @@ typedef enum GameComponent {
     MOVEMENT,
     COMBAT,
     ITEM, 
-    EQUIPMENT, 
-    TREASURE,
-    ANIMATION,
+    EVENT,
     PLAYER,
 
     COMP_COUNT
@@ -148,6 +146,17 @@ typedef struct Item {
     bool wielding;
 
 } Item;
+
+// 21/08/2018 -- 6:41 -- testing a type of event handlers with a type of delegates
+// using them as event listeners... I guess...
+typedef void (*EventListener)(void);
+
+typedef struct Event {
+
+    u32 objectId;
+    EventListener callback;
+
+} Event;
 
 
 /*** OUR LISTS ***/

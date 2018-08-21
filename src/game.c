@@ -287,7 +287,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPhys->blocksMovement = physData->blocksMovement;
 
             go->components[type] = newPhys;
-            insertAfter (graphics, NULL, newPhys);
+            insertAfter (physics, NULL, newPhys);
         } break;
         case MOVEMENT: {
             if (getComponent (go, type) != NULL) return;
@@ -361,6 +361,17 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             go->components[type] = newPlayer;
             // TODO: maybe in multiplayer we will need a list of items
         } break;
+        case EVENT: {
+            if (getComponent (go, type) != NULL) return;
+            Event *newEvent = (Event *) malloc (sizeof (Event));
+            Event *eventData = (Event *) data;
+            newEvent->objectId = go->id;
+            newEvent->callback = eventData->callback;
+
+            go->components[type] = newEvent;
+
+            // FIXME: do we need a list and a pool of events??
+        }
 
         // We have an invalid GameComponent type, so don't do anything
         default: break;
@@ -1254,8 +1265,28 @@ void updateGame (void) {
 
 }
 
-// TODO: use stairs
+// gets you into a nw level
+void useStairs (void) {
 
+    currentLevel->levelNum += 1;
+
+    // FIXME: generate a new level taking into a account the new level num I guess
+    void generateLevel (void);
+    generateLevel ();
+
+    // Position *playerPos = (Position *)game_object_get_component(player, COMP_POSITION);
+    // fov_calculate(playerPos->x, playerPos->y, fovMap);
+    // generate_target_map(playerPos->x, playerPos->y);
+
+    // TODO: what is our win condition?
+
+    char *msg = createString ("You are now on level %i", currentLevel->levelNum);
+    logMessage (msg, 0xFFFFFFFF);
+    free (msg);
+
+    // logMessage ("Event triggered!!!", SUCCESS_COLOR);
+
+}
 
 void generateLevel () {
 
@@ -1285,6 +1316,8 @@ void generateLevel () {
     addComponent (stairs, GRAPHICS, &g);
     Physics phys = { 0, false, false };
     addComponent (stairs, PHYSICS, &phys);
+    Event e = { 0, useStairs };
+    addComponent (stairs, EVENT, &e);
 
     fprintf (stdout, "Creating monsters...\n");
     // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave

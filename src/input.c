@@ -102,8 +102,21 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 playerTookTurn = true;
                 break;
 
-            // TODO: thi is used as a master key to have interaction with various items
-            // case SDLK_e: break;
+            // 21/08/2018 -- 6:51 -- this is used as the interactable button
+            case SDLK_e: {
+                // loop through all of our surrounding items in search for 
+                // an event listener to trigger
+                List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
+                for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
+                    Event *ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
+                    // trigger just the first event we find
+                    if (ev != NULL) {
+                        ev->callback ();
+                        break;
+                    }
+                }
+                free (gos);
+            } break;
 
             case SDLK_g: getItem (); break;
 
