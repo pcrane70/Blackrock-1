@@ -62,8 +62,10 @@ bool recalculateFov = false;
 
 extern void die (void);
 
-// Inits the wolrd, this will be all the 'physical part' that takes place in a world
-void initWorld (void) {
+// This should only be called once!
+// Inits the global state of the game
+// Inits all the data and structures for an initial game
+void initGame (void) {
 
     gameObjects = initList (free);
     positions = initList (free);
@@ -109,89 +111,25 @@ void initWorld (void) {
         die ();
     }
 
+    void initWorld (void);
+    initWorld ();
+
 }
 
-// Inits the global state of the game
-// Inits all the data and structures for an initial game
-// This should be called only once when we init run the app
-void initGame (void) {
-
-    initWorld ();
+// TODO: this inits the game to the tavern/village
+// TODO: this can be a good place to check if we have a save file of a map and load that from disk
+void initWorld (void) {
 
     GameObject *initPlayer (void);
     player = initPlayer ();
     playerComp = (Player *) getComponent (player, PLAYER);
 
-    // TODO:
-    // aftwe we have initialize our structures and allocated the memory,
-    // we will want to load the in game menu (tavern)
+    // TODO: we will want to load the in game menu (tavern)
 
-    // FIXME: as of 12/08/2018 -- 19:43 -- we don't have the tavern ready, so we will go
-    // straigth into the dungeon...
-
-    // TODO: make sure that we have cleared the last level data
-    // clear gameObjects and properly handle memory 
-
-    // TODO: this can be a good place to check if we have a save file of a map and load thhat from disk
-
-    currentLevel = (Level *) malloc (sizeof (Level));
-    currentLevel->levelNum = 1;
-    currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
-    for (short unsigned int i = 0; i < MAP_WIDTH; i++)
-        currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
-
-    // currentLevel->walls = (Wall **) calloc (MAP_WIDTH, sizeof (Wall *));
-    // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
-    //     currentLevel->walls[i] = (Wall *) calloc (MAP_HEIGHT, sizeof (Wall));
-
-    // generate a random world froms scratch
-    // TODO: maybe later we want to specify some parameters based on difficulty?
-    // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
-    // to generate rooms and for generating caves or open fiels
-
-    // after we have allocated the new level, generate the map
-    // this is used to render the walls to the screen... but maybe it is not a perfect system
-    initMap (currentLevel->mapCells);
-
-    // TODO: after the map has been init, place all the objects, NPCs and enemies, etc
-
-    fprintf (stdout, "Creating monsters...\n");
-    // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave
-    GameObject *createMonster (void);
-    for (short unsigned int i = 0; i < 10; i++) {
-        GameObject *monster = createMonster ();
-        // spawn in a random position
-        Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
-        Position *monsterPos = (Position *) getComponent (monster, POSITION);
-        monsterPos->x = (u8) monsterSpawnPos.x;
-        monsterPos->y = (u8) monsterSpawnPos.y;
-        // TODO: mark the spawnPos as filled
-        fprintf (stdout, "Created a new monster!\n");
-    }
-
-    // 15/08/2018 -- 18:09 -- lets sprinckle some items trough the level and see how they behave
-    // void createItem (char *name, u8 xPos, u8 yPos, u8 layer,
-    //  asciiChar glyph, u32 fgColor, i32 quantity, i32 weight, i32 lifetime);
-    // for (short unsigned int i = 0; i < 2; i++) {
-    //     Point spawnPos = getFreeSpot (currentLevel->mapCells);
-    //     createItem ("Test Item", spawnPos.x, spawnPos.y, MID_LAYER, 'I', 0xFFFFFFFF, 1, 1, 20);
-    // }  
-
-    // FIXME:
-    // 20/08/2018 -- 17:24 -- our items are broken until we have a config file
-    GameObject *createItem (u8);
-
-    // finally, we have a map full with monsters, so we can place the player and we are done 
-    fprintf (stdout, "Spawning the player...\n");
-    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    playerPos->x = (u8) playerSpawnPos.x;
-    playerPos->y = (u8) playerSpawnPos.y;
-
-    fprintf (stdout, "Done initializing game!\n");
-    logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
-
-    fprintf (stdout, "Game Objects: %i\n", LIST_SIZE (gameObjects));
+    // 20/08/2018 -- 22:51 -- as we don't have the tavern an the main menu ready, we will go staright into a new
+    // game inside the dungeon
+    void enterDungeon (void);
+    enterDungeon ();
     
 }
 
@@ -635,6 +573,23 @@ void cleanUpGame (void) {
     // clean up the player
     destroyList (((Player *) getComponent (player, PLAYER))->inventory);
     free (playerComp);
+
+    // clear the configs
+    clearConfig (playerConfig);
+    clearConfig (classesConfig);
+    clearConfig (monsterConfig);
+    clearConfig (itemsConfig);
+
+}
+
+// This is called every time we generate a new level to start fresh, only from data from the pool
+void clearOldLevel (void) {
+
+    if (gameObjects == NULL) return;
+
+    // send all of our objects and components to ther pools
+    for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next)
+        destroyGO ((GameObject *) e->data);
 
 }
 
@@ -1155,6 +1110,7 @@ GameObject *createMonster (void) {
 
 /*** COMBAT ***/
 
+// FIXME:
 void fight (GameObject *attacker, GameObject *defender) {
 
     Combat *att = (Combat *) getComponent (attacker, COMBAT);
@@ -1267,6 +1223,14 @@ void fight (GameObject *attacker, GameObject *defender) {
 
 /*** MANAGER ***/
 
+// As of 9/08/2018 -- 17:00 -- we only asks the player if he wants to play again
+// TODO: maybe later we can first display a screen with a score and then ask him to play again
+void gameOver (void) {
+
+
+
+}
+
 extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 // we will have the game update every time the player moves...
@@ -1290,10 +1254,86 @@ void updateGame (void) {
 
 }
 
-// As of 9/08/2018 -- 17:00 -- we only asks the player if he wants to play again
-// TODO: maybe later we can first display a screen with a score and then ask him to play again
-void gameOver (void) {
+// TODO: use stairs
 
 
+void generateLevel () {
+
+    // make sure we have cleaned the previous level data
+    clearOldLevel ();
+
+    // FIXME: THIS IS ONLY FOR DEBUGGING
+    fprintf (stdout, "GO Pool: %i  ", goPool->size);
+    fprintf (stdout, "Pos Pool: %i  ", posPool->size);
+    fprintf (stdout, "Graphics Pool: %i  ", graphicsPool->size);
+    fprintf (stdout, "Phys Pool: %i  ", physPool->size);
+    fprintf (stdout, "Move Pool: %i  ", movePool->size);
+    fprintf (stdout, "Combat Pool: %i  ", combatPool->size);
+    fprintf (stdout, "Item Pool: %i  ", itemsPool->size);
+
+    // this is used to render the walls to the screen... but maybe it is not a perfect system
+    initMap (currentLevel->mapCells);
+
+    // TODO: create other map elements such as stairs
+    // As of 20/08/2018 -- 23:18 -- we can only move through the dungeon using the stair cases
+    // but we can only move forward, we can not return to the previous level
+    GameObject *stairs = createGO ();
+    Point stairsPoint = getFreeSpot (currentLevel->mapCells);
+    Position p = { 0, stairsPoint.x, stairsPoint.y, MID_LAYER };
+    addComponent (stairs, POSITION, &p);
+    Graphics g = { 0, '<', 0xFFD700FF, 0x00000000, false, true, "Stairs" };
+    addComponent (stairs, GRAPHICS, &g);
+    Physics phys = { 0, false, false };
+    addComponent (stairs, PHYSICS, &phys);
+
+    fprintf (stdout, "Creating monsters...\n");
+    // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave
+    GameObject *createMonster (void);
+    for (short unsigned int i = 0; i < 10; i++) {
+        GameObject *monster = createMonster ();
+        // spawn in a random position
+        Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
+        Position *monsterPos = (Position *) getComponent (monster, POSITION);
+        monsterPos->x = (u8) monsterSpawnPos.x;
+        monsterPos->y = (u8) monsterSpawnPos.y;
+        // TODO: mark the spawnPos as filled
+        fprintf (stdout, "Created a new monster!\n");
+    }
+
+    // FIXME:
+    // 20/08/2018 -- 17:24 -- our items are broken until we have a config file
+    GameObject *createItem (u8);
+
+    // finally, we have a map full with monsters, so we can place the player and we are done 
+    fprintf (stdout, "Spawning the player...\n");
+    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    playerPos->x = (u8) playerSpawnPos.x;
+    playerPos->y = (u8) playerSpawnPos.y;
+
+}
+
+// This should only run when we enter the dungeon directly from the menu / taver or village
+// IT SHOULD NOT BE CALLED FROM INSIDE THE DUNGEON!!
+void enterDungeon (void) {
+
+    if (currentLevel == NULL) {
+        currentLevel = (Level *) malloc (sizeof (Level));
+        currentLevel->levelNum = 1;
+        currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
+        for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+            currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
+    } 
+    
+    // generate a random world froms scratch
+    // TODO: maybe later we want to specify some parameters based on difficulty?
+    // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
+    // to generate rooms and for generating caves or open fields
+
+    // after we have allocated the new level structure, we can start generating the first level
+    generateLevel ();
+
+    fprintf (stdout, "Done initializing game!\n");
+    logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
 
 }

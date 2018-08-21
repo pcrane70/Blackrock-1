@@ -150,3 +150,18 @@ void writeConfigFile (char *filename, Config *config) {
     fclose (configFile);
 
 }
+
+/*** CLEAN UP ***/
+
+void clearConfig (Config *cfg) {
+
+    if (cfg == NULL) return;
+
+    // clear each entity values
+    for (ListElement *e = LIST_START (cfg->entities); e != NULL; e = e->next) 
+        destroyList (((ConfigEntity *) e->data)->keyValuePairs);
+    
+    destroyList (cfg->entities);
+    free (cfg);
+
+}
