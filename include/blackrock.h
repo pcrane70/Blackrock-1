@@ -6,7 +6,7 @@
 
 #include <SDL2/SDL.h>
 
-#define SCREEN_WIDTH    1280
+#define SCREEN_WIDTH    1280    
 #define SCREEN_HEIGHT   720
 
 // TODO: how much space do we want to leave for the HUD??

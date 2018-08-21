@@ -436,7 +436,7 @@ void initMap (bool **mapCells) {
         for (u32 y = 0; y < MAP_HEIGHT; y++) 
             mapCells[x][y] = true;
 
-    // FIXME: make sure to reset the walls array!!!
+    wallCount = 0;
 
     fprintf (stdout, "Generating the map...\n");
     generateMap (mapCells);

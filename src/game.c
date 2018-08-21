@@ -1330,7 +1330,7 @@ void generateLevel () {
         monsterPos->x = (u8) monsterSpawnPos.x;
         monsterPos->y = (u8) monsterSpawnPos.y;
         // TODO: mark the spawnPos as filled
-        fprintf (stdout, "Created a new monster!\n");
+        // fprintf (stdout, "Created a new monster!\n");
     }
 
     // FIXME:
@@ -1343,6 +1343,15 @@ void generateLevel () {
     Position *playerPos = (Position *) getComponent (player, POSITION);
     playerPos->x = (u8) playerSpawnPos.x;
     playerPos->y = (u8) playerSpawnPos.y;
+
+    // FIXME: THIS IS ONLY FOR DEBUGGING
+    fprintf (stdout, "GO Pool: %i  ", goPool->size);
+    fprintf (stdout, "Pos Pool: %i  ", posPool->size);
+    fprintf (stdout, "Graphics Pool: %i  ", graphicsPool->size);
+    fprintf (stdout, "Phys Pool: %i  ", physPool->size);
+    fprintf (stdout, "Move Pool: %i  ", movePool->size);
+    fprintf (stdout, "Combat Pool: %i  ", combatPool->size);
+    fprintf (stdout, "Item Pool: %i  ", itemsPool->size);
 
 }
 

@@ -8,8 +8,6 @@
 
 #include "objectPool.h"
 
-// 11/08/2018 -- object pool will be on hold for now...
-
 // TODO: add the avility to init a pool with some members
 Pool *initPool (void) {
 
