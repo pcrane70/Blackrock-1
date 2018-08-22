@@ -101,7 +101,7 @@ typedef struct Stats {
 typedef struct Attack {
 
     u32 hitchance;      // chance to not miss the target
-    u32 attackPower;    // an ogre has a higher attack power than a kobolde
+    u32 baseDps;        // this is mostly for npcs
     u32 attackSpeed;    // how many hits per turn
     u32 spellPower;     // similar to attack power but for mages, etc
     u32 criticalStrike;     // chance to hit a critical (2x more powerful than normal)

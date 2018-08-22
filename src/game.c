@@ -1077,39 +1077,24 @@ GameObject *createMonster (void) {
         Physics phys = { 0, true, true };
         addComponent (monster, PHYSICS, &phys);
 
-        // FIXME:
-        // u32 speed = atoi (getEntityValue (monEntity, "mv_speed"));
-        // u32 frecuency = atoi (getEntityValue (monEntity, "mv_frequency"));
-        Movement mv = { .speed = 1, .frecuency = 1, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
+        u32 speed = atoi (getEntityValue (monEntity, "mv_speed"));
+        u32 frecuency = atoi (getEntityValue (monEntity, "mv_frequency"));
+        Movement mv = { .speed = speed, .frecuency = frecuency, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
         addComponent (monster, MOVEMENT, &mv);
 
-        // FIXME:
         Combat c;
 
-        // c.baseStats.maxHealth = atoi (getEntityValue (monEntity, "maxHP"));
-        // c.baseStats.strength = atoi (getEntityValue (monEntity, "strength"));
-        // c.attack.hitchance = atoi (getEntityValue (monEntity, "hitchance"));
-        // c.attack.attackPower = atoi (getEntityValue (monEntity, "attack_power"));
-        // c.attack.spellPower = atoi (getEntityValue (monEntity, "spell_power"));
-        // c.attack.attackSpeed = atoi (getEntityValue (monEntity, "attack_speed"));
-        // c.attack.criticalStrike = atoi (getEntityValue (monEntity, "critical"));
-        // c.defense.armor = atoi (getEntityValue (monEntity, "armor"));
-        // c.defense.dodge = atoi (getEntityValue (monEntity, "dodge"));
-        // c.defense.parry = atoi (getEntityValue (monEntity, "parry"));
-        // c.defense.block = atoi (getEntityValue (monEntity, "block"));
-
-        c.baseStats.maxHealth = 100;
-        c.baseStats.health = c.baseStats.maxHealth;
-        c.baseStats.strength = 10;
-        c.attack.hitchance = 50;
-        c.attack.attackPower = 10;
-        c.attack.spellPower = 0;
-        c.attack.attackSpeed = 1;
-        c.attack.criticalStrike = 50;
-        c.defense.armor = 10;
-        c.defense.block = 0;
-        c.defense.dodge = 0;
-        c.defense.parry = 0;
+        c.baseStats.maxHealth = atoi (getEntityValue (monEntity, "maxHP"));
+        c.baseStats.strength = atoi (getEntityValue (monEntity, "strength"));
+        c.attack.baseDps = atoi (getEntityValue (monEntity, "baseDps"));
+        c.attack.hitchance = atoi (getEntityValue (monEntity, "hitchance"));
+        c.attack.attackSpeed = atoi (getEntityValue (monEntity, "attack_speed"));
+        c.attack.spellPower = atoi (getEntityValue (monEntity, "spell_power"));
+        c.attack.criticalStrike = atoi (getEntityValue (monEntity, "critical"));
+        c.defense.armor = atoi (getEntityValue (monEntity, "armor"));
+        c.defense.dodge = atoi (getEntityValue (monEntity, "dodge"));
+        c.defense.parry = atoi (getEntityValue (monEntity, "parry"));
+        c.defense.block = atoi (getEntityValue (monEntity, "block"));
 
         addComponent (monster, COMBAT, &c);
     }
@@ -1155,7 +1140,7 @@ void fight (GameObject *attacker, GameObject *defender) {
         // add modifiers
         // take into account the base attack power
         // if it has a melee weapon, take into account the strenght
-        damage += (att->baseStats.strength + att->attack.attackPower);
+        // damage += (att->baseStats.strength + att->attack.attackPower);
 
         // take a roll to decide if we can hit a critical
         u32 critical = (u32) randomInt (1, 100);
@@ -1321,7 +1306,6 @@ void generateLevel () {
 
     fprintf (stdout, "Creating monsters...\n");
     // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave
-    GameObject *createMonster (void);
     for (short unsigned int i = 0; i < 10; i++) {
         GameObject *monster = createMonster ();
         // spawn in a random position
