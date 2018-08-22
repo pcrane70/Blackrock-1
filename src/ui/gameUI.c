@@ -41,13 +41,7 @@ asciiChar wallGlyph = '#';  // 19/08/2018 -- 18:00 -- we are assuming that are w
 
 static void renderMap (Console *console) {
 
-    // render the player
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
-    putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
-
-    // setup the layer rendering
-    
+    // setup the layer rendering    
     for (u32 x = 0; x < MAP_WIDTH; x++)
         for (u32 y = 0; y < MAP_HEIGHT; y ++)   
             layerRendered[x][y] = UNSET_LAYER;
@@ -101,23 +95,33 @@ static void renderMap (Console *console) {
     for (short unsigned int i = 0; i < wallCount; i++) 
         putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
         
+    // render the player
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
+    putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
+
 }
 
+// FIXME: create a more efficient way
 static void rednderStats (Console *console) {
 
     UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
     drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
 
-    putStringAt (console, playerComp->name, 0, 0, 0xFFFFFFFF, 0x00000000);
-
     // FIXME:
+    char *str = createString ("%s the warrior", playerComp->name);
+    putStringAt (console, str, 0, 0, 0xFFFFFFFF, 0x00000000);
+
     // player health
-    putCharAt (console, 'H', 0, 1, 0xFF990099, 0x00000000);
-    putCharAt (console, 'P', 1, 1, 0xFF990099, 0x00000000);
-    i32 leftX = 3;
-    i32 barWidth = 16;
+    // FIXME:
+    Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
+    // TODO: make this have dynamic colors
+    str = createString ("HP: %i/%i", playerCombat->baseStats.health, playerCombat->baseStats.maxHealth);
+    putStringAt (console, str, 0, 1, 0xFF990099, 0x00000000);
 
     // TODO: what other stats do we want to render?
+
+    free (str);
 
 }
 

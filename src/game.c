@@ -699,9 +699,6 @@ u32 getCarriedWeight (void) {
 
 }
 
-// An item is everithing a character can pickup and manipulate.
-// It can be miscellaneous, a weapon, or a piece of equipment
-
 // Function to get/pickup a nearby item
 // As of 16/08/2018:
 // The character must be on the same coord as the item to be able to pick it up
@@ -742,6 +739,14 @@ void getItem (void) {
     }
 
     free (objects);
+
+}
+
+// loots the monster corpse
+// TODO: how do we generate random items?
+void loot (void) {
+
+    logMessage ("You loot the monster corpse.", SUCCESS_COLOR);
 
 }
 
@@ -829,13 +834,15 @@ void equipItem (GameObject *go) {
 
 // TODO: crafting
 
-// TODO: what other actions maybe want for items?
-
-// only reduce lifetime of weapons, and equipment
 // TODO: I think we will want to add the ability to repair your items in a shop,
 // but only if they are above 0, if you don't repair your items soon enough, 
 // you will lose them
-void updateLifeTime () {
+void repairItems (void) {
+
+}
+
+// only reduce lifetime of weapons, and equipment
+void updateLifeTime (void) {
 
     GameObject *go = NULL;
     Item *item = NULL;
@@ -1087,16 +1094,11 @@ void updateMovement () {
 
 }
 
-
-// 14/08/2018 -- 23:02 -- test function to spawn some monsters to test their behaivour
-GameObject *createMonster (void) {
+GameObject *createMonster (u8 id) {
 
     GameObject *monster = NULL;
 
-    // FIXME: do we want appearance prob for monsters??
-
-    // FIXME: this is just for testing -- 18/08/2018 -- 21:35
-    ConfigEntity *monEntity = getEntityWithId (monsterConfig, 202);
+    ConfigEntity *monEntity = getEntityWithId (monsterConfig, id);
     
     if (monEntity != NULL) {
         monster = createGO ();
@@ -1135,12 +1137,56 @@ GameObject *createMonster (void) {
         c.baseStats.maxHealth = (atoi (getEntityValue (monEntity, "baseHP"))) + c.defense.armor;
         c.baseStats.health = c.baseStats.maxHealth;
 
-        fprintf (stdout, "Health: %i\n", c.baseStats.health);
-
         addComponent (monster, COMBAT, &c);
     }
 
     return monster;
+
+}
+
+// 22/08/2018 -- 7:11 -- this is our first random monster generation function
+// TODO: maybe later also take into account the current level
+// FIXME: create a better system
+u8 getMonsterId (void) {
+
+    // number of monster per type
+    u8 weak = 2;
+    u8 medium = 2;
+    u8 strong = 3;
+    u8 veryStrong = 2;
+
+    u32 choice;
+
+    switch (randomInt (1, 4)) {
+        case 1:
+            switch (randomInt (1, weak)) {
+               case 1: choice = 101; break; 
+               case 2: choice = 102; break; 
+            }
+            break;
+        case 2:
+            switch (randomInt (1, medium)) {
+                case 1: choice = 201; break;
+                case 2: choice = 202; break;
+            }
+            break;
+        case 3:
+            switch (randomInt (1, strong)) {
+                case 1: choice = 301; break;
+                case 2: choice = 302; break;
+                case 3: choice = 303; break;
+            }
+            break;
+        case 4:
+            switch (randomInt (1, veryStrong)) {
+                case 1: choice = 401; break;
+                case 2: choice = 402; break;
+            }
+            break;
+        default: break;
+    }
+
+    return choice;
 
 }
 
@@ -1158,7 +1204,6 @@ void fight (GameObject *attacker, GameObject *defender) {
 
     // FIXME: check for attack speed
 
-    // FIXME: CHANGE THE COLOR OF THE MESSAGES
     // check for the attack hit chance
     u32 hitRoll = (u32) randomInt (1, 100);
     if (hitRoll <= att->attack.hitchance) {
@@ -1255,8 +1300,6 @@ void fight (GameObject *attacker, GameObject *defender) {
             // health = maxhealth = basehealth + armor
             def->baseStats.health -= damage;
 
-            // TODO: create better strings for parry, etc
-
             if (isPlayer) {
                 Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
                 char *str = createString ("You hit the %s for %i damage.", g->name, damage);
@@ -1295,9 +1338,10 @@ void fight (GameObject *attacker, GameObject *defender) {
                     phys->blocksMovement = false;
                     phys->blocksSight = false;
 
-                    // TODO: don't remove the death body until we move to the next level
-
                     removeComponent (defender, MOVEMENT);
+
+                    Event e = { 0, loot };
+                    addComponent (defender, EVENT, &e);
 
                     Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
                     char *str = createString ("You killed the %s.", g->name);
@@ -1308,7 +1352,6 @@ void fight (GameObject *attacker, GameObject *defender) {
         }
 
         else {
-            // FIXME: change color
             if (msg != NULL) {
                 logMessage (msg, STOPPED_COLOR);
                 free (msg);
@@ -1374,17 +1417,25 @@ void useStairs (void) {
     void generateLevel (void);
     generateLevel ();
 
-    // Position *playerPos = (Position *)game_object_get_component(player, COMP_POSITION);
-    // fov_calculate(playerPos->x, playerPos->y, fovMap);
-    // generate_target_map(playerPos->x, playerPos->y);
-
     // TODO: what is our win condition?
 
     char *msg = createString ("You are now on level %i", currentLevel->levelNum);
     logMessage (msg, 0xFFFFFFFF);
     free (msg);
 
-    // logMessage ("Event triggered!!!", SUCCESS_COLOR);
+}
+
+void placeStairs (Point spawn) {
+
+    GameObject *stairs = createGO ();
+    Position p = { 0, spawn.x, spawn.y, MID_LAYER };
+    addComponent (stairs, POSITION, &p);
+    Graphics g = { 0, '<', 0xFFD700FF, 0x00000000, false, true, "Stairs" };
+    addComponent (stairs, GRAPHICS, &g);
+    Physics phys = { 0, false, false };
+    addComponent (stairs, PHYSICS, &phys);
+    Event e = { 0, useStairs };
+    addComponent (stairs, EVENT, &e);
 
 }
 
@@ -1408,21 +1459,13 @@ void generateLevel () {
     // TODO: create other map elements such as stairs
     // As of 20/08/2018 -- 23:18 -- we can only move through the dungeon using the stair cases
     // but we can only move forward, we can not return to the previous level
-    GameObject *stairs = createGO ();
-    Point stairsPoint = getFreeSpot (currentLevel->mapCells);
-    Position p = { 0, stairsPoint.x, stairsPoint.y, MID_LAYER };
-    addComponent (stairs, POSITION, &p);
-    Graphics g = { 0, '<', 0xFFD700FF, 0x00000000, false, true, "Stairs" };
-    addComponent (stairs, GRAPHICS, &g);
-    Physics phys = { 0, false, false };
-    addComponent (stairs, PHYSICS, &phys);
-    Event e = { 0, useStairs };
-    addComponent (stairs, EVENT, &e);
+    // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
+    placeStairs (getFreeSpot (currentLevel->mapCells));
 
     fprintf (stdout, "Creating monsters...\n");
-    // 14/08/2018 -- 23:02 -- spawn some monsters to test how they behave
     for (short unsigned int i = 0; i < 10; i++) {
-        GameObject *monster = createMonster ();
+        // generate a random monster
+        GameObject *monster = createMonster (getMonsterId ());
         // spawn in a random position
         Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
         Position *monsterPos = (Position *) getComponent (monster, POSITION);
@@ -1437,7 +1480,8 @@ void generateLevel () {
     // 20/08/2018 -- 17:24 -- our items are broken until we have a config file
     GameObject *createItem (u8);
 
-    // finally, we have a map full with monsters, so we can place the player and we are done 
+    // finally, we have a map full with monsters and items,
+    // so we can place the player and we are done 
     fprintf (stdout, "Spawning the player...\n");
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
     Position *playerPos = (Position *) getComponent (player, POSITION);
