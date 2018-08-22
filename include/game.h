@@ -32,7 +32,7 @@ typedef enum GameComponent {
 // TODO: do we want graphics and position to be already a part of the Go?
 typedef struct {
     
-    i32 id;
+    u32 id;
     void *components[COMP_COUNT];
 
 } GameObject;
@@ -48,7 +48,7 @@ typedef struct {
 
 typedef struct Position {
 
-    i32 objectId;
+    u32 objectId;
     u8 x, y;
     u8 layer;   
 
@@ -56,7 +56,7 @@ typedef struct Position {
 
 typedef struct Graphics {
 
-    i32 objectId;
+    u32 objectId;
     asciiChar glyph;
     u32 fgColor;
     u32 bgColor;
@@ -68,7 +68,7 @@ typedef struct Graphics {
 
 typedef struct Physics {
 
-    i32 objectId;
+    u32 objectId;
     bool blocksMovement;
     bool blocksSight;
 
@@ -76,21 +76,21 @@ typedef struct Physics {
 
 typedef struct Movement {
 
-    i32 objectId;
-    i32 speed;
-    i32 frecuency;
-    i32 ticksUntilNextMov;
+    u32 objectId;
+    u32 speed;
+    u32 frecuency;
+    u32 ticksUntilNextMov;
     Point destination;
     bool hasDestination;
     bool chasingPlayer;
-    i32 turnsSincePlayerSeen;
+    u32 turnsSincePlayerSeen;
 
 } Movement;
 
 // This are the general stats for every living entity
 typedef struct Stats {
 
-    i32 maxHealth;   // base health
+    u32 maxHealth;   // base health
     i32 health;
     u32 power;  // this represents the mana or whatever
     u32 powerRegen; // regen power/(ticks or turns)
@@ -119,7 +119,7 @@ typedef struct Defense {
 
 typedef struct Combat  {
 
-	i32 objectId;	
+	u32 objectId;	
     Stats baseStats;	
     Attack attack;
     Defense defense;
@@ -130,7 +130,7 @@ typedef struct Combat  {
 // TODO: how can we handle crafting?
 typedef struct Item {
 
-    i32 objectId;
+    u32 objectId;
     // char *name;  // 19/08/2018 -- 17:01 -- name is in the graphics comp
     u32 type;   // consumable, weapon, etc?
     u32 rarity;   // epic, rare, common, rubish, etc.
