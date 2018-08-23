@@ -126,24 +126,30 @@ typedef struct Combat  {
 
 } Combat;
 
+
+// 22/08/2018 -- 22:36 -- testing how does this works
+typedef struct Armour {
+
+    u16 maxLifetime;
+    u16 lifetime;
+    char *slot;
+    bool isEquipped;
+
+} Armour;
+
 // TODO: how can we handle consumables?
 // TODO: how can we handle crafting?
 typedef struct Item {
 
-    u32 objectId;
-    // char *name;  // 19/08/2018 -- 17:01 -- name is in the graphics comp
-    u32 type;   // consumable, weapon, etc?
-    u32 rarity;   // epic, rare, common, rubish, etc.
-    u32 quantity;   // this is used to handle stacks
-    u32 weight;     // we have a max weight that we can carry based on our class, genre, etc
-    u32 maxLifetime;
-    u32 lifetime;
-    // the dps + the attack power give the damage that we dealth in a hit
-    u32 dps;    // maybe we want to be able to hit with everythig that we have on hand
-    char *slot;
-    bool isEquipped;
-    // FIXME: 18/08/2018 -- 18:20
-    bool wielding;
+    u16 objectId;
+    u8 type;        // consumable, weapon, etc?
+    u8 rarity;      // epic, rare, common, rubish, etc.
+    u8 quantity;    // this is used to handle stacks, max stack is 20
+    u8 weight;      // we have a max weight that we can carry based on our class, genre, etc
+    u16 dps;        // maybe we want to be able to hit with everythig that we have on hand
+    u16 value[3];   // gold, silver, copper
+    Equipment *equipment;
+    // FIXME: how to hanlde effects?
 
 } Item;
 
@@ -191,13 +197,14 @@ typedef enum CharClass {
 typedef struct Player {
 
     char *name;
-    CharClass cClass;
-    u32 color;  // for accessibility
     u8 genre;     // 0 female, 1 male
-    List *inventory;
-    u32 level;
-    u32 maxWeight;
     // TODO: races
+    CharClass cClass;
+    u16 color;  // for accessibility
+    u8 level;
+    u16 money [3];  // gold, silver, copper
+    u16 maxWeight;
+    List *inventory;
 
 } Player;
 

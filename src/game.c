@@ -172,6 +172,11 @@ GameObject *initPlayer (void) {
     ConfigEntity *classEntity = getEntityWithId (classesConfig, p.cClass);
     p.color = xtoi (getEntityValue (classEntity, "color"));
 
+    // money
+    p.money[0] = atoi (getEntityValue (playerEntity, "gold"));
+    p.money[1] = atoi (getEntityValue (playerEntity, "silver"));
+    p.money[2] = atoi (getEntityValue (playerEntity, "copper"));
+
     // TODO: inventory
     p.inventory = NULL;
 
@@ -653,32 +658,19 @@ GameObject *createItem (u8 itemId) {
     addComponent (item, POSITION, &pos);
 
     asciiChar glyph = atoi (getEntityValue (itemEntity, "glyph"));
-    u32 color = xtoi (getEntityValue (itemEntity, "color"));
     char *name = getEntityValue (itemEntity, "name");
+    u32 color = xtoi (getEntityValue (itemEntity, "color"));
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addComponent (item, GRAPHICS, &g);
 
     Physics phys = { .blocksMovement = false, .blocksSight = false };
     addComponent (item, PHYSICS, &phys);
 
-    // FIXME:
     Item i;
-    // i.type = atoi (getEntityValue (itemEntity, "type"));
-    // i.rarity = atoi (getEntityValue (itemEntity, "rarity"));
-    // i.quantity = atoi (getEntityValue (itemEntity, "quantity"));
-    // i.weight = atoi (getEntityValue (itemEntity, "weight"));
-    // i.maxLifetime = atoi (getEntityValue (itemEntity, "max_life"));
-    // i.dps = atoi (getEntityValue (itemEntity, "dps"));
-
-    i.type = 1;
-    i.rarity = 1;
-    i.quantity = 1;
-    i.weight = 1;
-    i.maxLifetime = 100;
-    i.dps = 10;
-
-    // FIXME:!!!!!!!
-    i.slot = NULL;
+    i.type = atoi (getEntityValue (itemEntity, "type"));
+    i.rarity = atoi (getEntityValue (itemEntity, "rarity"));
+    i.quantity = atoi (getEntityValue (itemEntity, "quantity"));
+    i.weight = atoi (getEntityValue (itemEntity, "weight"));
 
     addComponent (item, ITEM, &i);
         
