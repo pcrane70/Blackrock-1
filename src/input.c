@@ -1,8 +1,9 @@
 #include "blackrock.h"
 
 #include "game.h"
+#include "item.h"
 
-#include "list.h"
+#include "utils/list.h"
 
 #include "ui/ui.h"
 #include "ui/gameUI.h"

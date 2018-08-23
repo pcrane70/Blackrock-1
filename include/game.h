@@ -5,8 +5,22 @@
 
 #include "map.h"    // for Point
 
-#include "list.h"
+#include "utils/list.h"
 #include "objectPool.h"
+
+/*** MESSAGE COLORS ***/
+
+#define SUCCESS_COLOR   0x009900FF
+#define WARNING_COLOR   0x990000FF
+
+#define HIT_COLOR       0xF2F2F2FF  // succesfull attack
+#define CRITICAL_COLOR  0xFFDB22FF  // critical hit
+#define MISS_COLOR      0xCCCCCCFF  // missed attack
+#define STOPPED_COLOR   0xFBFBFBFF  // parry, dodge, block
+#define KILL_COLOR      0xFF9900FF  // you kill a mob
+
+#define HEALTH_COLOR    0x00FF22FF  // player gains health
+#define DAMAGE_COLOR    0x8C2020FF  // player loses health
 
 
 // 11/08/2018
@@ -186,6 +200,13 @@ extern List *positions;
 extern List *graphics;
 extern List *physics;
 
+/*** POOLS ***/
+
+extern Pool *goPool;
+extern Pool *posPool;
+extern Pool *graphicsPool;
+extern Pool *physPool;
+
 
 /*** GAME STATE ***/
 
@@ -225,6 +246,7 @@ typedef struct Player {
 } Player;
 
 extern GameObject *player;
+extern Player *playerComp;  // for accessibility
 
 
 /*** Game Objects ***/

@@ -3,7 +3,7 @@
 
 #include "ui.h"
 
-#include "list.h"
+#include "utils/list.h"
 
 // FIXME: where do we want to put these?
 // This will store the log messages

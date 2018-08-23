@@ -5,7 +5,7 @@
 
 #include "console.h"
 
-#include "list.h"
+#include "utils/list.h"
 
 typedef SDL_Rect UIRect;
 

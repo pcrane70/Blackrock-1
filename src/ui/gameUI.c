@@ -12,7 +12,7 @@
 
 #include "input.h"
 
-#include "list.h"       // for messages
+#include "utils/list.h"       // for messages
 
 #define STATS_WIDTH		20
 #define STATS_HEIGHT 	5

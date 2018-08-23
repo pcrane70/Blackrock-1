@@ -16,7 +16,7 @@
 
 #include "blackrock.h"
 
-#include "list.h"
+#include "utils/list.h"
 
 #include "config.h"
 

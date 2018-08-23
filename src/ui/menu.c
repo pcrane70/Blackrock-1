@@ -6,7 +6,7 @@
 
 #include "blackrock.h"
 
-#include "list.h"
+#include "utils/list.h"
 
 #include "ui/ui.h"
 #include "ui/console.h"

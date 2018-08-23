@@ -8,7 +8,7 @@
 #include "blackrock.h"
 #include "game.h"
 
-#include "list.h"
+#include "utils/list.h"
 
 #define FOV_DISTANCE    8
 

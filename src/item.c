@@ -1,0 +1,322 @@
+#include "blackrock.h"
+#include "game.h"
+
+#include "utils/list.h"
+#include "objectPool.h"
+
+#include "item.h"
+
+#include "config.h"
+
+#include "ui/gameUI.h" // for strings
+
+#include "utils/myUtils.h"
+
+List *items = NULL;
+Pool *itemsPool = NULL;
+
+extern Config *itemsConfig;
+
+static u32 itemsId = 0;
+
+Item *newItem (void) {
+
+    Item *i = NULL;
+
+    // check if there is a an available one in the items pool
+    if (POOL_SIZE (itemsPool) > 0) {
+        i = pop (itemsPool);
+        if (i == NULL) i = (Item *) malloc (sizeof (Item));
+    } 
+    else i = (Item *) malloc (sizeof (Item));
+
+    if (i != NULL) {
+        i->id = itemsId;
+        itemsId++;
+        for (u8 u = 0; u < 2; u++) i->components[u] = NULL;
+        insertAfter (items, LIST_END (items), i);
+    }
+
+    return i;
+
+}
+
+void *getItemComp (Item *item, GameComponent type) {
+
+    void *retVal = item->components[type];
+    if (retVal == NULL) return NULL;
+    else return retVal;
+
+}
+
+void addItemComp (Item *item, GameComponent type, void *data) {
+
+    if (item == NULL || data == NULL) return;
+
+    switch (type) {
+        case POSITION: {
+            if (getItemComp (item, type) != NULL) return;
+            Position *newPos = NULL;
+            if (POOL_SIZE (posPool) > 0) {
+                newPos = pop (posPool);
+                if (newPos == NULL) newPos = (Position *) malloc (sizeof (Position));
+            }
+            else newPos = (Position *) malloc (sizeof (Position));
+
+            Position *posData = (Position *) data;
+            newPos->objectId = item->id;
+            newPos->x = posData->x;
+            newPos->y = posData->y;
+            newPos->layer = posData->layer;
+
+            item->components[type] = newPos;
+            insertAfter (positions, NULL, newPos);
+        } break;
+        case GRAPHICS: {
+            if (getItemComp (item, type) != NULL) return;
+            Graphics *newGraphics = NULL;
+            if (POOL_SIZE (graphicsPool) > 0) {
+                newGraphics = pop (graphicsPool);
+                if (newGraphics == NULL) newGraphics = (Graphics *) malloc (sizeof (Graphics));
+            }
+            else newGraphics = (Graphics *) malloc (sizeof (Graphics));
+
+            Graphics *graphicsData = (Graphics *) data;
+            newGraphics->objectId = item->id;
+            newGraphics->name = graphicsData->name;
+            newGraphics->glyph = graphicsData->glyph;
+            newGraphics->fgColor = graphicsData->fgColor;
+            newGraphics->bgColor = graphicsData->bgColor;
+
+            item->components[type] = newGraphics;
+            insertAfter (graphics, NULL, newGraphics);
+        } break;
+    }
+
+}
+
+// 20/08/2018 -- 17:05 -- Testing this new function for creating items
+Item *createItem (u8 itemId) {
+
+    ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
+    if (itemEntity == NULL) return NULL;
+
+    // we have a valid item, so create it...
+    Item *item = newItem ();
+
+    // this is just a placeholder
+    // Position pos = { .x = 0, .y = 0, .layer = LOWER_LAYER };
+    // addComponent (item, POSITION, &pos);
+
+    asciiChar glyph = atoi (getEntityValue (itemEntity, "glyph"));
+    char *name = getEntityValue (itemEntity, "name");
+    u32 color = xtoi (getEntityValue (itemEntity, "color"));
+    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
+    addItemComp (item, GRAPHICS, &g);
+
+    // Physics phys = { .blocksMovement = false, .blocksSight = false };
+    // addComponent (item, PHYSICS, &phys);
+
+    item->type = atoi (getEntityValue (itemEntity, "type"));
+    item->rarity = atoi (getEntityValue (itemEntity, "rarity"));
+    item->quantity = atoi (getEntityValue (itemEntity, "quantity"));
+    item->weight = atoi (getEntityValue (itemEntity, "weight"));
+    item->value[0] = atoi (getEntityValue (itemEntity, "gold"));
+    item->value[1] = atoi (getEntityValue (itemEntity, "silver"));
+    item->value[2] = atoi (getEntityValue (itemEntity, "copper"));
+        
+    return item;
+
+}
+
+Weapon *createWeapon (u8 itemId) {
+
+    ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
+    if (itemEntity == NULL) return NULL;
+
+    Weapon *weapon = (Weapon *) malloc (sizeof (Weapon));
+
+    weapon->item = createItem (itemId);
+    if (weapon->item == NULL) return NULL;
+
+    weapon->dps = atoi (getEntityValue (itemEntity, "dps"));
+    weapon->maxLifetime = atoi (getEntityValue (itemEntity, "maxLifetime"));
+    weapon->lifetime = weapon->maxLifetime;
+    weapon->isEquipped = false;
+
+    return weapon;
+
+}
+
+// check how much the player is carrying in its inventory and equipment
+u32 getCarriedWeight (void) {
+
+    u32 weight = 0;
+    Item *item = NULL;
+    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+        item = (Item *) getComponent ((GameObject *) LIST_DATA (e), ITEM);
+        if (item != NULL) weight += (item->weight * item->quantity);
+    }
+
+    return weight;
+
+}
+
+// Function to get/pickup a nearby item
+// As of 16/08/2018:
+// The character must be on the same coord as the item to be able to pick it up
+void getItem (void) {
+
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    // get a list of objects nearby the player
+    List *objects = getObjectsAtPos (playerPos->x, playerPos->y);
+
+    // we only pick one item each time
+    GameObject *itemGO = NULL;
+    Item *item = NULL;
+    for (ListElement *e = LIST_START (objects); e != NULL; e = e->next) {
+        itemGO = (GameObject *) LIST_DATA (e);
+        // we have a valid item to pickup
+        if ((item = (Item *) getComponent (itemGO, ITEM)) != NULL) break;
+    }
+
+    // check if we can actually pickup the item
+    if (itemGO != NULL && item != NULL) {
+        if ((getCarriedWeight () + item->weight) <= ((Player *) getComponent (player, PLAYER))->maxWeight) {
+            // add the item to the inventory
+            insertAfter (((Player *) getComponent (player, PLAYER))->inventory, NULL, itemGO);
+            // remove the item from the map
+            // FIXME: removeComponent (itemGO, POSITION);
+
+            Graphics *g = (Graphics *) getComponent (itemGO, GRAPHICS);
+            if (g != NULL) {
+                char *msg = createString ("You picked up the %s.", g->name);
+                logMessage (msg, SUCCESS_COLOR);
+                free (msg);
+            }
+
+            playerTookTurn = true;
+        }
+
+        else logMessage ("You are carrying to much already!", WARNING_COLOR);
+    }
+
+    free (objects);
+
+}
+
+// TODO: how do we select which item to drop?
+void dropItem (GameObject *go) {
+
+    if (go == NULL) return;
+
+    // check if we can drop the item at the current position
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    List *objects = getObjectsAtPos (playerPos->x, playerPos->y);
+    bool canBeDropped = true;
+    for (ListElement *e = LIST_START (objects); e != NULL; e = e->next) {
+        // 16/08/2018 -- 20:16 -- for now if there is already an item in that spot,
+        // you can NOT drop it
+        Item *i = (Item *) getComponent ((GameObject *) e->data, ITEM);
+        if (i != NULL) {
+            canBeDropped = false;
+            break;
+        } 
+    }
+
+    Graphics *g = (Graphics *) getComponent (go, GRAPHICS);
+
+    if (canBeDropped) {
+        Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
+        addComponent (go, POSITION, &pos);
+
+        // FIXME: unequip item
+
+        // remove from the inventory
+        // FIXME:
+        ListElement *e = getListElement (playerComp->inventory, go);
+        if (e != NULL) removeElement (playerComp->inventory, e);
+
+        if (g != NULL) {
+            char *msg = createString ("You dropped the %s.", g->name);
+            logMessage (msg, SUCCESS_COLOR);
+            free (msg);
+        }
+        else logMessage ("You dropped the item.", SUCCESS_COLOR);
+    }
+
+    else {
+        if (g != NULL) {
+            char *msg = createString ("Can't drop the %s here.", g->name);
+            logMessage (msg, WARNING_COLOR);
+            free (msg);
+        }
+        else logMessage ("Can't drop the item here.", WARNING_COLOR);
+    }
+
+    free (objects);
+
+}
+
+// FIXME: how do we select which item to equip?
+// equips an item, but only if it as a piece of equipment
+// TODO: how do we unequip an item?
+void equipItem (GameObject *go) {
+
+    if (go == NULL) return;
+
+    // TODO: check that the item can be equipped, if its is a weapon or a piece of armor
+
+    Item *item = (Item *) getComponent (go, ITEM);
+    if (item != NULL) {
+        // TODO: how do we check which pice of armor it is??
+        // TODO: unequip the item in the corresponding equipment slot
+
+        // equip the item
+
+        // TODO: update the player stats based on the new item
+        // Combat *itemCombat = (Combat *) getComponent (item, COMBAT);
+        // Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
+        
+    }
+
+}
+
+// TODO: consumables
+
+// TODO: crafting
+
+// TODO: I think we will want to add the ability to repair your items in a shop,
+// but only if they are above 0, if you don't repair your items soon enough, 
+// you will lose them
+void repairItems (void) {
+
+}
+
+// FIXME:
+// only reduce lifetime of weapons, and equipment
+void updateLifeTime (void) {
+
+    GameObject *go = NULL;
+    Item *item = NULL;
+    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+        go = (GameObject *) LIST_DATA (e);
+        item = (Item *) getComponent (go, ITEM);
+        // FIXME: only for weapons and armor
+
+        // FIXME:
+        // if (item->lifetime <= 0) {
+        //     bool wasEquipped = false;
+        //     if (item->isEquipped) {
+        //         wasEquipped = true;
+        //         // FIXME: unequip item
+        //     }
+
+        //     // remove from inventory
+        //     // FIXME:
+
+        //     // TODO: give feedback to the player with messages in the log
+        // }
+    }
+
+}

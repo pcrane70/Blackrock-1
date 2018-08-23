@@ -7,7 +7,7 @@
 #include "blackrock.h"  // for i32 def
 #include "game.h"   // for componnt types
 
-#include "list.h"
+#include "utils/list.h"
 
 List *initList (void (*destroy)(void *data)) {
 
