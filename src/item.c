@@ -91,6 +91,35 @@ void addItemComp (Item *item, GameComponent type, void *data) {
             item->components[type] = newGraphics;
             insertAfter (graphics, NULL, newGraphics);
         } break;
+        default: break;
+    }
+
+}
+
+void removeItemComp (Item *item, GameComponent type) {
+
+    if (item == NULL) return;
+
+    switch (type) {
+        case POSITION: {
+            Position *posComp = (Position *) getItemComp (item, type);
+            if (posComp == NULL) return;
+            ListElement *e = getListElement (positions, posComp);
+            void *posData = NULL;
+            if (e != NULL) posData = removeElement (positions, e);
+            push (posPool, posData);
+            item->components[type] = NULL;
+        } break;
+        case GRAPHICS: {
+            Graphics *graComp = (Graphics *) getItemComp (item, type);
+            if (graComp == NULL) return;
+            ListElement *e = getListElement (graphics, graComp);
+            void *graData = NULL;
+            if (e != NULL) graData = removeElement (graphics, e);
+            push (graphicsPool, graData);
+            item->components[type] = NULL;
+        } break;
+        default: break;
     }
 
 }
@@ -149,16 +178,32 @@ Weapon *createWeapon (u8 itemId) {
 }
 
 // check how much the player is carrying in its inventory and equipment
-u32 getCarriedWeight (void) {
+u16 getCarriedWeight (void) {
 
-    u32 weight = 0;
+    u16 weight = 0;
     Item *item = NULL;
     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        item = (Item *) getComponent ((GameObject *) LIST_DATA (e), ITEM);
+        item = (Item *) LIST_DATA (e);
         if (item != NULL) weight += (item->weight * item->quantity);
     }
 
     return weight;
+
+}
+
+List *getItemsAtPos (u16 x, u16 y) {
+
+    Position *pos = NULL;
+    List *retVal = initList (free);
+    for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+        pos = (Position *) getItemComp ((Item *) e->data, POSITION);
+        // inventory items do NOT have a pos comp
+        if (pos != NULL) {
+            if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
+        }
+    }
+
+    return retVal;
 
 }
 
@@ -168,27 +213,21 @@ u32 getCarriedWeight (void) {
 void getItem (void) {
 
     Position *playerPos = (Position *) getComponent (player, POSITION);
-    // get a list of objects nearby the player
-    List *objects = getObjectsAtPos (playerPos->x, playerPos->y);
+    // get a list of items nearby the player
+    List *objects = getItemsAtPos (playerPos->x, playerPos->y);
 
     // we only pick one item each time
-    GameObject *itemGO = NULL;
-    Item *item = NULL;
-    for (ListElement *e = LIST_START (objects); e != NULL; e = e->next) {
-        itemGO = (GameObject *) LIST_DATA (e);
-        // we have a valid item to pickup
-        if ((item = (Item *) getComponent (itemGO, ITEM)) != NULL) break;
-    }
+    Item *item = (Item *) ((LIST_START (objects))->data);
 
     // check if we can actually pickup the item
-    if (itemGO != NULL && item != NULL) {
+    if (item != NULL) {
         if ((getCarriedWeight () + item->weight) <= ((Player *) getComponent (player, PLAYER))->maxWeight) {
             // add the item to the inventory
-            insertAfter (((Player *) getComponent (player, PLAYER))->inventory, NULL, itemGO);
+            insertAfter (((Player *) getComponent (player, PLAYER))->inventory, NULL, item);
             // remove the item from the map
-            // FIXME: removeComponent (itemGO, POSITION);
+            removeItemComp (item, POSITION);
 
-            Graphics *g = (Graphics *) getComponent (itemGO, GRAPHICS);
+            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
             if (g != NULL) {
                 char *msg = createString ("You picked up the %s.", g->name);
                 logMessage (msg, SUCCESS_COLOR);
@@ -205,56 +244,31 @@ void getItem (void) {
 
 }
 
+// FIXME:
 // TODO: how do we select which item to drop?
-void dropItem (GameObject *go) {
+void dropItem (Item *item) {
 
-    if (go == NULL) return;
+    if (item == NULL) return;
 
-    // check if we can drop the item at the current position
     Position *playerPos = (Position *) getComponent (player, POSITION);
-    List *objects = getObjectsAtPos (playerPos->x, playerPos->y);
-    bool canBeDropped = true;
-    for (ListElement *e = LIST_START (objects); e != NULL; e = e->next) {
-        // 16/08/2018 -- 20:16 -- for now if there is already an item in that spot,
-        // you can NOT drop it
-        Item *i = (Item *) getComponent ((GameObject *) e->data, ITEM);
-        if (i != NULL) {
-            canBeDropped = false;
-            break;
-        } 
+
+    Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
+    addItemComp (item, POSITION, &pos);
+
+    // FIXME: unequip item
+
+    // remove from the inventory
+    // FIXME:
+    // ListElement *e = getListElement (playerComp->inventory, go);
+    // if (e != NULL) removeElement (playerComp->inventory, e);
+
+    Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+    if (g != NULL) {
+        char *msg = createString ("You dropped the %s.", g->name);
+        logMessage (msg, SUCCESS_COLOR);
+        free (msg);
     }
-
-    Graphics *g = (Graphics *) getComponent (go, GRAPHICS);
-
-    if (canBeDropped) {
-        Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
-        addComponent (go, POSITION, &pos);
-
-        // FIXME: unequip item
-
-        // remove from the inventory
-        // FIXME:
-        ListElement *e = getListElement (playerComp->inventory, go);
-        if (e != NULL) removeElement (playerComp->inventory, e);
-
-        if (g != NULL) {
-            char *msg = createString ("You dropped the %s.", g->name);
-            logMessage (msg, SUCCESS_COLOR);
-            free (msg);
-        }
-        else logMessage ("You dropped the item.", SUCCESS_COLOR);
-    }
-
-    else {
-        if (g != NULL) {
-            char *msg = createString ("Can't drop the %s here.", g->name);
-            logMessage (msg, WARNING_COLOR);
-            free (msg);
-        }
-        else logMessage ("Can't drop the item here.", WARNING_COLOR);
-    }
-
-    free (objects);
+    else logMessage ("You dropped the item.", SUCCESS_COLOR);
 
 }
 
