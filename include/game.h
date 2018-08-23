@@ -147,8 +147,6 @@ typedef struct Item {
 
 } Item;
 
-// 21/08/2018 -- 6:41 -- testing a type of event handlers with a type of delegates
-// using them as event listeners... I guess...
 typedef void (*EventListener)(void);
 
 typedef struct Event {
@@ -165,13 +163,6 @@ extern List *gameObjects;
 extern List *positions;
 extern List *graphics;
 extern List *physics;
-
-/*** OUR POOLS ***/
-
-extern Pool *goPool;
-extern Pool *posPool;
-extern Pool *graphicsPool;
-extern Pool *physPool;
 
 
 /*** GAME STATE ***/

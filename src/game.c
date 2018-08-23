@@ -19,15 +19,18 @@
 
 #include "config.h"     // for getting the data
 
-// FIXME:
+
 #define SUCCESS_COLOR   0x009900FF
 #define WARNING_COLOR   0x990000FF
 
-#define HIT_COLOR       0xFFFFFFFF  // succesfull attack
+#define HIT_COLOR       0xF2F2F2FF  // succesfull attack
+#define CRITICAL_COLOR  0xFFDB22FF  // critical hit
 #define MISS_COLOR      0xCCCCCCFF  // missed attack
-#define STOPPED_COLOR   0xFFFFFFFF  // parry, dodge, block
-#define CRITICAL_COLOR  0xFFFFFFFF  // critical hit
+#define STOPPED_COLOR   0xFBFBFBFF  // parry, dodge, block
 #define KILL_COLOR      0xFF9900FF  // you kill a mob
+
+#define HEALTH_COLOR    0x00FF22FF  // player gains health
+#define DAMAGE_COLOR    0x8C2020FF  // player loses health
 
 
 /*** WORLD STATE ***/
@@ -110,8 +113,6 @@ void initGame (void) {
         fprintf (stderr, "Critical Error! No monster config!\n");
         die ();
     }
-    // TODO: do we need an appearance probability? 
-
     itemsConfig = parseConfigFile ("./data/items.cfg");
     if (itemsConfig == NULL) {
         fprintf (stderr, "Critical Error! No items config!\n");
@@ -636,6 +637,8 @@ void clearOldLevel (void) {
 
 /*** LEVEL MANAGER ***/
 
+/*** ITEMS ***/
+
 // 20/08/2018 -- 17:05 -- Testing this new function for creating items
 GameObject *createItem (u8 itemId) {
 
@@ -682,8 +685,6 @@ GameObject *createItem (u8 itemId) {
     return item;
 
 }
-
-/*** ITEMS ***/
 
 // check how much the player is carrying in its inventory and equipment
 u32 getCarriedWeight (void) {
@@ -1074,6 +1075,7 @@ void updateMovement () {
                         }
                     }
 
+                    // FIXME:
                     // check if we can move to the new pos
                     if (canMove (newPos)) {
                         // Updating the entity position in an odd way
@@ -1311,8 +1313,8 @@ void fight (GameObject *attacker, GameObject *defender) {
             else {
                 Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
                 char *str = createString ("The %s hits you for %i damage!", g->name, damage);
-                if (crit) logMessage (str, CRITICAL_COLOR);
-                else logMessage (str, HIT_COLOR);
+                if (crit) logMessage (str, DAMAGE_COLOR);
+                else logMessage (str, DAMAGE_COLOR);
                 free (str);
             }
 
