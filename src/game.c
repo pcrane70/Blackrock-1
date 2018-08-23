@@ -42,7 +42,6 @@ List *graphics = NULL;
 List *physics = NULL;
 List *movement = NULL;
 List *combat = NULL;
-List *items = NULL;
 
 // Pools
 Pool *goPool = NULL;
@@ -51,7 +50,6 @@ Pool *graphicsPool = NULL;
 Pool *physPool = NULL;
 Pool *movePool = NULL;
 Pool *combatPool = NULL;
-Pool *itemsPool = NULL;
 
 // Player
 GameObject *player = NULL;
@@ -218,17 +216,9 @@ GameObject *initPlayer (void) {
 // 08/08/2018 --> we now handle some GameObjects with a llist and a Pool;
 // the map is managed using an array
 
-// Also note that we still don't know how do we want the levels to regenerate when we die
-// - do we want a new random level??
-// or the same one and only regenerate the levels when we start a new session??
-
 // 08/08/2018 -- 22:14
 // we start the program with no objects in the pool
-// TODO: maybe later we will want to have some in memory
 static unsigned int inactive = 0;
-
-// reference to the start of the pool
-static GameObject *pool = NULL;
 
 // 11/08/2018 -- we will assign a new id to each new GO starting at 1
 // id = 0 is the player 
@@ -239,7 +229,10 @@ GameObject *createGO (void) {
     GameObject *go = NULL;
 
     // first check if there is an available one in the pool
-    if (POOL_SIZE (goPool) > 0) go = pop (goPool);
+    if (POOL_SIZE (goPool) > 0) {
+        go = pop (goPool);
+        if (go == NULL) go = (GameObject *) malloc (sizeof (GameObject));
+    } 
     else go = (GameObject *) malloc (sizeof (GameObject));
 
     if (go != NULL) {
@@ -344,29 +337,6 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             go->components[type] = newCombat;
             insertAfter (combat, NULL, newCombat);
         } break;
-        case ITEM: {
-            if (getComponent (go, type) != NULL) return;
-
-            Item *newItem = NULL;
-
-            if ((POOL_SIZE (itemsPool) > 0)) newItem = pop (itemsPool);
-            else newItem = (Item *) malloc (sizeof (Item));
-
-            Item *itemData = (Item *) data;
-            newItem->objectId = go->id;
-            newItem->type = itemData->type;
-            newItem->rarity = itemData->rarity;
-            newItem->dps = itemData->dps;
-            newItem->slot = itemData->slot;
-            newItem->weight = itemData->weight;
-            newItem->quantity = itemData->quantity;
-            newItem->maxLifetime = itemData->maxLifetime;
-            newItem->lifetime = newItem->maxLifetime;
-            newItem->isEquipped = false;
-
-            go->components[type] = newItem;
-            insertAfter (items, NULL, newItem);
-        } break;
         case PLAYER: {
             if (getComponent (go, type) != NULL) return;
             Player *newPlayer = (Player *) malloc (sizeof (Player));
@@ -445,19 +415,6 @@ void updateComponent (GameObject *go, GameComponent type, void *data) {
             cComp->attack = cData->attack;
             cComp->defense = cData->defense;
         } break;
-        case ITEM: {
-            Item *itemComp = (Item *) getComponent (go, type);
-            if (itemComp == NULL) return;
-            Item *itemData = (Item *) data;
-            itemComp->objectId = go->id;
-            itemComp->type = itemData->type;
-            itemComp->dps = itemData->dps;
-            itemComp->slot = itemData->slot;
-            itemComp->weight = itemData->weight;
-            itemComp->quantity = itemData->quantity;
-            itemComp->lifetime = itemData->lifetime;
-            itemComp->isEquipped = itemData->isEquipped;
-        } break;
         case PLAYER: {
             Player *playerComp = (Player *) getComponent (go, type);
             if (playerComp == NULL) return;
@@ -520,15 +477,6 @@ void removeComponent (GameObject *go, GameComponent type) {
             void *combatData = NULL;
             if (e != NULL) combatData = removeElement (combat, e);
             push (combatPool, combatData);
-            go->components[type] = NULL;
-        } break;
-        case ITEM: {
-            Item *itemComp = (Item *) getComponent (go, type);
-            if (itemComp == NULL) return;
-            ListElement *e = getListElement (items, itemComp);
-            void *itemData = NULL;
-            if (e != NULL) itemData = removeElement (items, e);
-            push (itemsPool, itemData);
             go->components[type] = NULL;
         } break;
 
@@ -628,34 +576,102 @@ void cleanUpGame (void) {
 
 }
 
-// This is called every time we generate a new level to start fresh, only from data from the pool
-void clearOldLevel (void) {
-
-    if (gameObjects == NULL) return;
-
-    // send all of our objects and components to ther pools
-    for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next)
-        destroyGO ((GameObject *) e->data);
-
-}
-
-
-/*** LEVEL MANAGER ***/
 
 /*** ITEMS ***/
 
+List *items = NULL;
+Pool *itemsPool = NULL;
+
+static u32 itemsId = 0;
+
+Item *newItem (void) {
+
+    Item *i = NULL;
+
+    // check if there is a an available one in the items pool
+    if (POOL_SIZE (itemsPool) > 0) {
+        i = pop (itemsPool);
+        if (i == NULL) i = (Item *) malloc (sizeof (Item));
+    } 
+    else i = (Item *) malloc (sizeof (Item));
+
+    if (i != NULL) {
+        i->id = itemsId;
+        itemsId++;
+        for (u8 u = 0; u < 2; u++) i->components[u] = NULL;
+        insertAfter (items, LIST_END (items), i);
+    }
+
+    return i;
+
+}
+
+void *getItemComp (Item *item, GameComponent type) {
+
+    void *retVal = item->components[type];
+    if (retVal == NULL) return NULL;
+    else return retVal;
+
+}
+
+void addItemComp (Item *item, GameComponent type, void *data) {
+
+    if (item == NULL || data == NULL) return;
+
+    switch (type) {
+        case POSITION: {
+            if (getItemComp (item, type) != NULL) return;
+            Position *newPos = NULL;
+            if (POOL_SIZE (posPool) > 0) {
+                newPos = pop (posPool);
+                if (newPos == NULL) newPos = (Position *) malloc (sizeof (Position));
+            }
+            else newPos = (Position *) malloc (sizeof (Position));
+
+            Position *posData = (Position *) data;
+            newPos->objectId = item->id;
+            newPos->x = posData->x;
+            newPos->y = posData->y;
+            newPos->layer = posData->layer;
+
+            item->components[type] = newPos;
+            insertAfter (positions, NULL, newPos);
+        } break;
+        case GRAPHICS: {
+            if (getItemComp (item, type) != NULL) return;
+            Graphics *newGraphics = NULL;
+            if (POOL_SIZE (graphicsPool) > 0) {
+                newGraphics = pop (graphicsPool);
+                if (newGraphics == NULL) newGraphics = (Graphics *) malloc (sizeof (Graphics));
+            }
+            else newGraphics = (Graphics *) malloc (sizeof (Graphics));
+
+            Graphics *graphicsData = (Graphics *) data;
+            newGraphics->objectId = item->id;
+            newGraphics->name = graphicsData->name;
+            newGraphics->glyph = graphicsData->glyph;
+            newGraphics->fgColor = graphicsData->fgColor;
+            newGraphics->bgColor = graphicsData->bgColor;
+
+            item->components[type] = newGraphics;
+            insertAfter (graphics, NULL, newGraphics);
+        } break;
+    }
+
+}
+
 // 20/08/2018 -- 17:05 -- Testing this new function for creating items
-GameObject *createItem (u8 itemId) {
+Item *createItem (u8 itemId) {
 
     ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
     if (itemEntity == NULL) return NULL;
 
     // we have a valid item, so create it...
-    GameObject *item = createGO ();
+    Item *item = newItem ();
 
     // this is just a placeholder
-    Position pos = { .x = 0, .y = 0, .layer = LOWER_LAYER };
-    addComponent (item, POSITION, &pos);
+    // Position pos = { .x = 0, .y = 0, .layer = LOWER_LAYER };
+    // addComponent (item, POSITION, &pos);
 
     asciiChar glyph = atoi (getEntityValue (itemEntity, "glyph"));
     char *name = getEntityValue (itemEntity, "name");
@@ -663,18 +679,37 @@ GameObject *createItem (u8 itemId) {
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addComponent (item, GRAPHICS, &g);
 
-    Physics phys = { .blocksMovement = false, .blocksSight = false };
-    addComponent (item, PHYSICS, &phys);
+    // Physics phys = { .blocksMovement = false, .blocksSight = false };
+    // addComponent (item, PHYSICS, &phys);
 
-    Item i;
-    i.type = atoi (getEntityValue (itemEntity, "type"));
-    i.rarity = atoi (getEntityValue (itemEntity, "rarity"));
-    i.quantity = atoi (getEntityValue (itemEntity, "quantity"));
-    i.weight = atoi (getEntityValue (itemEntity, "weight"));
-
-    addComponent (item, ITEM, &i);
+    item->type = atoi (getEntityValue (itemEntity, "type"));
+    item->rarity = atoi (getEntityValue (itemEntity, "rarity"));
+    item->quantity = atoi (getEntityValue (itemEntity, "quantity"));
+    item->weight = atoi (getEntityValue (itemEntity, "weight"));
+    item->value[0] = atoi (getEntityValue (itemEntity, "gold"));
+    item->value[1] = atoi (getEntityValue (itemEntity, "silver"));
+    item->value[2] = atoi (getEntityValue (itemEntity, "copper"));
         
     return item;
+
+}
+
+Weapon *createWeapon (u8 itemId) {
+
+    ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
+    if (itemEntity == NULL) return NULL;
+
+    Weapon *weapon = (Weapon *) malloc (sizeof (Weapon));
+
+    weapon->item = createItem (itemId);
+    if (weapon->item == NULL) return NULL;
+
+    weapon->dps = atoi (getEntityValue (itemEntity, "dps"));
+    weapon->maxLifetime = atoi (getEntityValue (itemEntity, "maxLifetime"));
+    weapon->lifetime = weapon->maxLifetime;
+    weapon->isEquipped = false;
+
+    return weapon;
 
 }
 
@@ -769,8 +804,6 @@ void dropItem (GameObject *go) {
         addComponent (go, POSITION, &pos);
 
         // FIXME: unequip item
-        Item *item = (Item *) getComponent (go, ITEM);
-        if (item->isEquipped) {}
 
         // remove from the inventory
         // FIXME:
@@ -813,7 +846,6 @@ void equipItem (GameObject *go) {
         // TODO: unequip the item in the corresponding equipment slot
 
         // equip the item
-        item->isEquipped = !item->isEquipped;
 
         // TODO: update the player stats based on the new item
         // Combat *itemCombat = (Combat *) getComponent (item, COMBAT);
@@ -834,6 +866,7 @@ void repairItems (void) {
 
 }
 
+// FIXME:
 // only reduce lifetime of weapons, and equipment
 void updateLifeTime (void) {
 
@@ -843,20 +876,20 @@ void updateLifeTime (void) {
         go = (GameObject *) LIST_DATA (e);
         item = (Item *) getComponent (go, ITEM);
         // FIXME: only for weapons and armor
-        item->lifetime--;
 
-        if (item->lifetime <= 0) {
-            bool wasEquipped = false;
-            if (item->isEquipped) {
-                wasEquipped = true;
-                // FIXME: unequip item
-            }
+        // FIXME:
+        // if (item->lifetime <= 0) {
+        //     bool wasEquipped = false;
+        //     if (item->isEquipped) {
+        //         wasEquipped = true;
+        //         // FIXME: unequip item
+        //     }
 
-            // remove from inventory
-            // FIXME:
+        //     // remove from inventory
+        //     // FIXME:
 
-            // TODO: give feedback to the player with messages in the log
-        }
+        //     // TODO: give feedback to the player with messages in the log
+        // }
     }
 
 }
@@ -1369,7 +1402,18 @@ void fight (GameObject *attacker, GameObject *defender) {
 }
 
 
-/*** MANAGER ***/
+/*** LEVEL MANAGER ***/
+
+// This is called every time we generate a new level to start fresh, only from data from the pool
+void clearOldLevel (void) {
+
+    if (gameObjects == NULL) return;
+
+    // send all of our objects and components to ther pools
+    for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next)
+        destroyGO ((GameObject *) e->data);
+
+}
 
 // As of 9/08/2018 -- 17:00 -- we only asks the player if he wants to play again
 // TODO: maybe later we can first display a screen with a score and then ask him to play again
@@ -1472,7 +1516,6 @@ void generateLevel () {
 
     // FIXME:
     // 20/08/2018 -- 17:24 -- our items are broken until we have a config file
-    GameObject *createItem (u8);
 
     // finally, we have a map full with monsters and items,
     // so we can place the player and we are done 

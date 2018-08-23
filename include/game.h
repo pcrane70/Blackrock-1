@@ -17,7 +17,6 @@ typedef enum GameComponent {
     POSITION = 0,
     GRAPHICS,
     PHYSICS,
-    HEALTH, 
     MOVEMENT,
     COMBAT,
     ITEM, 
@@ -28,9 +27,7 @@ typedef enum GameComponent {
 
 } GameComponent;
 
-// Entity
-// TODO: do we want graphics and position to be already a part of the Go?
-typedef struct {
+typedef struct GameObject {
     
     u32 id;
     void *components[COMP_COUNT];
@@ -87,6 +84,8 @@ typedef struct Movement {
 
 } Movement;
 
+/*** COMBAT ***/
+
 // This are the general stats for every living entity
 typedef struct Stats {
 
@@ -126,10 +125,29 @@ typedef struct Combat  {
 
 } Combat;
 
+/*** ITEMS ***/
 
-// 22/08/2018 -- 22:36 -- testing how does this works
+// TODO: how can we handle consumables?
+// TODO: how can we handle crafting?
+typedef struct Item {
+
+    u16 id;
+    u16 itemId;     // item's unique identifire in our db
+    u8 type;        // consumable, weapon, etc?
+    u8 rarity;      // epic, rare, common, rubish, etc.
+    u8 quantity;    // this is used to handle stacks, max stack is 20
+    u8 weight;      // we have a max weight that we can carry based on our class, genre, etc
+    u16 value[3];   // gold, silver, copper
+    // FIXME: effects
+    // we only need position and graphics
+    void *components[2];   // 23/08/2018 -- 7:12 -- testing a separate ECS for our items
+
+} Item;
+
+// 23/08/2018 -- 6:55 -- testing how does this works
 typedef struct Armour {
 
+    Item *item;          // inherites from item
     u16 maxLifetime;
     u16 lifetime;
     char *slot;
@@ -137,21 +155,19 @@ typedef struct Armour {
 
 } Armour;
 
-// TODO: how can we handle consumables?
-// TODO: how can we handle crafting?
-typedef struct Item {
+typedef struct Weapon {
 
-    u16 objectId;
-    u8 type;        // consumable, weapon, etc?
-    u8 rarity;      // epic, rare, common, rubish, etc.
-    u8 quantity;    // this is used to handle stacks, max stack is 20
-    u8 weight;      // we have a max weight that we can carry based on our class, genre, etc
-    u16 dps;        // maybe we want to be able to hit with everythig that we have on hand
-    u16 value[3];   // gold, silver, copper
-    Equipment *equipment;
-    // FIXME: how to hanlde effects?
+    Item *item;          // inherites from item  
+    u8 dps;
+    u16 maxLifetime;
+    u16 lifetime;
+    bool isEquipped;
+    // FIXME: how do we handle if it is one or two handed??
 
-} Item;
+} Weapon;
+
+
+/*** EVENTS ***/
 
 typedef void (*EventListener)(void);
 
