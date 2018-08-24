@@ -132,7 +132,7 @@ void removeItemComp (Item *item, GameComponent type) {
 }
 
 // 20/08/2018 -- 17:05 -- Testing this new function for creating items
-Item *createItem (u8 itemId) {
+Item *createItem (u16 itemId) {
 
     ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
     if (itemEntity == NULL) return NULL;
@@ -165,7 +165,7 @@ Item *createItem (u8 itemId) {
 
 }
 
-Weapon *createWeapon (u8 itemId) {
+Weapon *createWeapon (u16 itemId) {
 
     ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
     if (itemEntity == NULL) return NULL;
@@ -231,6 +231,7 @@ List *getItemsAtPos (u8 x, u8 y) {
 // Function to get/pickup a nearby item
 // As of 16/08/2018:
 // The character must be on the same coord as the item to be able to pick it up
+// FIXME: how can we pickup loot items?
 void getItem (void) {
 
     Position *playerPos = (Position *) getComponent (player, POSITION);

@@ -52,13 +52,10 @@ UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount,
 void destroyView (UIView *view) {
 
     if (view != NULL) {
-        printf ("Destroying view");
         free (view->pixelRect);
         destroyConsole (view->console);
-        // free (view);
+        free (view);
     }
-
-    else printf ("Inventory view is NULL!");
 
 }
 

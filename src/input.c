@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "blackrock.h"
 
 #include "game.h"
@@ -12,6 +14,8 @@
 // Movement with wsad   03/08/2018
 
 extern bool inGame;
+
+/*** MAIN MENU ***/
 
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
@@ -32,6 +36,8 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
 }
 
+/*** GAME ***/
+
 void resolveCombat (Position newPos) {
 
     // check what is blocking the movement
@@ -50,9 +56,41 @@ void resolveCombat (Position newPos) {
 }
 
 Position *playerPos = NULL;
-Position newPos;
 
-// TODO: maybe later we will want to move using the numpad insted to allow diagonal movement
+void move (u8 newX, u8 newY) {
+
+    Position newPos = { .x = newX, .y = newY };
+    if (canMove (newPos)) {
+        recalculateFov = true;
+        playerPos->x = newX;
+        playerPos->y = newY;
+    } 
+    else resolveCombat (newPos);
+    playerTookTurn = true; 
+
+}
+
+extern UIView *lootView;
+extern UIView *inventoryView;
+
+bool isInUI (void) {
+
+    if (lootView != NULL || inventoryView != NULL) return true;
+    else return false;
+
+}
+
+void closeUIMenu (void) {
+
+    if (inventoryView != NULL) {
+        toggleInventory ();
+        return;
+    } 
+
+    if (lootView != NULL) toggleLootWindow ();
+
+}
+
 void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
     playerPos = (Position *) getComponent (player, POSITION);
@@ -61,51 +99,22 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
-            // Movement
-            // FIXME:
-            case SDLK_w: 
-                newPos.x = playerPos->x;
-                newPos.y = playerPos->y - 1;
-                if (canMove (newPos)) {
-                    recalculateFov = true;
-                    playerPos->y = newPos.y;
-                } 
-                else resolveCombat (newPos);
-                playerTookTurn = true; 
+            case SDLK_w:
+                if (!isInUI ()) move (playerPos->x, playerPos->y - 1);
                 break;
             case SDLK_s: 
-                newPos.x = playerPos->x;
-                newPos.y = playerPos->y + 1;
-                if (canMove (newPos)) {
-                    recalculateFov = true;
-                    playerPos->y = newPos.y;
-                } 
-                else resolveCombat (newPos);
-                playerTookTurn = true;
+                if (!isInUI ()) move (playerPos->x, playerPos->y + 1);
                 break;
             case SDLK_a: 
-                newPos.x = playerPos->x - 1;
-                newPos.y = playerPos->y;
-                if (canMove (newPos)) {
-                    recalculateFov = true;
-                    playerPos->x = newPos.x;
-                } 
-                else resolveCombat (newPos);
-                playerTookTurn = true; 
+                if (!isInUI ()) move (playerPos->x - 1, playerPos->y);
                 break;
             case SDLK_d:
-                newPos.x = playerPos->x + 1;
-                newPos.y = playerPos->y;
-                if (canMove (newPos)) {
-                    recalculateFov = true;
-                    playerPos->x = newPos.x;
-                } 
-                else resolveCombat (newPos);
-                playerTookTurn = true;
+                if (!isInUI ()) move (playerPos->x + 1, playerPos->y);
                 break;
 
             // 21/08/2018 -- 6:51 -- this is used as the interactable button
             case SDLK_e: {
+                if (isInUI ()) return;
                 // loop through all of our surrounding items in search for 
                 // an event listener to trigger
                 List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
@@ -122,11 +131,12 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 }
             } break;
 
-            case SDLK_g: getItem (); break;
+            case SDLK_g: if (inventoryView == NULL) getItem (); break;
 
             // TODO: drop an item
             // case SDLK_d: break;
 
+            // FIXME: how to handle an open loot menu and an open inventory?
             case SDLK_i: toggleInventory (); break;
 
             // TODO: equip an item
@@ -142,6 +152,8 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             // case SDLK_p: break;
 
             //TODO: what other things do we want?
+
+            case SDLK_ESCAPE: closeUIMenu (); break;
 
             default: break;
         }

@@ -49,21 +49,10 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene)
 
 void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
-    // FIXME: move this to game.c
     if (wasInGame) {
-         // Cleanup our GameObjects and Pools
-        fprintf (stdout, "Cleanning GameObjects...\n");
+        fprintf (stdout, "Cleanning up game...\n");
         cleanUpGame ();
-        free (currentLevel);
-        free (player);
     }
-   
-    // clean up single structs
-    // destroyConsole (console);
-    // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
-    //     free (currentLevel->mapCells[i]);
-
-    // free (currentLevel->mapCells);
     
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);

@@ -224,10 +224,29 @@ char *createString (const char *stringWithFormat, ...) {
 UIView *lootView = NULL;
 
 // FIXME: add a loot panel
-void renderLoot (Console *console) {
+static void renderLoot (Console *console) {
 
     UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
     drawRect (console, &looRect, 0x69777DFF, 0, 0xFF990099);
+
+    if (newLoot != NULL) {
+        if (newLoot->lootItems != NULL) {
+            i32 yIdx = 4;
+            for (ListElement *e = LIST_START (newLoot->lootItems); e != NULL; e = e->next) {
+                Item *item = (Item *) e->data;
+                Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+                if (g != NULL) {
+                    char *str = createString ("%s", g->name);
+                    putStringAt (console, str, 6, yIdx, 0x98FB98FF, 0x80000099);
+                    free (str);
+                    yIdx++;
+                }
+            }
+        }
+    }
+
+    // FIXME: Change color
+    else putStringAt (console, "No loot!", 11, 10, 0x333333FF, 0x00000000);
 
 }
 

@@ -229,7 +229,7 @@ typedef struct {
 
 } Level;
 
-global Level *currentLevel;
+extern Level *currentLevel;
 
 extern unsigned int wallCount;
 
@@ -243,6 +243,17 @@ extern bool recalculateFov;
 /*** COMBAT ***/
 
 extern void fight (GameObject *attacker, GameObject *defender);
+
+/*** LOOT ***/
+
+typedef struct Loot {
+
+    u8 money[3];
+    List *lootItems;
+
+} Loot;
+
+extern Loot *newLoot;
 
 
 // Cleanning Up!

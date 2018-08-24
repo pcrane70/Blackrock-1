@@ -43,12 +43,14 @@ GameObject *player = NULL;
 Player *playerComp = NULL;  // for accessibility
 bool playerTookTurn = false;
 
+// Level 
+Level *currentLevel = NULL;
+
 // Configs
 Config *playerConfig = NULL;
 Config *classesConfig = NULL;
 Config *monsterConfig = NULL;
 Config *itemsConfig = NULL;
-
 
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -551,14 +553,24 @@ void cleanUpGame (void) {
     destroyList (messageLog);
 
     // clean up the player
-    destroyList (((Player *) getComponent (player, PLAYER))->inventory);
+    if (playerComp->inventory != NULL) destroyList (playerComp->inventory);
     free (playerComp);
+    free (player);
+
+    // clean up the level
+    // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+    //     free (currentLevel->mapCells[i]);
+
+    free (currentLevel->mapCells);
+    free (currentLevel);
 
     // clear the configs
     clearConfig (playerConfig);
     clearConfig (classesConfig);
     clearConfig (monsterConfig);
     clearConfig (itemsConfig);
+
+    fprintf (stdout, "Done cleanning up game!\n");
 
 }
 
@@ -887,20 +899,35 @@ u8 getMonsterId (void) {
 
 /*** LOOT - ITEMS ***/
 
-// FIXME:
+Loot *newLoot = NULL;
+
+// FIXME: we need to remember the loof of all the corpses on the room
 // loots any corpse
 void loot (void) {
 
+    if (newLoot == NULL) {
+        newLoot = (Loot *) malloc (sizeof (Loot));
+        newLoot->lootItems = initList (free);
+    } 
+    else if (newLoot->lootItems != NULL) {
+        destroyList (newLoot->lootItems);
+        newLoot->lootItems = NULL;
+    } 
+    
+    if (newLoot->lootItems == NULL) newLoot->lootItems = initList (free);
+
     // FIXME: generate random money
-    u8 money[3] = { 0, 1, 50 };
+    newLoot->money[0] = 0;
+    newLoot->money[1] = 1;
+    newLoot->money[2] = 50;
 
     // FIXME: generate random items
+    insertAfter (newLoot->lootItems, NULL, createItem (1001));
+    insertAfter (newLoot->lootItems, NULL, createItem (1002));
+
+    fprintf (stdout, "New loot created!\n");
 
     // Display the loot to the player
-
-    // logMessage ("You loot the corpse.", DEFAULT_COLOR);
-
-    // FIXME: 
     toggleLootWindow ();
 
 }
