@@ -8,25 +8,7 @@
 #include "utils/list.h"
 #include "objectPool.h"
 
-/*** MESSAGE COLORS ***/
-
-#define DEFAULT_COLOR    0xFFFFFFFF
-
-#define SUCCESS_COLOR   0x009900FF
-#define WARNING_COLOR   0x990000FF
-
-#define HIT_COLOR       0xF2F2F2FF  // succesfull attack
-#define CRITICAL_COLOR  0xFFDB22FF  // critical hit
-#define MISS_COLOR      0xCCCCCCFF  // missed attack
-#define STOPPED_COLOR   0xFBFBFBFF  // parry, dodge, block
-#define KILL_COLOR      0xFF9900FF  // you kill a mob
-
-#define HEALTH_COLOR    0x00FF22FF  // player gains health
-#define DAMAGE_COLOR    0x8C2020FF  // player loses health
-
-
-// 11/08/2018
-// Getting back to an ECS but we will try to use linked lists and make a more efficient system
+#define COMP_COUNT      9
 
 typedef enum GameComponent {
 
@@ -38,8 +20,7 @@ typedef enum GameComponent {
     ITEM, 
     EVENT,
     PLAYER,
-
-    COMP_COUNT
+    LOOT
 
 } GameComponent;
 
@@ -144,7 +125,7 @@ typedef struct Combat  {
 
 /*** EVENTS ***/
 
-typedef void (*EventListener)(void);
+typedef void (*EventListener)(void *);
 
 typedef struct Event {
 
@@ -217,21 +198,31 @@ extern void *getComponent (GameObject *, GameComponent);
 extern void addComponent (GameObject *go, GameComponent type, void *data);
 extern List *getObjectsAtPos (u32 x, u32 y);
 
+/*** LOOT ***/
+
+typedef struct Loot {
+
+    u32 objectId;
+    u8 money[3];
+    List *lootItems;
+
+} Loot;
+
 /*** LEVEL MANAGER ***/
 
 typedef struct {
 
     unsigned int levelNum;
-
-    // 12/08/2018 -- 19:34 -- we will only worry for now for generating levels inside the dungeons
-    // later we will want to generate levels in caves or forests, etc
-    bool **mapCells;
+    bool **mapCells;    // dungeon map
+    // List *levelLoot;
 
 } Level;
 
 extern Level *currentLevel;
 
 extern unsigned int wallCount;
+
+/*** SCORE ***/
 
 
 /*** MOVEMENT ***/
@@ -243,17 +234,6 @@ extern bool recalculateFov;
 /*** COMBAT ***/
 
 extern void fight (GameObject *attacker, GameObject *defender);
-
-/*** LOOT ***/
-
-typedef struct Loot {
-
-    u8 money[3];
-    List *lootItems;
-
-} Loot;
-
-extern Loot *newLoot;
 
 
 // Cleanning Up!

@@ -223,26 +223,32 @@ char *createString (const char *stringWithFormat, ...) {
 
 UIView *lootView = NULL;
 
+extern Loot *currentLoot;
+
 // FIXME: add a loot panel
 static void renderLoot (Console *console) {
 
     UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
     drawRect (console, &looRect, 0x69777DFF, 0, 0xFF990099);
 
-    if (newLoot != NULL) {
-        if (newLoot->lootItems != NULL) {
+    if (currentLoot != NULL) {
+        if (currentLoot->lootItems != NULL) {
             i32 yIdx = 4;
-            for (ListElement *e = LIST_START (newLoot->lootItems); e != NULL; e = e->next) {
+            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
                 Item *item = (Item *) e->data;
                 Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
                 if (g != NULL) {
                     char *str = createString ("%s", g->name);
+                    // FIXME: change colors
                     putStringAt (console, str, 6, yIdx, 0x98FB98FF, 0x80000099);
                     free (str);
                     yIdx++;
                 }
             }
         }
+
+        // FIXME: display gold
+
     }
 
     // FIXME: Change color
@@ -286,19 +292,22 @@ static void renderInventory (Console *console) {
     if (LIST_SIZE (playerComp->inventory) == 0) 
         putStringAt (console, "Inventory is empty!", 11, 10, 0x333333FF, 0x00000000);
 
-    // As of 20/08/2018 -- 03:55 -- I plan to have the equipment and the inventory
-    // in separate views, like in WOW
     else {
-        // Graphics *graphics = NULL;
-        // Item *item = NULL;
-        // for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        //     graphics = (Graphics *) getComponent ((GameObject *) e->data, GRAPHICS);
-        //     item = (Item *) getComponent ((GameObject *) e->data, ITEM);
-        //     if (graphics != NULL && item != NULL) {
-        //         // FIXME:
-        //     }
-        // }
+        i32 yIdx = 4;
+        for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+            Item *item = (Item *) e->data;
+            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+            if (g != NULL) {
+                char *str = createString ("%s", g->name);
+                // FIXME: CHANGE TO BETTER COLORS!!
+                putStringAt (console, str, 6, yIdx, 0x98FB98FF, 0x80000099);
+                free (str);
+                yIdx++;
+            }
+        }
     }
+
+    // FIXME: display gold
 
     // FIXME: CHANGE TO BETTER COLORS!!
     // Render additional info

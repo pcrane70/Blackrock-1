@@ -24,6 +24,24 @@ extern List *messageLog;
 extern void logMessage (char *msg, u32 color);
 extern char *createString (const char *stringWithFormat, ...);
 
+
+/*** MESSAGE COLORS ***/
+
+#define DEFAULT_COLOR    0xFFFFFFFF
+
+#define SUCCESS_COLOR   0x009900FF
+#define WARNING_COLOR   0x990000FF
+
+#define HIT_COLOR       0xF2F2F2FF  // succesfull attack
+#define CRITICAL_COLOR  0xFFDB22FF  // critical hit
+#define MISS_COLOR      0xCCCCCCFF  // missed attack
+#define STOPPED_COLOR   0xFBFBFBFF  // parry, dodge, block
+#define KILL_COLOR      0xFF9900FF  // you kill a mob
+
+#define HEALTH_COLOR    0x00FF22FF  // player gains health
+#define DAMAGE_COLOR    0x8C2020FF  // player loses health
+
+
 /*** LOOT ***/
 
 extern void toggleLootWindow (void);

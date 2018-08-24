@@ -123,7 +123,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                         Event *ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
                         // trigger just the first event we find
                         if (ev != NULL) {
-                            ev->callback ();
+                            ev->callback (e->data);
                             break;
                         }
                     }

@@ -228,39 +228,27 @@ List *getItemsAtPos (u8 x, u8 y) {
 
 }
 
-// FIXME: remove form the list
-void pickUp (Item *item) {
+// pickup the first item of the list
+void pickUp (List *lootItems) {
 
-    // check if we can actually pickup the item
+    // ListElement *e = removeElement ()
+    Item *item = (Item *) removeElement (lootItems, LIST_START (lootItems));
+
     if (item != NULL) {
-        fprintf (stdout, "Picking up item!\n");
         if ((1 + item->weight) <= 100) {
-
-            // Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
-            // if (g != NULL) {
-            //     // char *str = createString ("You picked up the %s.", g->name);
-            //     if (g->name != NULL) {
-            //         fprintf (stdout, "Name: %s", g->name);
-            //         logMessage (createString ("You picked up the %s.", g->name), SUCCESS_COLOR);
-            //     } 
-            //     else fprintf (stderr, "No item name!\n");
-                
-            //     // free (str);
-            // }
             // add the item to the inventory
             insertAfter (playerComp->inventory, NULL, item);
             // remove the item from the map
-            // removeItemComp (item, POSITION);
-            fprintf (stdout, "Added to inventory!\n");
+            removeItemComp (item, POSITION);
 
-            // Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
-            // if (g != NULL) {
-            //     char *msg = createString ("You picked up the %s.", g->name);
-            //     logMessage (msg, SUCCESS_COLOR);
-            //     free (msg);
-            // }
-
-            
+            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+            if (g != NULL) {
+                if (g->name != NULL) {
+                    fprintf (stdout, "Name: %s", g->name);
+                    logMessage (createString ("You picked up the %s.", g->name), SUCCESS_COLOR);
+                } 
+                else logMessage ("Picked up the item!", SUCCESS_COLOR);
+            }
 
             playerTookTurn = true;
         }
@@ -286,20 +274,22 @@ void getItem (void) {
     }
 
     // we only pick one item each time
-    pickUp ((Item *) ((LIST_START (objects))->data));
+    pickUp (objects);
 
     if (objects != NULL) destroyList (objects);
 
 }
 
+extern Loot *currentLoot;
+
 // FIXME: handle multiple loots of multiple enemies
 // 24/08/2018 -- 01:14 -- I don't like this function so much :/
 void getLootItem (void) {
 
-    if (newLoot != NULL) {
+    if (currentLoot != NULL) {
         // we only pick one item each time
-        if ((newLoot->lootItems != NULL) && (LIST_SIZE (newLoot->lootItems) > 0)) 
-            pickUp ((Item *) LIST_START (newLoot->lootItems)) ;
+        if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0)) 
+            pickUp (currentLoot->lootItems);
 
         else logMessage ("There are no items to pick up!", WARNING_COLOR);
     }

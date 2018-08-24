@@ -29,6 +29,7 @@ List *graphics = NULL;
 List *physics = NULL;
 List *movement = NULL;
 List *combat = NULL;
+List *loot = NULL;
 
 // Pools
 Pool *goPool = NULL;
@@ -37,6 +38,7 @@ Pool *graphicsPool = NULL;
 Pool *physPool = NULL;
 Pool *movePool = NULL;
 Pool *combatPool = NULL;
+Pool *lootPool = NULL;
 
 // Player
 GameObject *player = NULL;
@@ -69,6 +71,7 @@ void initGame (void) {
     physics = initList (free);
     movement = initList (free);
     combat = initList (free);
+    loot = initList (free);
 
     // init our pools
     goPool = initPool ();
@@ -77,6 +80,7 @@ void initGame (void) {
     physPool = initPool ();
     movePool = initPool ();
     combatPool = initPool ();
+    lootPool = initPool ();
 
     initItems ();
 
@@ -318,6 +322,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             else newCombat = (Combat *) malloc (sizeof (Combat));
 
             Combat *combatData = (Combat *) data;
+            newCombat->objectId = go->id;
             newCombat->baseStats = combatData->baseStats;
             newCombat->attack = combatData->attack;
             newCombat->defense = combatData->defense;
@@ -350,6 +355,23 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             // FIXME: do we need a list and a pool of events??
         }
+        case LOOT: {
+            if (getComponent (go, type) != NULL) return;
+            Loot *newLoot = NULL;
+
+            if (POOL_SIZE (lootPool) > 0) newLoot = pop (lootPool);
+            else newLoot = (Loot *) malloc (sizeof (Loot));
+
+            Loot *lootData = (Loot *) data;
+            newLoot->objectId = go->id;
+            newLoot->money[0] = lootData->money[0];
+            newLoot->money[1] = lootData->money[1];
+            newLoot->money[2] = lootData->money[2];
+            newLoot->lootItems = lootData->lootItems;
+
+            go->components[type] = newLoot;
+            insertAfter (loot, NULL, newLoot);
+        } break;
 
         // We have an invalid GameComponent type, so don't do anything
         default: break;
@@ -467,6 +489,15 @@ void removeComponent (GameObject *go, GameComponent type) {
             push (combatPool, combatData);
             go->components[type] = NULL;
         } break;
+        case LOOT: {
+            Loot *lootComp = (Loot *) getComponent (go, type);
+            if (lootComp == NULL) return;
+            ListElement *e = getListElement (loot, lootComp);
+            void *lootData = NULL;
+            if (e != NULL) lootData = removeElement (loot, e);
+            push (lootPool, lootData);
+            go->components[type] = NULL;
+        } break;
 
         default: break;
     }
@@ -539,6 +570,7 @@ void cleanUpGame (void) {
     destroyList (movement);
     destroyList (combat);
     destroyList (items);
+    destroyList (loot);
 
     // cleanup the pools
     clearPool (goPool);
@@ -548,6 +580,7 @@ void cleanUpGame (void) {
     clearPool (movePool);
     clearPool (combatPool);
     clearPool (itemsPool);
+    clearPool (lootPool);
 
     // cleanup the message log
     destroyList (messageLog);
@@ -557,17 +590,16 @@ void cleanUpGame (void) {
     free (playerComp);
     free (player);
 
-    // clean up the level
-    // for (short unsigned int i = 0; i < MAP_WIDTH; i++)
-    //     free (currentLevel->mapCells[i]);
-
     free (currentLevel->mapCells);
-    free (currentLevel);
+    // if (currentLevel->levelLoot != NULL) {
+    //     for (ListElement *e = LIST_START (currentLevel->levelLoot); e != NULL; e = e->next) {
+    //         if (((Loot *)(e->data))->lootItems != NULL)
+    //             destroyList (((Loot *)(e->data))->lootItems);
+    //     }
+    // }
 
-    // FIXME:
-    // cleanup loot
-    // if (newLoot->lootItems != NULL) destroyList (newLoot->lootItems);
-    // free (newLoot);
+    // destroyList (currentLevel->levelLoot);
+    free (currentLevel);
 
     // clear the configs
     clearConfig (playerConfig);
@@ -904,36 +936,37 @@ u8 getMonsterId (void) {
 
 /*** LOOT - ITEMS ***/
 
-Loot *newLoot = NULL;
+void createLoot (GameObject *go) {
 
-// FIXME: we need to remember the loof of all the corpses on the room
-// loots any corpse
-void loot (void) {
-
-    if (newLoot == NULL) {
-        newLoot = (Loot *) malloc (sizeof (Loot));
-        newLoot->lootItems = initList (free);
-    } 
-    else if (newLoot->lootItems != NULL) {
-        destroyList (newLoot->lootItems);
-        newLoot->lootItems = NULL;
-    } 
-    
-    if (newLoot->lootItems == NULL) newLoot->lootItems = initList (free);
+    Loot newLoot;
 
     // FIXME: generate random money
-    newLoot->money[0] = 0;
-    newLoot->money[1] = 1;
-    newLoot->money[2] = 50;
+    newLoot.money[0] = 0;
+    newLoot.money[1] = 1;
+    newLoot.money[2] = 50;
+
+    newLoot.lootItems = initList (free);
 
     // FIXME: generate random items
-    insertAfter (newLoot->lootItems, NULL, createItem (1001));
-    insertAfter (newLoot->lootItems, NULL, createItem (1002));
+    insertAfter (newLoot.lootItems, NULL, createItem (1001));
+    insertAfter (newLoot.lootItems, NULL, createItem (1002));
+
+    addComponent (go, LOOT, &newLoot);
 
     fprintf (stdout, "New loot created!\n");
 
-    // Display the loot to the player
-    toggleLootWindow ();
+}
+
+Loot *currentLoot = NULL;
+
+void displayLoot (void *goData) {
+
+    GameObject *go = searchGameObjectById (((GameObject *)(goData))->id);
+    if (go != NULL) {
+        currentLoot = (Loot *) getComponent (go, LOOT);
+
+        toggleLootWindow ();
+    }
 
 }
 
@@ -1088,7 +1121,9 @@ void fight (GameObject *attacker, GameObject *defender) {
 
                     removeComponent (defender, MOVEMENT);
 
-                    Event e = { 0, loot };
+                    createLoot (defender);
+
+                    Event e = { 0, displayLoot };
                     addComponent (defender, EVENT, &e);
 
                     Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
@@ -1134,6 +1169,8 @@ void clearOldLevel (void) {
     for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next)
         destroyGO ((GameObject *) e->data);
 
+    // FIXME: loot
+
 }
 
 // FIXME:
@@ -1170,7 +1207,7 @@ void updateGame (void) {
 }
 
 // gets you into a nw level
-void useStairs (void) {
+void useStairs (void *goData) {
 
     currentLevel->levelNum += 1;
 
@@ -1269,6 +1306,8 @@ void enterDungeon (void) {
         currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
         for (short unsigned int i = 0; i < MAP_WIDTH; i++)
             currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
+
+        // currentLevel->levelLoot = initList (free);
     } 
     
     // generate a random world froms scratch
