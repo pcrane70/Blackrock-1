@@ -131,7 +131,12 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 }
             } break;
 
-            case SDLK_g: if (inventoryView == NULL) getItem (); break;
+            case SDLK_g:
+                if (inventoryView == NULL) {
+                    if (lootView != NULL) getLootItem ();
+                    else getItem (); 
+                } 
+                break;
 
             // TODO: drop an item
             // case SDLK_d: break;

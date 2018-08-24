@@ -52,6 +52,7 @@ extern void initItems (void);
 
 extern Item *createItem (u16 itemId);
 extern void getItem (void);
+extern void getLootItem (void);
 extern void *getItemComp (Item *, GameComponent);
 extern u16 getCarriedWeight (void);
 

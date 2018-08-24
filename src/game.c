@@ -564,6 +564,11 @@ void cleanUpGame (void) {
     free (currentLevel->mapCells);
     free (currentLevel);
 
+    // FIXME:
+    // cleanup loot
+    // if (newLoot->lootItems != NULL) destroyList (newLoot->lootItems);
+    // free (newLoot);
+
     // clear the configs
     clearConfig (playerConfig);
     clearConfig (classesConfig);

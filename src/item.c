@@ -188,7 +188,7 @@ void destroyItem (Item *item) {
 
     for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComp (item, i);
 
-    ListElement *e =getListElement (items, item);
+    ListElement *e = getListElement (items, item);
     if (e != NULL) {
         void *data = removeElement (items, e);
         push (itemsPool, data);
@@ -228,38 +228,39 @@ List *getItemsAtPos (u8 x, u8 y) {
 
 }
 
-// Function to get/pickup a nearby item
-// As of 16/08/2018:
-// The character must be on the same coord as the item to be able to pick it up
-// FIXME: how can we pickup loot items?
-void getItem (void) {
-
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    // get a list of items nearby the player
-    List *objects = getItemsAtPos (playerPos->x, playerPos->y);
-
-    if (objects == NULL) {
-        logMessage ("There are no items here!", WARNING_COLOR);
-        return;
-    }
-
-    // we only pick one item each time
-    Item *item = (Item *) ((LIST_START (objects))->data);
+// FIXME: remove form the list
+void pickUp (Item *item) {
 
     // check if we can actually pickup the item
     if (item != NULL) {
-        if ((getCarriedWeight () + item->weight) <= ((Player *) getComponent (player, PLAYER))->maxWeight) {
-            // add the item to the inventory
-            insertAfter (((Player *) getComponent (player, PLAYER))->inventory, NULL, item);
-            // remove the item from the map
-            removeItemComp (item, POSITION);
+        fprintf (stdout, "Picking up item!\n");
+        if ((1 + item->weight) <= 100) {
 
-            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
-            if (g != NULL) {
-                char *msg = createString ("You picked up the %s.", g->name);
-                logMessage (msg, SUCCESS_COLOR);
-                free (msg);
-            }
+            // Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+            // if (g != NULL) {
+            //     // char *str = createString ("You picked up the %s.", g->name);
+            //     if (g->name != NULL) {
+            //         fprintf (stdout, "Name: %s", g->name);
+            //         logMessage (createString ("You picked up the %s.", g->name), SUCCESS_COLOR);
+            //     } 
+            //     else fprintf (stderr, "No item name!\n");
+                
+            //     // free (str);
+            // }
+            // add the item to the inventory
+            insertAfter (playerComp->inventory, NULL, item);
+            // remove the item from the map
+            // removeItemComp (item, POSITION);
+            fprintf (stdout, "Added to inventory!\n");
+
+            // Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+            // if (g != NULL) {
+            //     char *msg = createString ("You picked up the %s.", g->name);
+            //     logMessage (msg, SUCCESS_COLOR);
+            //     free (msg);
+            // }
+
+            
 
             playerTookTurn = true;
         }
@@ -267,7 +268,43 @@ void getItem (void) {
         else logMessage ("You are carrying to much already!", WARNING_COLOR);
     }
 
+}
+
+
+// As of 16/08/2018:
+// The character must be on the same coord as the item to be able to pick it up
+void getItem (void) {
+
+    Position *playerPos = (Position *) getComponent (player, POSITION);
+    // get a list of items nearby the player
+    List *objects = getItemsAtPos (playerPos->x, playerPos->y);
+
+    if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
+        if (objects != NULL) destroyList (objects);
+        logMessage ("There are no items here!", WARNING_COLOR);
+        return;
+    }
+
+    // we only pick one item each time
+    pickUp ((Item *) ((LIST_START (objects))->data));
+
     if (objects != NULL) destroyList (objects);
+
+}
+
+// FIXME: handle multiple loots of multiple enemies
+// 24/08/2018 -- 01:14 -- I don't like this function so much :/
+void getLootItem (void) {
+
+    if (newLoot != NULL) {
+        // we only pick one item each time
+        if ((newLoot->lootItems != NULL) && (LIST_SIZE (newLoot->lootItems) > 0)) 
+            pickUp ((Item *) LIST_START (newLoot->lootItems)) ;
+
+        else logMessage ("There are no items to pick up!", WARNING_COLOR);
+    }
+
+    else logMessage ("There is not loot available here!", WARNING_COLOR);
 
 }
 
