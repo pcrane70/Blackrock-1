@@ -570,8 +570,19 @@ void cleanUpGame (void) {
     destroyList (movement);
     destroyList (combat);
     destroyList (items);
-    destroyList (loot);
 
+    // clean every list of items inside each loot object
+    if (loot != NULL) {
+        if (LIST_SIZE (loot) > 0) {
+            for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
+                if (((Loot *)(e->data))->lootItems != NULL 
+                    && (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0))
+                        destroyList (((Loot *)(e->data))->lootItems);
+            }
+        }
+        destroyList (loot);
+    }
+    
     // cleanup the pools
     clearPool (goPool);
     clearPool (posPool);
@@ -580,25 +591,28 @@ void cleanUpGame (void) {
     clearPool (movePool);
     clearPool (combatPool);
     clearPool (itemsPool);
-    clearPool (lootPool);
 
+    // clean every list of items inside each loot object
+    if (lootPool != NULL) {
+        if (POOL_SIZE (lootPool) > 0) {
+            for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
+                if (((Loot *)(p->data))->lootItems != NULL 
+                    && (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0))
+                        destroyList (((Loot *)(p->data))->lootItems);
+            } 
+        }
+        clearPool (lootPool);
+    }
+    
     // cleanup the message log
     destroyList (messageLog);
 
     // clean up the player
-    if (playerComp->inventory != NULL) destroyList (playerComp->inventory);
+    // if (playerComp->inventory != NULL) destroyList (playerComp->inventory);
     free (playerComp);
     free (player);
 
-    free (currentLevel->mapCells);
-    // if (currentLevel->levelLoot != NULL) {
-    //     for (ListElement *e = LIST_START (currentLevel->levelLoot); e != NULL; e = e->next) {
-    //         if (((Loot *)(e->data))->lootItems != NULL)
-    //             destroyList (((Loot *)(e->data))->lootItems);
-    //     }
-    // }
-
-    // destroyList (currentLevel->levelLoot);
+    // free (currentLevel->mapCells);
     free (currentLevel);
 
     // clear the configs
@@ -963,8 +977,17 @@ void displayLoot (void *goData) {
 
     GameObject *go = searchGameObjectById (((GameObject *)(goData))->id);
     if (go != NULL) {
-        currentLoot = (Loot *) getComponent (go, LOOT);
+        if (getComponent (go, LOOT) != NULL) {
+            if (LIST_SIZE (((Loot *) getComponent (go, LOOT))->lootItems) == 0) {
+                removeComponent (go, LOOT);
+                currentLoot = NULL;
+            }
 
+            else currentLoot = (Loot *) getComponent (go, LOOT);
+        }   
+
+        else currentLoot = NULL;
+        
         toggleLootWindow ();
     }
 
@@ -972,6 +995,165 @@ void displayLoot (void *goData) {
 
 
 /*** COMBAT ***/
+
+// FIXME: fix probability
+char *calculateDefense (GameObject *defender, bool isPlayer) {
+
+    Combat *def = (Combat *) getComponent (defender, COMBAT);
+
+    u8 chance = (u8) randomInt (0, 3);
+    char *msg = NULL;
+    switch (chance) {
+        case 0: break;
+        case 1: {
+            if (def->defense.dodge > 0) {
+                u8 roll = (u8) randomInt (1, 100);
+                if (roll <= def->defense.dodge) {
+                    if (!isPlayer) logMessage ("You dodge the attack.", STOPPED_COLOR);
+                    else {
+                        Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
+                        if (g != NULL) 
+                            msg = createString ("The %s dodges your attack.", g->name);
+                    }
+                } 
+            }
+        } break;
+        case 2: {
+            if (def->defense.parry > 0) {
+                u8 roll = (u8) randomInt (1, 100);
+                if (roll <= def->defense.parry) {
+                    if (!isPlayer) logMessage ("You parry the attack.", STOPPED_COLOR);
+                    else {
+                        Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
+                        if (g != NULL) 
+                            msg = createString ("The %s parries your attack.", g->name);
+                    }  
+                }
+            }
+        } break;
+        case 3: {
+            if (def->defense.block > 0) {
+                u8 roll = (u8) randomInt (1, 100);
+                if (roll <= def->defense.block) {
+                    // FIXME: only block if you have a shield equipped
+                    if (!isPlayer) logMessage ("You block the attack.", STOPPED_COLOR);
+                    else {
+                        Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
+                        if (g != NULL) 
+                            msg = createString ("The %s blocks your attack.", g->name);
+                    }
+                }  
+            }
+        } break;
+        default: break;
+    }
+
+    return msg;
+
+}
+
+u32 calculateDamage (GameObject *attacker, GameObject *defender, bool isPlayer) {
+
+    Combat *att = (Combat *) getComponent (attacker, COMBAT);
+
+    // get the damage
+    u32 damage;
+    // if the attacker is the player, search for weapon dps + strength
+    if (isPlayer) {
+        // FIXME: we need a better way to get what ever the charcter is wielding
+        // GameObject *go = NULL;
+        // Item *i = NULL;
+        // Item *weapon = NULL;
+        // for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+        //     go = (GameObject *) e->data;
+        //     i = (Item *) getComponent (go, ITEM);
+        //     if (i->wielding == true) {
+        //         weapon = i;
+        //         break;
+        //     } 
+        // }
+
+        // FIXME: 21/08/2018 -- 21:18 -- this is temporary
+        // 21/08/2018 -- 23:25 -- this is for a more dynamic experience
+        damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+        damage += att->baseStats.strength;
+    }
+    // if the attacker is a mob, just get the the base dps + strength
+    else {
+        // damage = att->attack.baseDps;
+        damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+        damage += att->baseStats.strength;
+    }
+
+    // take a roll to decide if we can hit a critical
+    u32 critical = (u32) randomInt (1, 100);
+    bool crit = false;
+    if (critical <= att->attack.criticalStrike) {
+        crit = true;
+        damage *= 2;
+    } 
+
+    if (isPlayer) {
+        Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
+        char *str = createString ("You hit the %s for %i damage.", g->name, damage);
+        if (crit) logMessage (str, CRITICAL_COLOR);
+        else logMessage (str, HIT_COLOR);
+        free (str);
+    }
+
+    else {
+        Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
+        char *str = createString ("The %s hits you for %i damage!", g->name, damage);
+        if (crit) logMessage (str, DAMAGE_COLOR);
+        else logMessage (str, DAMAGE_COLOR);
+        free (str);
+    }
+
+    return damage;
+
+}
+
+void checkForKill (GameObject *defender) {
+
+    Combat *def = (Combat *) getComponent (defender, COMBAT);
+
+    // check for the defenders health 
+    if (def->baseStats.health <= 0) {
+        if (defender == player) {
+            logMessage ("You have died!!", KILL_COLOR);
+            // TODO: player death animation?
+            void gameOver (void);
+            gameOver ();
+        }
+
+        else {
+            // TODO: maybe add a better visial feedback
+            Graphics *gra = (Graphics *) getComponent (defender, GRAPHICS);
+            gra->glyph = '%';
+            gra->fgColor = 0x990000FF;
+
+            Position *pos = (Position *) getComponent (defender, POSITION);
+            pos->layer = MID_LAYER; // we want the player to be able to walk over it
+
+            Physics *phys = (Physics *) getComponent (defender, PHYSICS);
+            phys->blocksMovement = false;
+            phys->blocksSight = false;
+
+            removeComponent (defender, MOVEMENT);
+
+            createLoot (defender);
+
+            Event e = { 0, displayLoot };
+            addComponent (defender, EVENT, &e);
+
+            Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
+            char *str = createString ("You killed the %s.", g->name);
+            logMessage (str, KILL_COLOR);
+            free (str);
+        }
+    }
+
+}
 
 // FIXME:
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
@@ -989,149 +1171,12 @@ void fight (GameObject *attacker, GameObject *defender) {
     u32 hitRoll = (u32) randomInt (1, 100);
     if (hitRoll <= att->attack.hitchance) {
         // chance of blocking, parry or dodge
-        bool hit = true;
-        u8 chance = (u8) randomInt (0, 3);
-        char *msg = NULL;
-        switch (chance) {
-            case 0: hit = true; break;
-            case 1: {
-                if (def->defense.dodge > 0) {
-                    u8 roll = (u8) randomInt (1, 100);
-                    if (roll <= def->defense.dodge) {
-                        hit = false;
-                        if (!isPlayer) logMessage ("You dodge the attack.", STOPPED_COLOR);
-                        else {
-                            Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
-                            if (g != NULL) 
-                                msg = createString ("The %s dodges your attack.", g->name);
-                        }
-                    } 
-                }
-            } break;
-            case 2: {
-                if (def->defense.parry > 0) {
-                    u8 roll = (u8) randomInt (1, 100);
-                    if (roll <= def->defense.parry) {
-                        hit = false;
-                        if (!isPlayer) logMessage ("You parry the attack.", STOPPED_COLOR);
-                        else {
-                            Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
-                            if (g != NULL) 
-                                msg = createString ("The %s parries your attack.", g->name);
-                        }  
-                    }
-                }
-            } break;
-            case 3: {
-                if (def->defense.block > 0) {
-                    u8 roll = (u8) randomInt (1, 100);
-                    if (roll <= def->defense.block) {
-                        hit = false;
-                        // FIXME: only block if you have a shield equipped
-                        if (!isPlayer) logMessage ("You block the attack.", STOPPED_COLOR);
-                        else {
-                            Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
-                            if (g != NULL) 
-                                msg = createString ("The %s blocks your attack.", g->name);
-                        }
-                    }  
-                }
-            } break;
-            default: break;
-        }
-
-        if (hit) {
-            // get the damage
-            u32 damage;
-            // if the attacker is the player, search for weapon dps + strength
-            if (isPlayer) {
-                // FIXME: we need a better way to get what ever the charcter is wielding
-                // GameObject *go = NULL;
-                // Item *i = NULL;
-                // Item *weapon = NULL;
-                // for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-                //     go = (GameObject *) e->data;
-                //     i = (Item *) getComponent (go, ITEM);
-                //     if (i->wielding == true) {
-                //         weapon = i;
-                //         break;
-                //     } 
-                // }
-
-                // FIXME: 21/08/2018 -- 21:18 -- this is temporary
-                // 21/08/2018 -- 23:25 -- this is for a more dynamic experience
-                damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
-                damage += att->baseStats.strength;
-            }
-            // if the attacker is a mob, just get the the base dps + strength
-            else {
-                // damage = att->attack.baseDps;
-                damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
-                damage += att->baseStats.strength;
-            }
-
-            // take a roll to decide if we can hit a critical
-            u32 critical = (u32) randomInt (1, 100);
-            bool crit = false;
-            if (critical <= att->attack.criticalStrike) {
-                crit = true;
-                damage *= 2;
-            } 
-
+        char *msg = calculateDefense (defender, isPlayer);
+        if (msg == NULL) {
             // health = maxhealth = basehealth + armor
-            def->baseStats.health -= damage;
+            def->baseStats.health -= calculateDamage (attacker, defender, isPlayer);
 
-            if (isPlayer) {
-                Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
-                char *str = createString ("You hit the %s for %i damage.", g->name, damage);
-                if (crit) logMessage (str, CRITICAL_COLOR);
-                else logMessage (str, HIT_COLOR);
-                free (str);
-            }
-
-            else {
-                Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
-                char *str = createString ("The %s hits you for %i damage!", g->name, damage);
-                if (crit) logMessage (str, DAMAGE_COLOR);
-                else logMessage (str, DAMAGE_COLOR);
-                free (str);
-            }
-
-            // check for the defenders health 
-            if (def->baseStats.health <= 0) {
-                if (defender == player) {
-                    logMessage ("You have died!!", KILL_COLOR);
-                    // TODO: player death animation?
-                    void gameOver (void);
-                    gameOver ();
-                }
-
-                else {
-                    // TODO: maybe add a better visial feedback
-                    Graphics *gra = (Graphics *) getComponent (defender, GRAPHICS);
-                    gra->glyph = '%';
-                    gra->fgColor = 0x990000FF;
-
-                    Position *pos = (Position *) getComponent (defender, POSITION);
-                    pos->layer = MID_LAYER; // we want the player to be able to walk over it
-
-                    Physics *phys = (Physics *) getComponent (defender, PHYSICS);
-                    phys->blocksMovement = false;
-                    phys->blocksSight = false;
-
-                    removeComponent (defender, MOVEMENT);
-
-                    createLoot (defender);
-
-                    Event e = { 0, displayLoot };
-                    addComponent (defender, EVENT, &e);
-
-                    Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
-                    char *str = createString ("You killed the %s.", g->name);
-                    logMessage (str, KILL_COLOR);
-                    free (str);
-                }
-            }
+            checkForKill (defender);
         }
 
         else {
@@ -1242,15 +1287,6 @@ void generateLevel () {
     // make sure we have cleaned the previous level data
     clearOldLevel ();
 
-    // FIXME: THIS IS ONLY FOR DEBUGGING
-    fprintf (stdout, "GO Pool: %i  ", goPool->size);
-    fprintf (stdout, "Pos Pool: %i  ", posPool->size);
-    fprintf (stdout, "Graphics Pool: %i  ", graphicsPool->size);
-    fprintf (stdout, "Phys Pool: %i  ", physPool->size);
-    fprintf (stdout, "Move Pool: %i  ", movePool->size);
-    fprintf (stdout, "Combat Pool: %i  ", combatPool->size);
-    fprintf (stdout, "Item Pool: %i  ", itemsPool->size);
-
     // this is used to render the walls to the screen... but maybe it is not a perfect system
     initMap (currentLevel->mapCells);
 
@@ -1284,15 +1320,6 @@ void generateLevel () {
     Position *playerPos = (Position *) getComponent (player, POSITION);
     playerPos->x = (u8) playerSpawnPos.x;
     playerPos->y = (u8) playerSpawnPos.y;
-
-    // FIXME: THIS IS ONLY FOR DEBUGGING
-    fprintf (stdout, "GO Pool: %i  ", goPool->size);
-    fprintf (stdout, "Pos Pool: %i  ", posPool->size);
-    fprintf (stdout, "Graphics Pool: %i  ", graphicsPool->size);
-    fprintf (stdout, "Phys Pool: %i  ", physPool->size);
-    fprintf (stdout, "Move Pool: %i  ", movePool->size);
-    fprintf (stdout, "Combat Pool: %i  ", combatPool->size);
-    fprintf (stdout, "Item Pool: %i  ", itemsPool->size);
 
 }
 

@@ -131,27 +131,18 @@ void removeItemComp (Item *item, GameComponent type) {
 
 }
 
-// 20/08/2018 -- 17:05 -- Testing this new function for creating items
 Item *createItem (u16 itemId) {
 
     ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
     if (itemEntity == NULL) return NULL;
 
-    // we have a valid item, so create it...
     Item *item = newItem ();
-
-    // this is just a placeholder
-    // Position pos = { .x = 0, .y = 0, .layer = LOWER_LAYER };
-    // addComponent (item, POSITION, &pos);
 
     asciiChar glyph = atoi (getEntityValue (itemEntity, "glyph"));
     char *name = getEntityValue (itemEntity, "name");
     u32 color = xtoi (getEntityValue (itemEntity, "color"));
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addItemComp (item, GRAPHICS, &g);
-
-    // Physics phys = { .blocksMovement = false, .blocksSight = false };
-    // addComponent (item, PHYSICS, &phys);
 
     item->type = atoi (getEntityValue (itemEntity, "type"));
     item->rarity = atoi (getEntityValue (itemEntity, "rarity"));
@@ -235,7 +226,7 @@ void pickUp (List *lootItems) {
     Item *item = (Item *) removeElement (lootItems, LIST_START (lootItems));
 
     if (item != NULL) {
-        if ((1 + item->weight) <= 100) {
+        if ((getCarriedWeight () + item->weight) <= playerComp->maxWeight) {
             // add the item to the inventory
             insertAfter (playerComp->inventory, NULL, item);
             // remove the item from the map
@@ -243,10 +234,7 @@ void pickUp (List *lootItems) {
 
             Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
             if (g != NULL) {
-                if (g->name != NULL) {
-                    fprintf (stdout, "Name: %s", g->name);
-                    logMessage (createString ("You picked up the %s.", g->name), SUCCESS_COLOR);
-                } 
+                if (g->name != NULL) logMessage (createString ("You picked up the %s.", g->name), SUCCESS_COLOR);
                 else logMessage ("Picked up the item!", SUCCESS_COLOR);
             }
 
@@ -282,8 +270,6 @@ void getItem (void) {
 
 extern Loot *currentLoot;
 
-// FIXME: handle multiple loots of multiple enemies
-// 24/08/2018 -- 01:14 -- I don't like this function so much :/
 void getLootItem (void) {
 
     if (currentLoot != NULL) {
