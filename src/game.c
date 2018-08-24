@@ -67,7 +67,6 @@ void initGame (void) {
     physics = initList (free);
     movement = initList (free);
     combat = initList (free);
-    items = initList (free);
 
     // init our pools
     goPool = initPool ();
@@ -76,7 +75,8 @@ void initGame (void) {
     physPool = initPool ();
     movePool = initPool ();
     combatPool = initPool ();
-    itemsPool = initPool ();
+
+    initItems ();
 
     // init the message log
     messageLog = initList (free);
@@ -169,7 +169,7 @@ GameObject *initPlayer (void) {
 
     // As of 18/08/2018 -- 23-21 -- the color of the glyph is based on the class
     asciiChar glyph = atoi (getEntityValue (playerEntity, "glyph"));
-    Graphics g = { 0, glyph, p.color, 0x000000FF };
+    Graphics g = { 0, glyph, p.color, 0x000000FF, false, false, NULL };
     addComponent (go, GRAPHICS, &g);
 
     // TODO: modify the combat component based on the class
@@ -887,17 +887,28 @@ u8 getMonsterId (void) {
 
 /*** LOOT - ITEMS ***/
 
-// loots the monster corpse
-// TODO: how do we generate random items?
+// FIXME:
+// loots any corpse
 void loot (void) {
 
-    logMessage ("You loot the monster corpse.", SUCCESS_COLOR);
+    // FIXME: generate random money
+    u8 money[3] = { 0, 1, 50 };
+
+    // FIXME: generate random items
+
+    // Display the loot to the player
+
+    // logMessage ("You loot the corpse.", DEFAULT_COLOR);
+
+    // FIXME: 
+    toggleLootWindow ();
 
 }
 
 
 /*** COMBAT ***/
 
+// FIXME:
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
 void fight (GameObject *attacker, GameObject *defender) {
 
@@ -1093,6 +1104,7 @@ void clearOldLevel (void) {
 
 }
 
+// FIXME:
 // As of 9/08/2018 -- 17:00 -- we only asks the player if he wants to play again
 // TODO: maybe later we can first display a screen with a score and then ask him to play again
 void gameOver (void) {
@@ -1103,6 +1115,7 @@ void gameOver (void) {
 
 extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
+// FIXME:
 // we will have the game update every time the player moves...
 void updateGame (void) {
 

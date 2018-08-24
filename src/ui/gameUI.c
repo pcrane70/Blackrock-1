@@ -10,6 +10,8 @@
 #include "ui/console.h"
 #include "ui/gameUI.h"
 
+#include "item.h"
+
 #include "input.h"
 
 #include "utils/list.h"       // for messages
@@ -27,8 +29,6 @@
 
 /*** UI ***/
 
-// Game
-
 Player *playerComp;
 
 u8 layerRendered[MAP_WIDTH][MAP_HEIGHT];
@@ -39,6 +39,7 @@ u32 wallsBgColor = 0x000000FF;
 u32 wallsFadedColor;
 asciiChar wallGlyph = '#';  // 19/08/2018 -- 18:00 -- we are assuming that are walls are the same
 
+// FIXME:
 static void renderMap (Console *console) {
 
     // setup the layer rendering    
@@ -147,8 +148,7 @@ void logMessage (char *msg, u32 color) {
     // add message to the log
     insertAfter (messageLog, LIST_END (messageLog), m);
 
-    // TODO: how many messages do we want to keep?
-    if (LIST_SIZE (messageLog) > 20) removeElement (messageLog, NULL);  // remove the oldest message
+    if (LIST_SIZE (messageLog) > 15) removeElement (messageLog, NULL);  // remove the oldest message
 
 }
 
@@ -212,7 +212,43 @@ char *createString (const char *stringWithFormat, ...) {
     return str;
 
 }
- 
+
+
+/*** LOOT ***/
+
+#define LOOT_LEFT       20
+#define LOOT_TOP        7
+#define LOOT_WIDTH      40
+#define LOOT_HEIGHT     30
+
+UIView *lootView = NULL;
+
+// FIXME: add a loot panel
+void renderLoot (Console *console) {
+
+    UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
+    drawRect (console, &looRect, 0x69777DFF, 0, 0xFF990099);
+
+}
+
+void toggleLootWindow (void) {
+
+    // show the loot window
+    if (lootView == NULL) {
+        UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+        lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
+    }
+    // hide the loot window
+    else {
+        if (lootView != NULL) {
+            ListElement *e = getListElement (activeScene->views, lootView);
+            destroyView ((UIView *) removeElement (activeScene->views, e));
+            lootView = NULL;
+        }
+    }
+
+}
 
 /*** INVENTORY ***/
 

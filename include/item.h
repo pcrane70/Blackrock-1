@@ -4,6 +4,8 @@
 #include "utils/list.h"
 #include "objectPool.h"
 
+#define ITEM_COMPS  2
+
 extern List *items;
 extern Pool *itemsPool;
 
@@ -20,7 +22,7 @@ typedef struct Item {
     u16 value[3];   // gold, silver, copper
     // FIXME: effects
     // we only need position and graphics
-    void *components[2];   // 23/08/2018 -- 7:12 -- testing a separate ECS for our items
+    void *components[ITEM_COMPS];   // 23/08/2018 -- 7:12 -- testing a separate ECS for our items
 
 } Item;
 
@@ -46,6 +48,9 @@ typedef struct Weapon {
 
 } Weapon;
 
+extern void initItems (void);
+
 extern void getItem (void);
+extern u16 getCarriedWeight (void);
 
 #endif

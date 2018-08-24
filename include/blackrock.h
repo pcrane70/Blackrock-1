@@ -9,7 +9,6 @@
 #define SCREEN_WIDTH    1280    
 #define SCREEN_HEIGHT   720
 
-// TODO: how much space do we want to leave for the HUD??
 #define MAP_WIDTH   80
 #define MAP_HEIGHT  40
 

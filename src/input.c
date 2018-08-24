@@ -62,6 +62,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
         switch (key) {
             // Movement
+            // FIXME:
             case SDLK_w: 
                 newPos.x = playerPos->x;
                 newPos.y = playerPos->y - 1;

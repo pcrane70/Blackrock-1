@@ -19,6 +19,13 @@ extern Config *itemsConfig;
 
 static u32 itemsId = 0;
 
+void initItems (void) {
+
+    items = initList (free);
+    itemsPool = initPool ();
+
+}
+
 Item *newItem (void) {
 
     Item *i = NULL;
@@ -177,6 +184,18 @@ Weapon *createWeapon (u8 itemId) {
 
 }
 
+void destroyItem (Item *item) {
+
+    for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComp (item, i);
+
+    ListElement *e =getListElement (items, item);
+    if (e != NULL) {
+        void *data = removeElement (items, e);
+        push (itemsPool, data);
+    }
+
+}
+
 // check how much the player is carrying in its inventory and equipment
 u16 getCarriedWeight (void) {
 
@@ -191,9 +210,11 @@ u16 getCarriedWeight (void) {
 
 }
 
-List *getItemsAtPos (u16 x, u16 y) {
+List *getItemsAtPos (u8 x, u8 y) {
 
     Position *pos = NULL;
+    if (items == NULL || (LIST_SIZE (items) == 0)) return NULL;
+
     List *retVal = initList (free);
     for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
         pos = (Position *) getItemComp ((Item *) e->data, POSITION);
@@ -215,6 +236,11 @@ void getItem (void) {
     Position *playerPos = (Position *) getComponent (player, POSITION);
     // get a list of items nearby the player
     List *objects = getItemsAtPos (playerPos->x, playerPos->y);
+
+    if (objects == NULL) {
+        logMessage ("There are no items here!", WARNING_COLOR);
+        return;
+    }
 
     // we only pick one item each time
     Item *item = (Item *) ((LIST_START (objects))->data);
@@ -240,7 +266,7 @@ void getItem (void) {
         else logMessage ("You are carrying to much already!", WARNING_COLOR);
     }
 
-    free (objects);
+    if (objects != NULL) destroyList (objects);
 
 }
 

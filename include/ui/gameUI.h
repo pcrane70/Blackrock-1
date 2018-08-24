@@ -5,6 +5,8 @@
 
 #include "utils/list.h"
 
+/*** MESSAGES ***/
+
 // FIXME: where do we want to put these?
 // This will store the log messages
 typedef struct Message {
@@ -22,6 +24,9 @@ extern List *messageLog;
 extern void logMessage (char *msg, u32 color);
 extern char *createString (const char *stringWithFormat, ...);
 
+/*** LOOT ***/
+
+extern void toggleLootWindow (void);
 
 /*** INVENTORY ***/
 

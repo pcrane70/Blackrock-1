@@ -10,6 +10,8 @@
 
 /*** MESSAGE COLORS ***/
 
+#define DEFAULT_COLOR    0xFFFFFFFF
+
 #define SUCCESS_COLOR   0x009900FF
 #define WARNING_COLOR   0x990000FF
 
@@ -196,7 +198,7 @@ typedef struct Player {
     u8 genre;     // 0 female, 1 male
     // TODO: races
     CharClass cClass;
-    u16 color;  // for accessibility
+    u32 color;  // for accessibility
     u8 level;
     u16 money [3];  // gold, silver, copper
     u16 maxWeight;
