@@ -48,6 +48,9 @@ extern void toggleLootWindow (void);
 
 /*** INVENTORY ***/
 
+extern u8 inventoryXIdx;
+extern u8 inventoryYIdx;
+
 extern void toggleInventory (void);
 
 

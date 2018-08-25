@@ -340,9 +340,11 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPlayer->inventory = initList (free);
             newPlayer->level = playerData->level;
             newPlayer->maxWeight = playerData->maxWeight;
+            newPlayer->money[0] = playerData->money[0];
+            newPlayer->money[1] = playerData->money[1];
+            newPlayer->money[2] = playerData->money[2];
 
             go->components[type] = newPlayer;
-            // TODO: maybe in multiplayer we will need a list of items
         } break;
         case EVENT: {
             if (getComponent (go, type) != NULL) return;

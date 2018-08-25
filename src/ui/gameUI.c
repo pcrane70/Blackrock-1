@@ -22,11 +22,6 @@
 #define LOG_WIDTH		60
 #define LOG_HEIGHT		5
 
-#define INVENTORY_LEFT		20
-#define INVENTORY_TOP		7
-#define INVENTORY_WIDTH		40
-#define INVENTORY_HEIGHT	30
-
 /*** UI ***/
 
 Player *playerComp;
@@ -109,18 +104,13 @@ static void rednderStats (Console *console) {
     UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
     drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
 
-    // FIXME:
     char *str = createString ("%s the warrior", playerComp->name);
     putStringAt (console, str, 0, 0, 0xFFFFFFFF, 0x00000000);
 
-    // player health
-    // FIXME:
     Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
     // TODO: make this have dynamic colors
     str = createString ("HP: %i/%i", playerCombat->baseStats.health, playerCombat->baseStats.maxHealth);
     putStringAt (console, str, 0, 1, 0xFF990099, 0x00000000);
-
-    // TODO: what other stats do we want to render?
 
     free (str);
 
@@ -225,7 +215,6 @@ UIView *lootView = NULL;
 
 extern Loot *currentLoot;
 
-// FIXME: add a loot panel
 static void renderLoot (Console *console) {
 
     UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
@@ -277,46 +266,79 @@ void toggleLootWindow (void) {
 
 /*** INVENTORY ***/
 
+#define INVENTORY_LEFT		20
+#define INVENTORY_TOP		7
+#define INVENTORY_WIDTH		40
+#define INVENTORY_HEIGHT	30
+
+#define INVENTORY_CELL_WIDTH    4
+#define INVENTORY_CELL_HEIGHT   4
+
+#define INVENTORY_COLOR     0x967933FF
+#define INVENTORY_TEXT      0xEEEEEEFF
+
 UIView *inventoryView = NULL;
 
-// FIXME: better color for inventory
+u8 inventoryXIdx = 0;
+u8 inventoryYIdx = 0;
+
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
-    drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
+    drawRect (console, &rect, INVENTORY_COLOR, 0, 0xFFFFFFFF);
 
-    // TODO: do we want a background image??
+    char *itemStr = NULL;
 
-    // list the inventory items
-    // FIXME: change text color and position
-    if (LIST_SIZE (playerComp->inventory) == 0) 
-        putStringAt (console, "Inventory is empty!", 11, 10, 0x333333FF, 0x00000000);
+    u8 inventoryIdx = 0;
 
-    else {
-        i32 yIdx = 4;
-        for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-            Item *item = (Item *) e->data;
-            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
-            if (g != NULL) {
-                char *str = createString ("%s", g->name);
-                // FIXME: CHANGE TO BETTER COLORS!!
-                putStringAt (console, str, 6, yIdx, 0x98FB98FF, 0x80000099);
-                free (str);
-                yIdx++;
-            }
+    // draw inventory cells
+    for (u8 y = 0; y < 3; y++) {
+         for (u8 x = 0; x < 7; x++) {
+            UIRect rect = { x + 3 + (INVENTORY_CELL_WIDTH * x), y + 2 + (INVENTORY_CELL_HEIGHT * y), INVENTORY_CELL_WIDTH, INVENTORY_CELL_HEIGHT };
+            
+            // highlight selected cell
+            if (inventoryXIdx == x && inventoryYIdx == y) {
+                drawRect (console, &rect, 0x000000FF, 0, 0x000000FF);
+
+                u8 count = 0;
+                for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+                    if (count == inventoryIdx) {
+                        Item *item = (Item *) e->data;
+                        if (item != NULL) {
+                            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+                            if (g != NULL) {
+                                itemStr = createString ("%s", g->name);
+                            }
+                            
+                        }
+                        break;
+                    }
+                    count++;
+                }
+            } 
+            else drawRect (console, &rect, 0xFFFFFFFF, 0, 0x000000FF);
+
+            inventoryIdx++;
         }
     }
 
-    // FIXME: display gold
+    if (itemStr != NULL) {
+        putStringAt (console, itemStr, 13, 20, INVENTORY_TEXT, 0x00000000);
+        free (itemStr);
+    }
 
-    // FIXME: CHANGE TO BETTER COLORS!!
     // Render additional info
-    char *weightInfo = createString ("Carrying: %i - Max: %i", getCarriedWeight (),
-        ((Player *) getComponent (player, PLAYER))->maxWeight);
-    putStringAt (console, weightInfo, 9, 23, 0x000044FF, 0x00000000);
-    putStringAt (console, "[Up/Down] to slect item", 5, 25, 0x333333FF, 0x00000000);
-    putStringAt (console, "[Spc] to (un)equip, [D] to drop", 5, 26, 0x333333FF, 0x00000000);
-    free (weightInfo);
+    // char *weightInfo = createString ("Carrying: %i - Max: %i", getCarriedWeight (), playerComp->maxWeight);
+    // putStringAt (console, weightInfo, 9, 25, 0x000044FF, 0x00000000);
+
+    // gold
+    char *gold = createString ("%ig - %is - %ic", playerComp->money[0], playerComp->money[1], playerComp->money[2]);
+    putStringAt (console, gold, 13, 25, INVENTORY_TEXT, 0x00000000);
+
+    putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, "[e] to (un)equip, [Spc] to drop", 4, 28, INVENTORY_TEXT, 0x00000000);
+    // free (weightInfo);
+    free (gold);
 
 }
 

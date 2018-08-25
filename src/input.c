@@ -70,6 +70,13 @@ void move (u8 newX, u8 newY) {
 
 }
 
+void moveInInventory (u8 newX, u8 newY) {
+
+    if (newX >= 0 && newX <= 6) inventoryXIdx = newX;
+    if (newY >= 0 && newY <= 3) inventoryYIdx = newY;
+
+}
+
 extern UIView *lootView;
 extern UIView *inventoryView;
 
@@ -101,15 +108,19 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
         switch (key) {
             case SDLK_w:
                 if (!isInUI ()) move (playerPos->x, playerPos->y - 1);
+                else if (inventoryView != NULL) moveInInventory (inventoryXIdx, inventoryYIdx - 1);
                 break;
             case SDLK_s: 
                 if (!isInUI ()) move (playerPos->x, playerPos->y + 1);
+                else if (inventoryView != NULL) moveInInventory (inventoryXIdx, inventoryYIdx + 1);
                 break;
             case SDLK_a: 
                 if (!isInUI ()) move (playerPos->x - 1, playerPos->y);
+                else if (inventoryView != NULL) moveInInventory (inventoryXIdx - 1, inventoryYIdx);
                 break;
             case SDLK_d:
                 if (!isInUI ()) move (playerPos->x + 1, playerPos->y);
+                else if (inventoryView != NULL) moveInInventory (inventoryXIdx + 1, inventoryYIdx);
                 break;
 
             // 21/08/2018 -- 6:51 -- this is used as the interactable button
@@ -155,8 +166,6 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             // TODO: toggle pause menu
             // case SDLK_p: break;
-
-            //TODO: what other things do we want?
 
             case SDLK_ESCAPE: closeUIMenu (); break;
 
