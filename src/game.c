@@ -965,6 +965,7 @@ void createLoot (GameObject *go) {
 
     // FIXME: generate random items
     insertAfter (newLoot.lootItems, NULL, createItem (1001));
+    insertAfter (newLoot.lootItems, NULL, createItem (1001));
     insertAfter (newLoot.lootItems, NULL, createItem (1002));
 
     addComponent (go, LOOT, &newLoot);
@@ -990,7 +991,8 @@ void displayLoot (void *goData) {
 
         else currentLoot = NULL;
         
-        toggleLootWindow ();
+        if (currentLoot != NULL) toggleLootWindow ();
+        else logMessage ("There is no loot here.", WARNING_COLOR);
     }
 
 }

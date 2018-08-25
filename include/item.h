@@ -4,6 +4,14 @@
 #include "utils/list.h"
 #include "objectPool.h"
 
+/*** ITEM RARITY ***/
+
+#define RUBISH_COLOR        0x798679FF
+#define COMMON_COLOR        0x0CB21DFF
+#define RARE_COLOR          0x2338B2FF
+#define EPIC_COLOR          0x6B3CADFF
+#define LEGENDARY_COLOR     0xD65300FF
+
 #define ITEM_COMPS  2
 
 extern List *items;

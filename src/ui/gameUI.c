@@ -206,42 +206,95 @@ char *createString (const char *stringWithFormat, ...) {
 
 /*** LOOT ***/
 
-#define LOOT_LEFT       20
-#define LOOT_TOP        7
-#define LOOT_WIDTH      40
-#define LOOT_HEIGHT     30
+#define LOOT_LEFT       30
+#define LOOT_TOP        9
+#define LOOT_WIDTH      20
+#define LOOT_HEIGHT     24
+
+#define LOOT_COLOR     0x69777DFF
+#define LOOT_TEXT      0xEEEEEEFF
 
 UIView *lootView = NULL;
 
 extern Loot *currentLoot;
 
+#define LOOT_RECT_WIDTH     18
+#define LOOT_RECT_HEIGHT    4
+
+#define LOOT_IMG_WIDTH    4
+#define LOOT_IMG_HEIGHT   4
+
+typedef struct LootRect {
+
+    UIRect *bgRect;
+    UIRect *imgRect;
+
+} LootRect;
+
+LootRect *createLootRect (u8 y) {
+
+    LootRect *new = (LootRect *) malloc (sizeof (LootRect));
+    new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+    new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+
+    new->bgRect->x = 1;
+    new->bgRect->y = y + 4 + (4 * y);
+    new->bgRect->w = LOOT_RECT_WIDTH;
+    new->bgRect->h = LOOT_RECT_HEIGHT;
+
+    new->imgRect->x = 1;
+    new->imgRect->y = y + 4 + (4 * y);
+    new->imgRect->w = LOOT_IMG_WIDTH;
+    new->imgRect->h = LOOT_IMG_HEIGHT;
+
+    return new;
+
+}
+
+void drawLootRect (Console *console, LootRect *rect, Item *item) {
+
+    drawRect (console, rect->bgRect, 0xFFFFFFFF, 0, 0x00000000);
+    drawRect (console, rect->imgRect, 0x000000FF, 0, 0x00000000);
+
+    Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+    if (g != NULL) {
+        u32 color;
+        switch (item->rarity) {
+            case 0: color = RUBISH_COLOR; break;
+            case 1: color = COMMON_COLOR; break;
+            case 2: color = RARE_COLOR; break;
+            case 3: color = EPIC_COLOR; break;
+            case 4: color = LEGENDARY_COLOR; break;
+            default: color = COMMON_COLOR; break;
+        }
+        
+        putStringAt (console, g->name, 7, (rect->bgRect->y) + 2, color, 0x00000000);
+    }
+
+}
+
 static void renderLoot (Console *console) {
 
-    UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
-    drawRect (console, &looRect, 0x69777DFF, 0, 0xFF990099);
-
     if (currentLoot != NULL) {
+        UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
+        drawRect (console, &looRect, LOOT_COLOR, 0, 0xFF990099);
+
+        putStringAt (console, "Loot", 8, 2, LOOT_TEXT, 0x00000000);
+
         if (currentLoot->lootItems != NULL) {
-            i32 yIdx = 4;
-            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
-                Item *item = (Item *) e->data;
-                Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
-                if (g != NULL) {
-                    char *str = createString ("%s", g->name);
-                    // FIXME: change colors
-                    putStringAt (console, str, 6, yIdx, 0x98FB98FF, 0x80000099);
-                    free (str);
-                    yIdx++;
-                }
+            u8 y = 0;
+            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) { 
+                LootRect *lr = createLootRect (y);
+                drawLootRect (console, lr, (Item *) e->data);
+                y++;
             }
         }
 
-        // FIXME: display gold
-
+        // gold
+        char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
+        putStringAt (console, gold, 3, 21, LOOT_TEXT, 0x00000000);
+        free (gold);
     }
-
-    // FIXME: Change color
-    else putStringAt (console, "No loot!", 11, 10, 0x333333FF, 0x00000000);
 
 }
 
@@ -287,14 +340,15 @@ static void renderInventory (Console *console) {
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
     drawRect (console, &rect, INVENTORY_COLOR, 0, 0xFFFFFFFF);
 
-    char *itemStr = NULL;
+    putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, 0x00000000);
 
     u8 inventoryIdx = 0;
+    Item *item = NULL;
 
     // draw inventory cells
     for (u8 y = 0; y < 3; y++) {
          for (u8 x = 0; x < 7; x++) {
-            UIRect rect = { x + 3 + (INVENTORY_CELL_WIDTH * x), y + 2 + (INVENTORY_CELL_HEIGHT * y), INVENTORY_CELL_WIDTH, INVENTORY_CELL_HEIGHT };
+            UIRect rect = { x + 3 + (INVENTORY_CELL_WIDTH * x), y + 5 + (INVENTORY_CELL_HEIGHT * y), INVENTORY_CELL_WIDTH, INVENTORY_CELL_HEIGHT };
             
             // highlight selected cell
             if (inventoryXIdx == x && inventoryYIdx == y) {
@@ -303,14 +357,7 @@ static void renderInventory (Console *console) {
                 u8 count = 0;
                 for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
                     if (count == inventoryIdx) {
-                        Item *item = (Item *) e->data;
-                        if (item != NULL) {
-                            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
-                            if (g != NULL) {
-                                itemStr = createString ("%s", g->name);
-                            }
-                            
-                        }
+                        item = (Item *) e->data;
                         break;
                     }
                     count++;
@@ -322,9 +369,21 @@ static void renderInventory (Console *console) {
         }
     }
 
-    if (itemStr != NULL) {
-        putStringAt (console, itemStr, 13, 20, INVENTORY_TEXT, 0x00000000);
-        free (itemStr);
+    if (item != NULL) {
+        Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+        if (g != NULL) {
+            u32 color;
+            switch (item->rarity) {
+                case 0: color = RUBISH_COLOR; break;
+                case 1: color = COMMON_COLOR; break;
+                case 2: color = RARE_COLOR; break;
+                case 3: color = EPIC_COLOR; break;
+                case 4: color = LEGENDARY_COLOR; break;
+                default: color = COMMON_COLOR; break;
+            }
+            
+            putStringAt (console, g->name, 4, 21, color, 0x00000000);
+        }
     }
 
     // Render additional info
