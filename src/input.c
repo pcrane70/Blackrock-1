@@ -70,6 +70,9 @@ void move (u8 newX, u8 newY) {
 
 }
 
+extern UIView *lootView;
+extern UIView *inventoryView;
+
 void moveInInventory (u8 newX, u8 newY) {
 
     if (newX >= 0 && newX <= 6) inventoryXIdx = newX;
@@ -77,8 +80,11 @@ void moveInInventory (u8 newX, u8 newY) {
 
 }
 
-extern UIView *lootView;
-extern UIView *inventoryView;
+void moveInLoot (u8 newY) {
+
+    if (newY >= 0 && (newY < LIST_SIZE (lootRects))) lootYIdx = newY;
+
+}
 
 bool isInUI (void) {
 
@@ -109,10 +115,12 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_w:
                 if (!isInUI ()) move (playerPos->x, playerPos->y - 1);
                 else if (inventoryView != NULL) moveInInventory (inventoryXIdx, inventoryYIdx - 1);
+                else if (lootView != NULL) moveInLoot (lootYIdx - 1);
                 break;
             case SDLK_s: 
                 if (!isInUI ()) move (playerPos->x, playerPos->y + 1);
                 else if (inventoryView != NULL) moveInInventory (inventoryXIdx, inventoryYIdx + 1);
+                else if (lootView != NULL) moveInLoot (lootYIdx + 1);
                 break;
             case SDLK_a: 
                 if (!isInUI ()) move (playerPos->x - 1, playerPos->y);
@@ -144,7 +152,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             case SDLK_g:
                 if (inventoryView == NULL) {
-                    if (lootView != NULL) getLootItem ();
+                    if (lootView != NULL) getLootItem (lootYIdx);
                     else getItem (); 
                 } 
                 break;

@@ -45,6 +45,10 @@ extern char *createString (const char *stringWithFormat, ...);
 /*** LOOT ***/
 
 extern void toggleLootWindow (void);
+extern void updateLootUI (u8 yIdx);
+
+extern List *lootRects;
+extern u8 lootYIdx;
 
 /*** INVENTORY ***/
 

@@ -13,7 +13,6 @@ List *initList (void (*destroy)(void *data)) {
 
     List *list = (List *) malloc (sizeof (List));
 
-    // TODO: how to handle a failed allocation
     if (list != NULL) {
         list->size = 0;
         list->destroy = destroy;
@@ -75,56 +74,6 @@ void *removeElement (List *list, ListElement *element) {
 
 }
 
-// FIXME: how to completely destroy the data??
-// Complete remove the element from the list and delete the data (destroy)
-/* void *destroyElement (List *list, ListElement *element) {
-
-    ListElement *old;
-    void *data = NULL;
-
-    if (LIST_SIZE (list) == 0) return NULL;
-
-    if (element == NULL) {
-        data = list->start->data;
-        old = list->start;
-        list->start = list->start->next;
-        if (list->start != NULL) list->start->prev = NULL;
-    }
-
-    else {
-        data = element->data;
-        old = element;
-
-        ListElement *prevElement = element->prev;
-        ListElement *nextElement = element->next;
-
-        if (prevElement != NULL && nextElement != NULL) {
-            prevElement->next = nextElement;
-            nextElement->prev = prevElement;
-        }
-
-        else {
-            // we are at the start of the list
-            if (prevElement == NULL) {
-                if (nextElement != NULL) nextElement->prev = NULL;
-                list->start = nextElement;
-            }
-
-            // we are at the end of the list
-            if (nextElement == NULL) {
-                if (prevElement != NULL) prevElement->next = NULL;
-                list->end = prevElement;
-            }
-        }
-    }
-
-    free (old);
-    list->size--;
-
-    return data;
-
-} */
-
 void destroyList (List *list) {
 
     void *data = NULL;
@@ -135,6 +84,20 @@ void destroyList (List *list) {
     }
 
     free (list);
+
+}
+
+void resetList (List *list) {
+
+    void *data = NULL;
+    while (LIST_SIZE (list) > 0) {
+        data = removeElement (list, NULL);
+        if (data != NULL && list->destroy != NULL) list->destroy (data);
+    }
+
+    list->start = NULL;
+    list->end = NULL;
+    list->size = 0;
 
 }
 

@@ -220,10 +220,18 @@ List *getItemsAtPos (u8 x, u8 y) {
 }
 
 // pickup the first item of the list
-void pickUp (List *lootItems) {
+void pickUp (List *lootItems, u8 yIdx) {
 
-    // ListElement *e = removeElement ()
-    Item *item = (Item *) removeElement (lootItems, LIST_START (lootItems));
+    Item *item = NULL;
+    u8 count = 0;
+    for (ListElement *e = LIST_START (lootItems); e != NULL; e = e->next) {
+        if (count == yIdx) {
+            item = (Item *) removeElement (lootItems, LIST_START (lootItems));
+            break;
+        }
+
+        count++;
+    }
 
     if (item != NULL) {
         if ((getCarriedWeight () + item->weight) <= playerComp->maxWeight) {
@@ -239,6 +247,9 @@ void pickUp (List *lootItems) {
             }
 
             playerTookTurn = true;
+
+            // update Loot UI
+            updateLootUI (yIdx);
         }
 
         else logMessage ("You are carrying to much already!", WARNING_COLOR);
@@ -249,11 +260,13 @@ void pickUp (List *lootItems) {
 
 // As of 16/08/2018:
 // The character must be on the same coord as the item to be able to pick it up
+// FIXME:
 void getItem (void) {
 
     Position *playerPos = (Position *) getComponent (player, POSITION);
     // get a list of items nearby the player
-    List *objects = getItemsAtPos (playerPos->x, playerPos->y);
+    // List *objects = getItemsAtPos (playerPos->x, playerPos->y);
+    List *objects = NULL;
 
     if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
         if (objects != NULL) destroyList (objects);
@@ -262,7 +275,7 @@ void getItem (void) {
     }
 
     // we only pick one item each time
-    pickUp (objects);
+    // pickUp (objects, 0);
 
     if (objects != NULL) destroyList (objects);
 
@@ -270,12 +283,12 @@ void getItem (void) {
 
 extern Loot *currentLoot;
 
-void getLootItem (void) {
+void getLootItem (u8 lootYIdx) {
 
     if (currentLoot != NULL) {
         // we only pick one item each time
         if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0)) 
-            pickUp (currentLoot->lootItems);
+            pickUp (currentLoot->lootItems, lootYIdx);
 
         else logMessage ("There are no items to pick up!", WARNING_COLOR);
     }

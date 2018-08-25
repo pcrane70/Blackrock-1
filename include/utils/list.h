@@ -34,6 +34,7 @@ typedef struct List {
 extern List *initList (void (*destroy)(void *data));
 extern void *removeElement (List *, ListElement *);
 extern void destroyList (List *);
+extern void resetList (List *);
 extern bool insertAfter (List *, ListElement *, void *data);
 
 // SEARCHING

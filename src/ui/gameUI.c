@@ -228,10 +228,13 @@ typedef struct LootRect {
 
     UIRect *bgRect;
     UIRect *imgRect;
+    Item *item;
 
 } LootRect;
 
-LootRect *createLootRect (u8 y) {
+List *lootRects = NULL;
+
+LootRect *createLootRect (u8 y, Item *i) {
 
     LootRect *new = (LootRect *) malloc (sizeof (LootRect));
     new->bgRect = (UIRect *) malloc (sizeof (UIRect));
@@ -247,19 +250,31 @@ LootRect *createLootRect (u8 y) {
     new->imgRect->w = LOOT_IMG_WIDTH;
     new->imgRect->h = LOOT_IMG_HEIGHT;
 
+    new->item = i;
+
     return new;
 
 }
 
-void drawLootRect (Console *console, LootRect *rect, Item *item) {
+void destroyLootRect (LootRect *lr) {
 
-    drawRect (console, rect->bgRect, 0xFFFFFFFF, 0, 0x00000000);
+    if (lr != NULL) {
+        if (lr->bgRect != NULL) free (lr->bgRect);
+        if (lr->imgRect != NULL) free (lr->imgRect);
+        lr->item = NULL;
+    }
+
+}
+
+void drawLootRect (Console *console, LootRect *rect, u32 bgColor) {
+
+    drawRect (console, rect->bgRect, bgColor, 0, 0x00000000);
     drawRect (console, rect->imgRect, 0x000000FF, 0, 0x00000000);
 
-    Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+    Graphics *g = (Graphics *) getItemComp (rect->item, GRAPHICS);
     if (g != NULL) {
         u32 color;
-        switch (item->rarity) {
+        switch (rect->item->rarity) {
             case 0: color = RUBISH_COLOR; break;
             case 1: color = COMMON_COLOR; break;
             case 2: color = RARE_COLOR; break;
@@ -273,6 +288,26 @@ void drawLootRect (Console *console, LootRect *rect, Item *item) {
 
 }
 
+u8 lootYIdx = 0;
+
+void updateLootUI (u8 yIdx) {
+
+    u8 count = 0;
+    if (lootRects != NULL && (LIST_SIZE (lootRects) > 0)) {
+        for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) {
+            if (count == yIdx) {
+                destroyLootRect ((LootRect *) removeElement (lootRects, e));
+                break;
+            }
+
+            count ++;
+        }
+    }
+
+    if (lootYIdx >= LIST_SIZE (lootRects)) lootYIdx -= 1;
+
+}
+
 static void renderLoot (Console *console) {
 
     if (currentLoot != NULL) {
@@ -281,14 +316,30 @@ static void renderLoot (Console *console) {
 
         putStringAt (console, "Loot", 8, 2, LOOT_TEXT, 0x00000000);
 
-        if (currentLoot->lootItems != NULL) {
-            u8 y = 0;
-            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) { 
-                LootRect *lr = createLootRect (y);
-                drawLootRect (console, lr, (Item *) e->data);
-                y++;
+        if (LIST_SIZE (lootRects) == 0) {
+            // reset highlighted
+            lootYIdx = 0;
+
+            if (currentLoot->lootItems != NULL) {
+                u8 y = 0;
+                for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) { 
+                    LootRect *lr = createLootRect (y, (Item *) e->data);
+                    if (y == 0) drawLootRect (console, lr, 0x000000FF);
+                    else drawLootRect (console, lr, 0xFFFFFFFF);
+                    insertAfter (lootRects, LIST_END (lootRects), lr);
+                    y++;
+                }
             }
         }
+
+        else {
+            u8 count = 0;
+            for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) {
+                if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, 0x000000FF);
+                else drawLootRect (console, (LootRect *) e->data, 0xFFFFFFFF);
+                count++;
+            }
+        }        
 
         // gold
         char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
@@ -305,6 +356,9 @@ void toggleLootWindow (void) {
         UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
         lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
         insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
+
+        if (lootRects == NULL) lootRects = initList (free);
+        else if (LIST_SIZE (lootRects) > 0) resetList (lootRects); 
     }
     // hide the loot window
     else {
@@ -312,6 +366,13 @@ void toggleLootWindow (void) {
             ListElement *e = getListElement (activeScene->views, lootView);
             destroyView ((UIView *) removeElement (activeScene->views, e));
             lootView = NULL;
+
+            if (lootRects != NULL && LIST_SIZE (lootRects) > 0) {
+                for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) 
+                    destroyLootRect ((LootRect *) e->data);
+
+                resetList (lootRects);
+            }
         }
     }
 
