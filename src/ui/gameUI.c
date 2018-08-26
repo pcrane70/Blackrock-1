@@ -404,6 +404,93 @@ UIView *inventoryView = NULL;
 u8 inventoryXIdx = 0;
 u8 inventoryYIdx = 0;
 
+typedef struct {
+
+    u8 xIdx, yIdx;
+    UIRect *bgRect;
+    Item *item;
+
+} InventoryRect;
+
+List *inventoryRects = NULL;
+
+void initInventoryRects () {
+
+    if (inventoryRects == NULL) {
+        inventoryRects = initList (free);
+
+        for (u8 i = 0; i < 21; i++) {
+            InventoryRect *new = (InventoryRect *) malloc (sizeof (InventoryRect));
+            new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+            new->bgRect->w = INVENTORY_CELL_WIDTH;
+            new->bgRect->h = INVENTORY_CELL_HEIGHT;
+            new->item = NULL;
+            insertAfter (inventoryRects, LIST_END (inventoryRects), new);
+        }
+    }
+
+    u8 idx = 0;
+    for (u8 y = 0; y < 3; y++) {
+         for (u8 x = 0; x < 7; x++) {
+             u8 count = 0;
+            for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+                if (count == idx) {
+                    InventoryRect *invRect = (InventoryRect *) e->data;
+                    invRect->xIdx = x;
+                    invRect->yIdx = y;
+                    invRect->bgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+                    invRect->bgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+                }
+
+                count++;
+            }
+
+            idx++;
+        }     
+    }
+
+}
+
+void resetInventoryRects () {
+
+    InventoryRect *invRect = NULL;
+    for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+        invRect = (InventoryRect *) e->data;
+        invRect->item = NULL;
+    }
+
+    u8 count = 0;
+    for (ListElement *le = LIST_START (inventoryRects); le != NULL; le = le->next) {
+        if (count < LIST_SIZE (playerComp->inventory)) {
+            u8 idx = 0;
+            for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+                if (idx == count) {
+                    ((InventoryRect *)(le->data))->item = (Item *) e->data;
+                    break;
+                }
+
+                idx++;
+            }
+        }
+        count++;
+    }
+
+}
+
+void destroyInvRects () {
+
+    InventoryRect *invRect = NULL;
+    for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+        invRect = (InventoryRect *) removeElement (inventoryRects, e);
+        if (invRect->bgRect != NULL) free (invRect->bgRect);
+
+        free (invRect);
+    }
+
+    free (inventoryRects);
+
+}
+
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
@@ -411,48 +498,34 @@ static void renderInventory (Console *console) {
 
     putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, 0x00000000);
 
-    u8 inventoryIdx = 0;
-    Item *item = NULL;
+    InventoryRect *invRect = NULL;
 
     // draw inventory cells
-    for (u8 y = 0; y < 3; y++) {
-         for (u8 x = 0; x < 7; x++) {
-            UIRect rect = { x + 3 + (INVENTORY_CELL_WIDTH * x), y + 5 + (INVENTORY_CELL_HEIGHT * y), INVENTORY_CELL_WIDTH, INVENTORY_CELL_HEIGHT };
-            
-            // highlight selected cell
-            if (inventoryXIdx == x && inventoryYIdx == y) {
-                drawRect (console, &rect, 0x000000FF, 0, 0x000000FF);
+    for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+        invRect = (InventoryRect *) e->data;
 
-                u8 count = 0;
-                for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-                    if (count == inventoryIdx) {
-                        item = (Item *) e->data;
-                        break;
+        // draw highlighted rect
+        if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
+            drawRect (console, invRect->bgRect, 0x000000FF, 0, 0x000000FF);
+            if (invRect->item != NULL) {
+                Graphics *g = (Graphics *) getItemComp (invRect->item, GRAPHICS);
+                if (g != NULL) {
+                    u32 color;
+                    switch (invRect->item->rarity) {
+                        case 0: color = RUBISH_COLOR; break;
+                        case 1: color = COMMON_COLOR; break;
+                        case 2: color = RARE_COLOR; break;
+                        case 3: color = EPIC_COLOR; break;
+                        case 4: color = LEGENDARY_COLOR; break;
+                        default: color = COMMON_COLOR; break;
                     }
-                    count++;
+                    
+                    putStringAt (console, g->name, 4, 21, color, 0x00000000);
                 }
-            } 
-            else drawRect (console, &rect, 0xFFFFFFFF, 0, 0x000000FF);
-
-            inventoryIdx++;
-        }
-    }
-
-    if (item != NULL) {
-        Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
-        if (g != NULL) {
-            u32 color;
-            switch (item->rarity) {
-                case 0: color = RUBISH_COLOR; break;
-                case 1: color = COMMON_COLOR; break;
-                case 2: color = RARE_COLOR; break;
-                case 3: color = EPIC_COLOR; break;
-                case 4: color = LEGENDARY_COLOR; break;
-                default: color = COMMON_COLOR; break;
             }
-            
-            putStringAt (console, g->name, 4, 21, color, 0x00000000);
         }
+
+        else drawRect (console, invRect->bgRect, 0xFFFFFFFF, 0, 0x000000FF);
     }
 
     // Render additional info
@@ -464,7 +537,7 @@ static void renderInventory (Console *console) {
     putStringAt (console, gold, 13, 25, INVENTORY_TEXT, 0x00000000);
 
     putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, 0x00000000);
-    putStringAt (console, "[e] to (un)equip, [Spc] to drop", 4, 28, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, 0x00000000);
     // free (weightInfo);
     free (gold);
 
@@ -486,6 +559,9 @@ void showInventory (UIScreen *screen) {
         UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
         inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
         insertAfter (screen->views, LIST_END (screen->views), inventoryView);
+
+        if (inventoryRects == NULL) initInventoryRects ();
+        else resetInventoryRects ();
     }
 
 }
@@ -549,6 +625,7 @@ void cleanGameUI (void) {
 
     if (inGameScreen != NULL) {
         hideInventory ();
+        destroyInvRects ();
 
         destroyLootWindow ();
 

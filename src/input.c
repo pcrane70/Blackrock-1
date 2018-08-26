@@ -76,7 +76,7 @@ extern UIView *inventoryView;
 void moveInInventory (u8 newX, u8 newY) {
 
     if (newX >= 0 && newX <= 6) inventoryXIdx = newX;
-    if (newY >= 0 && newY <= 3) inventoryYIdx = newY;
+    if (newY >= 0 && newY < 3) inventoryYIdx = newY;
 
 }
 
