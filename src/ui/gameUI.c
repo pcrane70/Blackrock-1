@@ -349,32 +349,40 @@ static void renderLoot (Console *console) {
 
 }
 
+void createLootWindow () {
+
+    UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+    lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+    insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
+
+    if (lootRects == NULL) lootRects = initList (free);
+    else if (LIST_SIZE (lootRects) > 0) resetList (lootRects); 
+
+}
+
+void destroyLootWindow () {
+
+    if (lootView != NULL) {
+        ListElement *e = getListElement (activeScene->views, lootView);
+        destroyView ((UIView *) removeElement (activeScene->views, e));
+        lootView = NULL;
+
+        if (lootRects != NULL && LIST_SIZE (lootRects) > 0) {
+            for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) 
+                destroyLootRect ((LootRect *) e->data);
+
+            resetList (lootRects);
+        }
+    }
+
+}
+
 void toggleLootWindow (void) {
 
     // show the loot window
-    if (lootView == NULL) {
-        UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-        lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
-
-        if (lootRects == NULL) lootRects = initList (free);
-        else if (LIST_SIZE (lootRects) > 0) resetList (lootRects); 
-    }
+    if (lootView == NULL) createLootWindow ();
     // hide the loot window
-    else {
-        if (lootView != NULL) {
-            ListElement *e = getListElement (activeScene->views, lootView);
-            destroyView ((UIView *) removeElement (activeScene->views, e));
-            lootView = NULL;
-
-            if (lootRects != NULL && LIST_SIZE (lootRects) > 0) {
-                for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) 
-                    destroyLootRect ((LootRect *) e->data);
-
-                resetList (lootRects);
-            }
-        }
-    }
+    else destroyLootWindow ();
 
 }
 
@@ -462,11 +470,11 @@ static void renderInventory (Console *console) {
 
 }
 
-void hideInventory (UIScreen *screen) {
+void hideInventory () {
 
     if (inventoryView != NULL) {
-        ListElement *inv = getListElement (screen->views, inventoryView);
-        destroyView ((UIView *) removeElement (screen->views, inv));
+        ListElement *inv = getListElement (activeScene->views, inventoryView);
+        destroyView ((UIView *) removeElement (activeScene->views, inv));
         inventoryView = NULL;
     }
 
@@ -494,6 +502,8 @@ void toggleInventory (void) {
 extern bool inGame;
 extern bool wasInGame;
 
+UIScreen *inGameScreen = NULL;
+
 UIScreen *gameScene (void) {
 
     List *igViews = initList (NULL);
@@ -516,7 +526,8 @@ UIScreen *gameScene (void) {
     UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
     insertAfter (igViews, NULL, logView);
 
-    UIScreen *inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    
     inGameScreen->views = igViews;
     inGameScreen->activeView = mapView;
     inGameScreen->handleEvent = hanldeGameEvent;
@@ -528,9 +539,29 @@ UIScreen *gameScene (void) {
     inGame = true;
     wasInGame = true;
 
-    // free (igViews);
-
-    // FIXME: are we cleanning up this?
     return inGameScreen;
+
+}
+
+/*** CLEAN UP ***/
+
+void cleanGameUI (void) {
+
+    if (inGameScreen != NULL) {
+        hideInventory ();
+
+        destroyLootWindow ();
+
+        ListElement *view = getListElement (inGameScreen->views, activeScene);
+        destroyView ((UIView *) removeElement (inGameScreen->views, view));
+        inGameScreen->activeView = NULL;
+
+        for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
+            destroyView ((UIView *) e->data);
+        
+        destroyList (inGameScreen->views);
+
+        free (inGameScreen);
+    }
 
 }

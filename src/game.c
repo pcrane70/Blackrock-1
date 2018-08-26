@@ -564,6 +564,10 @@ void destroyGO (GameObject *go) {
 
 void cleanUpGame (void) {
 
+    // clean game ui
+    cleanGameUI ();
+    fprintf (stdout, "Game UI cleaned up!\n");
+
     // clean up our lists
     destroyList (gameObjects);
     destroyList (positions);
@@ -573,13 +577,21 @@ void cleanUpGame (void) {
     destroyList (combat);
     destroyList (items);
 
+    fprintf (stdout, "Pool list: %i\n", LIST_SIZE (loot));
+
     // clean every list of items inside each loot object
     if (loot != NULL) {
         if (LIST_SIZE (loot) > 0) {
             for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
-                if (((Loot *)(e->data))->lootItems != NULL 
-                    && (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0))
-                        destroyList (((Loot *)(e->data))->lootItems);
+                if (((Loot *)(e->data))->lootItems != NULL) {
+                    if (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0) {
+                        for (ListElement *le = LIST_START (((Loot *)(e->data))->lootItems); le != NULL; le = le->next) 
+                            removeElement (((Loot *)(e->data))->lootItems, le);
+                        
+                    }
+
+                    free (((Loot *)(e->data))->lootItems);
+                }   
             }
         }
         destroyList (loot);
@@ -594,13 +606,20 @@ void cleanUpGame (void) {
     clearPool (combatPool);
     clearPool (itemsPool);
 
+    fprintf (stdout, "Loot pool: %i\n", POOL_SIZE (lootPool));
+
     // clean every list of items inside each loot object
     if (lootPool != NULL) {
         if (POOL_SIZE (lootPool) > 0) {
             for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
-                if (((Loot *)(p->data))->lootItems != NULL 
-                    && (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0))
-                        destroyList (((Loot *)(p->data))->lootItems);
+                if (((Loot *)(p->data))->lootItems != NULL) {
+                    if (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0) {
+                        for (ListElement *le = LIST_START (((Loot *)(le->data))->lootItems); le != NULL; le = le->next) 
+                            removeElement (((Loot *)(le->data))->lootItems, le);
+                    }
+
+                    free (((Loot *)(p->data))->lootItems);
+                }
             } 
         }
         clearPool (lootPool);
@@ -610,11 +629,10 @@ void cleanUpGame (void) {
     destroyList (messageLog);
 
     // clean up the player
-    // if (playerComp->inventory != NULL) destroyList (playerComp->inventory);
     free (playerComp);
     free (player);
 
-    // free (currentLevel->mapCells);
+    free (currentLevel->mapCells);
     free (currentLevel);
 
     // clear the configs
@@ -1217,8 +1235,6 @@ void clearOldLevel (void) {
     // send all of our objects and components to ther pools
     for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next)
         destroyGO ((GameObject *) e->data);
-
-    // FIXME: loot
 
 }
 

@@ -133,7 +133,8 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             // 21/08/2018 -- 6:51 -- this is used as the interactable button
             case SDLK_e: {
-                if (isInUI ()) return;
+                // FIXME:
+                // if (isInUI () && inventoryView != NULL)  
                 // loop through all of our surrounding items in search for 
                 // an event listener to trigger
                 List *gos = getObjectsAtPos (playerPos->x, playerPos->y);

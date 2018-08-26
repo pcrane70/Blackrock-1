@@ -61,4 +61,8 @@ extern void toggleInventory (void);
 // THIS SHOULD ONLY BE CALLED FROM THE UI CONTROLLER
 extern UIScreen *gameScene (void);
 
+/*** CLEAN UP ***/
+
+extern void cleanGameUI (void);
+
 #endif
