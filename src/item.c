@@ -219,6 +219,22 @@ List *getItemsAtPos (u8 x, u8 y) {
 
 }
 
+u32 getItemColor (u8 rarity) {
+
+    u32 color;
+    switch (rarity) {
+        case 0: color = RUBISH_COLOR; break;
+        case 1: color = COMMON_COLOR; break;
+        case 2: color = RARE_COLOR; break;
+        case 3: color = EPIC_COLOR; break;
+        case 4: color = LEGENDARY_COLOR; break;
+        default: color = COMMON_COLOR; break;
+    }
+
+    return color;
+
+}
+
 // pickup the first item of the list
 void pickUp (List *lootItems, u8 yIdx) {
 
@@ -226,7 +242,7 @@ void pickUp (List *lootItems, u8 yIdx) {
     u8 count = 0;
     for (ListElement *e = LIST_START (lootItems); e != NULL; e = e->next) {
         if (count == yIdx) {
-            item = (Item *) removeElement (lootItems, LIST_START (lootItems));
+            item = (Item *) removeElement (lootItems, e);
             break;
         }
 

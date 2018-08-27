@@ -62,6 +62,7 @@ extern Item *createItem (u16 itemId);
 extern void getItem (void);
 extern void getLootItem (u8);
 extern void *getItemComp (Item *, GameComponent);
+extern u32 getItemColor (u8 rarity);
 extern u16 getCarriedWeight (void);
 
 #endif
