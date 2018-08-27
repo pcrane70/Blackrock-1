@@ -23,7 +23,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
-            case SDLK_n: 
+            case SDLK_p: 
                 initGame ();
                 setActiveScene (gameScene ());
                 inGame = true;

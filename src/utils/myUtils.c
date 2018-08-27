@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 // TODO: is there a better way of generating random ints??
 unsigned int randomInt (unsigned int min, unsigned int max) {
@@ -36,5 +37,14 @@ int xtoi (char *hexString) {
     }
 
     return i;
+
+}
+
+bool system_is_little_endian (void) {
+
+    unsigned int x = 0x76543210;
+    char *c = (char *) &x;
+    if (*c == 0x10) return true;
+    else return false;
 
 }

@@ -4,6 +4,8 @@
 
 #include "blackrock.h"
 
+#include "resources.h"
+
 #include "ui/ui.h"
 
 // TODO: maybe in the future we acn add more graphics, but for now we are sticking with
@@ -98,6 +100,19 @@ void drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borde
 
             putCharAt (con, c, x, y, borderColor, color);
         }
+    }
+
+}
+
+/*** IMAGE DRAWING ***/
+
+void drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY) {
+
+    u32 dstX = cellX * console->cellWidth;
+    for (u32 srcY = 0; srcY < image->height; srcY++) {
+        u32 dstY = (cellY * console->cellHeight) + srcY;
+        memcpy (&console->pixels[(dstY * console->width) + dstX],
+            &image->pixels[srcY * image->width], image->width * sizeof (u32));
     }
 
 }
