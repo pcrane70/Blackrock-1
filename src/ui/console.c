@@ -7,9 +7,6 @@
 #include <assert.h>
 #include <string.h>
 
-// Include the STB image library - only the PNG support
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
 #include "utils/stb_image.h"
 
 #include "ui/console.h"

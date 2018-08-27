@@ -1,12 +1,15 @@
 #include "blackrock.h"
 
-#include "utils/stb_image.h"
 #include "utils/myUtils.h"
+
+// Include the STB image library - only the PNG support
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include "utils/stb_image.h"
 
 #include "resources.h"
 
 #define SWAP_U32(x) (((x) >> 24) | (((x) & 0x00FF0000) >> 8) | (((x) & 0x0000FF00) << 8) | ((x) << 24))
-
 
 BitmapImage *loadImageFromFile (char *filename) {
 

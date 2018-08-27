@@ -408,11 +408,15 @@ typedef struct {
 
     u8 xIdx, yIdx;
     UIRect *bgRect;
+    UIRect *imgRect;
     Item *item;
 
 } InventoryRect;
 
 List *inventoryRects = NULL;
+
+// FIXME: TEST
+BitmapImage *apple;
 
 void initInventoryRects () {
 
@@ -424,6 +428,9 @@ void initInventoryRects () {
             new->bgRect = (UIRect *) malloc (sizeof (UIRect));
             new->bgRect->w = INVENTORY_CELL_WIDTH;
             new->bgRect->h = INVENTORY_CELL_HEIGHT;
+            new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+            new->imgRect->w = INVENTORY_CELL_WIDTH;
+            new->imgRect->h = INVENTORY_CELL_HEIGHT;
             new->item = NULL;
             insertAfter (inventoryRects, LIST_END (inventoryRects), new);
         }
@@ -440,6 +447,8 @@ void initInventoryRects () {
                     invRect->yIdx = y;
                     invRect->bgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
                     invRect->bgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+                    invRect->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+                    invRect->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
                 }
 
                 count++;
@@ -506,8 +515,10 @@ static void renderInventory (Console *console) {
 
         // draw highlighted rect
         if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
-            drawRect (console, invRect->bgRect, 0x000000FF, 0, 0x000000FF);
+            // drawRect (console, invRect->bgRect, 0x000000FF, 0, 0x000000FF);
+            drawRect (console, invRect->imgRect, 0x000000FF, 0, 0x00000000);
             if (invRect->item != NULL) {
+                drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
                 Graphics *g = (Graphics *) getItemComp (invRect->item, GRAPHICS);
                 if (g != NULL) {
                     u32 color;
@@ -614,6 +625,8 @@ UIScreen *gameScene (void) {
 
     inGame = true;
     wasInGame = true;
+
+    apple = loadImageFromFile ("./resources/items/apple-big.png");
 
     return inGameScreen;
 
