@@ -210,6 +210,17 @@ void removeItemComponent (Item *item, ItemComponent type) {
 
 }
 
+// 28/08/2018 -- 11:15 -- testing effects inside items
+void healPlayer (void *i) {
+
+    Item *item = (Item *) i;
+    Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
+    if (playerCombat != NULL) {
+        playerCombat->baseStats.health += 5;
+    }
+
+}
+
 Item *createItem (u16 itemId) {
 
     ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
@@ -222,6 +233,10 @@ Item *createItem (u16 itemId) {
     u32 color = xtoi (getEntityValue (itemEntity, "color"));
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addGameComponent (item, GRAPHICS, &g);
+
+    // 28/08/2018 -- 11:15 -- testing effects inside items
+    u8 health = atoi (getEntityValue (itemEntity, "health"));
+    if (health != 0) item->callback = healPlayer;
 
     item->type = atoi (getEntityValue (itemEntity, "type"));
     item->rarity = atoi (getEntityValue (itemEntity, "rarity"));

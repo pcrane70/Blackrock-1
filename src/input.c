@@ -137,21 +137,33 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             // 21/08/2018 -- 6:51 -- this is used as the interactable button
             case SDLK_e: {
-                // FIXME:
-                // if (isInUI () && inventoryView != NULL)  
-                // loop through all of our surrounding items in search for 
-                // an event listener to trigger
-                List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
-                if (gos != NULL) {
-                    for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
-                        Event *ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
-                        // trigger just the first event we find
-                        if (ev != NULL) {
-                            ev->callback (e->data);
+                if (isInUI () && inventoryView != NULL) {
+                    u8 count = 0;
+                    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+                        if (count == inventoryYIdx) {
+                            Item *item = (Item *) e->data;
+                            item->callback (item);
                             break;
                         }
+
+                        count++;
                     }
-                    free (gos);
+                } 
+                // loop through all of our surrounding items in search for 
+                // an event listener to trigger
+                else if (!isInUI ()) {
+                    List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
+                    if (gos != NULL) {
+                        for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
+                            Event *ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
+                            // trigger just the first event we find
+                            if (ev != NULL) {
+                                ev->callback (e->data);
+                                break;
+                            }
+                        }
+                        free (gos);
+                    }
                 }
             } break;
 

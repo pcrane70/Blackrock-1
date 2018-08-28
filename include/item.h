@@ -35,7 +35,7 @@ typedef struct Item {
     u8 quantity;    // this is used to handle stacks, max stack is 20
     u8 weight;      // we have a max weight that we can carry based on our class, genre, etc
     u16 value[3];   // gold, silver, copper
-    // FIXME: effects   
+    EventListener callback;   
     void *components[GAME_OBJECT_COMPS];  
     void *itemComps[ITEM_COMPS];
 
