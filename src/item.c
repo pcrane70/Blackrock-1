@@ -15,14 +15,34 @@
 List *items = NULL;
 Pool *itemsPool = NULL;
 
-extern Config *itemsConfig;
+// our items db
+Config *itemsConfig = NULL;
 
-static u32 itemsId = 0;
+// items components
+List *weapons = NULL;
+List *equipment = NULL;
+
+// 28/08/2018 -- 09:03
+// I think we don't need a weapons or equipment pool because we are not moving so much
+// memory with them
+
+// static u32 itemsId = 0;
+
+extern unsigned int newId = 1;
+
+extern void die (void);
 
 void initItems (void) {
 
     items = initList (free);
     itemsPool = initPool ();
+
+    // items db
+    itemsConfig = parseConfigFile ("./data/items.cfg");
+    if (itemsConfig == NULL) {
+        fprintf (stderr, "Critical Error! No items config!\n");
+        die ();
+    }
 
 }
 
@@ -38,9 +58,10 @@ Item *newItem (void) {
     else i = (Item *) malloc (sizeof (Item));
 
     if (i != NULL) {
-        i->id = itemsId;
+        i->itemId = itemsId;
         itemsId++;
-        for (u8 u = 0; u < 2; u++) i->components[u] = NULL;
+        for (u8 u = 0; u < GAME_OBJECT_COMPS; u++) i->components[u] = NULL;
+        for (u8 u = 0; u < ITEM_COMPS; u++) i->itemComps[u] = NULL;
         insertAfter (items, LIST_END (items), i);
     }
 
@@ -48,21 +69,18 @@ Item *newItem (void) {
 
 }
 
-void *getItemComp (Item *item, GameComponent type) {
+void *getGameComponent (Item *item, GameComponent type) { return item->components[type]; }
 
-    void *retVal = item->components[type];
-    if (retVal == NULL) return NULL;
-    else return retVal;
+void *getItemComponent (Item *item, ItemComponent type) { return item->itemComps[type]; }
 
-}
-
-void addItemComp (Item *item, GameComponent type, void *data) {
+// FIXME: items and gos ids for lists!!
+void addGameComponent (Item *item, GameComponent type, void *data) {
 
     if (item == NULL || data == NULL) return;
 
     switch (type) {
         case POSITION: {
-            if (getItemComp (item, type) != NULL) return;
+            if (getGameComponent (item, type) != NULL) return;
             Position *newPos = NULL;
             if (POOL_SIZE (posPool) > 0) {
                 newPos = pop (posPool);
@@ -71,7 +89,7 @@ void addItemComp (Item *item, GameComponent type, void *data) {
             else newPos = (Position *) malloc (sizeof (Position));
 
             Position *posData = (Position *) data;
-            newPos->objectId = item->id;
+            newPos->objectId = item->itemId;
             newPos->x = posData->x;
             newPos->y = posData->y;
             newPos->layer = posData->layer;
@@ -80,7 +98,7 @@ void addItemComp (Item *item, GameComponent type, void *data) {
             insertAfter (positions, NULL, newPos);
         } break;
         case GRAPHICS: {
-            if (getItemComp (item, type) != NULL) return;
+            if (getGameComponent (item, type) != NULL) return;
             Graphics *newGraphics = NULL;
             if (POOL_SIZE (graphicsPool) > 0) {
                 newGraphics = pop (graphicsPool);
@@ -89,7 +107,7 @@ void addItemComp (Item *item, GameComponent type, void *data) {
             else newGraphics = (Graphics *) malloc (sizeof (Graphics));
 
             Graphics *graphicsData = (Graphics *) data;
-            newGraphics->objectId = item->id;
+            newGraphics->objectId = item->itemId;
             newGraphics->name = graphicsData->name;
             newGraphics->glyph = graphicsData->glyph;
             newGraphics->fgColor = graphicsData->fgColor;
@@ -103,28 +121,90 @@ void addItemComp (Item *item, GameComponent type, void *data) {
 
 }
 
-void removeItemComp (Item *item, GameComponent type) {
+void addItemComp (Item *item, ItemComponent type, void *data) {
+
+    if (item == NULL || data == NULL) return;
+
+    switch (type) {
+        case WEAPON: {
+            if (getItemComponent (item, type) != NULL) return;
+            Weapon *newWeapon = (Weapon *) malloc (sizeof (Weapon));
+            Weapon *weaponData = (Weapon *) data;
+            newWeapon->itemId = item->itemId;
+            newWeapon->dbId = item->dbId;
+            newWeapon->dps = weaponData->dps;
+            newWeapon->maxLifetime = weaponData->maxLifetime;
+            newWeapon->lifetime = weaponData->lifetime;
+            newWeapon->isEquipped = weaponData->isEquipped;
+            item->itemComps[type] = newWeapon;
+            insertAfter (weapons, NULL, newWeapon);
+        } break;
+        case ARMOUR: {
+            if (getItemComponent (item, type) != NULL) return;
+            Armour *newArmour = (Armour *) malloc (sizeof (Armour));
+            Armour *armourData = (Armour *) data;
+            newArmour->itemId = item->itemId;
+            newArmour->dbId = item->dbId;
+            newArmour->maxLifetime = armourData->maxLifetime;
+            newArmour->lifetime = armourData->lifetime;
+            newArmour->slot = armourData->slot;
+            newArmour->isEquipped = armourData->isEquipped;
+            item->itemComps[type] = newArmour;
+            insertAfter (equipment, NULL, newArmour);
+        } break;
+        default: break;
+    }
+
+}
+ 
+void removeGameComponent (Item *item, GameComponent type) {
 
     if (item == NULL) return;
 
     switch (type) {
         case POSITION: {
-            Position *posComp = (Position *) getItemComp (item, type);
+            Position *posComp = (Position *) getGameComponent (item, type);
             if (posComp == NULL) return;
             ListElement *e = getListElement (positions, posComp);
-            void *posData = NULL;
-            if (e != NULL) posData = removeElement (positions, e);
-            push (posPool, posData);
+            if (e != NULL) push (posPool, removeElement (positions, e));
             item->components[type] = NULL;
         } break;
         case GRAPHICS: {
-            Graphics *graComp = (Graphics *) getItemComp (item, type);
+            Graphics *graComp = (Graphics *) getGameComponent (item, type);
             if (graComp == NULL) return;
             ListElement *e = getListElement (graphics, graComp);
-            void *graData = NULL;
-            if (e != NULL) graData = removeElement (graphics, e);
-            push (graphicsPool, graData);
+            if (e != NULL) push (graphicsPool, removeElement (graphics, e));
             item->components[type] = NULL;
+        } break;
+        default: break;
+    }
+
+}
+
+void removeItemComponent (Item *item, ItemComponent type) {
+
+    if (item == NULL) return;
+
+    switch (type) {
+        case WEAPON: {
+            Weapon *weapon = (Weapon *) getItemComponent (item , type);
+            if (weapon == NULL) return;
+            ListElement *e = getListElement (weapons, weapon);
+            if (e != NULL) {
+                void *weaponData = removeElement (weapons, e);
+                free (weaponData);
+                item->itemComps[type] = NULL;
+            }
+        } break;
+        case ARMOUR: {
+            Armour *armour = (Armour *) getItemComponent (item, type);
+            if (armour == NULL) return;
+            ListElement *e = getListElement (equipment, armour);
+            if (e != NULL) {
+                void *armourData = removeElement (equipment, e);
+                free (armourData);
+                item->itemComps[type] = NULL;
+            }
         } break;
         default: break;
     }
@@ -156,34 +236,34 @@ Item *createItem (u16 itemId) {
 
 }
 
+
+// FIXME:
 Weapon *createWeapon (u16 itemId) {
 
-    ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
-    if (itemEntity == NULL) return NULL;
+    // ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
+    // if (itemEntity == NULL) return NULL;
 
-    Weapon *weapon = (Weapon *) malloc (sizeof (Weapon));
+    // Weapon *weapon = (Weapon *) malloc (sizeof (Weapon));
 
-    weapon->item = createItem (itemId);
-    if (weapon->item == NULL) return NULL;
+    // weapon->item = createItem (itemId);
+    // if (weapon->item == NULL) return NULL;
 
-    weapon->dps = atoi (getEntityValue (itemEntity, "dps"));
-    weapon->maxLifetime = atoi (getEntityValue (itemEntity, "maxLifetime"));
-    weapon->lifetime = weapon->maxLifetime;
-    weapon->isEquipped = false;
+    // weapon->dps = atoi (getEntityValue (itemEntity, "dps"));
+    // weapon->maxLifetime = atoi (getEntityValue (itemEntity, "maxLifetime"));
+    // weapon->lifetime = weapon->maxLifetime;
+    // weapon->isEquipped = false;
 
-    return weapon;
+    // return weapon;
 
 }
 
 void destroyItem (Item *item) {
 
-    for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComp (item, i);
+    for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
+    for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
     ListElement *e = getListElement (items, item);
-    if (e != NULL) {
-        void *data = removeElement (items, e);
-        push (itemsPool, data);
-    }
+    if (e != NULL) push (itemsPool, removeElement (items, e));
 
 }
 
@@ -254,7 +334,7 @@ void pickUp (List *lootItems, u8 yIdx) {
             // add the item to the inventory
             insertAfter (playerComp->inventory, NULL, item);
             // remove the item from the map
-            removeItemComp (item, POSITION);
+            removeGameComponent (item, POSITION);
 
             Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
             if (g != NULL) {
@@ -401,5 +481,18 @@ void updateLifeTime (void) {
         //     // TODO: give feedback to the player with messages in the log
         // }
     }
+
+}
+
+/*** CLEAN UP ***/
+
+void cleanUpItems (void) {
+
+    destroyList (items);
+    clearPool (itemsPool);
+
+    clearConfig (itemsConfig);
+
+    fprintf (stdout, "Done cleaning up items.\n");
 
 }

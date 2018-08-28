@@ -52,7 +52,6 @@ Level *currentLevel = NULL;
 Config *playerConfig = NULL;
 Config *classesConfig = NULL;
 Config *monsterConfig = NULL;
-Config *itemsConfig = NULL;
 
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -101,11 +100,6 @@ void initGame (void) {
     monsterConfig = parseConfigFile ("./data/monster.cfg");
     if (monsterConfig == NULL) {
         fprintf (stderr, "Critical Error! No monster config!\n");
-        die ();
-    }
-    itemsConfig = parseConfigFile ("./data/items.cfg");
-    if (itemsConfig == NULL) {
-        fprintf (stderr, "Critical Error! No items config!\n");
         die ();
     }
 
@@ -214,7 +208,7 @@ static unsigned int inactive = 0;
 
 // 11/08/2018 -- we will assign a new id to each new GO starting at 1
 // id = 0 is the player 
-static unsigned int newId = 1;
+unsigned int newId = 1;
 
 GameObject *createGO (void) {
 
@@ -575,7 +569,6 @@ void cleanUpGame (void) {
     destroyList (physics);
     destroyList (movement);
     destroyList (combat);
-    destroyList (items);
 
     fprintf (stdout, "Pool list: %i\n", LIST_SIZE (loot));
 
@@ -604,7 +597,6 @@ void cleanUpGame (void) {
     clearPool (physPool);
     clearPool (movePool);
     clearPool (combatPool);
-    clearPool (itemsPool);
 
     fprintf (stdout, "Loot pool: %i\n", POOL_SIZE (lootPool));
 
@@ -624,6 +616,9 @@ void cleanUpGame (void) {
         }
         clearPool (lootPool);
     }
+
+    // clean up items
+    cleanUpItems ();
     
     // cleanup the message log
     destroyList (messageLog);
@@ -639,7 +634,6 @@ void cleanUpGame (void) {
     clearConfig (playerConfig);
     clearConfig (classesConfig);
     clearConfig (monsterConfig);
-    clearConfig (itemsConfig);
 
     fprintf (stdout, "Done cleanning up game!\n");
 
