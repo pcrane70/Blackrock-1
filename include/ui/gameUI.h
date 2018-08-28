@@ -57,6 +57,8 @@ extern u8 inventoryYIdx;
 
 extern void toggleInventory (void);
 
+extern void togglePauseMenu (void);
+
 
 // THIS SHOULD ONLY BE CALLED FROM THE UI CONTROLLER
 extern UIScreen *gameScene (void);

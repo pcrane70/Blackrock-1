@@ -188,8 +188,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             // TODO: player rests?
             // case SDLK_z: break;
 
-            // TODO: toggle pause menu
-            // case SDLK_p: break;
+            case SDLK_p: togglePauseMenu (); break;
 
             case SDLK_ESCAPE: closeUIMenu (); break;
 

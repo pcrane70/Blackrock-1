@@ -388,10 +388,11 @@ void toggleLootWindow (void) {
 #define INVENTORY_CELL_WIDTH    4
 #define INVENTORY_CELL_HEIGHT   4
 
-#define INVENTORY_COLOR     0x967933FF
+#define INVENTORY_COLOR     0xCC8E35FF
 #define INVENTORY_TEXT      0xEEEEEEFF
 
-#define INVENTORY_SELECTED  0xFFFFFFFF
+#define INVENTORY_CELL_COLOR    0xBDC3C7FF
+#define INVENTORY_SELECTED      0x6C7A89FF
 
 #define ZERO_ITEMS      48
 
@@ -504,7 +505,7 @@ void renderInventoryItems (Console *console) {
         // draw highlighted rect
         if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
             // drawRect (console, invRect->bgRect, 0x000000FF, 0, 0x000000FF);
-            drawRect (console, invRect->imgRect, 0x000000FF, 0, 0x00000000);
+            drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
             if (invRect->item != NULL) {
                 // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
                 Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
@@ -516,7 +517,7 @@ void renderInventoryItems (Console *console) {
             }
         }
 
-        else drawRect (console, invRect->bgRect, 0xFFFFFFFF, 0, 0x000000FF);
+        else drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, 0x000000FF);
     }
 
 } 
@@ -582,14 +583,12 @@ void hideInventory () {
 
 void showInventory (UIScreen *screen) {
 
-    if (inventoryView == NULL) {
-        UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
-        insertAfter (screen->views, LIST_END (screen->views), inventoryView);
+    UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
+    inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
+    insertAfter (screen->views, LIST_END (screen->views), inventoryView);
 
-        if (inventoryRects == NULL) initInventoryRects ();
-        else resetInventoryRects ();
-    }
+    if (inventoryRects == NULL) initInventoryRects ();
+    else resetInventoryRects ();
 
 }
 
@@ -597,6 +596,44 @@ void toggleInventory (void) {
 
     if (inventoryView == NULL) showInventory (activeScene);
     else hideInventory (activeScene);
+
+}
+
+/*** PAUSE MENU ***/
+
+#define PAUSE_LEFT		20
+#define PAUSE_TOP		7
+#define PAUSE_WIDTH		40
+#define PAUSE_HEIGHT	30
+
+#define PAUSE_COLOR     0x4B6584FF
+
+UIView *pauseMenu = NULL;
+
+static void renderPauseMenu (Console *console) {
+
+    UIRect rect = { 0, 0, PAUSE_WIDTH, PAUSE_HEIGHT };
+    drawRect (console, &rect, PAUSE_COLOR, 0, 0xFFFFFFFF);
+
+    putStringAt (console, "Pause Menu", 15, 2, INVENTORY_TEXT, 0x00000000);
+
+}
+
+void togglePauseMenu (void) {
+
+    if (pauseMenu == NULL) {
+        UIRect pause = { (16 * PAUSE_LEFT), (16 * PAUSE_TOP), (16 * PAUSE_WIDTH), (16 * PAUSE_HEIGHT) };
+        pauseMenu = newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
+        insertAfter(activeScene->views, LIST_END (activeScene->views), pauseMenu)   ;
+    }
+
+    else {
+        if (pauseMenu != NULL) {
+            ListElement *pause = getListElement (activeScene->views, pauseMenu);
+            destroyView ((UIView *) removeElement (activeScene->views, pause));
+            pauseMenu = NULL;
+        }
+    }
 
 }
 
