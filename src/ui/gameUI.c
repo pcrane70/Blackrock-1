@@ -271,7 +271,7 @@ void drawLootRect (Console *console, LootRect *rect, u32 bgColor) {
     drawRect (console, rect->bgRect, bgColor, 0, 0x00000000);
     drawRect (console, rect->imgRect, 0x000000FF, 0, 0x00000000);
 
-    Graphics *g = (Graphics *) getItemComp (rect->item, GRAPHICS);
+    Graphics *g = (Graphics *) getGameComponent (rect->item, GRAPHICS);
     if (g != NULL)        
         putStringAt (console, g->name, 7, (rect->bgRect->y) + 2,
             getItemColor (rect->item->rarity), 0x00000000);
@@ -544,7 +544,7 @@ void renderInventoryItems (Console *console) {
     u8 count = 0;
     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
         item = (Item *) e->data;
-        g = (Graphics *) getItemComp (item, GRAPHICS);
+        g = (Graphics *) getGameComponent (item, GRAPHICS);
         if (g != NULL) str = createString ("%s", g->name);
 
         if (count == inventoryYIdx) {

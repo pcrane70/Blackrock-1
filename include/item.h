@@ -21,7 +21,6 @@ typedef enum ItemComponent {
 
 #define ITEM_COMPS  2
 
-
 #define GAME_OBJECT_COMPS   2
 
 extern List *items;
@@ -71,7 +70,7 @@ extern void initItems (void);
 extern Item *createItem (u16 itemId);
 extern void getItem (void);
 extern void getLootItem (u8);
-extern void *getItemComp (Item *, GameComponent);
+extern void *getGameComponent (Item *, GameComponent);
 extern u32 getItemColor (u8 rarity);
 extern u16 getCarriedWeight (void);
 

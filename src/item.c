@@ -28,7 +28,7 @@ List *equipment = NULL;
 
 // static u32 itemsId = 0;
 
-extern unsigned int newId = 1;
+extern unsigned int newId;
 
 extern void die (void);
 
@@ -58,8 +58,8 @@ Item *newItem (void) {
     else i = (Item *) malloc (sizeof (Item));
 
     if (i != NULL) {
-        i->itemId = itemsId;
-        itemsId++;
+        i->itemId = newId;
+        newId++;
         for (u8 u = 0; u < GAME_OBJECT_COMPS; u++) i->components[u] = NULL;
         for (u8 u = 0; u < ITEM_COMPS; u++) i->itemComps[u] = NULL;
         insertAfter (items, LIST_END (items), i);
@@ -73,7 +73,6 @@ void *getGameComponent (Item *item, GameComponent type) { return item->component
 
 void *getItemComponent (Item *item, ItemComponent type) { return item->itemComps[type]; }
 
-// FIXME: items and gos ids for lists!!
 void addGameComponent (Item *item, GameComponent type, void *data) {
 
     if (item == NULL || data == NULL) return;
@@ -222,7 +221,7 @@ Item *createItem (u16 itemId) {
     char *name = getEntityValue (itemEntity, "name");
     u32 color = xtoi (getEntityValue (itemEntity, "color"));
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-    addItemComp (item, GRAPHICS, &g);
+    addGameComponent (item, GRAPHICS, &g);
 
     item->type = atoi (getEntityValue (itemEntity, "type"));
     item->rarity = atoi (getEntityValue (itemEntity, "rarity"));
@@ -288,7 +287,7 @@ List *getItemsAtPos (u8 x, u8 y) {
 
     List *retVal = initList (free);
     for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
-        pos = (Position *) getItemComp ((Item *) e->data, POSITION);
+        pos = (Position *) getGameComponent ((Item *) e->data, POSITION);
         // inventory items do NOT have a pos comp
         if (pos != NULL) {
             if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
@@ -336,7 +335,7 @@ void pickUp (List *lootItems, u8 yIdx) {
             // remove the item from the map
             removeGameComponent (item, POSITION);
 
-            Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+            Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
             if (g != NULL) {
                 if (g->name != NULL) logMessage (createString ("You picked up the %s.", g->name), SUCCESS_COLOR);
                 else logMessage ("Picked up the item!", SUCCESS_COLOR);
@@ -411,7 +410,7 @@ void dropItem (Item *item) {
     // ListElement *e = getListElement (playerComp->inventory, go);
     // if (e != NULL) removeElement (playerComp->inventory, e);
 
-    Graphics *g = (Graphics *) getItemComp (item, GRAPHICS);
+    Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
     if (g != NULL) {
         char *msg = createString ("You dropped the %s.", g->name);
         logMessage (msg, SUCCESS_COLOR);
