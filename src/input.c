@@ -75,12 +75,11 @@ extern UIView *inventoryView;
 
 void moveInInventory (u8 newX, u8 newY) {
 
-    // FIXME: this will be on hold onto we solve the problems with the graphics inventory
-    // if (newX >= 0 && newX <= 6) inventoryXIdx = newX;
-    // if (newY >= 0 && newY < 3) inventoryYIdx = newY;
+    if (newX >= 0 && newX <= 6) inventoryXIdx = newX;
+    if (newY >= 0 && newY < 3) inventoryYIdx = newY;
 
     // highligt only the text
-    if (newY >= 0 && newY < LIST_SIZE (playerComp->inventory)) inventoryYIdx = newY;
+    // if (newY >= 0 && newY < LIST_SIZE (playerComp->inventory)) inventoryYIdx = newY;
 
 }
 
@@ -128,11 +127,11 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 break;
             case SDLK_a: 
                 if (!isInUI ()) move (playerPos->x - 1, playerPos->y);
-                // else if (inventoryView != NULL) moveInInventory (inventoryXIdx - 1, inventoryYIdx);
+                else if (inventoryView != NULL) moveInInventory (inventoryXIdx - 1, inventoryYIdx);
                 break;
             case SDLK_d:
                 if (!isInUI ()) move (playerPos->x + 1, playerPos->y);
-                // else if (inventoryView != NULL) moveInInventory (inventoryXIdx + 1, inventoryYIdx);
+                else if (inventoryView != NULL) moveInInventory (inventoryXIdx + 1, inventoryYIdx);
                 break;
 
             // 21/08/2018 -- 6:51 -- this is used as the interactable button

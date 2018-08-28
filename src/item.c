@@ -210,13 +210,64 @@ void removeItemComponent (Item *item, ItemComponent type) {
 
 }
 
+void destroyItem (Item *item) {
+
+    for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
+    for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
+
+    ListElement *e = getListElement (items, item);
+    if (e != NULL) push (itemsPool, removeElement (items, e));
+
+}
+
+void removeFromInventory (void *i) {
+
+    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+        if (i == e->data) {
+            destroyItem ((Item *) removeElement (playerComp->inventory, e));
+            break;
+        }
+    }
+
+}
+
 // 28/08/2018 -- 11:15 -- testing effects inside items
 void healPlayer (void *i) {
 
     Item *item = (Item *) i;
     Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
     if (playerCombat != NULL) {
-        playerCombat->baseStats.health += 5;
+        i32 *currHealth = &playerCombat->baseStats.health;
+        u32 maxHealth = playerCombat->baseStats.maxHealth;
+
+        // FIXME: get the real data
+        u16 health = 5;
+
+        if (*currHealth == maxHealth) 
+            logMessage ("You already have full health.", WARNING_COLOR);
+
+        else {
+            u16 realHp;
+
+            *currHealth += health;
+
+            // clamp the value if necessary
+            if (*currHealth > maxHealth) {
+                realHp = health - (*currHealth - maxHealth);
+                *currHealth = maxHealth;
+            }
+
+            else realHp = health;  
+
+            // after use, remove the item from the inventory
+            removeFromInventory (i);
+            // TODO: maybe better strings
+            // you have ate the apple for 5 health
+            char *str = createString ("You have been healed by %i hp.", realHp);
+            logMessage (str, SUCCESS_COLOR);
+            free (str);
+        }
+        
     }
 
 }
@@ -268,16 +319,6 @@ Weapon *createWeapon (u16 itemId) {
     // weapon->isEquipped = false;
 
     // return weapon;
-
-}
-
-void destroyItem (Item *item) {
-
-    for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
-    for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
-
-    ListElement *e = getListElement (items, item);
-    if (e != NULL) push (itemsPool, removeElement (items, e));
 
 }
 
@@ -352,8 +393,8 @@ void pickUp (List *lootItems, u8 yIdx) {
 
             Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
             if (g != NULL) {
-                if (g->name != NULL) logMessage (createString ("You picked up the %s.", g->name), SUCCESS_COLOR);
-                else logMessage ("Picked up the item!", SUCCESS_COLOR);
+                if (g->name != NULL) logMessage (createString ("You picked up the %s.", g->name), DEFAULT_COLOR);
+                else logMessage ("Picked up the item!", DEFAULT_COLOR);
             }
 
             playerTookTurn = true;

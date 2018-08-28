@@ -393,149 +393,136 @@ void toggleLootWindow (void) {
 
 #define INVENTORY_SELECTED  0xFFFFFFFF
 
+#define ZERO_ITEMS      48
+
 UIView *inventoryView = NULL;
 
 u8 inventoryXIdx = 0;
 u8 inventoryYIdx = 0;
 
-// FIXME: this won't be used until we solve the issues with the graphics...
-/* {
-    int hola = 0;
+typedef struct {
 
-    /* typedef struct {
+    u8 xIdx, yIdx;
+    UIRect *bgRect;
+    UIRect *imgRect;
+    Item *item;
 
-        u8 xIdx, yIdx;
-        UIRect *bgRect;
-        UIRect *imgRect;
-        Item *item;
+} InventoryRect;
 
-    } InventoryRect;
+List *inventoryRects = NULL;
 
-    List *inventoryRects = NULL;
+void initInventoryRects () {
 
-    void initInventoryRects () {
+    if (inventoryRects == NULL) {
+        inventoryRects = initList (free);
 
-        if (inventoryRects == NULL) {
-            inventoryRects = initList (free);
-
-            for (u8 i = 0; i < 21; i++) {
-                InventoryRect *new = (InventoryRect *) malloc (sizeof (InventoryRect));
-                new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-                new->bgRect->w = INVENTORY_CELL_WIDTH;
-                new->bgRect->h = INVENTORY_CELL_HEIGHT;
-                new->imgRect = (UIRect *) malloc (sizeof (UIRect));
-                new->imgRect->w = INVENTORY_CELL_WIDTH;
-                new->imgRect->h = INVENTORY_CELL_HEIGHT;
-                new->item = NULL;
-                insertAfter (inventoryRects, LIST_END (inventoryRects), new);
-            }
+        for (u8 i = 0; i < 21; i++) {
+            InventoryRect *new = (InventoryRect *) malloc (sizeof (InventoryRect));
+            new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+            new->bgRect->w = INVENTORY_CELL_WIDTH;
+            new->bgRect->h = INVENTORY_CELL_HEIGHT;
+            new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+            new->imgRect->w = INVENTORY_CELL_WIDTH;
+            new->imgRect->h = INVENTORY_CELL_HEIGHT;
+            new->item = NULL;
+            insertAfter (inventoryRects, LIST_END (inventoryRects), new);
         }
+    }
 
-        u8 idx = 0;
-        for (u8 y = 0; y < 3; y++) {
-            for (u8 x = 0; x < 7; x++) {
-                u8 count = 0;
-                for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
-                    if (count == idx) {
-                        InventoryRect *invRect = (InventoryRect *) e->data;
-                        invRect->xIdx = x;
-                        invRect->yIdx = y;
-                        invRect->bgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
-                        invRect->bgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
-                        invRect->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
-                        invRect->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
-                    }
+    u8 idx = 0;
+    for (u8 y = 0; y < 3; y++) {
+        for (u8 x = 0; x < 7; x++) {
+            u8 count = 0;
+            for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+                if (count == idx) {
+                    InventoryRect *invRect = (InventoryRect *) e->data;
+                    invRect->xIdx = x;
+                    invRect->yIdx = y;
+                    invRect->bgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+                    invRect->bgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+                    invRect->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+                    invRect->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+                }
 
-                    count++;
+                count++;
+            }
+
+            idx++;
+        }     
+    }
+
+}
+
+void resetInventoryRects () {
+
+    InventoryRect *invRect = NULL;
+    for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+        invRect = (InventoryRect *) e->data;
+        invRect->item = NULL;
+    }
+
+    u8 count = 0;
+    for (ListElement *le = LIST_START (inventoryRects); le != NULL; le = le->next) {
+        if (count < LIST_SIZE (playerComp->inventory)) {
+            u8 idx = 0;
+            for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+                if (idx == count) {
+                    ((InventoryRect *)(le->data))->item = (Item *) e->data;
+                    break;
                 }
 
                 idx++;
-            }     
-        }
-
-    }
-
-    void resetInventoryRects () {
-
-        InventoryRect *invRect = NULL;
-        for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
-            invRect = (InventoryRect *) e->data;
-            invRect->item = NULL;
-        }
-
-        u8 count = 0;
-        for (ListElement *le = LIST_START (inventoryRects); le != NULL; le = le->next) {
-            if (count < LIST_SIZE (playerComp->inventory)) {
-                u8 idx = 0;
-                for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-                    if (idx == count) {
-                        ((InventoryRect *)(le->data))->item = (Item *) e->data;
-                        break;
-                    }
-
-                    idx++;
-                }
             }
-            count++;
         }
-
+        count++;
     }
 
-    void destroyInvRects () {
+}
 
-        InventoryRect *invRect = NULL;
-        for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
-            invRect = (InventoryRect *) removeElement (inventoryRects, e);
-            if (invRect->bgRect != NULL) free (invRect->bgRect);
+void destroyInvRects () {
 
-            free (invRect);
-        }
+    InventoryRect *invRect = NULL;
+    for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+        invRect = (InventoryRect *) removeElement (inventoryRects, e);
+        if (invRect->bgRect != NULL) free (invRect->bgRect);
 
-        free (inventoryRects);
-
+        free (invRect);
     }
 
-    // FIXME: this will be on hold onto we solve the problems with the graphics inventory
-    void renderInventoryItems () {
+    free (inventoryRects);
 
-        InventoryRect *invRect = NULL;
+}
 
-        // draw inventory cells
-        for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
-            invRect = (InventoryRect *) e->data;
+void renderInventoryItems (Console *console) {
 
-            // draw highlighted rect
-            if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
-                // drawRect (console, invRect->bgRect, 0x000000FF, 0, 0x000000FF);
-                drawRect (console, invRect->imgRect, 0x000000FF, 0, 0x00000000);
-                if (invRect->item != NULL) {
-                    drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
-                    Graphics *g = (Graphics *) getItemComp (invRect->item, GRAPHICS);
-                    if (g != NULL) {
-                        u32 color;
-                        switch (invRect->item->rarity) {
-                            case 0: color = RUBISH_COLOR; break;
-                            case 1: color = COMMON_COLOR; break;
-                            case 2: color = RARE_COLOR; break;
-                            case 3: color = EPIC_COLOR; break;
-                            case 4: color = LEGENDARY_COLOR; break;
-                            default: color = COMMON_COLOR; break;
-                        }
-                        
-                        putStringAt (console, g->name, 4, 21, color, 0x00000000);
-                    }
-                }
+    InventoryRect *invRect = NULL;
+
+    // draw inventory cells
+    for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+        invRect = (InventoryRect *) e->data;
+
+        // draw highlighted rect
+        if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
+            // drawRect (console, invRect->bgRect, 0x000000FF, 0, 0x000000FF);
+            drawRect (console, invRect->imgRect, 0x000000FF, 0, 0x00000000);
+            if (invRect->item != NULL) {
+                // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
+                Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
+                if (g != NULL) 
+                    putStringAt (console, g->name, 4, 21, getItemColor (invRect->item->rarity), 0x00000000);
+
+                u8 quantity = ZERO_ITEMS + invRect->item->quantity;
+                putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
             }
-
-            else drawRect (console, invRect->bgRect, 0xFFFFFFFF, 0, 0x000000FF);
         }
 
-    } 
+        else drawRect (console, invRect->bgRect, 0xFFFFFFFF, 0, 0x000000FF);
+    }
 
-} */
+} 
 
 // render just the boring items text
-void renderInventoryItems (Console *console) {
+/* void renderInventoryItems (Console *console) {
 
     u8 yIdx = 5;
     Item *item = NULL;
@@ -560,7 +547,7 @@ void renderInventoryItems (Console *console) {
         count++;
     }
 
-}
+} */
 
 static void renderInventory (Console *console) {
 
@@ -600,8 +587,8 @@ void showInventory (UIScreen *screen) {
         inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
         insertAfter (screen->views, LIST_END (screen->views), inventoryView);
 
-        // if (inventoryRects == NULL) initInventoryRects ();
-        // else resetInventoryRects ();
+        if (inventoryRects == NULL) initInventoryRects ();
+        else resetInventoryRects ();
     }
 
 }
@@ -652,6 +639,8 @@ UIScreen *gameScene (void) {
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 
+    initInventoryRects ();
+
     inGame = true;
     wasInGame = true;
 
@@ -665,7 +654,7 @@ void cleanGameUI (void) {
 
     if (inGameScreen != NULL) {
         hideInventory ();
-        // destroyInvRects ();
+        destroyInvRects ();
 
         destroyLootWindow ();
 
