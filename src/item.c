@@ -163,10 +163,11 @@ void removeGameComponent (Item *item, GameComponent type) {
     switch (type) {
         case POSITION: {
             Position *posComp = (Position *) getGameComponent (item, type);
-            if (posComp == NULL) return;
-            ListElement *e = getListElement (positions, posComp);
+            if (posComp != NULL) {
+                ListElement *e = getListElement (positions, posComp);
             if (e != NULL) push (posPool, removeElement (positions, e));
             item->components[type] = NULL;
+            }
         } break;
         case GRAPHICS: {
             Graphics *graComp = (Graphics *) getGameComponent (item, type);
@@ -361,6 +362,7 @@ bool itemStacked (Item *item) {
         if (invItem->dbId == item->dbId) {
             if (invItem->quantity < MAX_STACK) {
                 invItem->quantity += 1;
+                destroyItem (item);
                 stacked = true;
                 break;
             }
@@ -374,18 +376,7 @@ bool itemStacked (Item *item) {
 }
 
 // pickup the first item of the list
-void pickUp (List *lootItems, u8 yIdx) {
-
-    Item *item = NULL;
-    u8 count = 0;
-    for (ListElement *e = LIST_START (lootItems); e != NULL; e = e->next) {
-        if (count == yIdx) {
-            item = (Item *) removeElement (lootItems, e);
-            break;
-        }
-
-        count++;
-    }
+void pickUp (Item *item) {
 
     if (item != NULL) {
         if ((getCarriedWeight () + item->weight) <= playerComp->maxWeight) {
@@ -407,9 +398,6 @@ void pickUp (List *lootItems, u8 yIdx) {
             }
 
             playerTookTurn = true;
-
-            // update Loot UI
-            updateLootUI (yIdx);
         }
 
         else logMessage ("You are carrying to much already!", WARNING_COLOR);
@@ -420,24 +408,29 @@ void pickUp (List *lootItems, u8 yIdx) {
 
 // As of 16/08/2018:
 // The character must be on the same coord as the item to be able to pick it up
-// FIXME:
 void getItem (void) {
+
+    fprintf (stdout, "Getting item...\n");
 
     Position *playerPos = (Position *) getComponent (player, POSITION);
     // get a list of items nearby the player
-    // List *objects = getItemsAtPos (playerPos->x, playerPos->y);
-    List *objects = NULL;
+    List *objects = getItemsAtPos (playerPos->x, playerPos->y);
+
+    fprintf (stdout, "Got a list of objects\n");
 
     if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
-        if (objects != NULL) destroyList (objects);
+        fprintf (stdout, "Lis is empty!\n");
+        if (objects != NULL) free (objects);
         logMessage ("There are no items here!", WARNING_COLOR);
-        return;
+        
     }
 
     // we only pick one item each time
-    // pickUp (objects, 0);
-
-    if (objects != NULL) destroyList (objects);
+    else {
+        pickUp ((Item *)((LIST_START (objects))->data));
+        fprintf (stdout, "Objects at pos: %i\n", LIST_SIZE (objects));
+        if (objects != NULL) destroyList (objects);
+    } 
 
 }
 
@@ -447,8 +440,23 @@ void getLootItem (u8 lootYIdx) {
 
     if (currentLoot != NULL) {
         // we only pick one item each time
-        if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0)) 
-            pickUp (currentLoot->lootItems, lootYIdx);
+        if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0)) {
+            Item *item = NULL;
+            u8 count = 0;
+            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
+                if (count == lootYIdx) {
+                    item = (Item *) removeElement (currentLoot->lootItems, e);
+                    break;
+                }
+
+                count++;
+            }
+
+            pickUp (item);
+
+            // update Loot UI
+            updateLootUI (lootYIdx);
+        }
 
         else logMessage ("There are no items to pick up!", WARNING_COLOR);
     }
@@ -457,31 +465,43 @@ void getLootItem (u8 lootYIdx) {
 
 }
 
-// FIXME:
-// TODO: how do we select which item to drop?
 void dropItem (Item *item) {
 
     if (item == NULL) return;
+    if (item->quantity <= 0) return;    // quick dirty fix
+
+    Item *dropItem = NULL;
+
+    if (item->stackable) {
+        item->quantity--;
+        if (item->quantity > 0) dropItem = createItem (item->dbId);
+
+        else {
+            for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
+                if (e->data == (void *) item) 
+                    dropItem = (Item *) removeElement (playerComp->inventory, e);
+        } 
+
+    }
+
+    else {
+        for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
+            if (e->data == (void *) item) 
+                dropItem = (Item *) removeElement (playerComp->inventory, e);
+
+    }
 
     Position *playerPos = (Position *) getComponent (player, POSITION);
-
     Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
-    addItemComp (item, POSITION, &pos);
+    addGameComponent (dropItem, POSITION, &pos);
 
-    // FIXME: unequip item
-
-    // remove from the inventory
-    // FIXME:
-    // ListElement *e = getListElement (playerComp->inventory, go);
-    // if (e != NULL) removeElement (playerComp->inventory, e);
-
-    Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
+    Graphics *g = (Graphics *) getGameComponent (dropItem, GRAPHICS);
     if (g != NULL) {
         char *msg = createString ("You dropped the %s.", g->name);
-        logMessage (msg, SUCCESS_COLOR);
+        logMessage (msg, DEFAULT_COLOR);
         free (msg);
     }
-    else logMessage ("You dropped the item.", SUCCESS_COLOR);
+    else logMessage ("You dropped the item.", DEFAULT_COLOR);
 
 }
 
@@ -508,8 +528,6 @@ void equipItem (GameObject *go) {
     }
 
 }
-
-// TODO: consumables
 
 // TODO: crafting
 

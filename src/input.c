@@ -146,7 +146,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                                 break;
                             }
                         }
-                        free (gos);
+                        destroyList (gos);
                     }
                 }
             } break;
@@ -158,8 +158,13 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 } 
                 break;
 
-            // TODO: drop an item
-            // case SDLK_d: break;
+            // drop item
+            case SDLK_SPACE:
+                if (isInUI () && inventoryView != NULL) {
+                    Item *item = getSelectedItem ();
+                    if (item != NULL) dropItem (item);
+                } 
+                break;
 
             // FIXME: how to handle an open loot menu and an open inventory?
             case SDLK_i: toggleInventory (); break;

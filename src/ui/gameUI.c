@@ -522,34 +522,6 @@ void renderInventoryItems (Console *console) {
 
 } 
 
-// render just the boring items text
-/* void renderInventoryItems (Console *console) {
-
-    u8 yIdx = 5;
-    Item *item = NULL;
-    Graphics *g = NULL;
-    char *str = NULL;
-    u8 count = 0;
-    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        item = (Item *) e->data;
-        g = (Graphics *) getGameComponent (item, GRAPHICS);
-        if (g != NULL) str = createString ("%s", g->name);
-
-        if (count == inventoryYIdx) {
-            putStringAt (console, str, 4, yIdx, getItemColor (item->rarity), INVENTORY_SELECTED);
-            yIdx++;
-        }
-
-        else {
-            putStringAt (console, str, 4, yIdx, getItemColor (item->rarity), 0x00000000);
-            yIdx++;
-        }
-
-        count++;
-    }
-
-} */
-
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
@@ -606,7 +578,7 @@ Item *getSelectedItem (void) {
         invRect = (InventoryRect *) e->data;
         if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
             if (invRect->item != NULL) return invRect->item;
-            
+
         }
     }
 

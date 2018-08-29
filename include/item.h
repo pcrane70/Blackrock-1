@@ -72,6 +72,7 @@ extern void initItems (void);
 
 extern Item *createItem (u16 itemId);
 extern void getItem (void);
+extern void dropItem (Item *);
 extern void getLootItem (u8);
 extern void *getGameComponent (Item *, GameComponent);
 extern u32 getItemColor (u8 rarity);
