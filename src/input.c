@@ -78,16 +78,9 @@ void moveInInventory (u8 newX, u8 newY) {
     if (newX >= 0 && newX <= 6) inventoryXIdx = newX;
     if (newY >= 0 && newY < 3) inventoryYIdx = newY;
 
-    // highligt only the text
-    // if (newY >= 0 && newY < LIST_SIZE (playerComp->inventory)) inventoryYIdx = newY;
-
 }
 
-void moveInLoot (u8 newY) {
-
-    if (newY >= 0 && (newY < LIST_SIZE (lootRects))) lootYIdx = newY;
-
-}
+void moveInLoot (u8 newY) { if (newY >= 0 && (newY < LIST_SIZE (lootRects))) lootYIdx = newY; }
 
 bool isInUI (void) {
 
@@ -137,16 +130,8 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             // 21/08/2018 -- 6:51 -- this is used as the interactable button
             case SDLK_e: {
                 if (isInUI () && inventoryView != NULL) {
-                    u8 count = 0;
-                    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-                        if (count == inventoryYIdx) {
-                            Item *item = (Item *) e->data;
-                            item->callback (item);
-                            break;
-                        }
-
-                        count++;
-                    }
+                    Item *item = getSelectedItem ();
+                    if (item != NULL) item->callback (item);
                 } 
                 // loop through all of our surrounding items in search for 
                 // an event listener to trigger

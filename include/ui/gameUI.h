@@ -3,6 +3,8 @@
 
 #include "ui.h"
 
+#include "item.h"
+
 #include "utils/list.h"
 
 /*** MESSAGES ***/
@@ -56,6 +58,8 @@ extern u8 inventoryXIdx;
 extern u8 inventoryYIdx;
 
 extern void toggleInventory (void);
+extern Item *getSelectedItem (void);
+
 
 extern void togglePauseMenu (void);
 

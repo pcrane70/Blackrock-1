@@ -26,13 +26,16 @@ typedef enum ItemComponent {
 extern List *items;
 extern Pool *itemsPool;
 
+#define MAX_STACK   20
+
 typedef struct Item {
 
     u16 itemId;     
     u16 dbId;       // item's unique identifire in our db
     u8 type;        // consumable, weapon, etc?
     u8 rarity;      // epic, rare, common, rubish, etc.
-    u8 quantity;    // this is used to handle stacks, max stack is 20
+    bool stackable; // this is used to handle stacks, max stack is 20
+    u8 quantity;    
     u8 weight;      // we have a max weight that we can carry based on our class, genre, etc
     u16 value[3];   // gold, silver, copper
     EventListener callback;   

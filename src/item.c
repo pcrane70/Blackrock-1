@@ -259,8 +259,9 @@ void healPlayer (void *i) {
 
             else realHp = health;  
 
-            // after use, remove the item from the inventory
-            removeFromInventory (i);
+            item->quantity--;
+            if (item->quantity == 0) removeFromInventory (item);
+
             // TODO: maybe better strings
             // you have ate the apple for 5 health
             char *str = createString ("You have been healed by %i hp.", realHp);
@@ -289,8 +290,10 @@ Item *createItem (u16 itemId) {
     u8 health = atoi (getEntityValue (itemEntity, "health"));
     if (health != 0) item->callback = healPlayer;
 
+    item->dbId = itemId;
     item->type = atoi (getEntityValue (itemEntity, "type"));
     item->rarity = atoi (getEntityValue (itemEntity, "rarity"));
+    item->stackable = atoi (getEntityValue (itemEntity, "stackable"));
     item->quantity = atoi (getEntityValue (itemEntity, "quantity"));
     item->weight = atoi (getEntityValue (itemEntity, "weight"));
     item->value[0] = atoi (getEntityValue (itemEntity, "gold"));
@@ -298,27 +301,6 @@ Item *createItem (u16 itemId) {
     item->value[2] = atoi (getEntityValue (itemEntity, "copper"));
         
     return item;
-
-}
-
-
-// FIXME:
-Weapon *createWeapon (u16 itemId) {
-
-    // ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
-    // if (itemEntity == NULL) return NULL;
-
-    // Weapon *weapon = (Weapon *) malloc (sizeof (Weapon));
-
-    // weapon->item = createItem (itemId);
-    // if (weapon->item == NULL) return NULL;
-
-    // weapon->dps = atoi (getEntityValue (itemEntity, "dps"));
-    // weapon->maxLifetime = atoi (getEntityValue (itemEntity, "maxLifetime"));
-    // weapon->lifetime = weapon->maxLifetime;
-    // weapon->isEquipped = false;
-
-    // return weapon;
 
 }
 
@@ -370,6 +352,27 @@ u32 getItemColor (u8 rarity) {
 
 }
 
+bool itemStacked (Item *item) {
+
+    Item *invItem = NULL;
+    bool stacked = false;
+    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+        invItem = (Item *) e->data;
+        if (invItem->dbId == item->dbId) {
+            if (invItem->quantity < MAX_STACK) {
+                invItem->quantity += 1;
+                stacked = true;
+                break;
+            }
+            
+            else continue;
+        }
+    }
+
+    return stacked;
+
+}
+
 // pickup the first item of the list
 void pickUp (List *lootItems, u8 yIdx) {
 
@@ -387,7 +390,13 @@ void pickUp (List *lootItems, u8 yIdx) {
     if (item != NULL) {
         if ((getCarriedWeight () + item->weight) <= playerComp->maxWeight) {
             // add the item to the inventory
-            insertAfter (playerComp->inventory, NULL, item);
+            if (item->stackable && (LIST_SIZE (playerComp->inventory) > 0)) {
+                if (!itemStacked (item)) 
+                    insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+            }
+
+            else insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+            
             // remove the item from the map
             removeGameComponent (item, POSITION);
 

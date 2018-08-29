@@ -391,8 +391,8 @@ void toggleLootWindow (void) {
 #define INVENTORY_COLOR     0xCC8E35FF
 #define INVENTORY_TEXT      0xEEEEEEFF
 
-#define INVENTORY_CELL_COLOR    0xBDC3C7FF
-#define INVENTORY_SELECTED      0x6C7A89FF
+#define INVENTORY_CELL_COLOR    0xD1C7B8FF
+#define INVENTORY_SELECTED      0x847967FF
 
 #define ZERO_ITEMS      48
 
@@ -596,6 +596,19 @@ void toggleInventory (void) {
 
     if (inventoryView == NULL) showInventory (activeScene);
     else hideInventory (activeScene);
+
+}
+
+Item *getSelectedItem (void) {
+
+    InventoryRect *invRect = NULL;
+    for (ListElement *e = LIST_START (inventoryRects); e != NULL; e = e->next) {
+        invRect = (InventoryRect *) e->data;
+        if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
+            if (invRect->item != NULL) return invRect->item;
+            
+        }
+    }
 
 }
 
