@@ -161,6 +161,8 @@ extern void updateGame (void);
 
 /*** PLAYER ***/
 
+#include "item.h"
+
 typedef enum CharClass {
 
     WARRIOR = 1,
@@ -184,10 +186,20 @@ typedef struct Player {
     u16 money [3];  // gold, silver, copper
     u16 maxWeight;
     List *inventory;
-    List *weapons;      // a player can have 2 on-handed or a 2 handed or equip a shield
-    List *equipment;
+    Item **weapons;      // a player can have 2 on-handed or a 2 handed or equip a shield
+    Item **equipment;
 
 } Player;
+
+// head         0
+// shoulders    1
+// chest        2
+// wrist        3
+// belt         4
+// legs         5
+// shoes        6
+// trinket      7
+// ring         8
 
 extern GameObject *player;
 extern Player *playerComp;  // for accessibility

@@ -161,12 +161,14 @@ GameObject *initPlayer (void) {
     p.money[1] = atoi (getEntityValue (playerEntity, "silver"));
     p.money[2] = atoi (getEntityValue (playerEntity, "copper"));
 
-    // TODO: inventory && equipment from a saved file
-    p.inventory = NULL;
-    p.equipment = NULL;
-
     p.maxWeight = atoi (getEntityValue (playerEntity, "maxWeight")) + atoi (getEntityValue (classEntity, "weightMod"));
     addComponent (go, PLAYER, &p);
+
+    Player *pl = (Player *) getComponent (player, PLAYER);
+    pl->weapons = (Item **) calloc (3, sizeof (Item *));
+    for (u8 i = 0; i < 3; i++) pl->weapons[i] = NULL;
+    pl->equipment = (Item **) calloc (9, sizeof (Item *));
+    for (u8 i = 0; i < 9; i++) pl->equipment[i] = NULL;
 
     // As of 18/08/2018 -- 23-21 -- the color of the glyph is based on the class
     asciiChar glyph = atoi (getEntityValue (playerEntity, "glyph"));
@@ -333,7 +335,9 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPlayer->cClass = playerData->cClass;
             newPlayer->genre = playerData->genre;
             newPlayer->inventory = initList (free);
-            newPlayer->equipment = initList (free);
+            // newPlayer->equipment = initList (free);
+            newPlayer->weapons = NULL;
+            newPlayer->equipment = NULL;
             newPlayer->level = playerData->level;
             newPlayer->maxWeight = playerData->maxWeight;
             newPlayer->money[0] = playerData->money[0];
@@ -626,6 +630,8 @@ void cleanUpGame (void) {
     destroyList (messageLog);
 
     // clean up the player
+    free (playerComp->weapons);
+    free (playerComp->equipment);
     free (playerComp);
     free (player);
 

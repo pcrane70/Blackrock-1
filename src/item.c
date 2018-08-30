@@ -375,18 +375,23 @@ bool itemStacked (Item *item) {
 
 }
 
+void addToInventory (Item *item) {
+
+    if (item->stackable && (LIST_SIZE (playerComp->inventory) > 0)) {
+        if (!itemStacked (item)) 
+            insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+    }
+
+    else insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+
+}
+
 // pickup the first item of the list
 void pickUp (Item *item) {
 
     if (item != NULL) {
         if ((getCarriedWeight () + item->weight) <= playerComp->maxWeight) {
-            // add the item to the inventory
-            if (item->stackable && (LIST_SIZE (playerComp->inventory) > 0)) {
-                if (!itemStacked (item)) 
-                    insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
-            }
-
-            else insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+            addToInventory (item);
             
             // remove the item from the map
             removeGameComponent (item, POSITION);
@@ -505,8 +510,11 @@ void dropItem (Item *item) {
 
 }
 
-/*** EQUIPMENT ***/
+/*** WEAPONS -- EQUIPMENT ***/
 
+// FIXME: handle two handed weapons!!
+// TODO: check for specific class weapons
+// TODO: update combat stats based on weapon modifiers if necessary
 void toggleEquipWeapon (void *i) {
 
     if (i == NULL) return;
@@ -516,44 +524,78 @@ void toggleEquipWeapon (void *i) {
 
     // unequip
     if (weapon->isEquipped) {
+        Item *w = playerComp->weapons[weapon->slot];
+        if (w != NULL) {
+            addToInventory (w);
+            Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
+            if (g != NULL) {
+                char *str = createString ("You unequip the %s", g->name);
+                logMessage (str, DEFAULT_COLOR);
+                free (str);
+            } 
 
+            playerComp->weapons[weapon->slot] = NULL;
+        }
     }
 
     // equip
     else {
+        // Item *w = (Item *) removeElement (playerComp->inventory, getListElement (playerComp->inventory, item));
+        Item *w = playerComp->weapons[weapon->slot];
+        if (w != NULL) {
+            insertAfter (playerComp->weapons, NULL, w);
+            Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
+            if (g != NULL) {
+                char *str = createString ("Yoou are now wielding the %s", g->name);
+                logMessage (str, DEFAULT_COLOR);
+                free (str);
+            }
 
+            playerComp->weapons[weapon->slot] = NULL;
+        }
     }
-
+        
 }
 
-// FIXME: how do we select which item to equip?
-// equips an item, but only if it as a piece of equipment
-// TODO: how do we unequip an item?
-// TODO: check for specific class weapons
-void equipItem (void *i) {
+// TODO: update combat stats based on armour modifiers if necessary
+// TODO: create better strings deppending on the item
+void toggleEquipArmour (void *i) {
 
     if (i == NULL) return;
 
     Item *item = (Item *) i;
+    Armour *armour = (Armour *) getItemComponent (item, ARMOUR);
 
-    // TODO: check that the item can be equipped, if its is a weapon or a piece of armor
-    Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
-    if (weapon != NULL) {
-        // add to player equipment
+    // unequip
+    if (armour->isEquipped) {
+        Item *a = playerComp->equipment[armour->slot];
+        if (a != NULL) {
+            addToInventory (a);
+            Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
+            if (g != NULL) {
+                char *str = createString ("You take off the %s", g->name);
+                logMessage (str, DEFAULT_COLOR);
+                free (str);
+            } 
 
+            playerComp->equipment[armour->slot] = NULL;
+        }
     }
 
+    // equip
+    else {
+        Item *a = playerComp->equipment[armour->slot];
+        if (a != NULL) {
+            insertAfter (playerComp->equipment, NULL, a);
+            Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
+            if (g != NULL) {
+                char *str = createString ("Yoou are now wielding the %s", g->name);
+                logMessage (str, DEFAULT_COLOR);
+                free (str);
+            }
 
-    if (item != NULL) {
-        // TODO: how do we check which pice of armor it is??
-        // TODO: unequip the item in the corresponding equipment slot
-
-        // equip the item
-
-        // TODO: update the player stats based on the new item
-        // Combat *itemCombat = (Combat *) getComponent (item, COMBAT);
-        // Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
-        
+            playerComp->equipment[armour->slot] = NULL;
+        }
     }
 
 }
@@ -567,30 +609,41 @@ void repairItems (void) {
 
 }
 
+// As of 30/08/2018 -- 11:10 -- if an item get to lifetime = 0, it will unequip and 
+// go to the inventory... if there is no space in the inventory, it will stay equipped
+// but it will loose all of its qualities
+
 // FIXME:
 // only reduce lifetime of weapons, and equipment
 void updateLifeTime (void) {
 
-    GameObject *go = NULL;
     Item *item = NULL;
-    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        go = (GameObject *) LIST_DATA (e);
-        item = (Item *) getComponent (go, ITEM);
-        // FIXME: only for weapons and armor
 
-        // FIXME:
-        // if (item->lifetime <= 0) {
-        //     bool wasEquipped = false;
-        //     if (item->isEquipped) {
-        //         wasEquipped = true;
-        //         // FIXME: unequip item
-        //     }
+    // weapons 
+    Weapon *weapon = NULL;
+    for (u8 i = 0; i < 3; i++) {
+        item = playerComp->weapons[i];
+        weapon = (Weapon *) getItemComponent (item, WEAPON);
 
-        //     // remove from inventory
-        //     // FIXME:
+        // FIXME: update lifetime of weapons when hitting a mob
 
-        //     // TODO: give feedback to the player with messages in the log
-        // }
+        if (weapon->lifetime <= 0) {
+            // unequip
+            toggleEquipWeapon (item);
+        }
+    }
+
+    // armour
+    Armour *armour = NULL;
+    for (u8 i = 0; i < 9; i++) {
+        item = playerComp->equipment[i];
+        armour = (Armour *) getItemComponent (item, ARMOUR);
+
+        // FIXME: update lifetime of armour when being hit from a mob
+
+        if (armour->lifetime <= 0) {
+            
+        }
     }
 
 }

@@ -51,11 +51,12 @@ typedef struct Armour {
     u16 dbId;       // item's unique identifire in our db
     u16 maxLifetime;
     u16 lifetime;
-    char *slot;
+    u8 slot;
     bool isEquipped;
 
 } Armour;
 
+// TODO: add class specific weapons
 typedef struct Weapon {
 
     u16 itemId;     
@@ -64,7 +65,8 @@ typedef struct Weapon {
     u16 maxLifetime;
     u16 lifetime;
     bool isEquipped;
-    // FIXME: how do we handle if it is one or two handed??
+    u8 slot;
+    bool twoHanded;
 
 } Weapon;
 
