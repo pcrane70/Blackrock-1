@@ -158,6 +158,9 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 } 
                 break;
 
+            // 30/08/2018 -- 07:02 -- This might be temporary
+            case SDLK_c: collectGold (); break;
+
             // drop item
             case SDLK_SPACE:
                 if (isInUI () && inventoryView != NULL) {

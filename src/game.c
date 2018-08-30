@@ -1009,6 +1009,48 @@ void displayLoot (void *goData) {
 
 }
 
+void collectGold (void) {
+
+    if (currentLoot != NULL) {
+        if (currentLoot->money[0] > 0 || currentLoot->money[1] > 0 || currentLoot->money[2] > 0) {
+            char *str = createString ("You collected: %ig %is %ic",
+                currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
+            
+            if ((playerComp->money[2] + currentLoot->money[2]) >= 100) {
+                playerComp->money[1] += 1;
+                playerComp->money[2] = 0;
+                currentLoot->money[2] = 0;
+            }
+
+            else {
+                playerComp->money[2] += currentLoot->money[2];
+                currentLoot->money[2] = 0;
+            } 
+
+            if ((playerComp->money[1] + currentLoot->money[1]) >= 100) {
+                playerComp->money[0] += 1;
+                playerComp->money[1] = 0;
+                currentLoot->money[1] = 0;
+            }
+
+            else {
+                playerComp->money[1] += currentLoot->money[1];
+                currentLoot->money[1] = 0;
+            }
+
+            playerComp->money[0] += currentLoot->money[0];
+
+            logMessage (str, DEFAULT_COLOR);
+            free (str);
+
+        }
+
+        else logMessage ("There is not gold here to collect!", WARNING_COLOR);
+
+    }
+
+}
+
 
 /*** COMBAT ***/
 

@@ -208,6 +208,8 @@ typedef struct Loot {
 
 } Loot;
 
+void collectGold (void);
+
 /*** LEVEL MANAGER ***/
 
 typedef struct {
