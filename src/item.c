@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "blackrock.h"
 #include "game.h"
 
@@ -61,7 +63,38 @@ void initItems (void) {
 
     else fprintf (stdout, "Succesfully connected to the items db.\n");
 
+    // FIXME: THis is only for testing the db
+    // we are filling up the db with some data
+    // char *sql = "DROP TABLE IF EXISTS Food;"
+    //             "CREATE TABLE Food(Id INT, Name TEXT, Glyph INT, Rarity INT, Stackable INT, Quantity INT, Gold INT, Silver INT, Copper INT);"
+    //             "INSERT INTO Food VALUES(1001, 'Apple', 46, 1, 1, 1, 0, 1, 50);"
+    //             "INSERT INTO Food VALUES(1002, 'Bread', 46, 1, 1, 1, 0, 1, 80);";
+
+    // char *err_msg = 0;
+    // rc = sqlite3_exec (itemsDb, sql, 0, 0, &err_msg);
+
+    // if (rc != SQLITE_OK) {
+    //     fprintf (stderr, "Error! Failed to create table!\n");
+    //     fprintf (stderr, "SQL error: %s\n", err_msg);
+    //     sqlite3_free (err_msg);
+    // }
+
+    // else fprintf (stdout, "Table food created successfully!\n");
+
+    // int last_id = sqlite3_last_insert_rowid (itemsDb);
+    // printf("The last Id of the inserted row is %d\n", last_id);
+
 }
+
+#define ID_COL          0
+#define NAME_COL        1
+#define GLYPH_COL       2
+#define RARITRY_COL     3
+#define STACKABLE_COL   4
+#define QUANTITY_COL    5
+#define GOLD_COL        6
+#define SILVER_COL      7
+#define COPPER_COL      8
 
 Item *newItem (void) {
 
@@ -291,7 +324,50 @@ void healPlayer (void *i) {
 
 }
 
+// 29/08/2018 -- 23:34 -- new way of creating an item using sqlite db
 Item *createItem (u16 itemId) {
+
+    sqlite3_stmt *res;
+    char *sql = "SELECT Id, Name, Glyph, Rarity, Stackable, Quantity, Gold, Silver, Copper FROM Food WHERE Id = ?";
+    int rc = sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0);
+
+    if (rc == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
+    else fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
+
+    int step = sqlite3_step (res);
+
+    if (step == SQLITE_ROW) {
+        fprintf (stdout, "%i: ", sqlite3_column_int (res, itemId));
+        fprintf(stdout, "%s\n", sqlite3_column_text (res, NAME_COL));
+    }
+
+    Item *item = newItem ();
+    asciiChar glyph = (asciiChar) sqlite3_column_int (res, GLYPH_COL);
+    const char *temp = sqlite3_column_text (res, NAME_COL);
+    char *name = (char *) calloc (strlen (temp), sizeof (char));
+    strcpy (name, temp);
+
+    // FIXME: COLOR
+    u32 color = 0xFFFFFFFF;
+    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
+    addGameComponent (item, GRAPHICS, &g);
+
+    item->dbId = itemId;
+    item->rarity = sqlite3_column_int (res, 3);
+    item->stackable = (sqlite3_column_int (res, STACKABLE_COL) == 0) ? false : true;
+    item->quantity = sqlite3_column_int (res, QUANTITY_COL);
+    item->value[0] = (u16) sqlite3_column_int (res, GOLD_COL);
+    item->value[1] = (u16) sqlite3_column_int (res, SILVER_COL);
+    item->value[2] = (u16) sqlite3_column_int (res, COPPER_COL);
+
+    sqlite3_finalize(res);
+
+    return item;
+
+} 
+ 
+// Old way of creating an item using a cfg file
+/* Item *createItem (u16 itemId) {
 
     ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
     if (itemEntity == NULL) return NULL;
@@ -320,7 +396,7 @@ Item *createItem (u16 itemId) {
         
     return item;
 
-}
+} */
 
 // check how much the player is carrying in its inventory and equipment
 u16 getCarriedWeight (void) {
