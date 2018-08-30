@@ -584,6 +584,53 @@ Item *getSelectedItem (void) {
 
 }
 
+/*** CHARACTER ***/
+
+#define CHARACTER_LEFT		20
+#define CHARACTER_TOP		7
+#define CHARACTER_WIDTH		40
+#define CHARACTER_HEIGHT	30
+
+#define CHARACTER_CELL_WIDTH    4
+#define CHARACTER_CELL_HEIGHT   4
+
+#define CHARACTER_COLOR     0x4B6584FF
+#define CHARACTER_TEXT      0xEEEEEEFF
+
+#define CHARACTER_CELL_COLOR    0xD1C7B8FF
+#define CHARACTER_SELECTED      0x847967FF
+
+UIView *characterView = NULL;
+
+static void renderCharacter (Console *console) {
+
+    UIRect rect = { 0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT };
+    drawRect (console, &rect, CHARACTER_COLOR, 0, 0xFFFFFFFF);
+
+    putStringAt (console, "Character", 16, 2, INVENTORY_TEXT, 0x00000000);
+    
+    
+}
+
+void toggleCharacter (void) {
+
+    if (characterView == NULL) {
+        UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
+        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
+        insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
+    }
+
+    else {
+        if (characterView != NULL) {
+            ListElement *c = getListElement (activeScene->views, characterView);
+            destroyView ((UIView *) removeElement (activeScene->views, c));
+            characterView = NULL;
+        }
+    }
+
+}
+
+
 /*** PAUSE MENU ***/
 
 #define PAUSE_LEFT		20
@@ -609,7 +656,7 @@ void togglePauseMenu (void) {
     if (pauseMenu == NULL) {
         UIRect pause = { (16 * PAUSE_LEFT), (16 * PAUSE_TOP), (16 * PAUSE_WIDTH), (16 * PAUSE_HEIGHT) };
         pauseMenu = newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
-        insertAfter(activeScene->views, LIST_END (activeScene->views), pauseMenu)   ;
+        insertAfter(activeScene->views, LIST_END (activeScene->views), pauseMenu);
     }
 
     else {

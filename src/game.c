@@ -161,8 +161,9 @@ GameObject *initPlayer (void) {
     p.money[1] = atoi (getEntityValue (playerEntity, "silver"));
     p.money[2] = atoi (getEntityValue (playerEntity, "copper"));
 
-    // TODO: inventory
+    // TODO: inventory && equipment from a saved file
     p.inventory = NULL;
+    p.equipment = NULL;
 
     p.maxWeight = atoi (getEntityValue (playerEntity, "maxWeight")) + atoi (getEntityValue (classEntity, "weightMod"));
     addComponent (go, PLAYER, &p);
@@ -332,6 +333,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPlayer->cClass = playerData->cClass;
             newPlayer->genre = playerData->genre;
             newPlayer->inventory = initList (free);
+            newPlayer->equipment = initList (free);
             newPlayer->level = playerData->level;
             newPlayer->maxWeight = playerData->maxWeight;
             newPlayer->money[0] = playerData->money[0];

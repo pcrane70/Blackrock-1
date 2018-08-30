@@ -505,16 +505,45 @@ void dropItem (Item *item) {
 
 }
 
+/*** EQUIPMENT ***/
+
+void toggleEquipWeapon (void *i) {
+
+    if (i == NULL) return;
+
+    Item *item = (Item *) i;
+    Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
+
+    // unequip
+    if (weapon->isEquipped) {
+
+    }
+
+    // equip
+    else {
+
+    }
+
+}
+
 // FIXME: how do we select which item to equip?
 // equips an item, but only if it as a piece of equipment
 // TODO: how do we unequip an item?
-void equipItem (GameObject *go) {
+// TODO: check for specific class weapons
+void equipItem (void *i) {
 
-    if (go == NULL) return;
+    if (i == NULL) return;
+
+    Item *item = (Item *) i;
 
     // TODO: check that the item can be equipped, if its is a weapon or a piece of armor
+    Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
+    if (weapon != NULL) {
+        // add to player equipment
 
-    Item *item = (Item *) getComponent (go, ITEM);
+    }
+
+
     if (item != NULL) {
         // TODO: how do we check which pice of armor it is??
         // TODO: unequip the item in the corresponding equipment slot

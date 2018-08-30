@@ -70,9 +70,6 @@ void move (u8 newX, u8 newY) {
 
 }
 
-extern UIView *lootView;
-extern UIView *inventoryView;
-
 void moveInInventory (u8 newX, u8 newY) {
 
     if (newX >= 0 && newX <= 6) inventoryXIdx = newX;
@@ -97,6 +94,8 @@ void closeUIMenu (void) {
     } 
 
     if (lootView != NULL) toggleLootWindow ();
+
+    if (characterView != NULL) toggleCharacter ();
 
 }
 
@@ -159,7 +158,10 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 break;
 
             // 30/08/2018 -- 07:02 -- This might be temporary
-            case SDLK_c: collectGold (); break;
+            case SDLK_c: 
+                if (isInUI () && (lootView != NULL)) collectGold ();
+                else if (!isInUI () && (characterView == NULL)) toggleCharacter ();
+                break;
 
             // drop item
             case SDLK_SPACE:
@@ -174,9 +176,6 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             // TODO: equip an item
             // case SDLK_q: break;
-
-            // TODO: toggle character equipment
-            // case SDLK_c: break;
 
             // TODO: player rests?
             // case SDLK_z: break;

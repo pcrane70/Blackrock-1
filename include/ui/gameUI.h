@@ -46,6 +46,8 @@ extern char *createString (const char *stringWithFormat, ...);
 
 /*** LOOT ***/
 
+extern UIView *lootView;
+
 extern void toggleLootWindow (void);
 extern void updateLootUI (u8 yIdx);
 
@@ -54,12 +56,21 @@ extern u8 lootYIdx;
 
 /*** INVENTORY ***/
 
+extern UIView *inventoryView;
+
 extern u8 inventoryXIdx;
 extern u8 inventoryYIdx;
 
 extern void toggleInventory (void);
 extern Item *getSelectedItem (void);
 
+/*** CHARACTER ***/
+
+extern UIView *characterView;
+
+extern void toggleCharacter (void);
+
+/*** PAUSE MENU ***/
 
 extern void togglePauseMenu (void);
 

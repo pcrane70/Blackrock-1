@@ -184,6 +184,8 @@ typedef struct Player {
     u16 money [3];  // gold, silver, copper
     u16 maxWeight;
     List *inventory;
+    List *weapons;      // a player can have 2 on-handed or a 2 handed or equip a shield
+    List *equipment;
 
 } Player;
 
