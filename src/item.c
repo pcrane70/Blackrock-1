@@ -12,6 +12,14 @@
 
 #include "utils/myUtils.h"
 
+/*** ITEMS DB ***/
+
+#include <sqlite3.h>
+
+// The path is form the makefile
+const char *dbPath = "./data/items.db";
+sqlite3 *itemsDb;
+
 List *items = NULL;
 Pool *itemsPool = NULL;
 
@@ -43,6 +51,15 @@ void initItems (void) {
         fprintf (stderr, "Critical Error! No items config!\n");
         die ();
     }
+
+    // connect to the items db
+    int rc = sqlite3_open (dbPath, &itemsDb);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Critical Error! Cannot open database: %s\n", sqlite3_errmsg (itemsDb));
+        die ();
+    }
+
+    else fprintf (stdout, "Succesfully connected to the items db.\n");
 
 }
 
@@ -573,7 +590,10 @@ void cleanUpItems (void) {
     destroyList (items);
     clearPool (itemsPool);
 
-    clearConfig (itemsConfig);
+    // clearConfig (itemsConfig);
+
+    // disconnect from the db
+    sqlite3_close (itemsDb);
 
     fprintf (stdout, "Done cleaning up items.\n");
 

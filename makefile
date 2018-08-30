@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -I $(IDIR) `sdl2-config --cflags --libs` -lm
+CFLAGS = -I $(IDIR) `sdl2-config --cflags --libs` -lm -l sqlite3
 
 IDIR = ./include/
 SRCDIR = ./src/
