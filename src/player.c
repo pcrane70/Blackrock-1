@@ -1,4 +1,3 @@
-
 #include "blackrock.h"
 
 #include "game.h"
@@ -83,9 +82,6 @@ Player *initPlayer (void) {
     p->money[0] = atoi (getEntityValue (playerEntity, "gold"));
     p->money[1] = atoi (getEntityValue (playerEntity, "silver"));
     p->money[2] = atoi (getEntityValue (playerEntity, "copper"));
-
-    // p.maxWeight = atoi (getEntityValue (playerEntity, "maxWeight")) + atoi (getEntityValue (classEntity, "weightMod"));
-    // addComponent (go, PLAYER, &p);
 
     // As of 18/08/2018 -- 23-21 -- the color of the glyph is based on the class
     p->graphics = (Graphics *) malloc (sizeof (Graphics));

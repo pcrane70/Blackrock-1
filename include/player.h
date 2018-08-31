@@ -24,7 +24,6 @@ typedef struct Player {
     u32 color;  // for accessibility
     u8 level;
     u16 money [3];  // gold, silver, copper
-    u16 maxWeight;
     Item ***inventory;
     Item **weapons;      // a player can have 2 on-handed or a 2 handed or equip a shield
     Item **equipment;

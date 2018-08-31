@@ -431,7 +431,7 @@ ItemRect *createInvRect (u8 x, u8 y) {
 
 }
 
-ItemRect ***initInventoryRects () {
+ItemRect ***initInventoryRects (void) {
 
     ItemRect ***invRects = (ItemRect ***) malloc (7 * sizeof (ItemRect **));
     for (u8 i = 0; i < 7; i++)
@@ -445,23 +445,24 @@ ItemRect ***initInventoryRects () {
 
 }
 
-void resetInventoryRects () {
+void resetInventoryRects (void) {
 
     for (u8 y = 0; y < 3; y++) 
         for (u8 x = 0; x < 7; x++)
             inventoryRects[x][y]->item = NULL;
 
-    // FIXME:
     // display the items that are currently on the players inventory
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
+            if (player->inventory[x][y] != NULL)
+                inventoryRects[x][y]->item = player->inventory[x][y];
 
         }
     }
 
 }
 
-void destroyInvRects () {
+void destroyInvRects (void) {
 
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
@@ -479,10 +480,12 @@ void destroyInvRects () {
 // TODO: draw here the item image
 void renderInventoryItems (Console *console) {
 
+    ItemRect *invRect = NULL;
+
     // draw inventory cells
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
-            ItemRect *invRect = inventoryRects[x][y];
+            invRect = inventoryRects[x][y];
     
              // draw highlighted rect
             if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
@@ -597,58 +600,79 @@ Item *getSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYId
 
 UIView *characterView = NULL;
 
-List *characterRects = NULL;
+ItemRect ***characterRects = NULL;
 
 u8 characterXIdx = 0;
 u8 characterYIdx = 0;
 
-// FIXME: change to an array
-void initCharacterRects (void) {
+ItemRect *createCharRect (u8 x, u8 y) {
 
-    if (characterRects == NULL) {
-        characterRects = initList (free);
+    ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
 
-        for (u8 i = 0; i < 13; i++) {
-            ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
-            new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-            new->bgRect->w = CHARACTER_CELL_WIDTH;
-            new->bgRect->h = CHARACTER_CELL_HEIGHT;
-            // new->imgRect = (UIRect *) malloc (sizeof (UIRect));
-            // new->imgRect->w = CHARACTER_CELL_WIDTH;
-            // new->imgRect->h = CHARACTER_CELL_HEIGHT;
-            new->imgRect = NULL;
-            new->item = NULL;
-            // insertAfter (characterRects, LIST_END (inventoryRects), new);
-        }
-    }
+    new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+    new->bgRect->w = CHARACTER_CELL_WIDTH;
+    new->bgRect->h = CHARACTER_CELL_HEIGHT;
+    // new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+    // new->imgRect->w = INVENTORY_CELL_WIDTH;
+    // new->imgRect->h = INVENTORY_CELL_HEIGHT;
+    new->imgRect = NULL;
+    new->item = NULL;
 
-    u8 idx = 0;
-    for (u8 y = 0; y < 6; y++) {
-        for (u8 x = 0; x < 2; x++) {
-            u8 count = 0;
-            for (ListElement *e = LIST_START (characterRects); e != NULL; e = e->next) {
-                if (count == idx) {
-                    ItemRect *invRect = (ItemRect *) e->data;
-                    invRect->xIdx = x;
-                    invRect->yIdx = y;
-                    invRect->bgRect->x = x + 3 + (CHARACTER_CELL_WIDTH * x);
-                    invRect->bgRect->y = y + 5 + (CHARACTER_CELL_HEIGHT * y);
-                    // invRect->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
-                    // invRect->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
-                }
+    new->xIdx = x;
+    new->yIdx = y;
+    new->bgRect->x = x + 3 + (CHARACTER_CELL_WIDTH * x);
+    new->bgRect->y = y + 5 + (CHARACTER_CELL_HEIGHT * y);
+    // new->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+    // new->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
 
-                count++;
-            }
-
-            idx++;
-        }
-    }
+    return new;
 
 }
 
+ItemRect ***initCharacterRects (void) {
+
+    ItemRect ***charRects = (ItemRect ***) malloc (3 * sizeof (ItemRect **));
+    for (u8 i = 0; i < 3; i++)
+        charRects[i] = (ItemRect **) malloc (6 * sizeof (ItemRect *));
+
+    for (u8 y = 0; y < 6; y++) 
+        for (u8 x = 0; x < 3; x++) 
+            charRects[x][y] = createCharRect (x, y);
+
+    return charRects;
+
+}
+
+// TODO: draw images
 void renderCharacterRects (Console *console) {
 
+    ItemRect *charRect = NULL;
+
+    // draw inventory cells
+    for (u8 y = 0; y < 6; y++) {
+        for (u8 x = 0; x < 3; x++) {
+            charRect = characterRects[x][y];
     
+             // draw highlighted rect
+            if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) {
+                drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, 0x000000FF);
+                // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
+                // if (charRect->item != NULL) {
+                //     // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
+                //     // Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
+                //     // if (g != NULL) 
+                //     //     putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), 0x00000000);
+                // }
+            }
+
+            // draw every other rect with an item on it
+            else if (charRect->item != NULL) 
+                drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, 0x000000FF);
+
+            // draw the empty rects
+            else drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, 0x000000FF);
+        }
+    }
 
 }
 
@@ -673,7 +697,7 @@ void toggleCharacter (void) {
         characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
         insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
 
-        if (inventoryRects == NULL) initCharacterRects ();
+        if (characterRects == NULL) characterRects = initCharacterRects ();
     }
 
     else {

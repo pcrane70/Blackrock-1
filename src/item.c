@@ -375,53 +375,6 @@ Item *createItem (u16 itemId) {
     return item;
 
 } 
- 
-// Old way of creating an item using a cfg file
-/* Item *createItem (u16 itemId) {
-
-    ConfigEntity *itemEntity = getEntityWithId (itemsConfig, itemId);
-    if (itemEntity == NULL) return NULL;
-
-    Item *item = newItem ();
-
-    asciiChar glyph = atoi (getEntityValue (itemEntity, "glyph"));
-    char *name = getEntityValue (itemEntity, "name");
-    u32 color = xtoi (getEntityValue (itemEntity, "color"));
-    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-    addGameComponent (item, GRAPHICS, &g);
-
-    // 28/08/2018 -- 11:15 -- testing effects inside items
-    u8 health = atoi (getEntityValue (itemEntity, "health"));
-    if (health != 0) item->callback = healPlayer;
-
-    item->dbId = itemId;
-    item->type = atoi (getEntityValue (itemEntity, "type"));
-    item->rarity = atoi (getEntityValue (itemEntity, "rarity"));
-    item->stackable = atoi (getEntityValue (itemEntity, "stackable"));
-    item->quantity = atoi (getEntityValue (itemEntity, "quantity"));
-    item->weight = atoi (getEntityValue (itemEntity, "weight"));
-    item->value[0] = atoi (getEntityValue (itemEntity, "gold"));
-    item->value[1] = atoi (getEntityValue (itemEntity, "silver"));
-    item->value[2] = atoi (getEntityValue (itemEntity, "copper"));
-        
-    return item;
-
-} */
-
-// FIXME:
-// check how much the player is carrying in its inventory and equipment
-// u16 getCarriedWeight (void) {
-
-//     u16 weight = 0;
-//     Item *item = NULL;
-//     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-//         item = (Item *) LIST_DATA (e);
-//         if (item != NULL) weight += (item->weight * item->quantity);
-//     }
-
-//     return weight;
-
-// }
 
 List *getItemsAtPos (u8 x, u8 y) {
 
@@ -516,23 +469,18 @@ void addToInventory (Item *item) {
 void pickUp (Item *item) {
 
     if (item != NULL) {
-        // FIXME: do we need to check for carried weigth??
-        if (1) {
-            addToInventory (item);
+        addToInventory (item);
             
-            // remove the item from the map
-            removeGameComponent (item, POSITION);
+        // remove the item from the map
+        removeGameComponent (item, POSITION);
 
-            Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
-            if (g != NULL) {
-                if (g->name != NULL) logMessage (createString ("You picked up the %s.", g->name), DEFAULT_COLOR);
-                else logMessage ("Picked up the item!", DEFAULT_COLOR);
-            }
-
-            playerTookTurn = true;
+        Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
+        if (g != NULL) {
+            if (g->name != NULL) logMessage (createString ("You picked up the %s.", g->name), DEFAULT_COLOR);
+            else logMessage ("Picked up the item!", DEFAULT_COLOR);
         }
 
-        else logMessage ("You are carrying to much already!", WARNING_COLOR);
+        playerTookTurn = true;
     }
 
 }
