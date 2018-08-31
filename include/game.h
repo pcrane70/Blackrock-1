@@ -191,18 +191,25 @@ typedef struct Player {
 
 } Player;
 
+#define EQUIPMENT_ELEMENTS      10
+
 // head         0
-// shoulders    1
-// chest        2
-// wrist        3
-// belt         4
-// legs         5
-// shoes        6
-// trinket      7
-// ring         8
+// necklace     1
+// shoulders    2
+// cape         3
+// chest        4
+
+// hands        5
+// belt         6
+// legs         7
+// shoes        8
+// ring         9
+
 
 extern GameObject *player;
 extern Player *playerComp;  // for accessibility
+
+extern char *getPlayerClassName (void);
 
 
 /*** Game Objects ***/
