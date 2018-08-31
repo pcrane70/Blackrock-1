@@ -210,6 +210,21 @@ char *getPlayerClassName (void) {
 
 }
 
+Item ***initPlayerInventory (void) {
+
+    Item ***inventory = (Item ***) calloc (7, sizeof (Item **));
+
+    for (u8 i = 0; i < 7; i++)
+        inventory[i] = (Item **) calloc (3, sizeof (Item *));
+
+    for (u8 y = 0; y < 3; y++) 
+        for (u8 x = 0; x < 7; x++) 
+            inventory[x][y] = NULL;
+
+    return inventory;
+
+}
+
 /*** Game Object Management **/
 
 // 08/08/2018 --> we now handle some GameObjects with a llist and a Pool;
@@ -344,7 +359,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPlayer->name = playerData->name;
             newPlayer->cClass = playerData->cClass;
             newPlayer->genre = playerData->genre;
-            newPlayer->inventory = initList (free);
+            newPlayer->inventory = initPlayerInventory ();
             newPlayer->weapons = (Item **) calloc (3, sizeof (Item *));
             for (u8 i = 0; i < 3; i++) newPlayer->weapons[i] = NULL;
             newPlayer->equipment = (Item **) calloc (EQUIPMENT_ELEMENTS, sizeof (Item *));

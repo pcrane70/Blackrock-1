@@ -271,16 +271,17 @@ void destroyItem (Item *item) {
 
 }
 
-void removeFromInventory (void *i) {
+// FIXME:
+// void removeFromInventory (void *i) {
 
-    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        if (i == e->data) {
-            destroyItem ((Item *) removeElement (playerComp->inventory, e));
-            break;
-        }
-    }
+//     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+//         if (i == e->data) {
+//             destroyItem ((Item *) removeElement (playerComp->inventory, e));
+//             break;
+//         }
+//     }
 
-}
+// }
 
 // 28/08/2018 -- 11:15 -- testing effects inside items
 void healPlayer (void *i) {
@@ -398,19 +399,20 @@ Item *createItem (u16 itemId) {
 
 } */
 
+// FIXME:
 // check how much the player is carrying in its inventory and equipment
-u16 getCarriedWeight (void) {
+// u16 getCarriedWeight (void) {
 
-    u16 weight = 0;
-    Item *item = NULL;
-    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        item = (Item *) LIST_DATA (e);
-        if (item != NULL) weight += (item->weight * item->quantity);
-    }
+//     u16 weight = 0;
+//     Item *item = NULL;
+//     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+//         item = (Item *) LIST_DATA (e);
+//         if (item != NULL) weight += (item->weight * item->quantity);
+//     }
 
-    return weight;
+//     return weight;
 
-}
+// }
 
 List *getItemsAtPos (u8 x, u8 y) {
 
@@ -446,38 +448,40 @@ u32 getItemColor (u8 rarity) {
 
 }
 
-bool itemStacked (Item *item) {
+// FIXME:
+// bool itemStacked (Item *item) {
 
-    Item *invItem = NULL;
-    bool stacked = false;
-    for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        invItem = (Item *) e->data;
-        if (invItem->dbId == item->dbId) {
-            if (invItem->quantity < MAX_STACK) {
-                invItem->quantity += 1;
-                destroyItem (item);
-                stacked = true;
-                break;
-            }
+//     Item *invItem = NULL;
+//     bool stacked = false;
+//     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
+//         invItem = (Item *) e->data;
+//         if (invItem->dbId == item->dbId) {
+//             if (invItem->quantity < MAX_STACK) {
+//                 invItem->quantity += 1;
+//                 destroyItem (item);
+//                 stacked = true;
+//                 break;
+//             }
             
-            else continue;
-        }
-    }
+//             else continue;
+//         }
+//     }
 
-    return stacked;
+//     return stacked;
 
-}
+// }
 
-void addToInventory (Item *item) {
+// FIXME:
+// void addToInventory (Item *item) {
 
-    if (item->stackable && (LIST_SIZE (playerComp->inventory) > 0)) {
-        if (!itemStacked (item)) 
-            insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
-    }
+//     if (item->stackable && (LIST_SIZE (playerComp->inventory) > 0)) {
+//         if (!itemStacked (item)) 
+//             insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+//     }
 
-    else insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+//     else insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
 
-}
+// }
 
 // pickup the first item of the list
 void pickUp (Item *item) {
@@ -563,45 +567,46 @@ void getLootItem (u8 lootYIdx) {
 
 }
 
-void dropItem (Item *item) {
+// FIXME:
+// void dropItem (Item *item) {
 
-    if (item == NULL) return;
-    if (item->quantity <= 0) return;    // quick dirty fix
+//     if (item == NULL) return;
+//     if (item->quantity <= 0) return;    // quick dirty fix
 
-    Item *dropItem = NULL;
+//     Item *dropItem = NULL;
 
-    if (item->stackable) {
-        item->quantity--;
-        if (item->quantity > 0) dropItem = createItem (item->dbId);
+//     if (item->stackable) {
+//         item->quantity--;
+//         if (item->quantity > 0) dropItem = createItem (item->dbId);
 
-        else {
-            for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
-                if (e->data == (void *) item) 
-                    dropItem = (Item *) removeElement (playerComp->inventory, e);
-        } 
+//         else {
+//             for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
+//                 if (e->data == (void *) item) 
+//                     dropItem = (Item *) removeElement (playerComp->inventory, e);
+//         } 
 
-    }
+//     }
 
-    else {
-        for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
-            if (e->data == (void *) item) 
-                dropItem = (Item *) removeElement (playerComp->inventory, e);
+//     else {
+//         for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
+//             if (e->data == (void *) item) 
+//                 dropItem = (Item *) removeElement (playerComp->inventory, e);
 
-    }
+//     }
 
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
-    addGameComponent (dropItem, POSITION, &pos);
+//     Position *playerPos = (Position *) getComponent (player, POSITION);
+//     Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
+//     addGameComponent (dropItem, POSITION, &pos);
 
-    Graphics *g = (Graphics *) getGameComponent (dropItem, GRAPHICS);
-    if (g != NULL) {
-        char *msg = createString ("You dropped the %s.", g->name);
-        logMessage (msg, DEFAULT_COLOR);
-        free (msg);
-    }
-    else logMessage ("You dropped the item.", DEFAULT_COLOR);
+//     Graphics *g = (Graphics *) getGameComponent (dropItem, GRAPHICS);
+//     if (g != NULL) {
+//         char *msg = createString ("You dropped the %s.", g->name);
+//         logMessage (msg, DEFAULT_COLOR);
+//         free (msg);
+//     }
+//     else logMessage ("You dropped the item.", DEFAULT_COLOR);
 
-}
+// }
 
 /*** WEAPONS -- EQUIPMENT ***/
 
