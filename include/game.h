@@ -8,7 +8,7 @@
 #include "utils/list.h"
 #include "objectPool.h"
 
-#define COMP_COUNT      9
+#define COMP_COUNT      7
 
 typedef enum GameComponent {
 
@@ -17,9 +17,7 @@ typedef enum GameComponent {
     PHYSICS,
     MOVEMENT,
     COMBAT,
-    ITEM, 
     EVENT,
-    PLAYER,
     LOOT
 
 } GameComponent;
@@ -157,59 +155,6 @@ extern void initGame (void);
 extern bool playerTookTurn;
 
 extern void updateGame (void);
-
-
-/*** PLAYER ***/
-
-#include "item.h"
-
-typedef enum CharClass {
-
-    WARRIOR = 1,
-    PALADIN,
-    ROGUE,
-    PRIEST,
-    DEATH_KNIGHT,
-    MAGE
-
-} CharClass;
-
-// As of 18/08/2018 -- 23:00 -- we will treat this as an independent component, not as a list
-typedef struct Player {
-
-    char *name;
-    u8 genre;     // 0 female, 1 male
-    // TODO: races
-    CharClass cClass;
-    u32 color;  // for accessibility
-    u8 level;
-    u16 money [3];  // gold, silver, copper
-    u16 maxWeight;
-    Item ***inventory;
-    Item **weapons;      // a player can have 2 on-handed or a 2 handed or equip a shield
-    Item **equipment;
-
-} Player;
-
-#define EQUIPMENT_ELEMENTS      10
-
-// head         0
-// necklace     1
-// shoulders    2
-// cape         3
-// chest        4
-
-// hands        5
-// belt         6
-// legs         7
-// shoes        8
-// ring         9
-
-
-extern GameObject *player;
-extern Player *playerComp;  // for accessibility
-
-extern char *getPlayerClassName (void);
 
 
 /*** Game Objects ***/
