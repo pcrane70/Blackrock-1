@@ -41,7 +41,6 @@ Pool *combatPool = NULL;
 Pool *lootPool = NULL;
 
 // Player
-Player *playerComp = NULL;  // for accessibility
 bool playerTookTurn = false;
 
 // Level 
