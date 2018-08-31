@@ -573,9 +573,9 @@ Item *getSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYId
 /*** CHARACTER ***/
 
 #define CHARACTER_LEFT		25
-#define CHARACTER_TOP		7
+#define CHARACTER_TOP		2
 #define CHARACTER_WIDTH		30
-#define CHARACTER_HEIGHT	30
+#define CHARACTER_HEIGHT	38
 
 #define CHARACTER_CELL_WIDTH    4
 #define CHARACTER_CELL_HEIGHT   4
@@ -635,11 +635,58 @@ ItemRect ***initCharacterRects (void) {
     for (u8 i = 0; i < 3; i++)
         charRects[i] = (ItemRect **) malloc (6 * sizeof (ItemRect *));
 
-    for (u8 y = 0; y < 6; y++) 
-        for (u8 x = 0; x < 3; x++) 
-            charRects[x][y] = createCharRect (x, y);
+    for (u8 y = 0; y < 6; y++) {
+        for (u8 x = 0; x < 3; x++) {
+            if (y != 5 && x == 1) charRects[x][y] = NULL;
+            else charRects[x][y] = createCharRect (x, y);
+        } 
+    }
+            
 
     return charRects;
+
+}
+
+void destroyCharRects (void) {
+
+    for (u8 y = 0; y < 6; y++) {
+        for (u8 x = 0; x < 3; x++) {
+            if (characterRects[x][y] != NULL) {
+                free (characterRects[x][y]->bgRect);
+                // free (characterRects[x][y]->imgRect);
+                characterRects[x][y]->item = NULL;
+                free (characterRects[x][y]);
+            }
+        }
+    }
+
+    free (characterRects);
+
+}
+
+// FIXME:
+void resetCharacterRects (void) {
+
+    for (u8 y = 0; y < 6; y++) {
+        for (u8 x = 0; x < 3; x++) {
+            if (characterRects[x][y] == NULL) continue;
+            characterRects[x][y]->item = NULL;
+        }
+    }
+            
+
+    // FIXME:
+    // equipment
+    // for (u8 y = 0; y < 5; y++) {
+    //     for (u8 x = 0; x < 3; x++) {
+    //         if (x == 1) continue;
+
+    //         characterRects[x][y]->item = NULL;
+    //     }
+    // }
+
+    // weapons
+    for (u8 i = 0; i < 3; i++) characterRects[i][5]->item = player->weapons[i];
 
 }
 
@@ -651,6 +698,8 @@ void renderCharacterRects (Console *console) {
     // draw inventory cells
     for (u8 y = 0; y < 6; y++) {
         for (u8 x = 0; x < 3; x++) {
+            if (characterRects[x][y] == NULL) continue;
+
             charRect = characterRects[x][y];
     
              // draw highlighted rect
@@ -681,10 +730,8 @@ static void renderCharacter (Console *console) {
     UIRect rect = { 0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT };
     drawRect (console, &rect, CHARACTER_COLOR, 0, 0xFFFFFFFF);
 
-    putStringAt (console, "Character", 11, 2, CHARACTER_TEXT, 0x00000000);
-
     // render character info
-    putStringAt (console, statsPlayerName, 7, 4, CHARACTER_TEXT, 0x00000000);
+    putStringAt (console, statsPlayerName, 7, 2, CHARACTER_TEXT, 0x00000000);
 
     renderCharacterRects (console);
     
@@ -698,6 +745,7 @@ void toggleCharacter (void) {
         insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
 
         if (characterRects == NULL) characterRects = initCharacterRects ();
+        else resetCharacterRects ();
     }
 
     else {
@@ -802,11 +850,10 @@ UIScreen *gameScene (void) {
 void cleanGameUI (void) {
 
     if (inGameScreen != NULL) {
-        // toggleInventory ();
         destroyInvRects ();
+        destroyCharRects ();
 
-        // FIXME: 
-        // properly clean up the UI!!!
+        // FIXME: clean up loot rects
 
         ListElement *view = getListElement (inGameScreen->views, activeScene);
         destroyView ((UIView *) removeElement (inGameScreen->views, view));

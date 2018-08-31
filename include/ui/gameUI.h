@@ -68,6 +68,9 @@ extern Item *getSelectedItem (void);
 
 extern UIView *characterView;
 
+extern u8 characterXIdx;
+extern u8 characterYIdx;
+
 extern void toggleCharacter (void);
 
 /*** PAUSE MENU ***/

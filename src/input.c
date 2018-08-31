@@ -82,19 +82,37 @@ void moveInInventory (u8 newX, u8 newY) {
 
 void moveInLoot (u8 newY) { if (newY >= 0 && (newY < LIST_SIZE (lootRects))) lootYIdx = newY; }
 
+void moveInCharacter (u8 newX, u8 newY, bool moveRight) {
+
+    if (newX >= 0 && newX < 3) {
+        if (characterYIdx == 5) characterXIdx = newX;
+        else {
+            if (moveRight && newX == 1) characterXIdx = 2;
+            else if (!moveRight && newX == 1) characterXIdx = 0;
+        } 
+    }
+
+    if (newY >= 0 && newY < 6) {
+        characterYIdx = newY;
+
+        if (characterYIdx != 5) {
+            if (characterXIdx == 1) 
+                characterXIdx = 0;
+        } 
+    } 
+
+}
+
 bool isInUI (void) {
 
-    if (lootView != NULL || inventoryView != NULL) return true;
+    if (lootView != NULL || inventoryView != NULL || characterView != NULL) return true;
     else return false;
 
 }
 
 void closeUIMenu (void) {
 
-    if (inventoryView != NULL) {
-        toggleInventory ();
-        return;
-    } 
+    if (inventoryView != NULL) toggleInventory ();
 
     if (lootView != NULL) toggleLootWindow ();
 
@@ -114,19 +132,23 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 if (!isInUI ()) move (playerPos->x, playerPos->y - 1);
                 else if (inventoryView != NULL) moveInInventory (inventoryXIdx, inventoryYIdx - 1);
                 else if (lootView != NULL) moveInLoot (lootYIdx - 1);
+                else if (characterView != NULL) moveInCharacter (characterXIdx, characterYIdx - 1, false);
                 break;
             case SDLK_s: 
                 if (!isInUI ()) move (playerPos->x, playerPos->y + 1);
                 else if (inventoryView != NULL) moveInInventory (inventoryXIdx, inventoryYIdx + 1);
                 else if (lootView != NULL) moveInLoot (lootYIdx + 1);
+                else if (characterView != NULL) moveInCharacter (characterXIdx, characterYIdx + 1, false);
                 break;
             case SDLK_a: 
                 if (!isInUI ()) move (playerPos->x - 1, playerPos->y);
                 else if (inventoryView != NULL) moveInInventory (inventoryXIdx - 1, inventoryYIdx);
+                else if (characterView != NULL) moveInCharacter (characterXIdx - 1, characterYIdx, false);
                 break;
             case SDLK_d:
                 if (!isInUI ()) move (playerPos->x + 1, playerPos->y);
                 else if (inventoryView != NULL) moveInInventory (inventoryXIdx + 1, inventoryYIdx);
+                else if (characterView != NULL) moveInCharacter (characterXIdx + 1, characterYIdx, true);
                 break;
 
             // 21/08/2018 -- 6:51 -- this is used as the interactable button
@@ -176,12 +198,6 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             // FIXME: how to handle an open loot menu and an open inventory?
             case SDLK_i: toggleInventory (); break;
-
-            // TODO: equip an item
-            // case SDLK_q: break;
-
-            // TODO: player rests?
-            // case SDLK_z: break;
 
             case SDLK_p: togglePauseMenu (); break;
 
