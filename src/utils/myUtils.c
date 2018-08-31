@@ -40,6 +40,16 @@ int xtoi (char *hexString) {
 
 }
 
+void copy (char *to, const char *from) {
+
+    while (*from)
+        *to++ = *from++;
+
+    *to = '\0';
+
+}
+
+
 bool system_is_little_endian (void) {
 
     unsigned int x = 0x76543210;
