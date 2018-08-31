@@ -8,6 +8,7 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "player.h"
 #include "item.h"
 #include "map.h"
 
@@ -41,6 +42,7 @@ Pool *combatPool = NULL;
 Pool *lootPool = NULL;
 
 // Player
+extern Player *player;
 bool playerTookTurn = false;
 
 // Level 
@@ -110,9 +112,7 @@ void initGame (void) {
 // TODO: this can be a good place to check if we have a save file of a map and load that from disk
 void initWorld (void) {
 
-    GameObject *initPlayer (void);
     player = initPlayer ();
-    playerComp = (Player *) getComponent (player, PLAYER);
 
     // TODO: we will want to load the in game menu (tavern)
 
@@ -415,6 +415,9 @@ void destroyGO (GameObject *go) {
 
 void cleanUpGame (void) {
 
+    // clean up the player
+    destroyPlayer ();
+
     // clean game ui
     cleanGameUI ();
     fprintf (stdout, "Game UI cleaned up!\n");
@@ -479,12 +482,6 @@ void cleanUpGame (void) {
     
     // cleanup the message log
     destroyList (messageLog);
-
-    // clean up the player
-    free (playerComp->weapons);
-    free (playerComp->equipment);
-    free (playerComp);
-    free (player);
 
     free (currentLevel->mapCells);
     free (currentLevel);
@@ -613,6 +610,7 @@ Position *getPos (i32 id) {
 
 void fight (GameObject *, GameObject *);
 
+// FIXME: fight function
 void updateMovement () {
 
     for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
@@ -647,8 +645,9 @@ void updateMovement () {
                 if ((fovMap[pos->x][pos->y] > 0) && (dmap[pos->x][pos->y] == 1)) {
                     // fight the player!
                     GameObject *enemy = searchGameObjectById (mv->objectId);
-                    if (enemy != NULL) 
-                        fight (enemy, player);
+                    // FIXME:
+                    // if (enemy != NULL) 
+                        // fight (enemy, player);
                 }
                 
                 else {
@@ -875,29 +874,29 @@ void collectGold (void) {
             char *str = createString ("You collected: %ig %is %ic",
                 currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
             
-            if ((playerComp->money[2] + currentLoot->money[2]) >= 100) {
-                playerComp->money[1] += 1;
-                playerComp->money[2] = 0;
+            if ((player->money[2] + currentLoot->money[2]) >= 100) {
+                player->money[1] += 1;
+                player->money[2] = 0;
                 currentLoot->money[2] = 0;
             }
 
             else {
-                playerComp->money[2] += currentLoot->money[2];
+                player->money[2] += currentLoot->money[2];
                 currentLoot->money[2] = 0;
             } 
 
-            if ((playerComp->money[1] + currentLoot->money[1]) >= 100) {
-                playerComp->money[0] += 1;
-                playerComp->money[1] = 0;
+            if ((player->money[1] + currentLoot->money[1]) >= 100) {
+                player->money[0] += 1;
+                player->money[1] = 0;
                 currentLoot->money[1] = 0;
             }
 
             else {
-                playerComp->money[1] += currentLoot->money[1];
+                player->money[1] += currentLoot->money[1];
                 currentLoot->money[1] = 0;
             }
 
-            playerComp->money[0] += currentLoot->money[0];
+            player->money[0] += currentLoot->money[0];
 
             logMessage (str, DEFAULT_COLOR);
             free (str);
@@ -1030,7 +1029,8 @@ u32 calculateDamage (GameObject *attacker, GameObject *defender, bool isPlayer) 
 
 }
 
-void checkForKill (GameObject *defender) {
+// FIXME:
+/* void checkForKill (GameObject *defender) {
 
     Combat *def = (Combat *) getComponent (defender, COMBAT);
 
@@ -1070,11 +1070,11 @@ void checkForKill (GameObject *defender) {
         }
     }
 
-}
+} */
 
-// FIXME:
+// FIXME: our combat system is broken, we have to include the player logic!!!
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
-void fight (GameObject *attacker, GameObject *defender) {
+/* void fight (GameObject *attacker, GameObject *defender) {
 
     Combat *att = (Combat *) getComponent (attacker, COMBAT);
     Combat *def = (Combat *) getComponent (defender, COMBAT);
@@ -1117,7 +1117,7 @@ void fight (GameObject *attacker, GameObject *defender) {
         }
     }
 
-}
+} */
 
 
 /*** LEVEL MANAGER ***/
@@ -1149,8 +1149,7 @@ extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 void updateGame (void) {
 
     if (playerTookTurn) {
-        Position *playerPos = (Position *) getComponent (player, POSITION);
-        generateTargetMap (playerPos->x, playerPos->y);
+        generateTargetMap (player->pos->x, player->pos->y);
         updateMovement ();
         // TODO: update lifetime
 
@@ -1159,8 +1158,7 @@ void updateGame (void) {
 
     // recalculate the fov
     if (recalculateFov) {
-        Position *playerPos = (Position *) getComponent (player, POSITION);
-        calculateFov (playerPos->x, playerPos->y, fovMap);
+        calculateFov (player->pos->x, player->pos->y, fovMap);
         recalculateFov = false;
     }
 
@@ -1232,9 +1230,8 @@ void generateLevel () {
     // so we can place the player and we are done 
     fprintf (stdout, "Spawning the player...\n");
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    playerPos->x = (u8) playerSpawnPos.x;
-    playerPos->y = (u8) playerSpawnPos.y;
+    player->pos->x = (u8) playerSpawnPos.x;
+    player->pos->y = (u8) playerSpawnPos.y;
 
 }
 

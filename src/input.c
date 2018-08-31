@@ -3,6 +3,7 @@
 #include "blackrock.h"
 
 #include "game.h"
+#include "player.h"
 #include "item.h"
 
 #include "utils/list.h"
@@ -38,7 +39,8 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
 /*** GAME ***/
 
-void resolveCombat (Position newPos) {
+// FIXME: our combat system is broken!!!
+/* void resolveCombat (Position newPos) {
 
     // check what is blocking the movement
     List *blockers = getObjectsAtPos (newPos.x, newPos.y);
@@ -53,10 +55,11 @@ void resolveCombat (Position newPos) {
 
     free (blockers);
 
-}
+} */
 
 Position *playerPos = NULL;
 
+// FIXME: combat
 void move (u8 newX, u8 newY) {
 
     Position newPos = { .x = newX, .y = newY };
@@ -65,7 +68,7 @@ void move (u8 newX, u8 newY) {
         playerPos->x = newX;
         playerPos->y = newY;
     } 
-    else resolveCombat (newPos);
+    // else resolveCombat (newPos);
     playerTookTurn = true; 
 
 }
@@ -101,7 +104,7 @@ void closeUIMenu (void) {
 
 void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
-    playerPos = (Position *) getComponent (player, POSITION);
+    playerPos = player->pos;
 
     if (event.type == SDL_KEYDOWN) {
         SDL_Keycode key = event.key.keysym.sym;
@@ -164,12 +167,12 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 break;
 
             // drop item
-            case SDLK_SPACE:
-                if (isInUI () && inventoryView != NULL) {
-                    Item *item = getSelectedItem ();
-                    if (item != NULL) dropItem (item);
-                } 
-                break;
+            // case SDLK_SPACE:
+            //     if (isInUI () && inventoryView != NULL) {
+            //         Item *item = getSelectedItem ();
+            //         if (item != NULL) dropItem (item);
+            //     } 
+            //     break;
 
             // FIXME: how to handle an open loot menu and an open inventory?
             case SDLK_i: toggleInventory (); break;

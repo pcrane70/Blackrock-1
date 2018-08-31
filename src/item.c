@@ -2,6 +2,7 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "player.h"
 
 #include "utils/list.h"
 #include "objectPool.h"
@@ -271,56 +272,64 @@ void destroyItem (Item *item) {
 
 }
 
-// FIXME:
-// void removeFromInventory (void *i) {
+Item *deleteItem (Item *item) {
 
-//     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-//         if (i == e->data) {
-//             destroyItem ((Item *) removeElement (playerComp->inventory, e));
-//             break;
-//         }
-//     }
+    for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
+    for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
-// }
+    free (item);
+
+    return NULL;
+
+}
+
+// FIXME: check for the destroy item function
+void removeFromInventory (Item *i) {
+
+    // search for the item in the inventory and remove it
+    for (u8 y = 0; y < 3; y++) {
+        for (u8 x = 0; x < 7; x++) {
+
+        }
+    }
+
+}
 
 // 28/08/2018 -- 11:15 -- testing effects inside items
 void healPlayer (void *i) {
 
     Item *item = (Item *) i;
-    Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
-    if (playerCombat != NULL) {
-        i32 *currHealth = &playerCombat->baseStats.health;
-        u32 maxHealth = playerCombat->baseStats.maxHealth;
 
-        // FIXME: get the real data
-        u16 health = 5;
+    i32 *currHealth = &player->combat->baseStats.health;
+    u32 maxHealth = player->combat->baseStats.maxHealth;
 
-        if (*currHealth == maxHealth) 
-            logMessage ("You already have full health.", WARNING_COLOR);
+    // FIXME: get the real data
+    u16 health = 5;
 
-        else {
-            u16 realHp;
+    if (*currHealth == maxHealth) 
+        logMessage ("You already have full health.", WARNING_COLOR);
 
-            *currHealth += health;
+    else {
+        u16 realHp;
 
-            // clamp the value if necessary
-            if (*currHealth > maxHealth) {
-                realHp = health - (*currHealth - maxHealth);
-                *currHealth = maxHealth;
-            }
+        *currHealth += health;
 
-            else realHp = health;  
-
-            item->quantity--;
-            if (item->quantity == 0) removeFromInventory (item);
-
-            // TODO: maybe better strings
-            // you have ate the apple for 5 health
-            char *str = createString ("You have been healed by %i hp.", realHp);
-            logMessage (str, SUCCESS_COLOR);
-            free (str);
+        // clamp the value if necessary
+        if (*currHealth > maxHealth) {
+            realHp = health - (*currHealth - maxHealth);
+            *currHealth = maxHealth;
         }
-        
+
+        else realHp = health;  
+
+        item->quantity--;
+        if (item->quantity == 0) removeFromInventory (item);
+
+        // TODO: maybe better strings
+        // you have ate the apple for 5 health
+        char *str = createString ("You have been healed by %i hp.", realHp);
+        logMessage (str, SUCCESS_COLOR);
+        free (str);
     }
 
 }
@@ -448,46 +457,67 @@ u32 getItemColor (u8 rarity) {
 
 }
 
-// FIXME:
-// bool itemStacked (Item *item) {
+// FIXME: check the destroy item function here!!
+bool itemStacked (Item *item) {
 
-//     Item *invItem = NULL;
-//     bool stacked = false;
-//     for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-//         invItem = (Item *) e->data;
-//         if (invItem->dbId == item->dbId) {
-//             if (invItem->quantity < MAX_STACK) {
-//                 invItem->quantity += 1;
-//                 destroyItem (item);
-//                 stacked = true;
-//                 break;
-//             }
-            
-//             else continue;
-//         }
-//     }
+    bool stacked = false;
 
-//     return stacked;
+    for (u8 y = 0; y < 3; y++) {
+        for (u8 x = 0; x < 7; x++) {
+            if (player->inventory[x][y] == NULL) continue;
+            else if (player->inventory[x][y]->dbId == item->dbId) {
+                if (player->inventory[x][y]->quantity < MAX_STACK) {
+                    player->inventory[x][y]->quantity += 1;
+                    destroyItem (item);
+                    stacked = true;
+                    break;
+                }
+            }
+        }
+    }
 
-// }
+    return stacked;
 
-// FIXME:
-// void addToInventory (Item *item) {
+}
 
-//     if (item->stackable && (LIST_SIZE (playerComp->inventory) > 0)) {
-//         if (!itemStacked (item)) 
-//             insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
-//     }
+void addToInventory (Item *item) {
 
-//     else insertAfter (playerComp->inventory, LIST_END (playerComp->inventory), item);
+    if (item->stackable && inventoryItems > 0) {
+        // insert in the next available inventory slot
+        if (!itemStacked (item)) {
+            for (u8 y = 0; y < 3; y++) {
+                for (u8 x = 0; x < 7; x++) {
+                    if (player->inventory[x][y] != NULL) continue;
+                    else {
+                        player->inventory[x][y] = item;
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
-// }
+    // insert in the next available inventory slot
+    else {
+        for (u8 y = 0; y < 3; y++) {
+            for (u8 x = 0; x < 7; x++) {
+                if (player->inventory[x][y] != NULL) continue;
+                else {
+                    player->inventory[x][y] = item;
+                    break;
+                }
+            }
+        }
+    } 
+
+}
 
 // pickup the first item of the list
 void pickUp (Item *item) {
 
     if (item != NULL) {
-        if ((getCarriedWeight () + item->weight) <= playerComp->maxWeight) {
+        // FIXME: do we need to check for carried weigth??
+        if (1) {
             addToInventory (item);
             
             // remove the item from the map
@@ -512,13 +542,8 @@ void pickUp (Item *item) {
 // The character must be on the same coord as the item to be able to pick it up
 void getItem (void) {
 
-    fprintf (stdout, "Getting item...\n");
-
-    Position *playerPos = (Position *) getComponent (player, POSITION);
     // get a list of items nearby the player
-    List *objects = getItemsAtPos (playerPos->x, playerPos->y);
-
-    fprintf (stdout, "Got a list of objects\n");
+    List *objects = getItemsAtPos (player->pos->x, player->pos->y);
 
     if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
         fprintf (stdout, "Lis is empty!\n");
@@ -530,7 +555,6 @@ void getItem (void) {
     // we only pick one item each time
     else {
         pickUp ((Item *)((LIST_START (objects))->data));
-        fprintf (stdout, "Objects at pos: %i\n", LIST_SIZE (objects));
         if (objects != NULL) destroyList (objects);
     } 
 
@@ -610,9 +634,10 @@ void getLootItem (u8 lootYIdx) {
 
 /*** WEAPONS -- EQUIPMENT ***/
 
+// FIXME:
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
-void toggleEquipWeapon (void *i) {
+/* void toggleEquipWeapon (void *i) {
 
     if (i == NULL) return;
 
@@ -621,7 +646,7 @@ void toggleEquipWeapon (void *i) {
 
     // unequip
     if (weapon->isEquipped) {
-        Item *w = playerComp->weapons[weapon->slot];
+        Item *w = player->weapons[weapon->slot];
         if (w != NULL) {
             addToInventory (w);
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
@@ -631,27 +656,27 @@ void toggleEquipWeapon (void *i) {
                 free (str);
             } 
 
-            playerComp->weapons[weapon->slot] = NULL;
+            player->weapons[weapon->slot] = NULL;
         }
     }
 
     // equip
     else {
-        ListElement *le = getListElement (playerComp->inventory, i);
-        Item *w = (Item *) removeElement (playerComp->inventory, le);
+        ListElement *le = getListElement (player->inventory, i);
+        Item *w = (Item *) removeElement (player->inventory, le);
         if (w != NULL) {
             // unequip our current weapon if we have one
-            if (playerComp->weapons[weapon->slot] != NULL) 
-                toggleEquipWeapon (playerComp->weapons[weapon->slot]);
+            if (player->weapons[weapon->slot] != NULL) 
+                toggleEquipWeapon (player->weapons[weapon->slot]);
 
             // if we are equipping a two handed and we have tow one handed
             if (((Weapon *) getItemComponent (w, WEAPON))->twoHanded) {
-                if (playerComp->weapons[1] != NULL)
-                    toggleEquipWeapon (playerComp->weapons[1]); // unequip the off hand weapon
+                if (player->weapons[1] != NULL)
+                    toggleEquipWeapon (player->weapons[1]); // unequip the off hand weapon
 
             }
 
-            playerComp->weapons[weapon->slot] = w;
+            player->weapons[weapon->slot] = w;
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
             if (g != NULL) {
                 char *str = createString ("You are now wielding the %s", g->name);
@@ -661,11 +686,12 @@ void toggleEquipWeapon (void *i) {
         }
     }
         
-}
+} */
 
+// FIXME:
 // TODO: update combat stats based on armour modifiers if necessary
 // TODO: create better strings deppending on the item
-void toggleEquipArmour (void *i) {
+/* void toggleEquipArmour (void *i) {
 
     if (i == NULL) return;
 
@@ -674,7 +700,7 @@ void toggleEquipArmour (void *i) {
 
     // unequip
     if (armour->isEquipped) {
-        Item *a = playerComp->equipment[armour->slot];
+        Item *a = player->equipment[armour->slot];
         if (a != NULL) {
             addToInventory (a);
             Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
@@ -684,20 +710,20 @@ void toggleEquipArmour (void *i) {
                 free (str);
             } 
 
-            playerComp->equipment[armour->slot] = NULL;
+            player->equipment[armour->slot] = NULL;
         }
     }
 
     // equip
     else {
-        ListElement *le = getListElement (playerComp->inventory, i);
-        Item *a = (Item *) removeElement (playerComp->inventory, le);
+        ListElement *le = getListElement (player->inventory, i);
+        Item *a = (Item *) removeElement (player->inventory, le);
         if (a != NULL) {
             // unequip the armour in that slot if we have one
-            if (playerComp->equipment[armour->slot] != NULL)
-                toggleEquipArmour (playerComp->equipment[armour->slot]);
+            if (player->equipment[armour->slot] != NULL)
+                toggleEquipArmour (player->equipment[armour->slot]);
 
-            playerComp->equipment[armour->slot] = a;
+            player->equipment[armour->slot] = a;
             Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
             if (g != NULL) {
                 char *str = createString ("Yoou are now wielding the %s", g->name);
@@ -707,7 +733,7 @@ void toggleEquipArmour (void *i) {
         }
     }
 
-}
+} */
 
 // TODO: crafting
 
@@ -731,14 +757,14 @@ void updateLifeTime (void) {
     // weapons 
     Weapon *weapon = NULL;
     for (u8 i = 0; i < 3; i++) {
-        item = playerComp->weapons[i];
+        item = player->weapons[i];
         weapon = (Weapon *) getItemComponent (item, WEAPON);
 
         // FIXME: update lifetime of weapons when hitting a mob
 
         if (weapon->lifetime <= 0) {
             // unequip
-            toggleEquipWeapon (item);
+            // toggleEquipWeapon (item);
         }
     }
 

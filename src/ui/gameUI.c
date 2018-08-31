@@ -4,6 +4,7 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "player.h"
 #include "map.h"    // for walls array
 
 #include "ui/ui.h"
@@ -24,7 +25,6 @@
 
 /*** STATS ***/
 
-Player *playerComp;
 char *statsPlayerName = NULL;
 
 u8 layerRendered[MAP_WIDTH][MAP_HEIGHT];
@@ -93,9 +93,8 @@ static void renderMap (Console *console) {
         putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
         
     // render the player
-    Position *playerPos = (Position *) getComponent (player, POSITION);
-    Graphics *playerGra = (Graphics *) getComponent (player, GRAPHICS);
-    putCharAt (console, playerGra->glyph, playerPos->x, playerPos->y, playerGra->fgColor, playerGra->bgColor);
+    putCharAt (console, player->graphics->glyph, player->pos->x, player->pos->y, 
+        player->graphics->fgColor, player->graphics->bgColor);
 
 }
 
@@ -107,10 +106,17 @@ static void rednderStats (Console *console) {
 
     putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, 0x00000000);
 
-    Combat *playerCombat = (Combat *) getComponent (player, COMBAT);
-    // TODO: make this have dynamic colors
-    char *str = createString ("HP: %i/%i", playerCombat->baseStats.health, playerCombat->baseStats.maxHealth);
-    putStringAt (console, str, 0, 1, 0xFF990099, 0x00000000);
+    int currHealth = player->combat->baseStats.health;
+    int maxHealth = player->combat->baseStats.maxHealth;
+    char *str = createString ("HP: %i/%i", currHealth, maxHealth);
+
+    if (currHealth >= (maxHealth * 0.75)) 
+        putStringAt (console, str, 0, 1, SUCCESS_COLOR, 0x00000000);
+
+    else if ((currHealth < (maxHealth * 0.75)) && (currHealth >= (maxHealth * 0.25)))
+        putStringAt (console, str, 0, 1, 0xFF990099, 0x00000000);
+
+    else putStringAt (console, str, 0, 1, WARNING_COLOR, 0x00000000);
 
     free (str);
 
@@ -527,7 +533,7 @@ static void renderInventory (Console *console) {
     renderInventoryItems (console);
     
     // gold
-    char *gold = createString ("%ig - %is - %ic", playerComp->money[0], playerComp->money[1], playerComp->money[2]);
+    char *gold = createString ("%ig - %is - %ic", player->money[0], player->money[1], player->money[2]);
     putStringAt (console, gold, 13, 25, INVENTORY_TEXT, 0x00000000);
 
     putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, 0x00000000);
@@ -754,8 +760,7 @@ UIScreen *gameScene (void) {
     inGameScreen->activeView = mapView;
     inGameScreen->handleEvent = hanldeGameEvent;
 
-    playerComp = (Player *) getComponent (player, PLAYER);
-    statsPlayerName = createString ("%s the %s", playerComp->name, getPlayerClassName ());
+    statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName ());
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 

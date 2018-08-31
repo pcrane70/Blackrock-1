@@ -31,6 +31,7 @@ typedef struct Player {
 
     Position *pos;
     Graphics *graphics;
+    Physics *physics;
     Combat *combat;
 
 } Player;
@@ -52,4 +53,8 @@ typedef struct Player {
 
 extern Player *player;
 
+extern u8 inventoryItems;
+
+extern Player *initPlayer (void);
 extern char *getPlayerClassName (void);
+extern void destroyPlayer (void);

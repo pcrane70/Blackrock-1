@@ -80,6 +80,8 @@ extern void *getGameComponent (Item *, GameComponent);
 extern u32 getItemColor (u8 rarity);
 extern u16 getCarriedWeight (void);
 
+extern Item *deleteItem (Item *);
+
 extern void cleanUpItems (void);
 
 #endif
