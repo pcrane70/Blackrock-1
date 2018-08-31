@@ -328,7 +328,7 @@ void healPlayer (void *i) {
 Item *createItem (u16 itemId) {
 
     sqlite3_stmt *res;
-    char *sql = "SELECT Id, Name, Glyph, Rarity, Stackable, Quantity, Gold, Silver, Copper FROM Food WHERE Id = ?";
+    char *sql = "SELECT * FROM Food WHERE Id = ?";
     int rc = sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0);
 
     if (rc == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
