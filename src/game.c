@@ -41,7 +41,6 @@ Pool *combatPool = NULL;
 Pool *lootPool = NULL;
 
 // Player
-GameObject *player = NULL;
 Player *playerComp = NULL;  // for accessibility
 bool playerTookTurn = false;
 
