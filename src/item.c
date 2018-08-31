@@ -512,7 +512,6 @@ void dropItem (Item *item) {
 
 /*** WEAPONS -- EQUIPMENT ***/
 
-// FIXME: handle two handed weapons!!
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
 void toggleEquipWeapon (void *i) {
@@ -540,18 +539,27 @@ void toggleEquipWeapon (void *i) {
 
     // equip
     else {
-        // Item *w = (Item *) removeElement (playerComp->inventory, getListElement (playerComp->inventory, item));
-        Item *w = playerComp->weapons[weapon->slot];
+        ListElement *le = getListElement (playerComp->inventory, i);
+        Item *w = (Item *) removeElement (playerComp->inventory, le);
         if (w != NULL) {
-            insertAfter (playerComp->weapons, NULL, w);
+            // unequip our current weapon if we have one
+            if (playerComp->weapons[weapon->slot] != NULL) 
+                toggleEquipWeapon (playerComp->weapons[weapon->slot]);
+
+            // if we are equipping a two handed and we have tow one handed
+            if (((Weapon *) getItemComponent (w, WEAPON))->twoHanded) {
+                if (playerComp->weapons[1] != NULL)
+                    toggleEquipWeapon (playerComp->weapons[1]); // unequip the off hand weapon
+
+            }
+
+            playerComp->weapons[weapon->slot] = w;
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
             if (g != NULL) {
-                char *str = createString ("Yoou are now wielding the %s", g->name);
+                char *str = createString ("You are now wielding the %s", g->name);
                 logMessage (str, DEFAULT_COLOR);
                 free (str);
             }
-
-            playerComp->weapons[weapon->slot] = NULL;
         }
     }
         
@@ -584,17 +592,20 @@ void toggleEquipArmour (void *i) {
 
     // equip
     else {
-        Item *a = playerComp->equipment[armour->slot];
+        ListElement *le = getListElement (playerComp->inventory, i);
+        Item *a = (Item *) removeElement (playerComp->inventory, le);
         if (a != NULL) {
-            insertAfter (playerComp->equipment, NULL, a);
+            // unequip the armour in that slot if we have one
+            if (playerComp->equipment[armour->slot] != NULL)
+                toggleEquipArmour (playerComp->equipment[armour->slot]);
+
+            playerComp->equipment[armour->slot] = a;
             Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
             if (g != NULL) {
                 char *str = createString ("Yoou are now wielding the %s", g->name);
                 logMessage (str, DEFAULT_COLOR);
                 free (str);
             }
-
-            playerComp->equipment[armour->slot] = NULL;
         }
     }
 
@@ -633,18 +644,19 @@ void updateLifeTime (void) {
         }
     }
 
+    // TODO:
     // armour
-    Armour *armour = NULL;
-    for (u8 i = 0; i < 9; i++) {
-        item = playerComp->equipment[i];
-        armour = (Armour *) getItemComponent (item, ARMOUR);
+    // Armour *armour = NULL;
+    // for (u8 i = 0; i < 9; i++) {
+    //     item = playerComp->equipment[i];
+    //     armour = (Armour *) getItemComponent (item, ARMOUR);
 
-        // FIXME: update lifetime of armour when being hit from a mob
+    //     // FIXME: update lifetime of armour when being hit from a mob
 
-        if (armour->lifetime <= 0) {
+    //     if (armour->lifetime <= 0) {
             
-        }
-    }
+    //     }
+    // }
 
 }
 
