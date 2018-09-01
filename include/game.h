@@ -120,7 +120,6 @@ typedef struct Combat  {
 
 } Combat;
 
-
 /*** EVENTS ***/
 
 typedef void (*EventListener)(void *);
@@ -171,6 +170,7 @@ typedef struct Loot {
     u32 objectId;
     u8 money[3];
     List *lootItems;
+    bool empty;
 
 } Loot;
 
@@ -182,7 +182,6 @@ typedef struct {
 
     unsigned int levelNum;
     bool **mapCells;    // dungeon map
-    // List *levelLoot;
 
 } Level;
 

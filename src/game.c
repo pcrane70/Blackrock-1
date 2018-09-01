@@ -500,11 +500,11 @@ bool canMove (Position pos, bool isPlayer) {
         }
 
         // check for player
-        // if (!isPlayer) {
-        //     if (pos.x == player->pos->x && pos.y == player->pos->y)
-        //         move = false;
+        if (!isPlayer) {
+            if (pos.x == player->pos->x && pos.y == player->pos->y)
+                move = false;
 
-        // }
+        }
     }   
 
     else move = false;
@@ -805,24 +805,21 @@ u8 getMonsterId (void) {
 
 /*** LOOT - ITEMS ***/
 
-// FIXME:
 void createLoot (GameObject *go) {
 
-    Loot newLoot;
+    // // FIXME: generate random money
+    // newLoot.money[0] = 0;
+    // newLoot.money[1] = 1;
+    // newLoot.money[2] = 50;
 
-    // FIXME: generate random money
-    newLoot.money[0] = 0;
-    newLoot.money[1] = 1;
-    newLoot.money[2] = 50;
+    // newLoot.lootItems = initList (free);
 
-    newLoot.lootItems = initList (free);
+    // // FIXME: generate random items
+    // insertAfter (newLoot.lootItems, NULL, createItem (1001));
+    // insertAfter (newLoot.lootItems, NULL, createItem (1001));
+    // insertAfter (newLoot.lootItems, NULL, createItem (1002));
 
-    // FIXME: generate random items
-    insertAfter (newLoot.lootItems, NULL, createItem (1001));
-    insertAfter (newLoot.lootItems, NULL, createItem (1001));
-    insertAfter (newLoot.lootItems, NULL, createItem (1002));
-
-    addComponent (go, LOOT, &newLoot);
+    // addComponent (go, LOOT, &newLoot);
 
     fprintf (stdout, "New loot created!\n");
 
@@ -830,6 +827,7 @@ void createLoot (GameObject *go) {
 
 Loot *currentLoot = NULL;
 
+// FIXME:
 void displayLoot (void *goData) {
 
     GameObject *go = searchGameObjectById (((GameObject *)(goData))->id);
@@ -840,15 +838,18 @@ void displayLoot (void *goData) {
                 currentLoot = NULL;
             }
 
-            else currentLoot = (Loot *) getComponent (go, LOOT);
+            else {
+                currentLoot = (Loot *) getComponent (go, LOOT);
+                toggleLootWindow ();
+            } 
         }   
 
-        else currentLoot = NULL;
-        
-        if (currentLoot != NULL) toggleLootWindow ();
-        else logMessage ("There is no loot here.", WARNING_COLOR);
+        else {
+            currentLoot = NULL;
+            logMessage ("There is no loot here.", WARNING_COLOR);
+        } 
     }
-
+    
 }
 
 void collectGold (void) {
@@ -1023,7 +1024,7 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
             removeComponent (defender, MOVEMENT);
 
-            // createLoot (defender);
+            createLoot (defender);
 
             Event e = { 0, displayLoot };
             addComponent (defender, EVENT, &e);

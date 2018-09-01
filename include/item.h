@@ -36,7 +36,6 @@ typedef struct Item {
     u8 rarity;      // epic, rare, common, rubish, etc.
     bool stackable; // this is used to handle stacks, max stack is 20
     u8 quantity;    
-    u8 weight;      // we have a max weight that we can carry based on our class, genre, etc
     u16 value[3];   // gold, silver, copper
     EventListener callback;   
     void *components[GAME_OBJECT_COMPS];  
