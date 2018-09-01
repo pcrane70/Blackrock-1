@@ -967,11 +967,11 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
         // FIXME: as of 01/09/2018 -- 03:47 -- we can only handle a two handed weapon
         // FIXME: also create a more dynamic damage
         // getting the weapon in the main hand
-        if (player->weapons[0] != NULL)
-            damage = ((Weapon *) getItemComponent (player->weapons[0], WEAPON))->dps;
+        // if (player->weapons[0] != NULL)
+        //     damage = ((Weapon *) getItemComponent (player->weapons[0], WEAPON))->dps;
 
         // 21/08/2018 -- 23:25 -- this is for a more dynamic experience
-        else damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+        damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
 
         damage += att->baseStats.strength;
     }
@@ -1010,44 +1010,41 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
 }
 
-void checkForKill (Combat *def, bool isPlayer) {
+void checkForKill (GameObject *defender, bool isPlayer) {
 
-    GameObject *defender = NULL;
-    if (!isPlayer) defender = searchGameObjectById (def->objectId);
-
-    // check for the defenders health 
-    if (def->baseStats.health <= 0) {
-        if (!isPlayer) {
-            logMessage ("You have died!!", KILL_COLOR);
-            // TODO: player death animation?
-            void gameOver (void);
-            gameOver ();
-        }
-
-        else {
-            // TODO: maybe add a better visial feedback
-            Graphics *gra = (Graphics *) getComponent (defender, GRAPHICS);
-            gra->glyph = '%';
-            gra->fgColor = 0x990000FF;
-
-            Position *pos = (Position *) getComponent (defender, POSITION);
-            pos->layer = MID_LAYER; // we want the player to be able to walk over it
-
+    // check for monster kill
+    if (isPlayer) {
+        if (((Combat *) getComponent (defender, COMBAT))->baseStats.health <= 0) {
+            // we want the player to be able to walk over the corpse
+            ((Position *) getComponent (defender, POSITION))->layer = MID_LAYER; 
             Physics *phys = (Physics *) getComponent (defender, PHYSICS);
             phys->blocksMovement = false;
             phys->blocksSight = false;
 
             removeComponent (defender, MOVEMENT);
 
-            createLoot (defender);
+            // createLoot (defender);
 
             Event e = { 0, displayLoot };
             addComponent (defender, EVENT, &e);
 
-            Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
-            char *str = createString ("You killed the %s.", g->name);
+            // TODO: maybe add a better visial feedback
+            Graphics *gra = (Graphics *) getComponent (defender, GRAPHICS);
+            gra->glyph = '%';
+            gra->fgColor = 0x990000FF;
+            char *str = createString ("You killed the %s.", gra->name);
             logMessage (str, KILL_COLOR);
             free (str);
+        }
+    }
+
+    // check for player death
+    else {
+        if (player->combat->baseStats.health <= 0) {
+            logMessage ("You have died!!", KILL_COLOR);
+            // TODO: player death animation?
+            void gameOver (void);
+            gameOver ();
         }
     }
 
@@ -1056,45 +1053,45 @@ void checkForKill (Combat *def, bool isPlayer) {
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
 void fight (Combat *att, Combat *def, bool isPlayer) {
 
-    // GameObject *attacker = NULL;
-    // GameObject *defender = NULL;
-    // if (isPlayer) defender = searchGameObjectById (def->objectId); 
-    // else attacker = searchGameObjectById (att->objectId);
+    GameObject *attacker = NULL;
+    GameObject *defender = NULL;
+    if (isPlayer) defender = searchGameObjectById (def->objectId); 
+    else attacker = searchGameObjectById (att->objectId);
 
     // FIXME: check for attack speed
 
     // check for the attack hit chance
-    // u32 hitRoll = (u32) randomInt (1, 100);
-    // if (hitRoll <= att->attack.hitchance) {
-    //     // chance of blocking, parry or dodge
-    //     char *msg = calculateDefense (def, isPlayer);
-    //     if (msg == NULL) {
-    //         // health = maxhealth = basehealth + armor
-    //         def->baseStats.health -= calculateDamage (att, def, isPlayer);
+    u32 hitRoll = (u32) randomInt (1, 100);
+    if (hitRoll <= att->attack.hitchance) {
+        // chance of blocking, parry or dodge
+        char *msg = calculateDefense (def, isPlayer);
+        if (msg == NULL) {
+            // health = maxhealth = basehealth + armor
+            def->baseStats.health -= calculateDamage (att, def, isPlayer);
 
-    //         checkForKill (def, isPlayer);
-    //     }
+            checkForKill (defender, isPlayer);
+        }
 
-    //     else {
-    //         if (msg != NULL) {
-    //             logMessage (msg, STOPPED_COLOR);
-    //             free (msg);
-    //         } 
-    //     }
+        else {
+            if (msg != NULL) {
+                logMessage (msg, STOPPED_COLOR);
+                free (msg);
+            } 
+        }
 
-    // }
+    }
 
-    // // The attcker missed the target
-    // else {
-    //     if (isPlayer) logMessage ("Your attack misses.", MISS_COLOR);
+    // The attcker missed the target
+    else {
+        if (isPlayer) logMessage ("Your attack misses.", MISS_COLOR);
 
-    //     else {
-    //         Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
-    //         char *str = createString ("The %s misses you.", g->name);
-    //         logMessage (str, MISS_COLOR);
-    //         free (str);
-    //     }
-    // }
+        else {
+            Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
+            char *str = createString ("The %s misses you.", g->name);
+            logMessage (str, MISS_COLOR);
+            free (str);
+        }
+    }
 
     logMessage ("Fight!", DEFAULT_COLOR);
 
@@ -1130,7 +1127,7 @@ void updateGame (void) {
 
     if (playerTookTurn) {
         generateTargetMap (player->pos->x, player->pos->y);
-        // updateMovement ();
+        updateMovement ();
 
         playerTookTurn = false;
     }
