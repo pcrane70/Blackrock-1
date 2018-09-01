@@ -120,6 +120,17 @@ typedef struct Combat  {
 
 } Combat;
 
+/*** ENTITIES ***/
+
+// a living entity
+typedef struct Entity {
+
+    u32 objectId;
+    u8 entityId;     // unique id in the db
+    
+
+} Entity;
+
 /*** EVENTS ***/
 
 typedef void (*EventListener)(void *);

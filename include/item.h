@@ -12,6 +12,25 @@
 #define EPIC_COLOR          0x6B3CADFF
 #define LEGENDARY_COLOR     0xD65300FF
 
+/*** DB COLS ***/
+
+// for nomral items -- like food
+#define ID_COL          0
+#define NAME_COL        1
+#define GLYPH_COL       2
+#define RARITRY_COL     3
+#define GOLD_COL        4
+#define SILVER_COL      5
+#define COPPER_COL      6
+#define STACKABLE_COL   7
+#define QUANTITY_COL    8
+
+// for weapons
+#define DPS_COL         7
+#define SLOT_COL        8
+#define TWO_HAND_COL    9
+#define LIFETIME_COL    10   
+
 typedef enum ItemComponent {
 
     WEAPON = 0,
@@ -72,6 +91,8 @@ typedef struct Weapon {
 extern void initItems (void);
 
 extern Item *createItem (u16 itemId);
+extern Item *createWeapon (u16 itemId);
+
 extern void getItem (void);
 extern void dropItem (Item *);
 extern void getLootItem (u8);
