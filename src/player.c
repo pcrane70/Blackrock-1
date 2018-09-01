@@ -8,13 +8,26 @@
 
 #include "utils/myUtils.h"
 
+extern void die (char *);
 
 Player *player = NULL;
-extern Config *playerConfig;
-extern Config *classesConfig;
+Config *playerConfig = NULL;
+Config *classesConfig = NULL;
 
 u8 inventoryItems = 0;
 
+void getPlayerData (void) {
+
+    playerConfig = parseConfigFile ("./data/player.cfg");
+    if (playerConfig == NULL) 
+        die ("Critical Error! No player config!\n");
+
+
+    classesConfig = parseConfigFile ("./data/classes.cfg");
+    if (classesConfig == NULL) 
+        die ("Critical Error! No classes config!\n");
+
+}
 
 char *getPlayerClassName (void) {
 
@@ -48,6 +61,8 @@ Item ***initPlayerInventory (void) {
 // TODO: check for a save file to retrive the information freom there instead
 // because the player is an special GO, we want to initialize him differently
 Player *initPlayer (void) {
+
+    getPlayerData ();
 
     Player *p = (Player *) malloc (sizeof (Player));
 
@@ -113,6 +128,10 @@ Player *initPlayer (void) {
 
     p->combat->baseStats.maxHealth = (atoi (getEntityValue (playerEntity, "baseHP"))) + p->combat->defense.armor;
     p->combat->baseStats.health = p->combat->baseStats.maxHealth;
+
+    // we don't need to have this two in memory
+    clearConfig (playerConfig);
+    clearConfig (classesConfig);
 
     return p;
 

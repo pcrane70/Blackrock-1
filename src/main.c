@@ -19,7 +19,12 @@ bool running = false;
 bool inGame = false;
 bool wasInGame = false;
 
-void die (void) { running = false; };
+void die (char *error) {
+
+    perror (error);
+    running = false;
+
+};
 
 
 /*** SCREEN ***/

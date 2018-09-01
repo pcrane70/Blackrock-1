@@ -39,36 +39,39 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
 /*** GAME ***/
 
-// FIXME: our combat system is broken!!!
-/* void resolveCombat (Position newPos) {
+void resolveCombat (Position newPos) {
 
     // check what is blocking the movement
     List *blockers = getObjectsAtPos (newPos.x, newPos.y);
-    if (blockers == NULL || LIST_SIZE (blockers) <= 0) return;
-    for (ListElement *e = LIST_START (blockers); e != NULL; e= e->next) {
+
+    if (blockers == NULL || LIST_SIZE (blockers) <= 0) {
+        free (blockers);
+        return;
+    }
+
+    for (ListElement *e = LIST_START (blockers); e != NULL; e = e->next) {
         Combat *c = (Combat *) getComponent ((GameObject *) e->data, COMBAT);
         if (c != NULL) {
-            fight (player, (GameObject *) e->data);
+            fight (player->combat, c, true);
             break;
         }
     }
 
-    free (blockers);
+    cleanUpList (blockers);
 
-} */
+}
 
 Position *playerPos = NULL;
 
-// FIXME: combat
 void move (u8 newX, u8 newY) {
 
     Position newPos = { .x = newX, .y = newY };
-    if (canMove (newPos)) {
+    if (canMove (newPos, true)) {
         recalculateFov = true;
         playerPos->x = newX;
         playerPos->y = newY;
     } 
-    // else resolveCombat (newPos);
+    else resolveCombat (newPos);
     playerTookTurn = true; 
 
 }

@@ -124,6 +124,8 @@ static void rednderStats (Console *console) {
 
 /*** MESSAGE LOG ***/
 
+// TODO: after a while of inactivity, vanish the log until new activity -- just for astethics
+
 List *messageLog = NULL;
 
 // create a new message in the log
@@ -850,8 +852,8 @@ UIScreen *gameScene (void) {
 void cleanGameUI (void) {
 
     if (inGameScreen != NULL) {
-        destroyInvRects ();
-        destroyCharRects ();
+        if (inventoryRects != NULL) destroyInvRects ();
+        if (characterRects != NULL) destroyCharRects ();
 
         // FIXME: clean up loot rects
 

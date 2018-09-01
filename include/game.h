@@ -195,13 +195,13 @@ extern unsigned int wallCount;
 
 /*** MOVEMENT ***/
 
-extern bool canMove (Position);
+extern bool canMove (Position pos, bool isPlayer);
 extern bool recalculateFov;
 
 
 /*** COMBAT ***/
 
-extern void fight (GameObject *attacker, GameObject *defender);
+extern void fight (Combat *att, Combat *def, bool isPlayer);
 
 
 // Cleanning Up!

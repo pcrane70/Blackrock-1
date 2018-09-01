@@ -37,6 +37,9 @@ extern void destroyList (List *);
 extern void resetList (List *);
 extern bool insertAfter (List *, ListElement *, void *data);
 
+// only gets rid of the List elemenst, but the data is kept
+extern void cleanUpList (List *);
+
 // SEARCHING
 extern void *searchList (List *, void *data);
 extern bool isInList (List *, void *data);

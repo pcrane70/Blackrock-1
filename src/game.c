@@ -49,15 +49,13 @@ bool playerTookTurn = false;
 Level *currentLevel = NULL;
 
 // Configs
-Config *playerConfig = NULL;
-Config *classesConfig = NULL;
 Config *monsterConfig = NULL;
 
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 bool recalculateFov = false;
 
-extern void die (void);
+extern void die (char *);
 
 // This should only be called once!
 // Inits the global state of the game
@@ -87,21 +85,9 @@ void initGame (void) {
     messageLog = initList (free);
 
     // getting the data
-    playerConfig = parseConfigFile ("./data/player.cfg");
-    if (playerConfig == NULL) {
-        fprintf (stderr, "Critical Error! No player config!\n");
-        die ();
-    }
-    classesConfig = parseConfigFile ("./data/classes.cfg");
-    if (classesConfig == NULL) {
-        fprintf (stderr, "Critical Error! No classes config!\n");
-        die ();
-    }
     monsterConfig = parseConfigFile ("./data/monster.cfg");
-    if (monsterConfig == NULL) {
-        fprintf (stderr, "Critical Error! No monster config!\n");
-        die ();
-    }
+    if (monsterConfig == NULL) 
+        die ("Critical Error! No monster config!\n");
 
     void initWorld (void);
     initWorld ();
@@ -420,7 +406,6 @@ void cleanUpGame (void) {
 
     // clean game ui
     cleanGameUI ();
-    fprintf (stdout, "Game UI cleaned up!\n");
 
     // clean up our lists
     destroyList (gameObjects);
@@ -429,8 +414,6 @@ void cleanUpGame (void) {
     destroyList (physics);
     destroyList (movement);
     destroyList (combat);
-
-    fprintf (stdout, "Pool list: %i\n", LIST_SIZE (loot));
 
     // clean every list of items inside each loot object
     if (loot != NULL) {
@@ -457,8 +440,6 @@ void cleanUpGame (void) {
     clearPool (physPool);
     clearPool (movePool);
     clearPool (combatPool);
-
-    fprintf (stdout, "Loot pool: %i\n", POOL_SIZE (lootPool));
 
     // clean every list of items inside each loot object
     if (lootPool != NULL) {
@@ -487,8 +468,6 @@ void cleanUpGame (void) {
     free (currentLevel);
 
     // clear the configs
-    clearConfig (playerConfig);
-    clearConfig (classesConfig);
     clearConfig (monsterConfig);
 
     fprintf (stdout, "Done cleanning up game!\n");
@@ -499,14 +478,14 @@ void cleanUpGame (void) {
 
 bool isWall (u32 x, u32 y) { return (currentLevel->mapCells[x][y]); }
 
-bool canMove (Position pos) {
+bool canMove (Position pos, bool isPlayer) {
 
     bool move = true;
 
     // first check the if we are inside the map bounds
     if ((pos.x >= 0) && (pos.x < MAP_WIDTH) && (pos.y >= 0) && (pos.y < MAP_HEIGHT)) {
         // check for level elements (like walls)
-        if (currentLevel->mapCells[pos.x][pos.y] == true) move = false;
+        if (isWall (pos.x, pos.y)) move = false;
 
         // check for any other entity, like monsters
         GameObject *go = NULL;
@@ -519,6 +498,13 @@ bool canMove (Position pos) {
                 break;
             }
         }
+
+        // check for player
+        // if (!isPlayer) {
+        //     if (pos.x == player->pos->x && pos.y == player->pos->y)
+        //         move = false;
+
+        // }
     }   
 
     else move = false;
@@ -608,9 +594,8 @@ Position *getPos (i32 id) {
 // TODO: maybe a more efficient way is to only update the movement of the
 // enemies that are in a close range?
 
-void fight (GameObject *, GameObject *);
+void fight (Combat *att, Combat *def, bool isPlayer);
 
-// FIXME: fight function
 void updateMovement () {
 
     for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
@@ -645,9 +630,8 @@ void updateMovement () {
                 if ((fovMap[pos->x][pos->y] > 0) && (dmap[pos->x][pos->y] == 1)) {
                     // fight the player!
                     GameObject *enemy = searchGameObjectById (mv->objectId);
-                    // FIXME:
-                    // if (enemy != NULL) 
-                        // fight (enemy, player);
+                    if (enemy != NULL) 
+                        fight ((Combat *) getComponent (enemy, COMBAT), player->combat, false);
                 }
                 
                 else {
@@ -703,9 +687,8 @@ void updateMovement () {
                         }
                     }
 
-                    // FIXME:
                     // check if we can move to the new pos
-                    if (canMove (newPos)) {
+                    if (canMove (newPos, false)) {
                         // Updating the entity position in an odd way
                         pos->x = newPos.x;
                         pos->y = newPos.y;
@@ -822,6 +805,7 @@ u8 getMonsterId (void) {
 
 /*** LOOT - ITEMS ***/
 
+// FIXME:
 void createLoot (GameObject *go) {
 
     Loot newLoot;
@@ -913,9 +897,10 @@ void collectGold (void) {
 /*** COMBAT ***/
 
 // FIXME: fix probability
-char *calculateDefense (GameObject *defender, bool isPlayer) {
+char *calculateDefense (Combat *def, bool isPlayer) {
 
-    Combat *def = (Combat *) getComponent (defender, COMBAT);
+    GameObject *defender = NULL;
+    if (isPlayer) defender = searchGameObjectById (def->objectId);
 
     u8 chance = (u8) randomInt (0, 3);
     char *msg = NULL;
@@ -968,30 +953,26 @@ char *calculateDefense (GameObject *defender, bool isPlayer) {
 
 }
 
-u32 calculateDamage (GameObject *attacker, GameObject *defender, bool isPlayer) {
+u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
-    Combat *att = (Combat *) getComponent (attacker, COMBAT);
+    GameObject *attacker = NULL;
+    GameObject *defender = NULL;
+    if (isPlayer) defender = searchGameObjectById (def->objectId);
+    else attacker = searchGameObjectById (att->objectId);
 
     // get the damage
     u32 damage;
     // if the attacker is the player, search for weapon dps + strength
     if (isPlayer) {
-        // FIXME: we need a better way to get what ever the charcter is wielding
-        // GameObject *go = NULL;
-        // Item *i = NULL;
-        // Item *weapon = NULL;
-        // for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) {
-        //     go = (GameObject *) e->data;
-        //     i = (Item *) getComponent (go, ITEM);
-        //     if (i->wielding == true) {
-        //         weapon = i;
-        //         break;
-        //     } 
-        // }
+        // FIXME: as of 01/09/2018 -- 03:47 -- we can only handle a two handed weapon
+        // FIXME: also create a more dynamic damage
+        // getting the weapon in the main hand
+        if (player->weapons[0] != NULL)
+            damage = ((Weapon *) getItemComponent (player->weapons[0], WEAPON))->dps;
 
-        // FIXME: 21/08/2018 -- 21:18 -- this is temporary
         // 21/08/2018 -- 23:25 -- this is for a more dynamic experience
-        damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+        else damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+
         damage += att->baseStats.strength;
     }
     // if the attacker is a mob, just get the the base dps + strength
@@ -1029,14 +1010,14 @@ u32 calculateDamage (GameObject *attacker, GameObject *defender, bool isPlayer) 
 
 }
 
-// FIXME:
-/* void checkForKill (GameObject *defender) {
+void checkForKill (Combat *def, bool isPlayer) {
 
-    Combat *def = (Combat *) getComponent (defender, COMBAT);
+    GameObject *defender = NULL;
+    if (!isPlayer) defender = searchGameObjectById (def->objectId);
 
     // check for the defenders health 
     if (def->baseStats.health <= 0) {
-        if (defender == player) {
+        if (!isPlayer) {
             logMessage ("You have died!!", KILL_COLOR);
             // TODO: player death animation?
             void gameOver (void);
@@ -1070,54 +1051,54 @@ u32 calculateDamage (GameObject *attacker, GameObject *defender, bool isPlayer) 
         }
     }
 
-} */
+}
 
-// FIXME: our combat system is broken, we have to include the player logic!!!
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
-/* void fight (GameObject *attacker, GameObject *defender) {
+void fight (Combat *att, Combat *def, bool isPlayer) {
 
-    Combat *att = (Combat *) getComponent (attacker, COMBAT);
-    Combat *def = (Combat *) getComponent (defender, COMBAT);
-
-    bool isPlayer = false;
-    if (attacker == player) isPlayer = true;
+    // GameObject *attacker = NULL;
+    // GameObject *defender = NULL;
+    // if (isPlayer) defender = searchGameObjectById (def->objectId); 
+    // else attacker = searchGameObjectById (att->objectId);
 
     // FIXME: check for attack speed
 
     // check for the attack hit chance
-    u32 hitRoll = (u32) randomInt (1, 100);
-    if (hitRoll <= att->attack.hitchance) {
-        // chance of blocking, parry or dodge
-        char *msg = calculateDefense (defender, isPlayer);
-        if (msg == NULL) {
-            // health = maxhealth = basehealth + armor
-            def->baseStats.health -= calculateDamage (attacker, defender, isPlayer);
+    // u32 hitRoll = (u32) randomInt (1, 100);
+    // if (hitRoll <= att->attack.hitchance) {
+    //     // chance of blocking, parry or dodge
+    //     char *msg = calculateDefense (def, isPlayer);
+    //     if (msg == NULL) {
+    //         // health = maxhealth = basehealth + armor
+    //         def->baseStats.health -= calculateDamage (att, def, isPlayer);
 
-            checkForKill (defender);
-        }
+    //         checkForKill (def, isPlayer);
+    //     }
 
-        else {
-            if (msg != NULL) {
-                logMessage (msg, STOPPED_COLOR);
-                free (msg);
-            } 
-        }
+    //     else {
+    //         if (msg != NULL) {
+    //             logMessage (msg, STOPPED_COLOR);
+    //             free (msg);
+    //         } 
+    //     }
 
-    }
+    // }
 
-    // The attcker missed the target
-    else {
-        if (isPlayer) logMessage ("Your attack misses.", MISS_COLOR);
+    // // The attcker missed the target
+    // else {
+    //     if (isPlayer) logMessage ("Your attack misses.", MISS_COLOR);
 
-        else {
-            Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
-            char *str = createString ("The %s misses you.", g->name);
-            logMessage (str, MISS_COLOR);
-            free (str);
-        }
-    }
+    //     else {
+    //         Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
+    //         char *str = createString ("The %s misses you.", g->name);
+    //         logMessage (str, MISS_COLOR);
+    //         free (str);
+    //     }
+    // }
 
-} */
+    logMessage ("Fight!", DEFAULT_COLOR);
+
+}
 
 
 /*** LEVEL MANAGER ***/
@@ -1144,14 +1125,12 @@ void gameOver (void) {
 
 extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
-// FIXME:
 // we will have the game update every time the player moves...
 void updateGame (void) {
 
     if (playerTookTurn) {
         generateTargetMap (player->pos->x, player->pos->y);
-        updateMovement ();
-        // TODO: update lifetime
+        // updateMovement ();
 
         playerTookTurn = false;
     }
@@ -1219,7 +1198,6 @@ void generateLevel () {
         monsterPos->x = (u8) monsterSpawnPos.x;
         monsterPos->y = (u8) monsterSpawnPos.y;
         // TODO: mark the spawnPos as filled
-        fprintf (stdout, "Created a new monster!\n");
     }
     fprintf (stdout, "Done creating monster.\n");
 

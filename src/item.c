@@ -283,15 +283,22 @@ Item *deleteItem (Item *item) {
 
 }
 
-// FIXME: check for the destroy item function
-void removeFromInventory (Item *i) {
+// search for the item in the inventory and remove it
+Item *removeFromInventory (Item *item) {
 
-    // search for the item in the inventory and remove it
+    Item *retVal = NULL;
+
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
-
+            if (item->dbId == player->inventory[x][y]->dbId) {
+                retVal = player->inventory[x][y];
+                player->inventory[x][y] = NULL;
+                break;
+            }
         }
     }
+
+    return retVal;
 
 }
 
@@ -582,10 +589,9 @@ void getLootItem (u8 lootYIdx) {
 
 /*** WEAPONS -- EQUIPMENT ***/
 
-// FIXME:
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
-/* void toggleEquipWeapon (void *i) {
+void toggleEquipWeapon (void *i) {
 
     if (i == NULL) return;
 
@@ -610,8 +616,7 @@ void getLootItem (u8 lootYIdx) {
 
     // equip
     else {
-        ListElement *le = getListElement (player->inventory, i);
-        Item *w = (Item *) removeElement (player->inventory, le);
+        Item *w = removeFromInventory (item);
         if (w != NULL) {
             // unequip our current weapon if we have one
             if (player->weapons[weapon->slot] != NULL) 
@@ -634,12 +639,11 @@ void getLootItem (u8 lootYIdx) {
         }
     }
         
-} */
+}
 
-// FIXME:
 // TODO: update combat stats based on armour modifiers if necessary
 // TODO: create better strings deppending on the item
-/* void toggleEquipArmour (void *i) {
+void toggleEquipArmour (void *i) {
 
     if (i == NULL) return;
 
@@ -664,8 +668,7 @@ void getLootItem (u8 lootYIdx) {
 
     // equip
     else {
-        ListElement *le = getListElement (player->inventory, i);
-        Item *a = (Item *) removeElement (player->inventory, le);
+        Item *a = removeFromInventory (item);
         if (a != NULL) {
             // unequip the armour in that slot if we have one
             if (player->equipment[armour->slot] != NULL)
@@ -681,7 +684,7 @@ void getLootItem (u8 lootYIdx) {
         }
     }
 
-} */
+}
 
 // TODO: crafting
 

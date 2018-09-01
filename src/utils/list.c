@@ -101,6 +101,17 @@ void resetList (List *list) {
 
 }
 
+// only gets rid of the List elemenst, but the data is kept
+void cleanUpList (List *list) {
+
+    void *data = NULL;
+    while (LIST_SIZE (list) > 0) 
+        data = removeElement (list, NULL);
+
+    free (list);
+
+}
+
 bool insertAfter (List *list, ListElement *element, void *data) {
 
     ListElement *new;
