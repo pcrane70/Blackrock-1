@@ -65,7 +65,7 @@ void initItems (void) {
 
     // This are used only for testing and to populate our dbs
     // insertIntoFoodDb ();
-    insertIntoWeaponsDb ();
+    // insertIntoWeaponsDb ();
 
 }
 

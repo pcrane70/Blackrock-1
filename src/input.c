@@ -87,22 +87,8 @@ void moveInLoot (u8 newY) { if (newY >= 0 && (newY < LIST_SIZE (lootRects))) loo
 
 void moveInCharacter (u8 newX, u8 newY, bool moveRight) {
 
-    if (newX >= 0 && newX < 3) {
-        if (characterYIdx == 5) characterXIdx = newX;
-        else {
-            if (moveRight && newX == 1) characterXIdx = 2;
-            else if (!moveRight && newX == 1) characterXIdx = 0;
-        } 
-    }
-
-    if (newY >= 0 && newY < 6) {
-        characterYIdx = newY;
-
-        if (characterYIdx != 5) {
-            if (characterXIdx == 1) 
-                characterXIdx = 0;
-        } 
-    } 
+    if (newX >= 0 && newX < 2) characterXIdx = newX;
+    if (newY >= 0 && newY < 6) characterYIdx = newY;
 
 }
 

@@ -576,7 +576,7 @@ Item *getSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYId
 
 #define CHARACTER_LEFT		25
 #define CHARACTER_TOP		2
-#define CHARACTER_WIDTH		30
+#define CHARACTER_WIDTH		29
 #define CHARACTER_HEIGHT	38
 
 #define CHARACTER_CELL_WIDTH    4
@@ -622,10 +622,36 @@ ItemRect *createCharRect (u8 x, u8 y) {
 
     new->xIdx = x;
     new->yIdx = y;
-    new->bgRect->x = x + 3 + (CHARACTER_CELL_WIDTH * x);
+
     new->bgRect->y = y + 5 + (CHARACTER_CELL_HEIGHT * y);
-    // new->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
     // new->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+
+    // armour
+    if (y != 5) {
+        if (x == 1) {
+            new->bgRect->x = ((CHARACTER_LEFT + CHARACTER_WIDTH)) - 2;
+            // new->imgRect->x = new->bgRect->x;
+        }
+
+        else {
+            new->bgRect->x = x + 2 + (CHARACTER_CELL_WIDTH * x);
+            // new->imgRect->x = new->bgRect->x;
+        }
+    }
+
+    // weapons
+    else {
+        if (x == 0) {
+            new->bgRect->x = 9;
+            // new->imgRect->x = new->bgRect->x;
+        }
+
+        else {
+            new->bgRect->x = 16;
+            // new->imgRect->x = new->bgRect->x;
+        }
+        
+    }
 
     return new;
 
@@ -633,18 +659,14 @@ ItemRect *createCharRect (u8 x, u8 y) {
 
 ItemRect ***initCharacterRects (void) {
 
-    ItemRect ***charRects = (ItemRect ***) malloc (3 * sizeof (ItemRect **));
-    for (u8 i = 0; i < 3; i++)
+    ItemRect ***charRects = (ItemRect ***) malloc (2 * sizeof (ItemRect **));
+    for (u8 i = 0; i < 2; i++)
         charRects[i] = (ItemRect **) malloc (6 * sizeof (ItemRect *));
 
-    for (u8 y = 0; y < 6; y++) {
-        for (u8 x = 0; x < 3; x++) {
-            if (y != 5 && x == 1) charRects[x][y] = NULL;
-            else charRects[x][y] = createCharRect (x, y);
-        } 
-    }
+    for (u8 y = 0; y < 6; y++) 
+        for (u8 x = 0; x < 2; x++) 
+            charRects[x][y] = createCharRect (x, y);
             
-
     return charRects;
 
 }
@@ -652,7 +674,7 @@ ItemRect ***initCharacterRects (void) {
 void destroyCharRects (void) {
 
     for (u8 y = 0; y < 6; y++) {
-        for (u8 x = 0; x < 3; x++) {
+        for (u8 x = 0; x < 2; x++) {
             if (characterRects[x][y] != NULL) {
                 free (characterRects[x][y]->bgRect);
                 // free (characterRects[x][y]->imgRect);
@@ -669,14 +691,10 @@ void destroyCharRects (void) {
 // FIXME:
 void resetCharacterRects (void) {
 
-    for (u8 y = 0; y < 6; y++) {
-        for (u8 x = 0; x < 3; x++) {
-            if (characterRects[x][y] == NULL) continue;
+    for (u8 y = 0; y < 6; y++) 
+        for (u8 x = 0; x < 2; x++) 
             characterRects[x][y]->item = NULL;
-        }
-    }
             
-
     // FIXME:
     // equipment
     // for (u8 y = 0; y < 5; y++) {
@@ -687,8 +705,9 @@ void resetCharacterRects (void) {
     //     }
     // }
 
+    // FIXME: idx
     // weapons
-    for (u8 i = 0; i < 3; i++) characterRects[i][5]->item = player->weapons[i];
+    // for (u8 i = 0; i < 3; i++) characterRects[i][5]->item = player->weapons[i];
 
 }
 
@@ -699,9 +718,7 @@ void renderCharacterRects (Console *console) {
 
     // draw inventory cells
     for (u8 y = 0; y < 6; y++) {
-        for (u8 x = 0; x < 3; x++) {
-            if (characterRects[x][y] == NULL) continue;
-
+        for (u8 x = 0; x < 2; x++) {
             charRect = characterRects[x][y];
     
              // draw highlighted rect
@@ -733,7 +750,7 @@ static void renderCharacter (Console *console) {
     drawRect (console, &rect, CHARACTER_COLOR, 0, 0xFFFFFFFF);
 
     // render character info
-    putStringAt (console, statsPlayerName, 7, 2, CHARACTER_TEXT, 0x00000000);
+    putStringAt (console, statsPlayerName, 6, 2, CHARACTER_TEXT, 0x00000000);
 
     renderCharacterRects (console);
     

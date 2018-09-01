@@ -78,7 +78,7 @@ Player *initPlayer (void) {
     ConfigEntity *playerEntity = getEntityWithId (playerConfig, 1);
 
     p->inventory = initPlayerInventory ();
-    p->weapons = (Item **) calloc (3, sizeof (Item *));
+    p->weapons = (Item **) calloc (2, sizeof (Item *));
     for (u8 i = 0; i < 3; i++) p->weapons[i] = NULL;
     p->equipment = (Item **) calloc (EQUIPMENT_ELEMENTS, sizeof (Item *));
     for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) p->equipment[i] = NULL;
