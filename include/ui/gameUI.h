@@ -7,6 +7,10 @@
 
 #include "utils/list.h"
 
+/*** MAP ***/
+
+extern UIView *mapView;
+
 /*** MESSAGES ***/
 
 // FIXME: where do we want to put these?

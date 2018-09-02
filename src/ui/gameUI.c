@@ -17,13 +17,14 @@
 
 #include "utils/list.h"       // for messages
 
-#define STATS_WIDTH		20
-#define STATS_HEIGHT 	5
 
-#define LOG_WIDTH		60
-#define LOG_HEIGHT		5
+extern UIView *activeView;
+
 
 /*** STATS ***/
+
+#define STATS_WIDTH		20
+#define STATS_HEIGHT 	5
 
 char *statsPlayerName = NULL;
 
@@ -123,6 +124,9 @@ static void rednderStats (Console *console) {
 }
 
 /*** MESSAGE LOG ***/
+
+#define LOG_WIDTH		60
+#define LOG_HEIGHT		5
 
 // TODO: after a while of inactivity, vanish the log until new activity -- just for astethics
 
@@ -358,6 +362,8 @@ void toggleLootWindow (void) {
 
         if (lootRects == NULL) lootRects = initList (free);
         else if (LIST_SIZE (lootRects) > 0) resetList (lootRects); 
+
+        activeView = lootView;
     } 
     
     else {
@@ -371,6 +377,8 @@ void toggleLootWindow (void) {
 
             resetList (lootRects);
         }
+
+        activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
 
 }
@@ -603,12 +611,16 @@ void toggleInventory (void) {
         }
 
         else showInventory (false);
+
+        activeView = inventoryView;
     } 
 
     else {
         if (characterView != NULL) updateCharacterPos (false);
 
         hideInventory ();
+
+        activeView = (UIView *) (LIST_END (activeScene->views))->data;
     }
     
 }
@@ -898,12 +910,16 @@ void toggleCharacter (void) {
         } 
 
         else showCharacter (false);
+
+        activeView = characterView;
     } 
 
     else {
         if (inventoryView != NULL) updateInventoryPos (false);
 
         hideCharacter ();
+
+        activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
      
 }
@@ -934,6 +950,8 @@ void togglePauseMenu (void) {
         UIRect pause = { (16 * PAUSE_LEFT), (16 * PAUSE_TOP), (16 * PAUSE_WIDTH), (16 * PAUSE_HEIGHT) };
         pauseMenu = newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
         insertAfter(activeScene->views, LIST_END (activeScene->views), pauseMenu);
+
+        activeView = pauseMenu;
     }
 
     else {
@@ -941,6 +959,8 @@ void togglePauseMenu (void) {
             ListElement *pause = getListElement (activeScene->views, pauseMenu);
             destroyView ((UIView *) removeElement (activeScene->views, pause));
             pauseMenu = NULL;
+
+            activeView = (UIView *) (LIST_END (activeScene->views))->data;
         }
     }
 
@@ -953,6 +973,8 @@ extern bool wasInGame;
 
 UIScreen *inGameScreen = NULL;
 
+UIView *mapView = NULL;
+
 UIScreen *gameScene (void) {
 
     List *igViews = initList (NULL);
@@ -964,7 +986,7 @@ UIScreen *gameScene (void) {
     colorize = true;
     bgColor = 0x000000FF;
 
-    UIView *mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
+    mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
     insertAfter (igViews, NULL, mapView);
 
     UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
@@ -978,6 +1000,7 @@ UIScreen *gameScene (void) {
     if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
     
     inGameScreen->views = igViews;
+    // FIXME: do we need this?
     inGameScreen->activeView = mapView;
     inGameScreen->handleEvent = hanldeGameEvent;
 
@@ -989,6 +1012,8 @@ UIScreen *gameScene (void) {
 
     inGame = true;
     wasInGame = true;
+
+    activeView = mapView;
 
     return inGameScreen;
 
