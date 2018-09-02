@@ -98,8 +98,9 @@ extern void dropItem (Item *);
 extern void getLootItem (u8);
 extern void *getGameComponent (Item *, GameComponent);
 extern void *getItemComponent (Item *, ItemComponent);
+
 extern u32 getItemColor (u8 rarity);
-extern u16 getCarriedWeight (void);
+extern char *getItemSlot (Item *);
 
 extern Item *deleteItem (Item *);
 

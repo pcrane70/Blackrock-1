@@ -62,7 +62,7 @@ extern u8 inventoryXIdx;
 extern u8 inventoryYIdx;
 
 extern void toggleInventory (void);
-extern Item *getSelectedItem (void);
+extern Item *getInvSelectedItem (void);
 
 /*** CHARACTER ***/
 

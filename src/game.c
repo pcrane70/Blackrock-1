@@ -106,6 +106,11 @@ void initWorld (void) {
     // game inside the dungeon
     void enterDungeon (void);
     enterDungeon ();
+
+    if (player->weapons[0] != NULL) {
+        fprintf (stdout, "Got a weapon!\n");
+    }
+    else fprintf (stdout, "No weapon!\n");
     
 }
 

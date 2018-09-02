@@ -143,7 +143,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             // 21/08/2018 -- 6:51 -- this is used as the interactable button
             case SDLK_e: {
                 if (isInUI () && inventoryView != NULL) {
-                    Item *item = getSelectedItem ();
+                    Item *item = getInvSelectedItem ();
                     if (item != NULL) item->callback (item);
                 } 
                 // loop through all of our surrounding items in search for 
@@ -180,7 +180,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             // drop item
             // case SDLK_SPACE:
             //     if (isInUI () && inventoryView != NULL) {
-            //         Item *item = getSelectedItem ();
+            //         Item *item = getInvSelectedItem ();
             //         if (item != NULL) dropItem (item);
             //     } 
             //     break;

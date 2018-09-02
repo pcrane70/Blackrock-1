@@ -393,6 +393,9 @@ void toggleLootWindow (void) {
 
 #define ZERO_ITEMS      48
 
+#define INV_DESC_BOX_WIDTH      34
+#define INV_DESC_BOX_HEIGHT     3
+
 UIView *inventoryView = NULL;
 
 u8 inventoryXIdx = 0;
@@ -520,9 +523,6 @@ void renderInventoryItems (Console *console) {
 
 } 
 
-#define DESC_BOX_WIDTH      34
-#define DESC_BOX_HEIGHT     3
-
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
@@ -531,7 +531,7 @@ static void renderInventory (Console *console) {
     putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, 0x00000000);
 
     // draw item description rect
-    UIRect descBox = { 3, 21, DESC_BOX_WIDTH, DESC_BOX_HEIGHT };
+    UIRect descBox = { 3, 21, INV_DESC_BOX_WIDTH, INV_DESC_BOX_HEIGHT };
     drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
 
     // render items
@@ -557,7 +557,7 @@ void toggleInventory (void) {
 
         if (inventoryRects == NULL) {
             inventoryRects = initInventoryRects ();
-            fprintf (stdout, "Done creating inv rects!\n");
+            resetInventoryRects ();
         } 
         else resetInventoryRects ();
     }
@@ -570,14 +570,14 @@ void toggleInventory (void) {
 
 }
 
-Item *getSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYIdx]->item; }
+Item *getInvSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYIdx]->item; }
 
 /*** CHARACTER ***/
 
 #define CHARACTER_LEFT		25
 #define CHARACTER_TOP		2
 #define CHARACTER_WIDTH		29
-#define CHARACTER_HEIGHT	38
+#define CHARACTER_HEIGHT	40
 
 #define CHARACTER_CELL_WIDTH    4
 #define CHARACTER_CELL_HEIGHT   4
@@ -588,17 +588,8 @@ Item *getSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYId
 #define CHARACTER_CELL_COLOR    0xD1C7B8FF
 #define CHARACTER_SELECTED      0x847967FF
 
-// head         0
-// necklace     1
-// shoulders    2
-// cape         3
-// chest        4
-
-// hands        5
-// belt         6
-// legs         7
-// shoes        8
-// ring         9
+#define CHAR_DESC_BOX_WIDTH     25
+#define CHAR_DESC_BOX_HEIGHT    3
 
 UIView *characterView = NULL;
 
@@ -606,6 +597,8 @@ ItemRect ***characterRects = NULL;
 
 u8 characterXIdx = 0;
 u8 characterYIdx = 0;
+
+Item *getCharSelectedItem (void) { return characterRects[characterXIdx][characterYIdx]->item; }
 
 ItemRect *createCharRect (u8 x, u8 y) {
 
@@ -688,7 +681,6 @@ void destroyCharRects (void) {
 
 }
 
-// FIXME:
 void resetCharacterRects (void) {
 
     for (u8 y = 0; y < 6; y++) 
@@ -705,9 +697,8 @@ void resetCharacterRects (void) {
     //     }
     // }
 
-    // FIXME: idx
     // weapons
-    // for (u8 i = 0; i < 3; i++) characterRects[i][5]->item = player->weapons[i];
+    for (u8 i = 0; i < 2; i++) characterRects[i][5]->item = player->weapons[i];
 
 }
 
@@ -753,6 +744,22 @@ static void renderCharacter (Console *console) {
     putStringAt (console, statsPlayerName, 6, 2, CHARACTER_TEXT, 0x00000000);
 
     renderCharacterRects (console);
+
+    // draw item description rect
+    UIRect descBox = { 2, 36, CHAR_DESC_BOX_WIDTH, CHAR_DESC_BOX_HEIGHT };
+    drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
+    Item *selected = getCharSelectedItem ();
+    // the slot is empty
+    if (selected != NULL) {
+        Graphics *g = (Graphics *) getGameComponent (selected, GRAPHICS);
+        if (g != NULL) {
+            char *slot = getItemSlot (selected);
+            char *str = createString ("%s: %s", slot,  g->name);
+            putStringAt (console, str, 3, 37, getItemColor (selected->rarity), 0x00000000);
+            free (slot);
+            free (str);
+        }
+    }
     
 }
 
@@ -763,7 +770,10 @@ void toggleCharacter (void) {
         characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
         insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
 
-        if (characterRects == NULL) characterRects = initCharacterRects ();
+        if (characterRects == NULL) {
+            characterRects = initCharacterRects ();
+            resetCharacterRects ();
+        } 
         else resetCharacterRects ();
     }
 

@@ -159,6 +159,7 @@ void addItemComp (Item *item, ItemComponent type, void *data) {
             newWeapon->maxLifetime = weaponData->maxLifetime;
             newWeapon->lifetime = weaponData->lifetime;
             newWeapon->isEquipped = weaponData->isEquipped;
+            newWeapon->slot = weaponData->slot;
             item->itemComps[type] = newWeapon;
             // insertAfter (weapons, NULL, newWeapon);
         } break;
@@ -396,7 +397,7 @@ Item *createWeapon (u16 itemId) {
     w.maxLifetime = (u16) sqlite3_column_int (res, LIFETIME_COL);
     w.lifetime = w.maxLifetime;
     w.isEquipped = false;
-    w.slot = (u8) sqlite3_column_int (res, SLOT_COL);
+    w.slot = sqlite3_column_int (res, SLOT_COL);
     w.twoHanded = (sqlite3_column_int (res, TWO_HAND_COL) == 0) ? false : true;
     addItemComp (item, WEAPON, &w);
     
@@ -439,6 +440,45 @@ u32 getItemColor (u8 rarity) {
     }
 
     return color;
+
+}
+
+char *getItemSlot (Item *item) {
+
+    char slot[15];
+
+    Weapon *w = getItemComponent (item, WEAPON);
+    if (w != NULL) {
+        switch (w->slot) {
+            case 0: strcpy (slot, "Main"); break;
+            case 1: strcpy (slot, "Off"); break;
+            default: break;
+        }
+    }
+
+    else {
+        Armour *a = getItemComponent (item, ARMOUR);
+        if (a != NULL) {
+            switch (a->slot) {
+                case 0: strcpy (slot, "Head"); break;
+                case 1: strcpy (slot, "Necklace"); break;
+                case 2: strcpy (slot, "Shoulders"); break;
+                case 3: strcpy (slot, "Cape"); break;
+                case 4: strcpy (slot, "Chest"); break;
+                case 5: strcpy (slot, "Hands"); break;
+                case 6: strcpy (slot, "Waist"); break;
+                case 7: strcpy (slot, "Legs"); break;
+                case 8: strcpy (slot, "Shoes"); break;
+                case 9: strcpy (slot, "Ring"); break;
+                default: break;
+            }
+        }
+    }
+
+    char *retVal = (char *) calloc (strlen (slot), sizeof (char));
+    strcpy (retVal, slot);
+
+    return retVal;
 
 }
 

@@ -131,13 +131,9 @@ Player *initPlayer (void) {
 
     // FIXME: depending on the class, we have a different starting weapon
     u16 startingWeapon = atoi (getEntityValue (playerEntity, "startingWeapon"));
-    // get the weapon from the db
     Item *weapon = createWeapon (startingWeapon);
-    // add to the weapons slot
-    if (weapon != NULL) {
+    if (weapon != NULL) 
         p->weapons[((Weapon *) getItemComponent (weapon, WEAPON))->slot] = weapon;
-        fprintf (stdout, "Added weapon to player!\n");
-    }
 
     else fprintf (stderr, "Problems creating player weapon.");
 
