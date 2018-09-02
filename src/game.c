@@ -1099,8 +1099,6 @@ void fight (Combat *att, Combat *def, bool isPlayer) {
         }
     }
 
-    logMessage ("Fight!", DEFAULT_COLOR);
-
 }
 
 

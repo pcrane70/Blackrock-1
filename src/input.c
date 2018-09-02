@@ -101,11 +101,11 @@ bool isInUI (void) {
 
 void closeUIMenu (void) {
 
-    if (inventoryView != NULL) toggleInventory ();
+    // if (inventoryView != NULL) toggleInventory (false);
 
-    if (lootView != NULL) toggleLootWindow ();
+    // if (lootView != NULL) toggleLootWindow ();
 
-    if (characterView != NULL) toggleCharacter ();
+    // if (characterView != NULL) hideCharacter ();
 
 }
 
@@ -171,11 +171,13 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 } 
                 break;
 
-            // 30/08/2018 -- 07:02 -- This might be temporary
-            case SDLK_c: 
-                if (isInUI () && (lootView != NULL)) collectGold ();
-                else if (!isInUI () && (characterView == NULL)) toggleCharacter ();
-                break;
+            case SDLK_c: toggleCharacter (); break;
+
+
+                // // if (isInUI () && (lootView != NULL)) collectGold ();
+                // if (characterView == NULL && inventoryView == NULL) showCharacter (false);
+                // else if (characterView == NULL && inventoryView != NULL) showCharacter (true); 
+                // break;
 
             // drop item
             // case SDLK_SPACE:

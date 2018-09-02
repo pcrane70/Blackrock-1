@@ -79,7 +79,7 @@ Player *initPlayer (void) {
 
     p->inventory = initPlayerInventory ();
     p->weapons = (Item **) calloc (2, sizeof (Item *));
-    for (u8 i = 0; i < 3; i++) p->weapons[i] = NULL;
+    for (u8 i = 0; i < 2; i++) p->weapons[i] = NULL;
     p->equipment = (Item **) calloc (EQUIPMENT_ELEMENTS, sizeof (Item *));
     for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) p->equipment[i] = NULL;
 
@@ -145,6 +145,7 @@ Player *initPlayer (void) {
 
 }
 
+// FIXME: problems cleanning up weapons and equipment
 void destroyPlayer (void) {
 
     free (player->name);
@@ -152,17 +153,21 @@ void destroyPlayer (void) {
     // clean up inventory
     for (u8 y = 0; y < 3; y++) 
         for (u8 x = 0; x < 7; x++) 
-            player->inventory[x][y] = deleteItem (player->inventory[x][y]);
+            if (player->inventory[x][y] != NULL)
+                player->inventory[x][y] = deleteItem (player->inventory[x][y]);
 
     free (player->inventory);
 
     // clean up weapons
-    for (u8 i = 0; i < 3; i++) player->weapons[i] = deleteItem (player->weapons[i]);
+    // for (u8 i = 0; i < 2; i++)
+    //     if (player->weapons[i] != NULL) 
+    //         player->weapons[i] = deleteItem (player->weapons[i]);
 
-    // clean up equipment
-    for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) 
-        player->equipment[i] = deleteItem (player->equipment[i]);
-
+    // // clean up equipment
+    // for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) 
+    //     if (player->equipment[i] != NULL)
+    //         player->equipment[i] = deleteItem (player->equipment[i]);
+        
     free (player->pos);
     free (player->graphics);
     free (player->physics);

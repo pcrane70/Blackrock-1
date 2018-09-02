@@ -377,8 +377,10 @@ void toggleLootWindow (void) {
 
 /*** INVENTORY ***/
 
-#define INVENTORY_LEFT		20
-#define INVENTORY_TOP		7
+#define INVENTORY_LEFT		    20
+#define INVENTORY_TOP		    7
+#define INVENTORY_DUAL_LEFT     37
+
 #define INVENTORY_WIDTH		40
 #define INVENTORY_HEIGHT	30
 
@@ -548,21 +550,34 @@ static void renderInventory (Console *console) {
 
 }
 
-void toggleInventory (void) {
+void updateCharacterPos (bool);
 
-    if (inventoryView == NULL) {
-        UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
+void showInventory (bool dual) {
+
+    if (dual) {
+        UIRect inv = { (16 * INVENTORY_DUAL_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
         inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), inventoryView);
-
-        if (inventoryRects == NULL) {
-            inventoryRects = initInventoryRects ();
-            resetInventoryRects ();
-        } 
-        else resetInventoryRects ();
     }
 
     else {
+        UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
+        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
+    }
+
+    insertAfter (activeScene->views, LIST_END (activeScene->views), inventoryView);
+
+    if (inventoryRects == NULL) {
+        inventoryRects = initInventoryRects ();
+        resetInventoryRects ();
+    } 
+
+    else resetInventoryRects ();
+
+}
+
+void hideInventory (void) {
+
+    if (inventoryView != NULL) {
         ListElement *inv = getListElement (activeScene->views, inventoryView);
         destroyView ((UIView *) removeElement (activeScene->views, inv));
         inventoryView = NULL;
@@ -570,12 +585,42 @@ void toggleInventory (void) {
 
 }
 
+void updateInventoryPos (bool dual) {
+
+    if (inventoryView != NULL) {
+        hideInventory ();
+        showInventory (dual);
+    }
+
+}
+
+void toggleInventory (void) {
+
+    if (inventoryView == NULL) {
+        if (characterView != NULL) {
+            updateCharacterPos (true);
+            showInventory (true);
+        }
+
+        else showInventory (false);
+    } 
+
+    else {
+        if (characterView != NULL) updateCharacterPos (false);
+
+        hideInventory ();
+    }
+    
+}
+
 Item *getInvSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYIdx]->item; }
 
 /*** CHARACTER ***/
 
-#define CHARACTER_LEFT		25
-#define CHARACTER_TOP		2
+#define CHARACTER_LEFT		    25
+#define CHARACTER_TOP		    2
+#define CHARACTER_DUAL_LEFT     3
+
 #define CHARACTER_WIDTH		29
 #define CHARACTER_HEIGHT	40
 
@@ -681,21 +726,18 @@ void destroyCharRects (void) {
 
 }
 
+// FIXME:
 void resetCharacterRects (void) {
 
     for (u8 y = 0; y < 6; y++) 
         for (u8 x = 0; x < 2; x++) 
             characterRects[x][y]->item = NULL;
-            
+
     // FIXME:
     // equipment
-    // for (u8 y = 0; y < 5; y++) {
-    //     for (u8 x = 0; x < 3; x++) {
-    //         if (x == 1) continue;
-
-    //         characterRects[x][y]->item = NULL;
-    //     }
-    // }
+    // for (u8 y = 0; y < 5; y++) 
+    //     for (u8 x = 0; x < 2; x++) 
+    //         characterRects[x][y]->item = 
 
     // weapons
     for (u8 i = 0; i < 2; i++) characterRects[i][5]->item = player->weapons[i];
@@ -735,6 +777,32 @@ void renderCharacterRects (Console *console) {
 
 }
 
+// I don't like this function...
+char *getCharRectSlot () {
+
+    char slot[15];
+
+    if (characterXIdx == 0 && characterYIdx == 0) strcpy (slot, "Head");
+    else if (characterXIdx == 0 && characterYIdx == 1) strcpy (slot, "Necklace");
+    else if (characterXIdx == 0 && characterYIdx == 2) strcpy (slot, "Shoulders");
+    else if (characterXIdx == 0 && characterYIdx == 3) strcpy (slot, "Cape");
+    else if (characterXIdx == 0 && characterYIdx == 4) strcpy (slot, "Chest");
+    else if (characterXIdx == 1 && characterYIdx == 0) strcpy (slot, "Hands");
+    else if (characterXIdx == 1 && characterYIdx == 1) strcpy (slot, "Waist");
+    else if (characterXIdx == 1 && characterYIdx == 2) strcpy (slot, "Legs");
+    else if (characterXIdx == 1 && characterYIdx == 3) strcpy (slot, "Shoes");
+    else if (characterXIdx == 1 && characterYIdx == 4) strcpy (slot, "Ring");
+
+    else if (characterXIdx == 0 && characterYIdx == 5) strcpy (slot, "Main");
+    else if (characterXIdx == 1 && characterYIdx == 5) strcpy (slot, "Off");
+
+    char *retVal = (char *) calloc (strlen (slot), sizeof (char));
+    strcpy (retVal, slot);
+
+    return retVal;
+
+}
+
 static void renderCharacter (Console *console) {
 
     UIRect rect = { 0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT };
@@ -749,44 +817,96 @@ static void renderCharacter (Console *console) {
     UIRect descBox = { 2, 36, CHAR_DESC_BOX_WIDTH, CHAR_DESC_BOX_HEIGHT };
     drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
     Item *selected = getCharSelectedItem ();
-    // the slot is empty
     if (selected != NULL) {
         Graphics *g = (Graphics *) getGameComponent (selected, GRAPHICS);
         if (g != NULL) {
             char *slot = getItemSlot (selected);
-            char *str = createString ("%s: %s", slot,  g->name);
+            // FIXME: add dynamic color strings
+            char *str = createString ("%s: %s", slot, g->name);
             putStringAt (console, str, 3, 37, getItemColor (selected->rarity), 0x00000000);
             free (slot);
             free (str);
         }
     }
+
+    // the slot is empty
+    else {
+        char *slot = getCharRectSlot ();
+        // FIXME: CHANGE COLOR
+        putStringAt (console, slot, 3, 37, 0x000000FF, 0x00000000);
+        free (slot);
+    }
     
+}
+
+void showCharacter (bool dual) {
+
+    if (dual) {
+        UIRect c = { (16 * CHARACTER_DUAL_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
+        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
+    }
+
+    else {
+        UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
+        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
+    }
+
+    insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
+
+    if (characterRects == NULL) {
+        characterRects = initCharacterRects ();
+        resetCharacterRects ();
+    } 
+
+    else resetCharacterRects ();
+
+}
+
+void hideCharacter () {
+
+    if (characterView != NULL) {
+        ListElement *c = getListElement (activeScene->views, characterView);
+        destroyView ((UIView *) removeElement (activeScene->views, c));
+        characterView = NULL;
+    }
+
+}
+
+void updateCharacterPos (bool dual) {
+
+    if (characterView != NULL) {
+        if (dual) {
+            hideCharacter (true);
+            showCharacter (true);
+        } 
+
+        else {
+            hideCharacter (false);
+            showCharacter (false);
+        } 
+        
+    }
+
 }
 
 void toggleCharacter (void) {
 
     if (characterView == NULL) {
-        UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
-        insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
-
-        if (characterRects == NULL) {
-            characterRects = initCharacterRects ();
-            resetCharacterRects ();
+        if (inventoryView != NULL) {
+            updateInventoryPos (true);
+            showCharacter (true);
         } 
-        else resetCharacterRects ();
-    }
+
+        else showCharacter (false);
+    } 
 
     else {
-        if (characterView != NULL) {
-            ListElement *c = getListElement (activeScene->views, characterView);
-            destroyView ((UIView *) removeElement (activeScene->views, c));
-            characterView = NULL;
-        }
-    }
+        if (inventoryView != NULL) updateInventoryPos (false);
 
+        hideCharacter ();
+    } 
+     
 }
-
 
 /*** PAUSE MENU ***/
 
