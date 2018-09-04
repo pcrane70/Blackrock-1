@@ -202,6 +202,12 @@ extern unsigned int wallCount;
 
 /*** SCORE ***/
 
+typedef struct Score {
+
+    unsigned int killCount;
+    unsigned int score;
+
+} Score;
 
 /*** MOVEMENT ***/
 

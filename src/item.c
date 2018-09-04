@@ -20,7 +20,7 @@
 #include <sqlite3.h>
 
 // The path is form the makefile
-const char *dbPath = "./data/items.db";
+const char *itemsDbPath = "./data/items.db";
 sqlite3 *itemsDb;
 
 List *items = NULL;
@@ -53,7 +53,7 @@ void initItems (void) {
     if (itemsConfig == NULL) die ("Critical Error! No items config!\n");
 
     // connect to the items db
-    if (sqlite3_open (dbPath, &itemsDb) != SQLITE_OK) {
+    if (sqlite3_open (itemsDbPath, &itemsDb) != SQLITE_OK) {
         fprintf (stderr, "%s\n", sqlite3_errmsg (itemsDb));
         die ("Problems with items db!\n");
     } 

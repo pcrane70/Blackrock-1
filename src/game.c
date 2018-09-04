@@ -89,6 +89,10 @@ void initGame (void) {
     if (monsterConfig == NULL) 
         die ("Critical Error! No monster config!\n");
 
+    // connect to enemies db
+    void connectEnemiesDb (void);
+    connectEnemiesDb ();
+
     void initWorld (void);
     initWorld ();
 
@@ -712,6 +716,93 @@ void updateMovement () {
 
 }
 
+/*** ENEMIES ***/
+
+#include <sqlite3.h>
+
+// The path is form the makefile
+const char *enemiesDbPath = "./data/enemies.db";
+sqlite3 *enemiesDb;
+
+void createEnemiesDb (void) {
+
+    // create monsters table
+    char *sql = "DROP TABLE IF EXISTS Monsters;"
+                "CREATE TABLE Monsters(Id INT, Name TEXT, Gaphics INT, Combat INT, Move INT, Drops INT)";
+
+    char *err_msg = 0;
+
+    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed to create MONSTER table!\n");
+        fprintf (stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free (err_msg);
+    }
+
+    else fprintf (stdout, "Monstes table created!\n");
+
+    // create combat stats table
+    sql = "DROP TABLE IF EXISTS Combat;"
+          "CREATE TABLE Combat(Id INT, Health INT, Armour INT, Dps INT, Strength INT, Hitchance INT, Speed INT, Critical INT, Dodge INT, Parry INT, Block INT)";
+
+    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed to create COMBAT table!\n");
+        fprintf (stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free (err_msg);
+    }
+
+    else fprintf (stdout, "Combat table created!\n");
+
+
+    // create movement stats table
+    sql = "DROP TABLE IF EXISTS Movement;"
+          "CREATE TABLE Movement(Id INT, Speed INT, Frequency INT)";
+
+    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed to create MOVEMENT table!\n");
+        fprintf (stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free (err_msg);
+    }
+
+    else fprintf (stdout, "Movement table created!\n");
+
+    // create graphics table
+    sql = "DROP TABLE IF EXISTS Graphics;"
+          "CREATE TABLE Graphics(Id INT, Glyph INT, Colot TEXT)";
+
+    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed to create GRAPHICS table!\n");
+        fprintf (stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free (err_msg);
+    }
+
+    else fprintf (stdout, "Graphics table created!\n");
+
+    // FIXME: drops
+
+}
+
+void connectEnemiesDb () {
+
+    // connect to the items db
+    if (sqlite3_open (enemiesDbPath, &enemiesDb) != SQLITE_OK) {
+        fprintf (stderr, "%s\n", sqlite3_errmsg (enemiesDb));
+        die ("Problems with enemies db!\n");
+    } 
+    else fprintf (stdout, "Succesfully connected to the enemies db.\n");
+
+    // createEnemiesDb ();
+                                
+}
+
+/* void insertIntoMonstersDB () {
+
+    "INSERT INTO Food VALUES(1001, 'Apple', 46, 1, 1, 1, 0, 1, 50);"
+    "INSERT INTO Food VALUES(1002, 'Bread', 46, 1, 1, 1, 0, 1, 80);";
+
+
+} */
+
+/*** OLD way for creating monsters ***/
 GameObject *createMonster (u8 id) {
 
     GameObject *monster = NULL;
