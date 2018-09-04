@@ -470,6 +470,10 @@ void cleanUpGame (void) {
 
     // clean up items
     cleanUpItems ();
+
+    // clean up enemies memory and db
+    void cleanUpEnemies (void);
+    cleanUpEnemies ();
     
     // cleanup the message log
     destroyList (messageLog);
@@ -758,6 +762,38 @@ void createEnemiesDb (void) {
 
 }
 
+// 04/09/2018 -- 12:18
+// FIXME: this is only for testing 
+typedef struct {
+
+    u16 id;
+    char *name;
+    double probability;
+
+} Monster;
+
+#define MONSTER_COUNT       9
+
+List *enemyData = NULL;
+
+// Getting the enemies data from the db into memory
+static int loadEnemyData (void *data, int argc, char **argv, char **azColName) {
+   
+    Monster *mon = (Monster *) malloc (sizeof (Monster));
+
+    mon->id = atoi (argv[0]);
+    char temp[20];
+    strcpy (temp, argv[1]);
+    mon->name = (char *) calloc (strlen (temp) + 1, sizeof (char));
+    strcpy (mon->name, temp);
+    mon->probability = atof (argv[2]);
+
+    insertAfter (enemyData, LIST_END (enemyData), mon);
+
+   return 0;
+
+}
+
 void connectEnemiesDb () {
 
     // connect to the items db
@@ -769,10 +805,21 @@ void connectEnemiesDb () {
 
     // createEnemiesDb ();
 
-    // FIXME: fill the enemies arrays/lists for easier access
+    // enemies in memory
+    enemyData = initList (free);
+
+    // load the enemies data into memory
+    char *err = 0;
+    char *sql = "SELECT * FROM Monsters";
+          
+    if (sqlite3_exec (enemiesDb, sql, loadEnemyData, NULL, &err) != SQLITE_OK ) {
+        fprintf (stderr, "SQL error: %s\n", err);
+        sqlite3_free (err);
+    } 
+    
+    else fprintf(stdout, "Done loading monster data.\n");
                                 
 }
-
 
 /*** OLD way for creating monsters ***/
 GameObject *createMonster (u8 id) {
@@ -868,6 +915,13 @@ u8 getMonsterId (void) {
     }
 
     return choice;
+
+}
+
+void cleanUpEnemies (void) {
+
+    destroyList (enemyData);
+    sqlite3_close (enemiesDb);
 
 }
 
