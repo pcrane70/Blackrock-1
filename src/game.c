@@ -724,11 +724,14 @@ void updateMovement () {
 const char *enemiesDbPath = "./data/enemies.db";
 sqlite3 *enemiesDb;
 
+// FIXME:
+// this is only used for development
 void createEnemiesDb (void) {
 
+    // FIXME: add probability
     // create monsters table
     char *sql = "DROP TABLE IF EXISTS Monsters;"
-                "CREATE TABLE Monsters(Id INT, Name TEXT, Gaphics INT, Combat INT, Move INT, Drops INT)";
+                "CREATE TABLE Monsters(Id INT, Name TEXT, Probability DOUBLE)";
 
     char *err_msg = 0;
 
@@ -767,7 +770,7 @@ void createEnemiesDb (void) {
 
     // create graphics table
     sql = "DROP TABLE IF EXISTS Graphics;"
-          "CREATE TABLE Graphics(Id INT, Glyph INT, Colot TEXT)";
+          "CREATE TABLE Graphics(Id INT, Glyph INT, Color TEXT)";
 
     if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
         fprintf (stderr, "Error! Failed to create GRAPHICS table!\n");
