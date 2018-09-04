@@ -383,7 +383,7 @@ Item *createWeapon (u16 itemId) {
     addGameComponent (item, GRAPHICS, &g);
 
     item->dbId = itemId;
-    item->rarity = sqlite3_column_int (res, 3);
+    item->rarity = sqlite3_column_int (res, RARITRY_COL);
     item->value[0] = (u16) sqlite3_column_int (res, GOLD_COL);
     item->value[1] = (u16) sqlite3_column_int (res, SILVER_COL);
     item->value[2] = (u16) sqlite3_column_int (res, COPPER_COL);
