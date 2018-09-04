@@ -79,6 +79,7 @@ void initGame (void) {
     combatPool = initPool ();
     lootPool = initPool ();
 
+    // retrieves the data from the items db
     initItems ();
 
     // init the message log
@@ -724,61 +725,34 @@ void updateMovement () {
 const char *enemiesDbPath = "./data/enemies.db";
 sqlite3 *enemiesDb;
 
-// FIXME:
-// this is only used for development
+// this is only used for development purposes
 void createEnemiesDb (void) {
-
-    // FIXME: add probability
-    // create monsters table
-    char *sql = "DROP TABLE IF EXISTS Monsters;"
-                "CREATE TABLE Monsters(Id INT, Name TEXT, Probability DOUBLE)";
 
     char *err_msg = 0;
 
-    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed to create MONSTER table!\n");
-        fprintf (stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free (err_msg);
-    }
+    // create monsters table
+    // char *sql = "DROP TABLE IF EXISTS Monsters;"
+    //             "CREATE TABLE Monsters(Id INT, Name TEXT, Probability DOUBLE)";
 
-    else fprintf (stdout, "Monstes table created!\n");
+    // // create combat stats table
+    // sql = "DROP TABLE IF EXISTS Combat;"
+    //       "CREATE TABLE Combat(Id INT, Health INT, Armour INT, Dps INT, Strength INT, Hitchance INT, Speed INT, Critical INT, Dodge INT, Parry INT, Block INT)";
 
-    // create combat stats table
-    sql = "DROP TABLE IF EXISTS Combat;"
-          "CREATE TABLE Combat(Id INT, Health INT, Armour INT, Dps INT, Strength INT, Hitchance INT, Speed INT, Critical INT, Dodge INT, Parry INT, Block INT)";
+    // // create movement stats table
+    // sql = "DROP TABLE IF EXISTS Movement;"
+    //       "CREATE TABLE Movement(Id INT, Speed INT, Frequency INT)";
 
-    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed to create COMBAT table!\n");
-        fprintf (stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free (err_msg);
-    }
+    // // create graphics table
+    // sql = "DROP TABLE IF EXISTS Graphics;"
+    //       "CREATE TABLE Graphics(Id INT, Glyph INT, Color TEXT)";
 
-    else fprintf (stdout, "Combat table created!\n");
+    // if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+    //     fprintf (stderr, "Error! Failed to create GRAPHICS table!\n");
+    //     fprintf (stderr, "SQL error: %s\n", err_msg);
+    //     sqlite3_free (err_msg);
+    // }
 
-
-    // create movement stats table
-    sql = "DROP TABLE IF EXISTS Movement;"
-          "CREATE TABLE Movement(Id INT, Speed INT, Frequency INT)";
-
-    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed to create MOVEMENT table!\n");
-        fprintf (stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free (err_msg);
-    }
-
-    else fprintf (stdout, "Movement table created!\n");
-
-    // create graphics table
-    sql = "DROP TABLE IF EXISTS Graphics;"
-          "CREATE TABLE Graphics(Id INT, Glyph INT, Color TEXT)";
-
-    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed to create GRAPHICS table!\n");
-        fprintf (stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free (err_msg);
-    }
-
-    else fprintf (stdout, "Graphics table created!\n");
+    // else fprintf (stdout, "Table created!\n");
 
     // FIXME: drops
 
@@ -794,16 +768,11 @@ void connectEnemiesDb () {
     else fprintf (stdout, "Succesfully connected to the enemies db.\n");
 
     // createEnemiesDb ();
+
+    // FIXME: fill the enemies arrays/lists for easier access
                                 
 }
 
-/* void insertIntoMonstersDB () {
-
-    "INSERT INTO Food VALUES(1001, 'Apple', 46, 1, 1, 1, 0, 1, 50);"
-    "INSERT INTO Food VALUES(1002, 'Bread', 46, 1, 1, 1, 0, 1, 80);";
-
-
-} */
 
 /*** OLD way for creating monsters ***/
 GameObject *createMonster (u8 id) {
