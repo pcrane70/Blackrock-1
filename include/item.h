@@ -14,22 +14,16 @@
 
 /*** DB COLS ***/
 
-// for nomral items -- like food
-#define ID_COL          0
-#define NAME_COL        1
-#define GLYPH_COL       2
-#define RARITRY_COL     3
-#define GOLD_COL        4
-#define SILVER_COL      5
-#define COPPER_COL      6
-#define STACKABLE_COL   7
-#define QUANTITY_COL    8
-
-// for weapons
-#define DPS_COL         7
-#define SLOT_COL        8
-#define TWO_HAND_COL    9
-#define LIFETIME_COL    10   
+#define ITEM_ID_COL          0
+#define ITEM_NAME_COL        1
+#define ITEM_RARITRY_COL     2
+#define ITEM_GOLD_COL        3
+#define ITEM_SILVER_COL      4
+#define ITEM_COPPER_COL      5
+#define ITEM_PROB_COL        6
+#define ITEM_QUANTITY_COL    7  
+#define ITEM_STACKABLE_COL   8
+#define ITEM_CALLBACK_COL    9
 
 typedef enum ItemComponent {
 
@@ -49,13 +43,14 @@ extern Pool *itemsPool;
 
 typedef struct Item {
 
-    u16 itemId;     
-    u16 dbId;       // item's unique identifire in our db
+    u32 itemId;     
+    u32 dbId;       // item's unique identifire in our db
     u8 type;        // consumable, weapon, etc?
     u8 rarity;      // epic, rare, common, rubish, etc.
     bool stackable; // this is used to handle stacks, max stack is 20
     u8 quantity;    
     u16 value[3];   // gold, silver, copper
+    double probability;
     EventListener callback;   
     void *components[GAME_OBJECT_COMPS];  
     void *itemComps[ITEM_COMPS];
@@ -65,8 +60,9 @@ typedef struct Item {
 // 23/08/2018 -- 6:55 -- testing how does this works
 typedef struct Armour {
 
-    u16 itemId;     
-    u16 dbId;       // item's unique identifire in our db
+    u32 itemId;     
+    u32 dbId;       // item's unique identifire in our db
+    u8 type;
     u16 maxLifetime;
     u16 lifetime;
     u8 slot;
@@ -79,6 +75,7 @@ typedef struct Weapon {
 
     u16 itemId;     
     u16 dbId;       // item's unique identifire in our db
+    u8 type;
     u8 dps;
     u16 maxLifetime;
     u16 lifetime;
@@ -90,8 +87,8 @@ typedef struct Weapon {
 
 extern void initItems (void);
 
-extern Item *createItem (u16 itemId);
-extern Item *createWeapon (u16 itemId);
+extern Item *createItem (u32 itemId);
+extern Item *createWeapon (u32 itemId);
 
 extern void getItem (void);
 extern void dropItem (Item *);

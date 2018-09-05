@@ -58,9 +58,11 @@ void initItems (void) {
     // development functions
     // This are used only for testing and to populate our dbs
     void createItemsDb (void);
-    createItemsDb ();
+    // createItemsDb ();
 
 }
+
+/*** ITEMS IN MEMORY ***/
 
 Item *newItem (void) {
 
@@ -148,6 +150,7 @@ void addItemComp (Item *item, ItemComponent type, void *data) {
             Weapon *weaponData = (Weapon *) data;
             newWeapon->itemId = item->itemId;
             newWeapon->dbId = item->dbId;
+            newWeapon->type = weaponData->type;
             newWeapon->dps = weaponData->dps;
             newWeapon->maxLifetime = weaponData->maxLifetime;
             newWeapon->lifetime = weaponData->lifetime;
@@ -162,6 +165,7 @@ void addItemComp (Item *item, ItemComponent type, void *data) {
             Armour *armourData = (Armour *) data;
             newArmour->itemId = item->itemId;
             newArmour->dbId = item->dbId;
+            newArmour->type = armourData->type;
             newArmour->maxLifetime = armourData->maxLifetime;
             newArmour->lifetime = armourData->lifetime;
             newArmour->slot = armourData->slot;
@@ -269,50 +273,43 @@ Item *removeFromInventory (Item *item) {
 
 }
 
-// 28/08/2018 -- 11:15 -- testing effects inside items
-void healPlayer (void *i) {
+/*** CREATING ITEMS ***/
 
-    Item *item = (Item *) i;
+u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
 
-    i32 *currHealth = &player->combat->baseStats.health;
-    u32 maxHealth = player->combat->baseStats.maxHealth;
+    // get the db data
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Graphics WHERE Id = ?";
 
-    // FIXME: get the real data
-    u16 health = 5;
-
-    if (*currHealth == maxHealth) 
-        logMessage ("You already have full health.", WARNING_COLOR);
-
+    if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
     else {
-        u16 realHp;
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
+        return 1;
+    } 
 
-        *currHealth += health;
+    int step = sqlite3_step (res);
 
-        // clamp the value if necessary
-        if (*currHealth > maxHealth) {
-            realHp = health - (*currHealth - maxHealth);
-            *currHealth = maxHealth;
-        }
+    asciiChar glyph = (asciiChar) sqlite3_column_int (res, 1);
+    const char *c = sqlite3_column_text (res, 2);
+    char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
+    strcpy (colour, c);
+    u32 color = (u32) xtoi (colour);
+    Graphics g = { 0, glyph, color, 0x000000FF, false, false, itemName };
+    addGameComponent (item, GRAPHICS, &g);
 
-        else realHp = health;  
+    sqlite3_finalize (res);
 
-        item->quantity--;
-        if (item->quantity == 0) removeFromInventory (item);
-
-        // TODO: maybe better strings
-        // you have ate the apple for 5 health
-        char *str = createString ("You have been healed by %i hp.", realHp);
-        logMessage (str, SUCCESS_COLOR);
-        free (str);
-    }
+    return 0;
 
 }
 
 // 29/08/2018 -- 23:34 -- new way of creating an item using sqlite db
-Item *createItem (u16 itemId) {
+// 05/09/2018 -- 11:04 -- creating items with a more complex db
+Item *createItem (u32 itemId) {
 
+    // get the db data
     sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Food WHERE Id = ?";
+    char *sql = "SELECT * FROM Items WHERE Id = ?";
 
     if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
     else {
@@ -322,29 +319,26 @@ Item *createItem (u16 itemId) {
 
     int step = sqlite3_step (res);
 
-    if (step == SQLITE_ROW) {
-        fprintf (stdout, "%i: ", sqlite3_column_int (res, itemId));
-        fprintf(stdout, "%s\n", sqlite3_column_text (res, NAME_COL));
-    }
-
     Item *item = newItem ();
-    asciiChar glyph = (asciiChar) sqlite3_column_int (res, GLYPH_COL);
-    const char *temp = sqlite3_column_text (res, NAME_COL);
-    char *name = (char *) calloc (strlen (temp), sizeof (char));
-    strcpy (name, temp);
-
-    // FIXME: COLOR
-    u32 color = 0xFFFFFFFF;
-    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-    addGameComponent (item, GRAPHICS, &g);
-
     item->dbId = itemId;
-    item->rarity = sqlite3_column_int (res, 3);
-    item->stackable = (sqlite3_column_int (res, STACKABLE_COL) == 0) ? false : true;
-    item->quantity = sqlite3_column_int (res, QUANTITY_COL);
-    item->value[0] = (u16) sqlite3_column_int (res, GOLD_COL);
-    item->value[1] = (u16) sqlite3_column_int (res, SILVER_COL);
-    item->value[2] = (u16) sqlite3_column_int (res, COPPER_COL);
+
+    char name[30];
+    strcpy (name, sqlite3_column_text (res, ITEM_NAME_COL));
+    item->rarity = sqlite3_column_int (res, ITEM_RARITRY_COL);
+    item->value[0] = (u16) sqlite3_column_int (res, ITEM_GOLD_COL);
+    item->value[1] = (u16) sqlite3_column_int (res, ITEM_SILVER_COL);
+    item->value[2] = (u16) sqlite3_column_int (res, ITEM_COPPER_COL);
+    item->probability = sqlite3_column_double (res, ITEM_PROB_COL);
+    item->stackable = (sqlite3_column_int (res, ITEM_STACKABLE_COL) == 0) ? false : true;
+    item->quantity = sqlite3_column_int (res, ITEM_QUANTITY_COL);
+    
+    // FIXME: callback
+
+    // graphics
+    if (addGraphicsToItem (itemId, item, name) != 0) {
+        fprintf (stderr, "Error adding graphics component!\n");
+        return NULL;
+    } 
 
     sqlite3_finalize (res);
 
@@ -352,57 +346,78 @@ Item *createItem (u16 itemId) {
 
 } 
 
-Item *createWeapon (u16 itemId) {
+Item *createWeapon (u32 itemId) {
 
+    Item *weapon = createItem (itemId);
+
+    weapon->stackable = false;
+    weapon->quantity = 1;
+
+    // get the db data
     sqlite3_stmt *res;
     char *sql = "SELECT * FROM Weapons WHERE Id = ?";
-    int rc = sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0);
 
-    if (rc == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
-    else fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
+    if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
+        return NULL;
+    } 
 
     int step = sqlite3_step (res);
 
-    if (step == SQLITE_ROW)
-        fprintf (stdout, "Item to create: %s\n", sqlite3_column_text (res, NAME_COL));
- 
-    Item *item = newItem ();
-    asciiChar glyph = (asciiChar) sqlite3_column_int (res, GLYPH_COL);
-    const char *temp = sqlite3_column_text (res, NAME_COL);
-    char *name = (char *) calloc (strlen (temp), sizeof (char));
-    strcpy (name, temp);
-
-    // FIXME: COLOR
-    u32 color = 0xFFFFFFFF;
-    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-    addGameComponent (item, GRAPHICS, &g);
-
-    item->dbId = itemId;
-    item->rarity = sqlite3_column_int (res, RARITRY_COL);
-    item->value[0] = (u16) sqlite3_column_int (res, GOLD_COL);
-    item->value[1] = (u16) sqlite3_column_int (res, SILVER_COL);
-    item->value[2] = (u16) sqlite3_column_int (res, COPPER_COL);
-
-    // weapon
-    item->stackable = false;
-    item->quantity = 1;
-
     Weapon w;
-    w.dps = (u8) sqlite3_column_int (res, DPS_COL);
-    w.maxLifetime = (u16) sqlite3_column_int (res, LIFETIME_COL);
+    w.dbId = itemId;
+    w.type = (u8) sqlite3_column_int (res, 1);
+    w.twoHanded = (sqlite3_column_int (res, 2) == 0) ? false : true;
+    w.dps = (u8) sqlite3_column_int (res, 3);
+    w.slot = sqlite3_column_int (res, 4);
+    w.maxLifetime = (u16) sqlite3_column_int (res, 5);
     w.lifetime = w.maxLifetime;
     w.isEquipped = false;
-    w.slot = sqlite3_column_int (res, SLOT_COL);
-    w.twoHanded = (sqlite3_column_int (res, TWO_HAND_COL) == 0) ? false : true;
-    addItemComp (item, WEAPON, &w);
-    
-    sqlite3_finalize(res);
+    addItemComp (weapon, WEAPON, &w);
 
-    fprintf (stdout, "New weapon created!\n");
+    sqlite3_finalize (res);
 
-    return item;
+    return weapon;
 
 }
+
+// FIXME:
+Item *createArmour (u32 itemId) {
+
+    Item *armour = createItem (itemId);
+
+    armour->stackable = false;
+    armour->quantity = 1;
+
+    // get the db data
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Armour WHERE Id = ?";
+
+    if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
+        return NULL;
+    } 
+
+    int step = sqlite3_step (res);
+
+    Armour a;
+    a.dbId = itemId;
+    // a.type = ;
+    // a.slot = ;
+    // a.maxLifetime = ;
+    a.lifetime = a.maxLifetime;
+    a.isEquipped = false;
+    addItemComp (armour, WEAPON, &a);
+
+    sqlite3_finalize (res);
+
+    return armour;
+
+}
+
+/*** ITEMS FUNCS ***/
 
 List *getItemsAtPos (u8 x, u8 y) {
 
@@ -647,7 +662,7 @@ void getLootItem (u8 lootYIdx) {
 
 // }
 
-/*** WEAPONS -- EQUIPMENT ***/
+/*** WEAPONS -- ARMOUR ***/
 
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
@@ -795,6 +810,47 @@ void updateLifeTime (void) {
 
 }
 
+/*** CALLBACKS ***/
+
+// 28/08/2018 -- 11:15 -- testing effects inside items
+void healPlayer (void *i) {
+
+    Item *item = (Item *) i;
+
+    i32 *currHealth = &player->combat->baseStats.health;
+    u32 maxHealth = player->combat->baseStats.maxHealth;
+
+    // FIXME: get the real data
+    u16 health = 5;
+
+    if (*currHealth == maxHealth) 
+        logMessage ("You already have full health.", WARNING_COLOR);
+
+    else {
+        u16 realHp;
+
+        *currHealth += health;
+
+        // clamp the value if necessary
+        if (*currHealth > maxHealth) {
+            realHp = health - (*currHealth - maxHealth);
+            *currHealth = maxHealth;
+        }
+
+        else realHp = health;  
+
+        item->quantity--;
+        if (item->quantity == 0) removeFromInventory (item);
+
+        // TODO: maybe better strings
+        // you have ate the apple for 5 health
+        char *str = createString ("You have been healed by %i hp.", realHp);
+        logMessage (str, SUCCESS_COLOR);
+        free (str);
+    }
+
+}
+
 /*** CLEAN UP ***/
 
 void cleanUpItems (void) {
@@ -811,7 +867,7 @@ void cleanUpItems (void) {
 
 }
 
-/*** DEVELOPMENT ***/
+/*** DEVELOPMENT - DATABASE ***/
 
 // 05/09/2018 -- new way for creating our items db 
 void createItemsDb (void) {
@@ -820,30 +876,42 @@ void createItemsDb (void) {
 
     // master item
     char *sql = "DROP TABLE IF EXISTS Items;"
-                "CREATE TABLE Items(Id INT, Type INT, Two INT, Dps INT, Slot INT, Lifetime INT);";
+                "CREATE TABLE Items(Id INT, Name TEXT, Rarity INT, Gold INT, Silver INT, Copper INT, Probability DOUBLE, Quantity INT, Stackable INT, Callback INT);";
+
+    if (sqlite3_exec (itemsDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed create ITEMS table!\n");
+        fprintf (stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free (err_msg);
+    }
+
+    // graphics
+    sql = "DROP TABLE IF EXISTS Graphics;"
+          "CREATE TABLE Graphics(Id INT, Glyph INT, Color TEXT)";
+
+    if (sqlite3_exec (itemsDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed create GRAPHICS table!\n");
+        fprintf (stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free (err_msg);
+    }
 
     // weapons
     sql = "DROP TABLE IF EXISTS Weapons;"
           "CREATE TABLE Weapons(Id INT, Type INT, Two INT, Dps INT, Slot INT, Lifetime INT);";
 
     if (sqlite3_exec (itemsDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed create Weapons table!\n");
+        fprintf (stderr, "Error! Failed create WEAPONS table!\n");
         fprintf (stderr, "SQL error: %s\n", err_msg);
         sqlite3_free (err_msg);
     }
-
-    else fprintf (stdout, "Weapons table created successfully!\n");
 
     // armour
     sql = "DROP TABLE IF EXISTS Armour;"
           "CREATE TABLE Armour(Id INT, Type INT, Slot INT, Lifetime INT);";
 
     if (sqlite3_exec (itemsDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed create Armour table!\n");
+        fprintf (stderr, "Error! Failed create ARMOUR table!\n");
         fprintf (stderr, "SQL error: %s\n", err_msg);
         sqlite3_free (err_msg);
     }
-
-    else fprintf (stdout, "Armour table created successfully!\n");
 
 }
