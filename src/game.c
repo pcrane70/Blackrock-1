@@ -763,10 +763,9 @@ void createEnemiesDb (void) {
 }
 
 // 04/09/2018 -- 12:18
-// FIXME: this is only for testing 
 typedef struct {
 
-    u16 id;
+    u32 id;
     char *name;
     double probability;
 
@@ -821,61 +820,156 @@ void connectEnemiesDb () {
                                 
 }
 
-/*** OLD way for creating monsters ***/
-GameObject *createMonster (u8 id) {
+Monster *searchMonById (u32 monId) {
 
-    GameObject *monster = NULL;
-
-    ConfigEntity *monEntity = getEntityWithId (monsterConfig, id);
-    
-    if (monEntity != NULL) {
-        monster = createGO ();
-
-        // This is just a placeholder until it spawns in the world
-        Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
-        addComponent (monster, POSITION, &pos);
-
-        asciiChar glyph = atoi (getEntityValue (monEntity, "glyph"));
-        u32 color = xtoi (getEntityValue (monEntity, "color"));
-        char *name = getEntityValue (monEntity, "name");
-        Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-        addComponent (monster, GRAPHICS, &g);
-
-        Physics phys = { 0, true, true };
-        addComponent (monster, PHYSICS, &phys);
-
-        u32 speed = atoi (getEntityValue (monEntity, "mv_speed"));
-        u32 frecuency = atoi (getEntityValue (monEntity, "mv_frequency"));
-        Movement mv = { .speed = speed, .frecuency = frecuency, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
-        addComponent (monster, MOVEMENT, &mv);
-
-        Combat c;
-
-        c.baseStats.strength = atoi (getEntityValue (monEntity, "strength"));
-        c.attack.baseDps = atoi (getEntityValue (monEntity, "baseDps"));
-        c.attack.hitchance = atoi (getEntityValue (monEntity, "hitchance"));
-        c.attack.attackSpeed = atoi (getEntityValue (monEntity, "attack_speed"));
-        c.attack.spellPower = atoi (getEntityValue (monEntity, "spell_power"));
-        c.attack.criticalStrike = atoi (getEntityValue (monEntity, "critical"));
-        c.defense.armor = atoi (getEntityValue (monEntity, "armor"));
-        c.defense.dodge = atoi (getEntityValue (monEntity, "dodge"));
-        c.defense.parry = atoi (getEntityValue (monEntity, "parry"));
-        c.defense.block = atoi (getEntityValue (monEntity, "block"));
-
-        c.baseStats.maxHealth = (atoi (getEntityValue (monEntity, "baseHP"))) + c.defense.armor;
-        c.baseStats.health = c.baseStats.maxHealth;
-
-        addComponent (monster, COMBAT, &c);
+    Monster *mon = NULL;
+    for (ListElement *e = LIST_START (enemyData); e != NULL; e = e->next) {
+        mon = (Monster *) e->data;
+        if (mon->id == monId) break;
     }
 
-    return monster;
+    return mon;
+
+}
+
+u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
+
+    // get the db data
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Graphics WHERE Id = ?";
+
+    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
+        return 1;
+    } 
+
+    int step = sqlite3_step (res);
+
+    asciiChar glyph = (asciiChar) sqlite3_column_int (res, 1);
+    char *name = (char *) calloc (strlen (monData->name) + 1, sizeof (char));
+    strcpy (name, monData->name);
+    const char *c = sqlite3_column_text (res, 2);
+    char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
+    strcpy (colour, c);
+    u32 color = (u32) xtoi (colour);
+    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
+    addComponent (mon, GRAPHICS, &g);
+
+    sqlite3_finalize (res);
+
+    return 0;
+
+}
+
+u8 addMovementToMon (u32 monId, Monster *monData, GameObject *mon) {
+
+    // get the db data
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Movement WHERE Id = ?";
+
+    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
+        return 1;
+    } 
+
+    int step = sqlite3_step (res);
+
+    u32 speed = (u32) sqlite3_column_int (res, 1);
+    u32 frecuency = (u32) sqlite3_column_int (res, 2);
+    Movement mv = { .speed = speed, .frecuency = frecuency, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
+    addComponent (mon, MOVEMENT, &mv);
+
+    sqlite3_finalize (res);
+
+    return 0;
+
+}
+
+u8 addCombatToMon (u32 monId, Monster *monData, GameObject *mon) {
+
+   // get the db data
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Combat WHERE Id = ?";
+
+    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
+        return 1;
+    } 
+
+    int step = sqlite3_step (res);
+
+    Combat c;
+
+    c.baseStats.strength = (u32) sqlite3_column_int (res, 4);
+    c.attack.baseDps = (u32) sqlite3_column_int (res, 3);
+    c.attack.hitchance = (u32) sqlite3_column_int (res, 5);
+    c.attack.attackSpeed = (u32) sqlite3_column_int (res, 6);
+    c.attack.spellPower = 0;
+    c.attack.criticalStrike = (u32) sqlite3_column_int (res, 7);
+    c.defense.armor = (u32) sqlite3_column_int (res, 2);
+    c.defense.dodge = (u32) sqlite3_column_int (res, 8);
+    c.defense.parry = (u32) sqlite3_column_int (res, 9);
+    c.defense.block = (u32) sqlite3_column_int (res, 10);
+
+    c.baseStats.maxHealth = ((u32) sqlite3_column_int (res, 1)) + c.defense.armor;
+    c.baseStats.health = c.baseStats.maxHealth;
+
+    addComponent (mon, COMBAT, &c);
+
+    sqlite3_finalize (res);
+
+    return 0; 
+
+}
+
+// NEW way for creating the monsters using the enemies db and the in game memory enemy list
+GameObject *createMonster (u32 monId) {
+
+    // get the memory data
+    Monster *monData = searchMonById (monId);
+    if (monData == NULL) {
+        fprintf (stderr, "Error! No monster found with the provided id!\n");
+        return NULL;
+    }
+
+    GameObject *mon = createGO ();
+
+    // This is just a placeholder until it spawns in the world
+    Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
+    addComponent (mon, POSITION, &pos);
+
+    // graphics
+    if (addGraphicsToMon (monId, monData, mon) != 0) {
+        fprintf (stderr, "Error adding graphics component!\n");
+        return NULL;
+    } 
+
+    Physics phys = { 0, true, true };
+    addComponent (mon, PHYSICS, &phys);
+
+    // movement
+    if (addMovementToMon (monId, monData, mon) != 0) {
+        fprintf (stderr, "Error adding movement component!\n");
+        return NULL;
+    } 
+
+    // combat
+    if (addCombatToMon (monId, monData, mon) != 0) {
+        fprintf (stderr, "Error adding combat component!\n");
+        return NULL;
+    } 
+
+    return mon;
 
 }
 
 // 22/08/2018 -- 7:11 -- this is our first random monster generation function
 // TODO: maybe later also take into account the current level
 // FIXME: create a better system
-u8 getMonsterId (void) {
+u32 getMonsterId (void) {
 
     // number of monster per type
     u8 weak = 2;
@@ -927,6 +1021,7 @@ void cleanUpEnemies (void) {
 
 /*** LOOT - ITEMS ***/
 
+// FIXME:
 void createLoot (GameObject *go) {
 
     // // FIXME: generate random money
@@ -1292,6 +1387,7 @@ void placeStairs (Point spawn) {
 
 }
 
+// FIXME: 
 void generateLevel () {
 
     // make sure we have cleaned the previous level data
@@ -1306,18 +1402,29 @@ void generateLevel () {
     // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
     placeStairs (getFreeSpot (currentLevel->mapCells));
 
+    // FIXME: how do we handle how many monster sto add
+    u8 monNum = 10;
+    // FIXME: better error handling
     fprintf (stdout, "Creating monsters...\n");
-    for (short unsigned int i = 0; i < 10; i++) {
+    u16 count = 0;
+    for (short unsigned int i = 0; i < monNum; i++) {
         // generate a random monster
+        // FIXME: create a better system
         GameObject *monster = createMonster (getMonsterId ());
-        // spawn in a random position
-        Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
-        Position *monsterPos = (Position *) getComponent (monster, POSITION);
-        monsterPos->x = (u8) monsterSpawnPos.x;
-        monsterPos->y = (u8) monsterSpawnPos.y;
-        // TODO: mark the spawnPos as filled
+        if (monster != NULL) {
+            // spawn in a random position
+            Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
+            Position *monsterPos = (Position *) getComponent (monster, POSITION);
+            monsterPos->x = (u8) monsterSpawnPos.x;
+            monsterPos->y = (u8) monsterSpawnPos.y;
+            // TODO: mark the spawnPos as filled
+            count++;
+        }
+
+        else fprintf (stderr, "Error creating monster!\n");
+        
     }
-    fprintf (stdout, "Done creating monster.\n");
+    fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
 
     // FIXME:
     // 20/08/2018 -- 17:24 -- our items are broken until we have a config file

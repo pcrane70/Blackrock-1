@@ -320,10 +320,12 @@ Item *createItem (u16 itemId) {
 
     sqlite3_stmt *res;
     char *sql = "SELECT * FROM Food WHERE Id = ?";
-    int rc = sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0);
 
-    if (rc == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
-    else fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
+    if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
+        return NULL;
+    } 
 
     int step = sqlite3_step (res);
 
@@ -351,7 +353,7 @@ Item *createItem (u16 itemId) {
     item->value[1] = (u16) sqlite3_column_int (res, SILVER_COL);
     item->value[2] = (u16) sqlite3_column_int (res, COPPER_COL);
 
-    sqlite3_finalize(res);
+    sqlite3_finalize (res);
 
     return item;
 
