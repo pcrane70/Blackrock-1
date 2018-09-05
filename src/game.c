@@ -49,7 +49,7 @@ bool playerTookTurn = false;
 Level *currentLevel = NULL;
 
 // Configs
-Config *monsterConfig = NULL;
+// Config *monsterConfig = NULL;
 
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -86,9 +86,9 @@ void initGame (void) {
     messageLog = initList (free);
 
     // getting the data
-    monsterConfig = parseConfigFile ("./data/monster.cfg");
-    if (monsterConfig == NULL) 
-        die ("Critical Error! No monster config!\n");
+    // monsterConfig = parseConfigFile ("./data/monster.cfg");
+    // if (monsterConfig == NULL) 
+    //     die ("Critical Error! No monster config!\n");
 
     // connect to enemies db
     void connectEnemiesDb (void);
@@ -482,7 +482,7 @@ void cleanUpGame (void) {
     free (currentLevel);
 
     // clear the configs
-    clearConfig (monsterConfig);
+    // clearConfig (monsterConfig);
 
     fprintf (stdout, "Done cleanning up game!\n");
 

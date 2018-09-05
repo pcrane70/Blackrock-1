@@ -48,10 +48,6 @@ void initItems (void) {
     items = initList (free);
     itemsPool = initPool ();
 
-    // items db
-    itemsConfig = parseConfigFile ("./data/items.cfg");
-    if (itemsConfig == NULL) die ("Critical Error! No items config!\n");
-
     // connect to the items db
     if (sqlite3_open (itemsDbPath, &itemsDb) != SQLITE_OK) {
         fprintf (stderr, "%s\n", sqlite3_errmsg (itemsDb));
@@ -60,12 +56,9 @@ void initItems (void) {
     else fprintf (stdout, "Succesfully connected to the items db.\n");
 
     // development functions
-    void insertIntoFoodDb (void);
-    void insertIntoWeaponsDb (void);
-
     // This are used only for testing and to populate our dbs
-    // insertIntoFoodDb ();
-    // insertIntoWeaponsDb ();
+    void createItemsDb (void);
+    createItemsDb ();
 
 }
 
@@ -820,55 +813,37 @@ void cleanUpItems (void) {
 
 /*** DEVELOPMENT ***/
 
-void insertIntoFoodDb (void) {
-
-    // we are filling up the db with some data
-    char *sql = "DROP TABLE IF EXISTS Food;"
-                "CREATE TABLE Food(Id INT, Name TEXT, Glyph INT, Rarity INT, Stackable INT, Quantity INT, Gold INT, Silver INT, Copper INT);"
-                "INSERT INTO Food VALUES(1001, 'Apple', 46, 1, 1, 1, 0, 1, 50);"
-                "INSERT INTO Food VALUES(1002, 'Bread', 46, 1, 1, 1, 0, 1, 80);";
+// 05/09/2018 -- new way for creating our items db 
+void createItemsDb (void) {
 
     char *err_msg = 0;
-    int rc = sqlite3_exec (itemsDb, sql, 0, 0, &err_msg);
 
-    if (rc != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed to work on table!\n");
+    // master item
+    char *sql = "DROP TABLE IF EXISTS Items;"
+                "CREATE TABLE Items(Id INT, Type INT, Two INT, Dps INT, Slot INT, Lifetime INT);";
+
+    // weapons
+    sql = "DROP TABLE IF EXISTS Weapons;"
+          "CREATE TABLE Weapons(Id INT, Type INT, Two INT, Dps INT, Slot INT, Lifetime INT);";
+
+    if (sqlite3_exec (itemsDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed create Weapons table!\n");
         fprintf (stderr, "SQL error: %s\n", err_msg);
         sqlite3_free (err_msg);
     }
 
-    else fprintf (stdout, "Food's sql executed succesfully!\n");
+    else fprintf (stdout, "Weapons table created successfully!\n");
 
-}
+    // armour
+    sql = "DROP TABLE IF EXISTS Armour;"
+          "CREATE TABLE Armour(Id INT, Type INT, Slot INT, Lifetime INT);";
 
-void insertIntoWeaponsDb (void) {
-
-    // creating table
-    char *create = "DROP TABLE IF EXISTS Weapons;"
-                "CREATE TABLE Weapons(Id INT, Name TEXT, Glyph INT, Rarity INT,\
-                Gold INT, Silver INT, Copper INT, Dps INT, Slot INT, Two INT, Lifetime INT);";
-                
-    char *err_msg = 0;
-    int rc = sqlite3_exec (itemsDb, create, 0, 0, &err_msg);
-
-    if (rc != SQLITE_OK) {
+    if (sqlite3_exec (itemsDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+        fprintf (stderr, "Error! Failed create Armour table!\n");
         fprintf (stderr, "SQL error: %s\n", err_msg);
         sqlite3_free (err_msg);
-        die ("Error! Failed to create weapons table!\n");
     }
 
-    // add some data
-    char *insert = "INSERT INTO Weapons VALUES(2001, 'Soldier Sword', 46, 1, 1, 90, 50, 5, 1, 0, 10);"
-            "INSERT INTO Weapons VALUES(2002, 'Combat Axe', 46, 1, 2, 50, 0, 8, 1, 1, 15);";
-
-    rc = sqlite3_exec (itemsDb, insert, 0, 0, &err_msg);
-
-    if (rc != SQLITE_OK) {
-        fprintf (stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free (err_msg);
-        die ("Error! Failed to add to weapons table!\n");
-    }
-
-    fprintf (stdout, "Weapon's sql executed succesfully!\n");
+    else fprintf (stdout, "Armour table created successfully!\n");
 
 }
