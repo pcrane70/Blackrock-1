@@ -25,6 +25,7 @@ typedef enum GameComponent {
 typedef struct GameObject {
     
     u32 id;
+    u32 dbId;   // 06/09/2018 -- we need to this somewhere
     void *components[COMP_COUNT];
 
 } GameObject;
@@ -126,8 +127,7 @@ typedef struct Combat  {
 typedef struct Entity {
 
     u32 objectId;
-    u8 entityId;     // unique id in the db
-    
+    u32 entityId;     // unique id in the db
 
 } Entity;
 
@@ -204,8 +204,8 @@ extern unsigned int wallCount;
 
 typedef struct Score {
 
-    unsigned int killCount;
-    unsigned int score;
+    u32 killCount;
+    u32 score;
 
 } Score;
 

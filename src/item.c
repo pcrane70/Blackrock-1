@@ -404,9 +404,9 @@ Item *createArmour (u32 itemId) {
 
     Armour a;
     a.dbId = itemId;
-    // a.type = ;
-    // a.slot = ;
-    // a.maxLifetime = ;
+    a.type = (u8) sqlite3_column_int (res, 1);
+    a.slot = (u8) sqlite3_column_int (res, 2);
+    a.maxLifetime = (u16) sqlite3_column_int (res, 3);
     a.lifetime = a.maxLifetime;
     a.isEquipped = false;
     addItemComp (armour, WEAPON, &a);

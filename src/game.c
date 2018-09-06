@@ -758,7 +758,16 @@ void createEnemiesDb (void) {
 
     // else fprintf (stdout, "Table created!\n");
 
-    // FIXME: drops
+    // 06/09/2018 -- first approach to a drop system
+    // drops
+    // char *sql = "DROP TABLE IF EXISTS Drops;"
+    //             "CREATE TABLE Drops(Id INT, Min INT, Max INT, Items TEXT)";
+
+    // if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
+    //     fprintf (stderr, "Error! Failed to create Drops table!\n");
+    //     fprintf (stderr, "SQL error: %s\n", err_msg);
+    //     sqlite3_free (err_msg);
+    // }
 
 }
 
@@ -936,6 +945,7 @@ GameObject *createMonster (u32 monId) {
     }
 
     GameObject *mon = createGO ();
+    mon->dbId = monId;
 
     // This is just a placeholder until it spawns in the world
     Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
@@ -1022,9 +1032,12 @@ void cleanUpEnemies (void) {
 /*** LOOT - ITEMS ***/
 
 // FIXME:
+// generate random loot based on the enemy
 void createLoot (GameObject *go) {
 
-    // // FIXME: generate random money
+    // generate random money
+    Loot newLoot;
+
     // newLoot.money[0] = 0;
     // newLoot.money[1] = 1;
     // newLoot.money[2] = 50;
