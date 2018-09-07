@@ -310,6 +310,35 @@ void updateLootUI (u8 yIdx) {
 
 }
 
+void renderLootRects (Console *console) {
+
+    if (LIST_SIZE (lootRects) == 0) {
+        // reset highlighted
+        lootYIdx = 0;
+
+        if (currentLoot->lootItems != NULL) {
+            u8 y = 0;
+            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) { 
+                LootRect *lr = createLootRect (y, (Item *) e->data);
+                if (y == 0) drawLootRect (console, lr, 0x000000FF);
+                else drawLootRect (console, lr, 0xFFFFFFFF);
+                insertAfter (lootRects, LIST_END (lootRects), lr);
+                y++;
+            }
+        }
+    }
+
+    else {
+        u8 count = 0;
+        for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) {
+            if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, 0x000000FF);
+            else drawLootRect (console, (LootRect *) e->data, 0xFFFFFFFF);
+            count++;
+        }
+    }     
+
+}
+
 static void renderLoot (Console *console) {
 
     if (currentLoot != NULL) {
@@ -318,30 +347,8 @@ static void renderLoot (Console *console) {
 
         putStringAt (console, "Loot", 8, 2, LOOT_TEXT, 0x00000000);
 
-        if (LIST_SIZE (lootRects) == 0) {
-            // reset highlighted
-            lootYIdx = 0;
-
-            if (currentLoot->lootItems != NULL) {
-                u8 y = 0;
-                for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) { 
-                    LootRect *lr = createLootRect (y, (Item *) e->data);
-                    if (y == 0) drawLootRect (console, lr, 0x000000FF);
-                    else drawLootRect (console, lr, 0xFFFFFFFF);
-                    insertAfter (lootRects, LIST_END (lootRects), lr);
-                    y++;
-                }
-            }
-        }
-
-        else {
-            u8 count = 0;
-            for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) {
-                if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, 0x000000FF);
-                else drawLootRect (console, (LootRect *) e->data, 0xFFFFFFFF);
-                count++;
-            }
-        }        
+        if ((currentLoot->lootItems != NULL) || (LIST_SIZE (currentLoot->lootItems) > 0))
+            renderLootRects (console);   
 
         // gold
         char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);

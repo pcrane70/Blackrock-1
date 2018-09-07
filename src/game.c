@@ -186,7 +186,8 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Graphics *graphicsData = (Graphics *) data;
             newGraphics->objectId = go->id;
-            newGraphics->name = graphicsData->name;
+            newGraphics->name = (char *) calloc (strlen (graphicsData->name) + 1, sizeof (char));
+            strcpy (newGraphics->name, graphicsData->name);
             newGraphics->glyph = graphicsData->glyph;
             newGraphics->fgColor = graphicsData->fgColor;
             newGraphics->bgColor = graphicsData->bgColor;
@@ -1033,25 +1034,53 @@ void cleanUpEnemies (void) {
 
 /*** LOOT - ITEMS ***/
 
-List *generateLootItems (int *dropItems) {
+List *generateLootItems (u32 *dropItems, u32 count) {
 
+    // FIXME: take into account that we have differente tables for weapons
+    // and armour and for normal items
+    // FIXME: 07/09/2018 -- 09:16 -- we can only create normal items
     // connect to the items db to get items probability
-    // generate random loot drops based on items probability
-    // create the items objects
-    // add them to the loot
 
-    // newLoot.lootItems = initList (free);
+    // get each items probability to calculate drops
+    double itemsProbs[count];
 
-    // // FIXME: generate random items
-    // insertAfter (newLoot.lootItems, NULL, createItem (1001));
-    // insertAfter (newLoot.lootItems, NULL, createItem (1001));
-    // insertAfter (newLoot.lootItems, NULL, createItem (1002));
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Items WHERE Id = ?";
+    for (u32 i = 0; i < count; i++) {
+        if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK)
+            sqlite3_bind_int (res, 1, dropItems[i]);
+
+        // FIXME: better error handling
+        // else {
+        //     fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
+        //     return 1;
+        // } 
+    }
+
+    // generate a random number of loot items
+    // FIXME: this will be based depending of the enemy
+    u8 itemsNum = (u8) randomInt (0, 2);
+
+    if (itemsNum == 0) return NULL;
+    else {
+        List *lootItems = initList (free);
+
+        // generate random loot drops based on items probability
+        // FIXME: 07/09/2018 -- 09:44 this is just for testing
+        // we are only slectig the first items in dropItems and ignoring probs
+        for (u8 i = 0; i < itemsNum; i++) 
+            insertAfter (lootItems, NULL, createItem (dropItems[i]));
+
+        return lootItems;
+    }
 
 }
 
 // FIXME:
 // generate random loot based on the enemy
-int createLoot (GameObject *go) {
+u8 createLoot (GameObject *go) {
+
+    fprintf (stdout, "Creating new loot...\n");
 
     // get the enemy's db data
     sqlite3_stmt *res;
@@ -1065,6 +1094,8 @@ int createLoot (GameObject *go) {
 
     int step = sqlite3_step (res);
 
+    fprintf (stdout, "Getting loot data...\n");
+
     u32 minGold = (u32) sqlite3_column_int (res, 1);
     u32 maxGold = (u32) sqlite3_column_int (res, 2);
 
@@ -1076,35 +1107,44 @@ int createLoot (GameObject *go) {
     newLoot.money[1] = randomInt (0, 99);
     newLoot.money[2] = randomInt (0, 99);
 
+    fprintf (stdout, "Money has been added!\n");
+
     // get the possible drop items
     const char *c = sqlite3_column_text (res, 3);
-    char *itemsTxt = (char *) calloc (strlen (c) + 1, sizeof (char));
-    strcpy (itemsTxt, c);
+    if (c != NULL) {
+        char *itemsTxt = (char *) calloc (strlen (c) + 1, sizeof (char));
+        strcpy (itemsTxt, c);
 
-    // parse the string by commas
-    char **tokens = splitString (itemsTxt, ',');
-    if (tokens) {
-        // count how many elements will be extracted
-        u32 count = 0;
-        while (*itemsTxt++) if (',' == *itemsTxt) count++;
+        // parse the string by commas
+        char **tokens = splitString (itemsTxt, ',');
+        if (tokens) {
+            // count how many elements will be extracted
+            u32 count = 0;
+            while (*itemsTxt++) if (',' == *itemsTxt) count++;
 
-        count += 1;     // take into account the last item after the last comma
+            count += 1;     // take into account the last item after the last comma
 
-        u32 *dropItems = (int *) calloc (count, sizeof (int));
-        u32 idx = 0;
-        for (u32 i = 0; *(tokens + i); i++) {
-            dropItems[idx] = atoi (*(tokens + i));
-            free (*(tokens + i));
+            u32 *dropItems = (int *) calloc (count, sizeof (int));
+            u32 idx = 0;
+            for (u32 i = 0; *(tokens + i); i++) {
+                dropItems[idx] = atoi (*(tokens + i));
+                idx++;
+                free (*(tokens + i));
+            }
+
+            free (tokens);
+
+            newLoot.lootItems = generateLootItems (dropItems, count);
         }
 
-        free (tokens);
-
-        newLoot.lootItems = generateLootItems (dropItems);
+        // no drop items in the db or an error somewhere retrieving the data
+        // so only hanlde the loot with the money
+        else newLoot.lootItems = NULL;
     }
-
-    // no drop items in the db or an error somewhere retrieving the data
-    // so only hanlde the loot with the money
+    
     else newLoot.lootItems = NULL;
+
+    fprintf (stdout, "Adding loot to enemy...\n");
 
     // add the loot struct to the go as a component
     addComponent (go, LOOT, &newLoot);
@@ -1125,15 +1165,21 @@ void displayLoot (void *goData) {
     GameObject *go = searchGameObjectById (((GameObject *)(goData))->id);
     if (go != NULL) {
         if (getComponent (go, LOOT) != NULL) {
-            if (LIST_SIZE (((Loot *) getComponent (go, LOOT))->lootItems) == 0) {
-                removeComponent (go, LOOT);
-                currentLoot = NULL;
-            }
+            // if (LIST_SIZE (((Loot *) getComponent (go, LOOT))->lootItems) == 0) {
+            //     removeComponent (go, LOOT);
+            //     currentLoot = NULL;
+            // }
 
-            else {
-                currentLoot = (Loot *) getComponent (go, LOOT);
-                toggleLootWindow ();
-            } 
+            // else {
+            //     currentLoot = (Loot *) getComponent (go, LOOT);
+            //     toggleLootWindow ();
+            // } 
+
+            // currentLoot = (Loot *) getComponent (go, LOOT);
+            // toggleLootWindow ();
+
+            // FIXME: just for testing
+            logMessage ("You found some loot here!", SUCCESS_COLOR);
         }   
 
         else {
@@ -1316,7 +1362,8 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
             removeComponent (defender, MOVEMENT);
 
-            createLoot (defender);
+            // FIXME: better error handling
+            if (createLoot (defender) != 0) fprintf (stderr, "Error creating loot!\n");
 
             Event e = { 0, displayLoot };
             addComponent (defender, EVENT, &e);
