@@ -865,6 +865,8 @@ u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addComponent (mon, GRAPHICS, &g);
 
+    free (name);
+    free (colour);
     sqlite3_finalize (res);
 
     return 0;
@@ -898,7 +900,7 @@ u8 addMovementToMon (u32 monId, Monster *monData, GameObject *mon) {
 
 u8 addCombatToMon (u32 monId, Monster *monData, GameObject *mon) {
 
-   // get the db data
+    // get the db data
     sqlite3_stmt *res;
     char *sql = "SELECT * FROM Combat WHERE Id = ?";
 
@@ -1031,16 +1033,12 @@ void cleanUpEnemies (void) {
 
 /*** LOOT - ITEMS ***/
 
-// FIXME:
-// generate random loot based on the enemy
-void createLoot (GameObject *go) {
+List *generateLootItems (int *dropItems) {
 
-    // generate random money
-    Loot newLoot;
-
-    // newLoot.money[0] = 0;
-    // newLoot.money[1] = 1;
-    // newLoot.money[2] = 50;
+    // connect to the items db to get items probability
+    // generate random loot drops based on items probability
+    // create the items objects
+    // add them to the loot
 
     // newLoot.lootItems = initList (free);
 
@@ -1049,9 +1047,73 @@ void createLoot (GameObject *go) {
     // insertAfter (newLoot.lootItems, NULL, createItem (1001));
     // insertAfter (newLoot.lootItems, NULL, createItem (1002));
 
-    // addComponent (go, LOOT, &newLoot);
+}
+
+// FIXME:
+// generate random loot based on the enemy
+int createLoot (GameObject *go) {
+
+    // get the enemy's db data
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Drops WHERE Id = ?";
+
+    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, go->dbId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
+        return 1;
+    } 
+
+    int step = sqlite3_step (res);
+
+    u32 minGold = (u32) sqlite3_column_int (res, 1);
+    u32 maxGold = (u32) sqlite3_column_int (res, 2);
+
+    Loot newLoot;
+
+    // FIXME: create a better system
+    // generate random money directly
+    newLoot.money[0] = randomInt (minGold, maxGold);
+    newLoot.money[1] = randomInt (0, 99);
+    newLoot.money[2] = randomInt (0, 99);
+
+    // get the possible drop items
+    const char *c = sqlite3_column_text (res, 3);
+    char *itemsTxt = (char *) calloc (strlen (c) + 1, sizeof (char));
+    strcpy (itemsTxt, c);
+
+    // parse the string by commas
+    char **tokens = splitString (itemsTxt, ',');
+    if (tokens) {
+        // count how many elements will be extracted
+        u32 count = 0;
+        while (*itemsTxt++) if (',' == *itemsTxt) count++;
+
+        count += 1;     // take into account the last item after the last comma
+
+        u32 *dropItems = (int *) calloc (count, sizeof (int));
+        u32 idx = 0;
+        for (u32 i = 0; *(tokens + i); i++) {
+            dropItems[idx] = atoi (*(tokens + i));
+            free (*(tokens + i));
+        }
+
+        free (tokens);
+
+        newLoot.lootItems = generateLootItems (dropItems);
+    }
+
+    // no drop items in the db or an error somewhere retrieving the data
+    // so only hanlde the loot with the money
+    else newLoot.lootItems = NULL;
+
+    // add the loot struct to the go as a component
+    addComponent (go, LOOT, &newLoot);
 
     fprintf (stdout, "New loot created!\n");
+
+    sqlite3_finalize (res);
+
+    return 0;
 
 }
 

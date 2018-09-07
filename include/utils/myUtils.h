@@ -5,6 +5,7 @@ extern int randomInt (int min, int max);
 extern int xtoi (char *hexString);
 
 extern void copy (char *to, const char *from);
+extern char **splitString (char *str, const char delim);
 
 extern bool system_is_little_endian (void);
 
