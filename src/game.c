@@ -1033,6 +1033,7 @@ void cleanUpEnemies (void) {
 
 /*** LOOT - ITEMS ***/
 
+// FIXME:
 List *generateLootItems (u32 *dropItems, u32 count) {
 
     // FIXME: take into account that we have differente tables for weapons
@@ -1158,34 +1159,47 @@ u8 createLoot (GameObject *go) {
 
 Loot *currentLoot = NULL;
 
+bool emptyLoot (Loot *loot) {
+
+    bool empty = false;
+
+    if (loot->lootItems != NULL) 
+        if (LIST_SIZE (loot->lootItems) <= 0) empty = true;
+
+
+    if (loot->money[0] == 0 && loot->money[1] == 0 && loot->money[2] == 0) empty = true;
+    else empty = false;
+
+    return empty;
+
+}
+
 // FIXME:
 void displayLoot (void *goData) {
 
-    // GameObject *go = searchGameObjectById (((GameObject *)(goData))->id);
-    // if (go != NULL) {
-    //     if (getComponent (go, LOOT) != NULL) {
-    //         // if (LIST_SIZE (((Loot *) getComponent (go, LOOT))->lootItems) == 0) {
-    //         //     removeComponent (go, LOOT);
-    //         //     currentLoot = NULL;
-    //         // }
+    GameObject *go = NULL;
+    if (goData != NULL) go = searchGameObjectById (((GameObject *)(goData))->id);
 
-    //         // else {
-    //         //     currentLoot = (Loot *) getComponent (go, LOOT);
-    //         //     toggleLootWindow ();
-    //         // } 
+    if (go != NULL) {
+        Loot *loot = (Loot *) getComponent (go, LOOT);
+        if (loot != NULL) {
+            if (!emptyLoot (loot)) {
+                currentLoot = loot;
+                toggleLootWindow ();
+            }
 
-    //         // currentLoot = (Loot *) getComponent (go, LOOT);
-    //         // toggleLootWindow ();
+            else {
+                currentLoot = NULL;
+                logMessage ("There is no loot here.", WARNING_COLOR);
+            } 
+            
+        }   
 
-    //         // FIXME: just for testing
-    //         logMessage ("You found some loot here!", SUCCESS_COLOR);
-    //     }   
-
-    //     else {
-    //         currentLoot = NULL;
-    //         logMessage ("There is no loot here.", WARNING_COLOR);
-    //     } 
-    // }
+        else {
+            currentLoot = NULL;
+            logMessage ("There is no loot here.", WARNING_COLOR);
+        } 
+    }
     
 }
 
@@ -1219,6 +1233,7 @@ void collectGold (void) {
             }
 
             player->money[0] += currentLoot->money[0];
+            currentLoot->money[0] = 0;
 
             logMessage (str, DEFAULT_COLOR);
             free (str);

@@ -102,7 +102,7 @@ void closeUIMenu (void) {
 
     // if (inventoryView != NULL) toggleInventory (false);
 
-    // if (lootView != NULL) toggleLootWindow ();
+    if (lootView != NULL) toggleLootWindow ();
 
     // if (characterView != NULL) hideCharacter ();
 
@@ -193,7 +193,11 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 else if (activeView == mapView) getItem (); 
                 break;
 
-            case SDLK_c: toggleCharacter (); break;
+            // FIXME: add responsive ui panels
+            case SDLK_c: 
+                if (activeView != lootView) toggleCharacter (); 
+                else collectGold ();
+                break;
 
             // FIXME:
             // drop item

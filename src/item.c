@@ -576,7 +576,6 @@ void getItem (void) {
     List *objects = getItemsAtPos (player->pos->x, player->pos->y);
 
     if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
-        fprintf (stdout, "Lis is empty!\n");
         if (objects != NULL) free (objects);
         logMessage ("There are no items here!", WARNING_COLOR);
         

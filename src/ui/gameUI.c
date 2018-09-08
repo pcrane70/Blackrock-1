@@ -347,8 +347,8 @@ static void renderLoot (Console *console) {
 
         putStringAt (console, "Loot", 8, 2, LOOT_TEXT, 0x00000000);
 
-        if ((currentLoot->lootItems != NULL) || (LIST_SIZE (currentLoot->lootItems) > 0))
-            renderLootRects (console);   
+        // if ((currentLoot->lootItems != NULL) || (LIST_SIZE (currentLoot->lootItems) > 0))
+        //     renderLootRects (console);   
 
         // gold
         char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
@@ -371,6 +371,8 @@ void toggleLootWindow (void) {
         else if (LIST_SIZE (lootRects) > 0) resetList (lootRects); 
 
         activeView = lootView;
+
+        fprintf (stdout, "Displaying loot...\n");
     } 
     
     else {
