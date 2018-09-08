@@ -170,18 +170,21 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
                 // loop through all of our surrounding items in search for 
                 // an event listener to trigger
-                else if (activeView == mapView) {
+                if (activeView == mapView) {
                     List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
                     if (gos != NULL) {
+                        Event *ev = NULL;
                         for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
-                            Event *ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
+                            ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
                             // trigger just the first event we find
                             if (ev != NULL) {
                                 ev->callback (e->data);
                                 break;
                             }
                         }
-                        destroyList (gos);
+
+                        if (LIST_SIZE (gos) > 0) cleanUpList (gos);
+                        else free (gos);
                     }
                 }
             } break;

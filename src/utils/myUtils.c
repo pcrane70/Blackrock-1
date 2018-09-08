@@ -87,7 +87,7 @@ char **splitString (char *str, const char delim) {
             token = strtok (0, dlm);
         }
 
-        assert (idx == count - 1);
+        // assert (idx == count - 1);
         *(result + idx) = 0;
     }
 

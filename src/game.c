@@ -373,8 +373,7 @@ List *getObjectsAtPos (u32 x, u32 y) {
         if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
     }
 
-    if (LIST_SIZE (retVal) > 0) return retVal;
-    else return NULL;
+    return retVal;
 
 }
 
@@ -1162,31 +1161,31 @@ Loot *currentLoot = NULL;
 // FIXME:
 void displayLoot (void *goData) {
 
-    GameObject *go = searchGameObjectById (((GameObject *)(goData))->id);
-    if (go != NULL) {
-        if (getComponent (go, LOOT) != NULL) {
-            // if (LIST_SIZE (((Loot *) getComponent (go, LOOT))->lootItems) == 0) {
-            //     removeComponent (go, LOOT);
-            //     currentLoot = NULL;
-            // }
+    // GameObject *go = searchGameObjectById (((GameObject *)(goData))->id);
+    // if (go != NULL) {
+    //     if (getComponent (go, LOOT) != NULL) {
+    //         // if (LIST_SIZE (((Loot *) getComponent (go, LOOT))->lootItems) == 0) {
+    //         //     removeComponent (go, LOOT);
+    //         //     currentLoot = NULL;
+    //         // }
 
-            // else {
-            //     currentLoot = (Loot *) getComponent (go, LOOT);
-            //     toggleLootWindow ();
-            // } 
+    //         // else {
+    //         //     currentLoot = (Loot *) getComponent (go, LOOT);
+    //         //     toggleLootWindow ();
+    //         // } 
 
-            // currentLoot = (Loot *) getComponent (go, LOOT);
-            // toggleLootWindow ();
+    //         // currentLoot = (Loot *) getComponent (go, LOOT);
+    //         // toggleLootWindow ();
 
-            // FIXME: just for testing
-            logMessage ("You found some loot here!", SUCCESS_COLOR);
-        }   
+    //         // FIXME: just for testing
+    //         logMessage ("You found some loot here!", SUCCESS_COLOR);
+    //     }   
 
-        else {
-            currentLoot = NULL;
-            logMessage ("There is no loot here.", WARNING_COLOR);
-        } 
-    }
+    //     else {
+    //         currentLoot = NULL;
+    //         logMessage ("There is no loot here.", WARNING_COLOR);
+    //     } 
+    // }
     
 }
 
