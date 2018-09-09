@@ -778,18 +778,91 @@ void createEnemiesDb (void) {
 
 }
 
+typedef struct {
+
+    u8 minGold;
+    u8 maxGold;
+    u32 *drops;
+    u8 dropCount;
+
+} MonsterLoot;
+
 // 04/09/2018 -- 12:18
 typedef struct {
 
     u32 id;
     char *name;
     double probability;
+    MonsterLoot loot;
 
 } Monster;
 
 #define MONSTER_COUNT       9
 
 List *enemyData = NULL;
+
+int loadMonsterLoot (u32 monId, MonsterLoot *loot) {
+
+    // get the db data
+    sqlite3_stmt *res;
+    char *sql = "SELECT * FROM Drops WHERE Id = ?";
+
+    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
+    else {
+        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
+        return 1;
+    } 
+
+    int step = sqlite3_step (res);
+
+    loot->minGold = (u32) sqlite3_column_int (res, 1);
+    loot->maxGold = (u32) sqlite3_column_int (res, 2);
+
+    // get the possible drop items
+    const char *c = sqlite3_column_text (res, 3);
+    if (c != NULL) {
+        char *itemsTxt = (char *) calloc (strlen (c) + 1, sizeof (char));
+        strcpy (itemsTxt, c);
+
+        // parse the string by commas
+        char **tokens = splitString (itemsTxt, ',');
+        if (tokens) {
+            // count how many elements will be extracted
+            u32 count = 0;
+            while (*itemsTxt++) if (',' == *itemsTxt) count++;
+
+            count += 1;     // take into account the last item after the last comma
+
+            loot->dropCount = count;
+            loot->drops = (u32 *) calloc (count, sizeof (u32));
+            u32 idx = 0;
+            for (u32 i = 0; *(tokens + i); i++) {
+                loot->drops[idx] = atoi (*(tokens + i));
+                idx++;
+                free (*(tokens + i));
+            }
+
+            free (tokens);
+        }
+
+        // no drop items in the db or an error somewhere retrieving the data
+        // so only hanlde the loot with the money
+        else {
+            loot->drops = NULL;
+            loot->dropCount = 0;
+        } 
+    }
+    
+    else {
+        loot->drops = NULL;
+        loot->dropCount = 0;
+    } 
+
+    sqlite3_finalize (res);
+
+    return 0;
+
+}
 
 // Getting the enemies data from the db into memory
 static int loadEnemyData (void *data, int argc, char **argv, char **azColName) {
@@ -802,6 +875,9 @@ static int loadEnemyData (void *data, int argc, char **argv, char **azColName) {
     mon->name = (char *) calloc (strlen (temp) + 1, sizeof (char));
     strcpy (mon->name, temp);
     mon->probability = atof (argv[2]);
+
+    if (loadMonsterLoot (mon->id, &mon->loot) != 0)
+        fprintf (stderr, "Error getting monster loot. Monster id: %i.\n", mon->id);
 
     insertAfter (enemyData, LIST_END (enemyData), mon);
 
@@ -843,6 +919,8 @@ Monster *searchMonById (u32 monId) {
         mon = (Monster *) e->data;
         if (mon->id == monId) break;
     }
+
+    if (mon == NULL) fprintf (stderr, "No monster found with id: %i\n", monId);
 
     return mon;
 
@@ -1049,20 +1127,22 @@ List *generateLootItems (u32 *dropItems, u32 count) {
     // connect to the items db to get items probability
 
     // get each items probability to calculate drops
-    double itemsProbs[count];
+    // double itemsProbs[count];
 
-    sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Items WHERE Id = ?";
-    for (u32 i = 0; i < count; i++) {
-        if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK)
-            sqlite3_bind_int (res, 1, dropItems[i]);
+    // sqlite3_stmt *res;
+    // char *sql = "SELECT * FROM Items WHERE Id = ?";
+    // for (u32 i = 0; i < count; i++) {
+    //     if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK)
+    //         sqlite3_bind_int (res, 1, dropItems[i]);
 
-        // FIXME: better error handling
-        // else {
-        //     fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        //     return 1;
-        // } 
-    }
+    //     // FIXME: better error handling
+    //     // else {
+    //     //     fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
+    //     //     return 1;
+    //     // } 
+    // }
+
+    // sqlite3_finalize (res);
 
     // generate a random number of loot items
     // FIXME: this will be based depending of the enemy
@@ -1082,9 +1162,8 @@ List *generateLootItems (u32 *dropItems, u32 count) {
         for (u8 i = 0; i < itemsNum; i++) {
             item = createItem (dropItems[i]);
             if (item != NULL) insertAfter (lootItems, LIST_END (lootItems), item);
-
         }
-            
+
         return lootItems;
     }
 
@@ -1094,72 +1173,25 @@ List *generateLootItems (u32 *dropItems, u32 count) {
 // generate random loot based on the enemy
 u8 createLoot (GameObject *go) {
 
+    Monster *mon = searchMonById (go->dbId);
+    if (mon == NULL) return 1;
+
     fprintf (stdout, "Creating new loot...\n");
-
-    // get the enemy's db data
-    sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Drops WHERE Id = ?";
-
-    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, go->dbId);
-    else {
-        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        return 1;
-    } 
-
-    int step = sqlite3_step (res);
-
-    u32 minGold = (u32) sqlite3_column_int (res, 1);
-    u32 maxGold = (u32) sqlite3_column_int (res, 2);
 
     Loot newLoot;
 
     // FIXME: create a better system
     // generate random money directly
-    newLoot.money[0] = randomInt (minGold, maxGold);
+    newLoot.money[0] = randomInt (mon->loot.minGold, mon->loot.maxGold);
     newLoot.money[1] = randomInt (0, 99);
     newLoot.money[2] = randomInt (0, 99);
 
-    // get the possible drop items
-    const char *c = sqlite3_column_text (res, 3);
-    if (c != NULL) {
-        char *itemsTxt = (char *) calloc (strlen (c) + 1, sizeof (char));
-        strcpy (itemsTxt, c);
-
-        // parse the string by commas
-        char **tokens = splitString (itemsTxt, ',');
-        if (tokens) {
-            // count how many elements will be extracted
-            u32 count = 0;
-            while (*itemsTxt++) if (',' == *itemsTxt) count++;
-
-            count += 1;     // take into account the last item after the last comma
-
-            u32 *dropItems = (int *) calloc (count, sizeof (int));
-            u32 idx = 0;
-            for (u32 i = 0; *(tokens + i); i++) {
-                dropItems[idx] = atoi (*(tokens + i));
-                idx++;
-                free (*(tokens + i));
-            }
-
-            free (tokens);
-
-            newLoot.lootItems = generateLootItems (dropItems, count);
-        }
-
-        // no drop items in the db or an error somewhere retrieving the data
-        // so only hanlde the loot with the money
-        else newLoot.lootItems = NULL;
-    }
-    
-    else newLoot.lootItems = NULL;
+    newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
 
     // add the loot struct to the go as a component
     addComponent (go, LOOT, &newLoot);
 
     fprintf (stdout, "New loot created!\n");
-
-    sqlite3_finalize (res);
 
     return 0;
 

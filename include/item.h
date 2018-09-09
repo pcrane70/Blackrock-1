@@ -49,7 +49,7 @@ typedef struct Item {
     u8 rarity;      // epic, rare, common, rubish, etc.
     bool stackable; // this is used to handle stacks, max stack is 20
     u8 quantity;    
-    u16 value[3];   // gold, silver, copper
+    u32 value[3];   // gold, silver, copper
     double probability;
     EventListener callback;   
     void *components[GAME_OBJECT_COMPS];  
@@ -63,8 +63,8 @@ typedef struct Armour {
     u32 itemId;     
     u32 dbId;       // item's unique identifire in our db
     u8 type;
-    u16 maxLifetime;
-    u16 lifetime;
+    u32 maxLifetime;
+    u32 lifetime;
     u8 slot;
     bool isEquipped;
 
@@ -73,12 +73,12 @@ typedef struct Armour {
 // TODO: add class specific weapons
 typedef struct Weapon {
 
-    u16 itemId;     
-    u16 dbId;       // item's unique identifire in our db
+    u32 itemId;     
+    u32 dbId;       // item's unique identifire in our db
     u8 type;
     u8 dps;
-    u16 maxLifetime;
-    u16 lifetime;
+    u32 maxLifetime;
+    u32 lifetime;
     bool isEquipped;
     u8 slot;
     bool twoHanded;
@@ -87,7 +87,7 @@ typedef struct Weapon {
 
 extern void initItems (void);
 
-extern Item *createItem (u32 itemId);
+extern Item *createItem (int itemId);
 extern Item *createWeapon (u32 itemId);
 
 extern void getItem (void);

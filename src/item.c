@@ -64,23 +64,26 @@ void initItems (void) {
 
 /*** ITEMS IN MEMORY ***/
 
+// FIXME: items pool
 Item *newItem (void) {
 
     Item *i = NULL;
 
     // check if there is a an available one in the items pool
-    if (POOL_SIZE (itemsPool) > 0) {
-        i = pop (itemsPool);
-        if (i == NULL) i = (Item *) malloc (sizeof (Item));
-    } 
-    else i = (Item *) malloc (sizeof (Item));
+    // if (POOL_SIZE (itemsPool) > 0) {
+    //     i = pop (itemsPool);
+    //     if (i == NULL) i = (Item *) malloc (sizeof (Item));
+    // } 
+    // else i = (Item *) malloc (sizeof (Item));
+
+    i = (Item *) malloc (sizeof (Item));
 
     if (i != NULL) {
         i->itemId = newId;
         newId++;
         for (u8 u = 0; u < GAME_OBJECT_COMPS; u++) i->components[u] = NULL;
         for (u8 u = 0; u < ITEM_COMPS; u++) i->itemComps[u] = NULL;
-        insertAfter (items, LIST_END (items), i);
+        insertAfter (items, NULL, i);
     }
 
     return i;
@@ -300,6 +303,7 @@ u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, itemName };
     addGameComponent (item, GRAPHICS, &g);
 
+    free (colour);
     sqlite3_finalize (res);
 
     return 0;
@@ -326,7 +330,9 @@ EventListener getItemCallback (u8 cb) {
 
 // 29/08/2018 -- 23:34 -- new way of creating an item using sqlite db
 // 05/09/2018 -- 11:04 -- creating items with a more complex db
-Item *createItem (u32 itemId) {
+Item *createItem (int itemId) {
+
+    fprintf (stdout, "Creating item: %i\n", itemId);
 
     // get the db data
     sqlite3_stmt *res;
@@ -340,22 +346,27 @@ Item *createItem (u32 itemId) {
 
     int step = sqlite3_step (res);
 
+    fprintf (stdout, "Creating item...\n");
     Item *item = newItem ();
     if (item == NULL) return NULL;
+    fprintf (stdout, "New item created!\n");
 
     item->dbId = itemId;
 
-    char name[30];
-    strcpy (name, sqlite3_column_text (res, ITEM_NAME_COL));
-    item->rarity = sqlite3_column_int (res, ITEM_RARITRY_COL);
-    item->value[0] = (u16) sqlite3_column_int (res, ITEM_GOLD_COL);
-    item->value[1] = (u16) sqlite3_column_int (res, ITEM_SILVER_COL);
-    item->value[2] = (u16) sqlite3_column_int (res, ITEM_COPPER_COL);
+    char name[50];
+    const char *itemName = sqlite3_column_text (res, ITEM_NAME_COL);
+    strcpy (name, itemName);
+    item->rarity = (u8) sqlite3_column_int (res, ITEM_RARITRY_COL);
+    item->value[0] = sqlite3_column_int (res, ITEM_GOLD_COL);
+    item->value[1] = sqlite3_column_int (res, ITEM_SILVER_COL);
+    item->value[2] = sqlite3_column_int (res, ITEM_COPPER_COL);
     item->probability = sqlite3_column_double (res, ITEM_PROB_COL);
     item->stackable = (sqlite3_column_int (res, ITEM_STACKABLE_COL) == 0) ? false : true;
-    item->quantity = sqlite3_column_int (res, ITEM_QUANTITY_COL);
+    item->quantity = (u8) sqlite3_column_int (res, ITEM_QUANTITY_COL);
+
+    fprintf (stdout, "Added data to item!\n");
     
-    item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
+    // item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
 
     // graphics
     if (addGraphicsToItem (itemId, item, name) != 0) {
