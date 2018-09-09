@@ -426,22 +426,22 @@ void cleanUpGame (void) {
     destroyList (combat);
 
     // clean every list of items inside each loot object
-    if (loot != NULL) {
-        if (LIST_SIZE (loot) > 0) {
-            for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
-                if (((Loot *)(e->data))->lootItems != NULL) {
-                    if (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0) {
-                        for (ListElement *le = LIST_START (((Loot *)(e->data))->lootItems); le != NULL; le = le->next) 
-                            removeElement (((Loot *)(e->data))->lootItems, le);
+    // if (loot != NULL) {
+    //     if (LIST_SIZE (loot) > 0) {
+    //         for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
+    //             if (((Loot *)(e->data))->lootItems != NULL) {
+    //                 if (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0) {
+    //                     for (ListElement *le = LIST_START (((Loot *)(e->data))->lootItems); le != NULL; le = le->next) 
+    //                         removeElement (((Loot *)(e->data))->lootItems, le);
                         
-                    }
+    //                 }
 
-                    free (((Loot *)(e->data))->lootItems);
-                }   
-            }
-        }
-        destroyList (loot);
-    }
+    //                 free (((Loot *)(e->data))->lootItems);
+    //             }   
+    //         }
+    //     }
+    //     destroyList (loot);
+    // }
     
     // cleanup the pools
     clearPool (goPool);
@@ -452,21 +452,21 @@ void cleanUpGame (void) {
     clearPool (combatPool);
 
     // clean every list of items inside each loot object
-    if (lootPool != NULL) {
-        if (POOL_SIZE (lootPool) > 0) {
-            for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
-                if (((Loot *)(p->data))->lootItems != NULL) {
-                    if (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0) {
-                        for (ListElement *le = LIST_START (((Loot *)(le->data))->lootItems); le != NULL; le = le->next) 
-                            removeElement (((Loot *)(le->data))->lootItems, le);
-                    }
+    // if (lootPool != NULL) {
+    //     if (POOL_SIZE (lootPool) > 0) {
+    //         for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
+    //             if (((Loot *)(p->data))->lootItems != NULL) {
+    //                 if (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0) {
+    //                     for (ListElement *le = LIST_START (((Loot *)(le->data))->lootItems); le != NULL; le = le->next) 
+    //                         removeElement (((Loot *)(le->data))->lootItems, le);
+    //                 }
 
-                    free (((Loot *)(p->data))->lootItems);
-                }
-            } 
-        }
-        clearPool (lootPool);
-    }
+    //                 free (((Loot *)(p->data))->lootItems);
+    //             }
+    //         } 
+    //     }
+    //     clearPool (lootPool);
+    // }
 
     // clean up items
     cleanUpItems ();
@@ -1063,14 +1063,21 @@ List *generateLootItems (u32 *dropItems, u32 count) {
 
     if (itemsNum == 0) return NULL;
     else {
+        fprintf (stdout, "Creating loot items!\n");
+
         List *lootItems = initList (free);
 
         // generate random loot drops based on items probability
         // FIXME: 07/09/2018 -- 09:44 this is just for testing
         // we are only slectig the first items in dropItems and ignoring probs
-        for (u8 i = 0; i < itemsNum; i++) 
-            insertAfter (lootItems, NULL, createItem (dropItems[i]));
+        // FIXME: fix the drop items index
+        Item *item;
+        for (u8 i = 0; i < itemsNum; i++) {
+            item = createItem (dropItems[i]);
+            if (item != NULL) insertAfter (lootItems, LIST_END (lootItems), item);
 
+        }
+            
         return lootItems;
     }
 
@@ -1094,8 +1101,6 @@ u8 createLoot (GameObject *go) {
 
     int step = sqlite3_step (res);
 
-    fprintf (stdout, "Getting loot data...\n");
-
     u32 minGold = (u32) sqlite3_column_int (res, 1);
     u32 maxGold = (u32) sqlite3_column_int (res, 2);
 
@@ -1106,8 +1111,6 @@ u8 createLoot (GameObject *go) {
     newLoot.money[0] = randomInt (minGold, maxGold);
     newLoot.money[1] = randomInt (0, 99);
     newLoot.money[2] = randomInt (0, 99);
-
-    fprintf (stdout, "Money has been added!\n");
 
     // get the possible drop items
     const char *c = sqlite3_column_text (res, 3);
@@ -1144,8 +1147,6 @@ u8 createLoot (GameObject *go) {
     
     else newLoot.lootItems = NULL;
 
-    fprintf (stdout, "Adding loot to enemy...\n");
-
     // add the loot struct to the go as a component
     addComponent (go, LOOT, &newLoot);
 
@@ -1161,20 +1162,19 @@ Loot *currentLoot = NULL;
 
 bool emptyLoot (Loot *loot) {
 
-    bool empty = false;
+    bool noItems, noMoney;
 
     if (loot->lootItems != NULL) 
-        if (LIST_SIZE (loot->lootItems) <= 0) empty = true;
+        if (LIST_SIZE (loot->lootItems) <= 0) noItems = true;
 
 
-    if (loot->money[0] == 0 && loot->money[1] == 0 && loot->money[2] == 0) empty = true;
-    else empty = false;
+    if (loot->money[0] == 0 && loot->money[1] == 0 && loot->money[2] == 0) noMoney = true;
 
-    return empty;
+    if (noItems && noMoney) return true;
+    else return false;
 
 }
 
-// FIXME:
 void displayLoot (void *goData) {
 
     GameObject *go = NULL;

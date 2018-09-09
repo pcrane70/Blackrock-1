@@ -76,11 +76,13 @@ void *removeElement (List *list, ListElement *element) {
 
 void destroyList (List *list) {
 
-    void *data = NULL;
+    if (list->size > 0) {
+        void *data = NULL;
 
-    while (LIST_SIZE (list) > 0) {
-        data = removeElement (list, NULL);
-        if (data != NULL && list->destroy != NULL) list->destroy (data);
+        while (LIST_SIZE (list) > 0) {
+            data = removeElement (list, NULL);
+            if (data != NULL && list->destroy != NULL) list->destroy (data);
+        }
     }
 
     free (list);
@@ -89,10 +91,12 @@ void destroyList (List *list) {
 
 void resetList (List *list) {
 
-    void *data = NULL;
-    while (LIST_SIZE (list) > 0) {
-        data = removeElement (list, NULL);
-        if (data != NULL && list->destroy != NULL) list->destroy (data);
+    if (LIST_SIZE (list) > 0) {
+        void *data = NULL;
+        while (LIST_SIZE (list) > 0) {
+            data = removeElement (list, NULL);
+            if (data != NULL && list->destroy != NULL) list->destroy (data);
+        }
     }
 
     list->start = NULL;

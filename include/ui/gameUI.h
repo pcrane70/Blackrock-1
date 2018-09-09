@@ -55,7 +55,7 @@ extern UIView *lootView;
 extern void toggleLootWindow (void);
 extern void updateLootUI (u8 yIdx);
 
-extern List *lootRects;
+extern List *activeLootRects;
 extern u8 lootYIdx;
 
 /*** INVENTORY ***/

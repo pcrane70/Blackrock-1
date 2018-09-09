@@ -4,6 +4,7 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "item.h"
 #include "player.h"
 #include "map.h"    // for walls array
 
@@ -11,11 +12,10 @@
 #include "ui/console.h"
 #include "ui/gameUI.h"
 
-#include "item.h"
-
 #include "input.h"
 
 #include "utils/list.h"       // for messages
+#include "objectPool.h"
 
 
 extern UIView *activeView;
@@ -244,13 +244,27 @@ typedef struct LootRect {
 
 } LootRect;
 
-List *lootRects = NULL;
+List *activeLootRects = NULL;
+Pool *lootRectsPool = NULL;
 
 LootRect *createLootRect (u8 y, Item *i) {
 
-    LootRect *new = (LootRect *) malloc (sizeof (LootRect));
-    new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-    new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+    LootRect *new = NULL;
+
+    if (POOL_SIZE (lootRectsPool) > 0) {
+        new = pop (lootRectsPool);
+        if (new == NULL) {
+            new = (LootRect *) malloc (sizeof (LootRect));
+            new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+            new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+        }
+    }
+
+    else {
+        new = (LootRect *) malloc (sizeof (LootRect));
+        new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+        new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+    }
 
     new->bgRect->x = 1;
     new->bgRect->y = y + 4 + (4 * y);
@@ -268,6 +282,7 @@ LootRect *createLootRect (u8 y, Item *i) {
 
 }
 
+// FIXME: take into account the object pool!!
 void destroyLootRect (LootRect *lr) {
 
     if (lr != NULL) {
@@ -295,10 +310,10 @@ u8 lootYIdx = 0;
 void updateLootUI (u8 yIdx) {
 
     u8 count = 0;
-    if (lootRects != NULL && (LIST_SIZE (lootRects) > 0)) {
-        for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) {
+    if (activeLootRects != NULL && (LIST_SIZE (activeLootRects) > 0)) {
+        for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
             if (count == yIdx) {
-                destroyLootRect ((LootRect *) removeElement (lootRects, e));
+                push (lootRectsPool, removeElement (activeLootRects, e));
                 break;
             }
 
@@ -306,36 +321,19 @@ void updateLootUI (u8 yIdx) {
         }
     }
 
-    if (lootYIdx >= LIST_SIZE (lootRects)) lootYIdx -= 1;
+    if (lootYIdx >= LIST_SIZE (activeLootRects)) lootYIdx -= 1;
 
 }
 
 void renderLootRects (Console *console) {
 
-    if (LIST_SIZE (lootRects) == 0) {
-        // reset highlighted
-        lootYIdx = 0;
-
-        if (currentLoot->lootItems != NULL) {
-            u8 y = 0;
-            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) { 
-                LootRect *lr = createLootRect (y, (Item *) e->data);
-                if (y == 0) drawLootRect (console, lr, 0x000000FF);
-                else drawLootRect (console, lr, 0xFFFFFFFF);
-                insertAfter (lootRects, LIST_END (lootRects), lr);
-                y++;
-            }
-        }
+    u8 count = 0;
+    for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+        if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, 0x000000FF);
+        else drawLootRect (console, (LootRect *) e->data, 0xFFFFFFFF);
+        
+        count++;
     }
-
-    else {
-        u8 count = 0;
-        for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) {
-            if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, 0x000000FF);
-            else drawLootRect (console, (LootRect *) e->data, 0xFFFFFFFF);
-            count++;
-        }
-    }     
 
 }
 
@@ -347,8 +345,8 @@ static void renderLoot (Console *console) {
 
         putStringAt (console, "Loot", 8, 2, LOOT_TEXT, 0x00000000);
 
-        // if ((currentLoot->lootItems != NULL) || (LIST_SIZE (currentLoot->lootItems) > 0))
-        //     renderLootRects (console);   
+        if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0))
+            renderLootRects (console);   
 
         // gold
         char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
@@ -367,8 +365,15 @@ void toggleLootWindow (void) {
 
         lootYIdx = 0;
 
-        if (lootRects == NULL) lootRects = initList (free);
-        else if (LIST_SIZE (lootRects) > 0) resetList (lootRects); 
+        if (currentLoot->lootItems != NULL && LIST_SIZE (currentLoot->lootItems) > 0) {
+            LootRect *lr = NULL;
+            u8 y = 0;
+            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
+                lr = createLootRect (y, (Item *) e->data);
+                insertAfter (activeLootRects, LIST_END (activeLootRects), lr);
+                y++;
+            }
+        }
 
         activeView = lootView;
 
@@ -380,11 +385,12 @@ void toggleLootWindow (void) {
         destroyView ((UIView *) removeElement (activeScene->views, e));
         lootView = NULL;
 
-        if (lootRects != NULL && LIST_SIZE (lootRects) > 0) {
-            for (ListElement *e = LIST_START (lootRects); e != NULL; e = e->next) 
-                destroyLootRect ((LootRect *) e->data);
+        // deactivate the loot rects and send them to the pool
+        if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
+            for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
+                push (lootRectsPool, removeElement (activeLootRects, e));
 
-            resetList (lootRects);
+            resetList (activeLootRects);
         }
 
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
@@ -1019,6 +1025,9 @@ UIScreen *gameScene (void) {
 
     initInventoryRects ();
 
+    activeLootRects = initList (free);
+    lootRectsPool = initPool ();
+
     inGame = true;
     wasInGame = true;
 
@@ -1036,7 +1045,8 @@ void cleanGameUI (void) {
         if (inventoryRects != NULL) destroyInvRects ();
         if (characterRects != NULL) destroyCharRects ();
 
-        // FIXME: clean up loot rects
+        if (activeLootRects != NULL) destroyList (activeLootRects);
+        if (lootRectsPool != NULL) clearPool (lootRectsPool);
 
         ListElement *view = getListElement (inGameScreen->views, activeScene);
         destroyView ((UIView *) removeElement (inGameScreen->views, view));
@@ -1048,6 +1058,8 @@ void cleanGameUI (void) {
         destroyList (inGameScreen->views);
 
         free (inGameScreen);
+
+        fprintf (stdout, "Done cleanning up game UI.\n");
     }
 
 }

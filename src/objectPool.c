@@ -57,9 +57,9 @@ void *pop (Pool *pool) {
 
 void clearPool (Pool *pool) {
 
-    PoolMember *ptr, *temp;
-    void *data;
-    if ((POOL_TOP (pool) != NULL) && (POOL_SIZE (pool) != 0)) {
+    if (POOL_SIZE (pool) > 0) {
+        PoolMember *ptr, *temp;
+        void *data;
         ptr = POOL_TOP (pool);
         while (ptr != NULL) {
             temp = pool->top;
@@ -70,5 +70,7 @@ void clearPool (Pool *pool) {
             ptr = pool->top;
         }
     }
+    
+    free (pool);
 
 }

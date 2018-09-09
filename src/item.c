@@ -125,7 +125,8 @@ void addGameComponent (Item *item, GameComponent type, void *data) {
 
             Graphics *graphicsData = (Graphics *) data;
             newGraphics->objectId = item->itemId;
-            newGraphics->name = graphicsData->name;
+            newGraphics->name = (char *) calloc (strlen (graphicsData->name) + 1, sizeof (char));
+            strcpy (newGraphics->name, graphicsData->name);
             newGraphics->glyph = graphicsData->glyph;
             newGraphics->fgColor = graphicsData->fgColor;
             newGraphics->bgColor = graphicsData->bgColor;
@@ -307,6 +308,8 @@ u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
 // 05/09/2018 -- 11:04 -- creating items with a more complex db
 Item *createItem (u32 itemId) {
 
+    fprintf (stdout, "Item to create: %i\n", itemId);
+
     // get the db data
     sqlite3_stmt *res;
     char *sql = "SELECT * FROM Items WHERE Id = ?";
@@ -320,6 +323,8 @@ Item *createItem (u32 itemId) {
     int step = sqlite3_step (res);
 
     Item *item = newItem ();
+    if (item == NULL) return NULL;
+
     item->dbId = itemId;
 
     char name[30];

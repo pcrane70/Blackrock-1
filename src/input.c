@@ -82,7 +82,7 @@ void moveInInventory (u8 newX, u8 newY) {
 
 }
 
-void moveInLoot (u8 newY) { if (newY >= 0 && (newY < LIST_SIZE (lootRects))) lootYIdx = newY; }
+void moveInLoot (u8 newY) { if (newY >= 0 && (newY < LIST_SIZE (activeLootRects))) lootYIdx = newY; }
 
 void moveInCharacter (u8 newX, u8 newY, bool moveRight) {
 
