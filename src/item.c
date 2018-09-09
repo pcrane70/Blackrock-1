@@ -306,6 +306,24 @@ u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
 
 }
 
+void healPlayer (void *);
+
+EventListener getItemCallback (u8 cb) {
+
+    EventListener callback = NULL;
+
+    switch (cb) {
+        case 0: break;
+        case 1: callback = healPlayer; break;
+        case 2: break;
+        case 3: break;
+        default: break;
+    }
+
+    return callback;
+
+}
+
 // 29/08/2018 -- 23:34 -- new way of creating an item using sqlite db
 // 05/09/2018 -- 11:04 -- creating items with a more complex db
 Item *createItem (u32 itemId) {
@@ -337,7 +355,7 @@ Item *createItem (u32 itemId) {
     item->stackable = (sqlite3_column_int (res, ITEM_STACKABLE_COL) == 0) ? false : true;
     item->quantity = sqlite3_column_int (res, ITEM_QUANTITY_COL);
     
-    // FIXME: callback
+    item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
 
     // graphics
     if (addGraphicsToItem (itemId, item, name) != 0) {

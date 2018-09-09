@@ -165,7 +165,9 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_e: {
                 if (activeView == inventoryView) {
                     Item *item = getInvSelectedItem ();
-                    if (item != NULL) item->callback (item);
+                    if (item != NULL) {
+                        if (item->callback != NULL) item->callback (item);
+                    } 
                 } 
 
                 // loop through all of our surrounding items in search for 
