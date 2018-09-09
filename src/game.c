@@ -413,6 +413,7 @@ void cleanUpGame (void) {
 
     // clean up the player
     destroyPlayer ();
+    fprintf (stdout, "Done cleanning up player\n");
 
     // clean game ui
     cleanGameUI ();
@@ -426,22 +427,24 @@ void cleanUpGame (void) {
     destroyList (combat);
 
     // clean every list of items inside each loot object
-    // if (loot != NULL) {
-    //     if (LIST_SIZE (loot) > 0) {
-    //         for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
-    //             if (((Loot *)(e->data))->lootItems != NULL) {
-    //                 if (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0) {
-    //                     for (ListElement *le = LIST_START (((Loot *)(e->data))->lootItems); le != NULL; le = le->next) 
-    //                         removeElement (((Loot *)(e->data))->lootItems, le);
+    if (loot != NULL) {
+        if (LIST_SIZE (loot) > 0) {
+            for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
+                if (((Loot *)(e->data))->lootItems != NULL) {
+                    if (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0) {
+                        for (ListElement *le = LIST_START (((Loot *)(e->data))->lootItems); le != NULL; le = le->next) 
+                            removeElement (((Loot *)(e->data))->lootItems, le);
                         
-    //                 }
+                    }
 
-    //                 free (((Loot *)(e->data))->lootItems);
-    //             }   
-    //         }
-    //     }
-    //     destroyList (loot);
-    // }
+                    free (((Loot *)(e->data))->lootItems);
+                }   
+            }
+        }
+        destroyList (loot);
+    }
+
+    fprintf (stdout, "Done cleanning up lists\n");
     
     // cleanup the pools
     clearPool (goPool);
@@ -452,28 +455,32 @@ void cleanUpGame (void) {
     clearPool (combatPool);
 
     // clean every list of items inside each loot object
-    // if (lootPool != NULL) {
-    //     if (POOL_SIZE (lootPool) > 0) {
-    //         for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
-    //             if (((Loot *)(p->data))->lootItems != NULL) {
-    //                 if (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0) {
-    //                     for (ListElement *le = LIST_START (((Loot *)(le->data))->lootItems); le != NULL; le = le->next) 
-    //                         removeElement (((Loot *)(le->data))->lootItems, le);
-    //                 }
+    if (lootPool != NULL) {
+        if (POOL_SIZE (lootPool) > 0) {
+            for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
+                if (((Loot *)(p->data))->lootItems != NULL) {
+                    if (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0) {
+                        for (ListElement *le = LIST_START (((Loot *)(le->data))->lootItems); le != NULL; le = le->next) 
+                            removeElement (((Loot *)(le->data))->lootItems, le);
+                    }
 
-    //                 free (((Loot *)(p->data))->lootItems);
-    //             }
-    //         } 
-    //     }
-    //     clearPool (lootPool);
-    // }
+                    free (((Loot *)(p->data))->lootItems);
+                }
+            } 
+        }
+        clearPool (lootPool);
+    }
+
+    fprintf (stdout, "Done cleanning up pools\n");
 
     // clean up items
     cleanUpItems ();
+    fprintf (stdout, "Done cleanning up items\n");
 
     // clean up enemies memory and db
     void cleanUpEnemies (void);
     cleanUpEnemies ();
+    fprintf (stdout, "Done cleanning up enemies\n");
     
     // cleanup the message log
     destroyList (messageLog);

@@ -234,13 +234,15 @@ void removeItemComponent (Item *item, ItemComponent type) {
 
 }
 
-void destroyItem (Item *item) {
+Item *destroyItem (Item *item) {
 
     for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
     for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
     ListElement *e = getListElement (items, item);
     if (e != NULL) push (itemsPool, removeElement (items, e));
+
+    return NULL;
 
 }
 
@@ -307,8 +309,6 @@ u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
 // 29/08/2018 -- 23:34 -- new way of creating an item using sqlite db
 // 05/09/2018 -- 11:04 -- creating items with a more complex db
 Item *createItem (u32 itemId) {
-
-    fprintf (stdout, "Item to create: %i\n", itemId);
 
     // get the db data
     sqlite3_stmt *res;
@@ -504,13 +504,13 @@ bool itemStacked (Item *item) {
 
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
-            if (player->inventory[x][y] == NULL) continue;
-            else if (player->inventory[x][y]->dbId == item->dbId) {
-                if (player->inventory[x][y]->quantity < MAX_STACK) {
-                    player->inventory[x][y]->quantity += 1;
-                    destroyItem (item);
-                    stacked = true;
-                    break;
+            if (player->inventory[x][y] != NULL && !stacked) {
+                if (player->inventory[x][y]->dbId == item->dbId) {
+                    if (player->inventory[x][y]->quantity < MAX_STACK) {
+                        player->inventory[x][y]->quantity += 1;
+                        destroyItem (item);
+                        stacked = true;
+                    }
                 }
             }
         }
@@ -522,15 +522,17 @@ bool itemStacked (Item *item) {
 
 void addToInventory (Item *item) {
 
+    bool inserted = false;
+
     if (item->stackable && inventoryItems > 0) {
         // insert in the next available inventory slot
         if (!itemStacked (item)) {
             for (u8 y = 0; y < 3; y++) {
                 for (u8 x = 0; x < 7; x++) {
-                    if (player->inventory[x][y] != NULL) continue;
-                    else {
+                    if (player->inventory[x][y] == NULL && !inserted) {
                         player->inventory[x][y] = item;
-                        break;
+                        inserted = true;
+                        inventoryItems += 1;
                     }
                 }
             }
@@ -541,10 +543,10 @@ void addToInventory (Item *item) {
     else {
         for (u8 y = 0; y < 3; y++) {
             for (u8 x = 0; x < 7; x++) {
-                if (player->inventory[x][y] != NULL) continue;
-                else {
+                if (player->inventory[x][y] == NULL && !inserted) {
                     player->inventory[x][y] = item;
-                    break;
+                    inserted = true;
+                    inventoryItems += 1;
                 }
             }
         }
@@ -626,6 +628,7 @@ void getLootItem (u8 lootYIdx) {
 }
 
 // FIXME:
+// FIXME: DONT FORGET inventoryItems -= 1;
 // void dropItem (Item *item) {
 
 //     if (item == NULL) return;

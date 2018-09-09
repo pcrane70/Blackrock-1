@@ -154,7 +154,7 @@ void destroyPlayer (void) {
     for (u8 y = 0; y < 3; y++) 
         for (u8 x = 0; x < 7; x++) 
             if (player->inventory[x][y] != NULL)
-                player->inventory[x][y] = deleteItem (player->inventory[x][y]);
+                player->inventory[x][y] = destroyItem (player->inventory[x][y]);
 
     free (player->inventory);
 

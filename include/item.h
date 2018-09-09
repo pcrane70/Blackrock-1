@@ -99,6 +99,7 @@ extern void *getItemComponent (Item *, ItemComponent);
 extern u32 getItemColor (u8 rarity);
 extern char *getItemSlot (Item *);
 
+extern Item *destroyItem (Item *);
 extern Item *deleteItem (Item *);
 
 extern void cleanUpItems (void);
