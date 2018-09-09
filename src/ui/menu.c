@@ -18,58 +18,119 @@
 #define BG_WIDTH    80
 #define BG_HEIGHT   45
 
-#define MENU_LEFT   50
-#define MENU_TOP    28
-#define MENU_WIDTH  24
-#define MENU_HEIGHT 10 
+UIScreen *menuScreen = NULL;
 
 char *launchImg = "./resources/blackrock-small.png";  
 
 /*** LAUNCH IMAGE ***/
 
-static void renderBg (Console *console) {
+UIView *launchView = NULL;
+BitmapImage *bgImage = NULL;
 
-    static BitmapImage *bgImage = NULL;
+static void renderLaunch (Console *console) {
 
-    if (bgImage == NULL) 
-        bgImage = loadImageFromFile (launchImg);
+    if (bgImage == NULL) bgImage = loadImageFromFile (launchImg);
 
     drawImageAt (console, bgImage, 0, 0);
 
 }
 
-/*** MENUS ***/
+void toggleLaunch (void) {
 
-// Old menu
-static void renderMainMenu (Console *console) {
+    if (launchView == NULL) {
+        UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
+        launchView = newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, 0x000000FF, true, renderLaunch);
+        insertAfter (menuScreen->views, NULL, launchView);
+    }
 
-    UIRect rect = { 0, 0, MENU_WIDTH, MENU_HEIGHT };
-    drawRect (console, &rect, 0x363247FF, 0, 0xFFFFFFFF);
-
-    putStringAt (console, "Start a (N)ew game", 2, 3, 0xBCA285FF, 0X00000000);
+    else {
+        if (launchView != NULL) {
+            ListElement *launch = getListElement (activeScene->views, launchView);
+            destroyView ((UIView *) removeElement (activeScene->views, launch));
+            launchView = NULL;
+        }
+    }
 
 }
 
+/*** MENUS ***/
+
+/*** CHARACTER CREATION ***/
+
+#define CHAR_CREATION_LEFT		0
+#define CHAR_CREATION_TOP		0
+#define CHAR_CREATION_WIDTH		80
+#define CHAR_CREATION_HEIGHT	45
+
+#define CHAR_CREATION_COLOR     0x4B6584FF
+
+#define CHAR_CREATION_TEXT      0xEEEEEEFF
+
+UIView *characterMenu = NULL;
+
+// 09/09/2018 -- this is only temporary, later we will want to have a better character and profile menu
+static void renderCharacterMenu (Console *console) {
+
+    UIRect rect = { 0, 0, CHAR_CREATION_WIDTH, CHAR_CREATION_HEIGHT };
+    drawRect (console, &rect, CHAR_CREATION_COLOR, 0, 0xFFFFFFFF);
+
+    putStringAtCenter (console, "Character Creation", 2, CHAR_CREATION_TEXT, 0x00000000);
+
+}
+
+void toggleCharacterMenu (void) {
+
+    if (characterMenu == NULL) {
+        toggleLaunch ();
+
+        UIRect charMenu = { (16 * CHAR_CREATION_LEFT), (16 * CHAR_CREATION_TOP), (16 * CHAR_CREATION_WIDTH), (16 * CHAR_CREATION_HEIGHT) };
+        characterMenu = newView (charMenu, CHAR_CREATION_WIDTH, CHAR_CREATION_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacterMenu);
+        insertAfter(activeScene->views, LIST_END (activeScene->views), characterMenu);
+    }
+
+    else {
+        if (characterMenu != NULL) {
+            toggleLaunch ();
+
+            ListElement *charMenu = getListElement (activeScene->views, characterMenu);
+            destroyView ((UIView *) removeElement (activeScene->views, charMenu));
+            characterMenu = NULL;
+        }
+    }
+
+}
+
+
+/*** MENU SCENE ***/
+
 UIScreen *menuScene (void) {
 
-    List *menuViews = initList (NULL);
-
-    // UIRect menuRect = { (16 * MENU_LEFT), (16 * MENU_TOP), (16 * MENU_WIDTH), (16 * MENU_HEIGHT) };
-    // UIView *menuView = newView (menuRect, MENU_WIDTH, MENU_HEIGHT, tileset, 0, 0x000000FF, true, renderMainMenu);
-    // insertAfter (menuViews, NULL, menuView);
-
-    UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
-    UIView *bgView = newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, 0x000000FF, true, renderBg);
-    insertAfter (menuViews, NULL, bgView);
-
-    // TODO: add more menus here!
-
-    UIScreen *menuScreen = (UIScreen *) malloc (sizeof (UIScreen));
-    menuScreen->views = menuViews;
-    menuScreen->activeView = bgView;
+    menuScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    menuScreen->views = initList (NULL);
     menuScreen->handleEvent = hanldeMenuEvent;
+
+    toggleLaunch ();
 
     return menuScreen;
 
 }
 
+void cleanUpMenuScene (void) {
+
+    if (menuScreen != NULL) {
+        if (bgImage != NULL) {
+            free (bgImage->pixels);
+            free (bgImage);
+        }
+
+        for (ListElement *e = LIST_START (menuScreen->views); e != NULL; e = e->next) 
+            destroyView ((UIView *) e->data);
+
+        destroyList (menuScreen->views);
+
+        free (menuScreen);
+
+        fprintf (stdout, "Done cleaning up menu.\n");
+    }
+
+}

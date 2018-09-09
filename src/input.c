@@ -15,18 +15,32 @@ extern bool inGame;
 
 /*** MAIN MENU ***/
 
+extern bool running;
+
+extern UIView *characterMenu;
+extern void toggleCharacterMenu (void);
+
+extern void cleanUpMenuScene (void);
+
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
     if (event.type == SDL_KEYDOWN) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
-            case SDLK_p: 
-                initGame ();
-                setActiveScene (gameScene ());
-                inGame = true;
+            case SDLK_p: toggleCharacterMenu (); break; 
+            case SDLK_s: 
+                if (characterMenu != NULL) {
+                    cleanUpMenuScene ();
+                    initGame ();
+                    setActiveScene (gameScene ());
+                    inGame = true;
+                }
                 break;
 
+            // TODO: toggle credits window
+            case SDLK_c: break;
+            case SDLK_e: running = false; break;
             default: break;
         }
 
@@ -100,11 +114,11 @@ bool isInUI (void) {
 
 void closeUIMenu (void) {
 
-    // if (inventoryView != NULL) toggleInventory (false);
+    if (inventoryView != NULL) toggleInventory ();
 
     if (lootView != NULL) toggleLootWindow ();
 
-    // if (characterView != NULL) hideCharacter ();
+    if (characterView != NULL) toggleCharacter ();
 
 }
 

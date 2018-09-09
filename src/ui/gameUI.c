@@ -1048,10 +1048,6 @@ void cleanGameUI (void) {
         if (activeLootRects != NULL) destroyList (activeLootRects);
         if (lootRectsPool != NULL) clearPool (lootRectsPool);
 
-        ListElement *view = getListElement (inGameScreen->views, activeScene);
-        destroyView ((UIView *) removeElement (inGameScreen->views, view));
-        inGameScreen->activeView = NULL;
-
         for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
             destroyView ((UIView *) e->data);
         

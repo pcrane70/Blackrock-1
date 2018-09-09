@@ -405,7 +405,6 @@ Item *createWeapon (u32 itemId) {
 
 }
 
-// FIXME:
 Item *createArmour (u32 itemId) {
 
     Item *armour = createItem (itemId);

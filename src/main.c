@@ -3,15 +3,11 @@
 
 #include "blackrock.h"
 #include "game.h"
-#include "map.h"    // we are only accesing the walls array with this
 
 #include "ui/console.h"
 
 #include "ui/ui.h"
 #include "ui/gameUI.h"
-
-#include "input.h"
-
 
 #define FPS_LIMIT   20
 

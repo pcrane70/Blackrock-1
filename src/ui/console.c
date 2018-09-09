@@ -248,6 +248,16 @@ void putStringAt (Console *con, char *string, i32 x, i32 y, u32 fgColor, u32 bgC
 
 }
 
+void putStringAtCenter (Console *con, char *string, i32 y, u32 fgColor, u32 bgColor) {
+
+    u32 stringLen = strlen (string);
+    u32 x = (con->cols / 2) - (stringLen / 2);
+
+    for (u8 i = 0; i < stringLen; i++)
+        putCharAt (con, (asciiChar) string[i], x + i, y, fgColor, bgColor);
+
+}
+
 void putStringAtRect (Console *con, char *string, Rect rect, bool wrap, u32 fgColor, u32 bgColor) {
 
     u32 len = strlen (string);

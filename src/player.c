@@ -159,14 +159,14 @@ void destroyPlayer (void) {
     free (player->inventory);
 
     // clean up weapons
-    // for (u8 i = 0; i < 2; i++)
-    //     if (player->weapons[i] != NULL) 
-    //         player->weapons[i] = deleteItem (player->weapons[i]);
+    for (u8 i = 0; i < 2; i++)
+        if (player->weapons[i] != NULL) 
+            player->weapons[i] = destroyItem (player->weapons[i]);
 
     // // clean up equipment
-    // for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) 
-    //     if (player->equipment[i] != NULL)
-    //         player->equipment[i] = deleteItem (player->equipment[i]);
+    for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) 
+        if (player->equipment[i] != NULL)
+            player->equipment[i] = destroyItem (player->equipment[i]);
         
     free (player->pos);
     free (player->graphics);
