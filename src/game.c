@@ -1043,7 +1043,7 @@ GameObject *createMonster (u32 monId) {
         return NULL;
     } 
 
-    Physics phys = { 0, true, true };
+    Physics phys = { 0, true, false };
     addComponent (mon, PHYSICS, &phys);
 
     // movement
@@ -1632,7 +1632,11 @@ void enterDungeon (void) {
     // after we have allocated the new level structure, we can start generating the first level
     generateLevel ();
 
+    calculateFov (player->pos->x, player->pos->y, fovMap);
+
     fprintf (stdout, "Done initializing game!\n");
+
+    // FIXME: add different texts here!!
     logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
 
 }
