@@ -153,6 +153,7 @@ void triggerEvent (void) {
         Item *item = getInvSelectedItem ();
         if (item != NULL) {
             if (item->callback != NULL) item->callback (item);
+
         } 
     } 
 

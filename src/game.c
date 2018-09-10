@@ -1537,6 +1537,8 @@ void useStairs (void *goData) {
     void generateLevel (void);
     generateLevel ();
 
+    calculateFov (player->pos->x, player->pos->y, fovMap);
+
     // TODO: what is our win condition?
 
     char *msg = createString ("You are now on level %i", currentLevel->levelNum);

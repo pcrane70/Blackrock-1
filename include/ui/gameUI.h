@@ -68,6 +68,7 @@ extern u8 inventoryYIdx;
 
 extern void toggleInventory (void);
 extern Item *getInvSelectedItem (void);
+extern void resetInventoryRects (void);
 
 /*** CHARACTER ***/
 

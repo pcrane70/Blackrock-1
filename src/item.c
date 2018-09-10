@@ -260,14 +260,18 @@ Item *deleteItem (Item *item) {
 Item *removeFromInventory (Item *item) {
 
     Item *retVal = NULL;
+    bool removed = false;
 
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
-            if (item->dbId == player->inventory[x][y]->dbId) {
-                retVal = player->inventory[x][y];
-                player->inventory[x][y] = NULL;
-                break;
+            if (!removed) {
+                if (item->dbId == player->inventory[x][y]->dbId) {
+                    retVal = player->inventory[x][y];
+                    player->inventory[x][y] = NULL;
+                    removed = true;
+                }
             }
+            
         }
     }
 
@@ -362,7 +366,7 @@ Item *createItem (int itemId) {
 
     fprintf (stdout, "Added data to item!\n");
     
-    // item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
+    item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
 
     // graphics
     if (addGraphicsToItem (itemId, item, name) != 0) {
@@ -843,7 +847,6 @@ void updateLifeTime (void) {
 
 /*** CALLBACKS ***/
 
-// 28/08/2018 -- 11:15 -- testing effects inside items
 void healPlayer (void *i) {
 
     Item *item = (Item *) i;
@@ -852,7 +855,8 @@ void healPlayer (void *i) {
     u32 maxHealth = player->combat->baseStats.maxHealth;
 
     // FIXME: get the real data
-    u16 health = 5;
+    // FIXME: 09/09/2018 -- 23:08 -- this is just for testing
+    u16 health = (u16) randomInt (5, 10);
 
     if (*currHealth == maxHealth) 
         logMessage ("You already have full health.", WARNING_COLOR);
@@ -871,7 +875,12 @@ void healPlayer (void *i) {
         else realHp = health;  
 
         item->quantity--;
-        if (item->quantity == 0) removeFromInventory (item);
+        if (item->quantity == 0) {
+            Item *old = removeFromInventory (item);
+            if (old != NULL) destroyItem (old);
+
+            resetInventoryRects ();
+        }
 
         // TODO: maybe better strings
         // you have ate the apple for 5 health
