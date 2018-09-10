@@ -145,7 +145,6 @@ Player *initPlayer (void) {
 
 }
 
-// FIXME: problems cleanning up weapons and equipment
 void destroyPlayer (void) {
 
     free (player->name);

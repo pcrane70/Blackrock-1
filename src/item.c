@@ -265,7 +265,7 @@ Item *removeFromInventory (Item *item) {
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
             if (!removed) {
-                if (item->dbId == player->inventory[x][y]->dbId) {
+                if (item == player->inventory[x][y]) {
                     retVal = player->inventory[x][y];
                     player->inventory[x][y] = NULL;
                     removed = true;
@@ -602,7 +602,6 @@ void pickUp (Item *item) {
 
 }
 
-
 // As of 16/08/2018:
 // The character must be on the same coord as the item to be able to pick it up
 void getItem (void) {
@@ -618,8 +617,8 @@ void getItem (void) {
 
     // we only pick one item each time
     else {
-        pickUp ((Item *)((LIST_START (objects))->data));
-        if (objects != NULL) destroyList (objects);
+        pickUp ((Item *) removeElement (objects, (LIST_START (objects))));
+        if (objects != NULL) cleanUpList (objects);
     } 
 
 }
@@ -655,47 +654,42 @@ void getLootItem (u8 lootYIdx) {
 
 }
 
-// FIXME:
-// FIXME: DONT FORGET inventoryItems -= 1;
-// void dropItem (Item *item) {
+// TODO: add the option to drop the entiere stack
+void dropItem (Item *item) {
 
-//     if (item == NULL) return;
-//     if (item->quantity <= 0) return;    // quick dirty fix
+    if (item == NULL) return;
+    if (item->quantity <= 0) return;    // quick dirty fix
 
-//     Item *dropItem = NULL;
+    Item *dropItem = NULL;
 
-//     if (item->stackable) {
-//         item->quantity--;
-//         if (item->quantity > 0) dropItem = createItem (item->dbId);
+    if (item->stackable) {
+        if (item->quantity > 1) {
+            item->quantity--;
+            dropItem = createItem (item->dbId);
+        } 
+        else {
+            dropItem = removeFromInventory (item);
+            resetInventoryRects ();
+        } 
+    }
 
-//         else {
-//             for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
-//                 if (e->data == (void *) item) 
-//                     dropItem = (Item *) removeElement (playerComp->inventory, e);
-//         } 
+    else dropItem = removeFromInventory (item);
 
-//     }
+    inventoryItems--;
 
-//     else {
-//         for (ListElement *e = LIST_START (playerComp->inventory); e != NULL; e = e->next) 
-//             if (e->data == (void *) item) 
-//                 dropItem = (Item *) removeElement (playerComp->inventory, e);
+    Position pos = { .x = player->pos->x, .y = player->pos->y, .layer = MID_LAYER };
+    addGameComponent (dropItem, POSITION, &pos);
 
-//     }
+    Graphics *g = (Graphics *) getGameComponent (dropItem, GRAPHICS);
+    if (g != NULL) {
+        char *msg = createString ("You dropped the %s.", g->name);
+        logMessage (msg, DEFAULT_COLOR);
+        free (msg);
+    }
 
-//     Position *playerPos = (Position *) getComponent (player, POSITION);
-//     Position pos = { .x = playerPos->x, .y = playerPos->y, .layer = MID_LAYER };
-//     addGameComponent (dropItem, POSITION, &pos);
+    else logMessage ("You dropped the item.", DEFAULT_COLOR);
 
-//     Graphics *g = (Graphics *) getGameComponent (dropItem, GRAPHICS);
-//     if (g != NULL) {
-//         char *msg = createString ("You dropped the %s.", g->name);
-//         logMessage (msg, DEFAULT_COLOR);
-//         free (msg);
-//     }
-//     else logMessage ("You dropped the item.", DEFAULT_COLOR);
-
-// }
+}
 
 /*** WEAPONS -- ARMOUR ***/
 

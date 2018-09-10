@@ -17,9 +17,7 @@
 #include "utils/list.h"       // for messages
 #include "objectPool.h"
 
-
 extern UIView *activeView;
-
 
 /*** STATS ***/
 
@@ -82,6 +80,31 @@ static void renderMap (Console *console) {
         else if (walls[i].hasBeenSeen) 
             putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFadedColor, wallsBgColor);
         
+    }
+
+    // FIXME: i dont like this!!
+    Item *item = NULL;
+    Position *itemPos = NULL;
+    Graphics *itemGra = NULL;
+    for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+        item = (Item *) e->data;
+        itemPos = getGameComponent (item, POSITION);
+        if (itemPos != NULL) {
+            itemGra = getGameComponent (item, GRAPHICS);
+
+            if (fovMap[itemPos->x][itemPos->y] > 0) {
+                itemGra->hasBeenSeen = true;
+                putCharAt (console, itemGra->glyph, itemPos->x, itemPos->y, itemGra->fgColor, itemGra->bgColor);
+                layerRendered[itemPos->x][itemPos->y] = itemPos->layer;
+            }
+
+            else if (itemGra->visibleOutsideFov && itemGra->hasBeenSeen) {
+                fullColor = itemGra->fgColor;
+                fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
+                putCharAt (console, g->glyph, itemPos->x, itemPos->y, fadedColor, 0x000000FF);
+                layerRendered[itemPos->x][itemPos->y] = itemPos->layer;
+            }
+        }
     }
         
     // render the player

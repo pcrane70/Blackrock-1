@@ -222,14 +222,13 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 else collectGold ();
                 break;
 
-            // FIXME:
             // drop item
-            // case SDLK_SPACE:
-            //     if (isInUI () && inventoryView != NULL) {
-            //         Item *item = getInvSelectedItem ();
-            //         if (item != NULL) dropItem (item);
-            //     } 
-            //     break;
+            case SDLK_SPACE:
+                if (activeView == inventoryView) {
+                    Item *item = getInvSelectedItem ();
+                    if (item != NULL) dropItem (item);
+                } 
+                break;
 
             case SDLK_i: toggleInventory (); break;
 

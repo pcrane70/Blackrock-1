@@ -173,6 +173,7 @@ extern GameObject *createGO (void);
 extern void *getComponent (GameObject *, GameComponent);
 extern void addComponent (GameObject *go, GameComponent type, void *data);
 extern List *getObjectsAtPos (u32 x, u32 y);
+extern GameObject *searchGameObjectById (u32);
 
 /*** LOOT ***/
 
