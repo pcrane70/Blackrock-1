@@ -981,6 +981,45 @@ void togglePauseMenu (void) {
 
 }
 
+/*** DEATH SCREEN ***/
+
+#define FULL_SCREEN_LEFT		0
+#define FULL_SCREEN_TOP		    0
+#define FULL_SCREEN_WIDTH		80
+#define FULL_SCREEN_HEIGHT	    45
+
+BitmapImage *deathImg = NULL;
+char *deathImgPath = "./resources/death-720.png"; 
+
+UIView *deathScreen = NULL;
+
+static void renderDeathScreen (Console *console) {
+
+    if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
+
+    drawImageAt (console, deathImg, 0, 0);
+
+}
+
+void toggleDeathScreen (void) {
+
+    if (deathScreen == NULL) {
+        UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
+        deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), deathScreen);
+    }
+
+    else {
+        if (deathScreen != NULL) {
+            ListElement *death = getListElement (activeScene->views, deathScreen);
+            destroyView ((UIView *) removeElement (activeScene->views, death));
+            deathScreen = NULL;
+        }
+    }
+
+}
+
+
 /*** INIT GAME SCREEN ***/
 
 extern bool inGame;
@@ -1047,6 +1086,8 @@ void cleanGameUI (void) {
 
         if (activeLootRects != NULL) destroyList (activeLootRects);
         if (lootRectsPool != NULL) clearPool (lootRectsPool);
+
+        if (deathImg != NULL) destroyImage (deathImg);
 
         for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
             destroyView ((UIView *) e->data);

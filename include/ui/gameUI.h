@@ -81,6 +81,10 @@ extern void toggleCharacter (void);
 
 extern void togglePauseMenu (void);
 
+/*** SCREENS ***/
+
+extern void toggleDeathScreen (void);
+
 
 // THIS SHOULD ONLY BE CALLED FROM THE UI CONTROLLER
 extern UIScreen *gameScene (void);

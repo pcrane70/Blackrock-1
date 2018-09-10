@@ -2,6 +2,8 @@
 
 #include "utils/myUtils.h"
 
+/*** IMAGES ***/
+
 // Include the STB image library - only the PNG support
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
@@ -36,5 +38,14 @@ BitmapImage *loadImageFromFile (char *filename) {
     stbi_image_free (imgData);
 
     return bmi;
+
+}
+
+void destroyImage (BitmapImage *image) {
+
+    if (image != NULL) {
+        free (image->pixels);
+        free (image);
+    }
 
 }

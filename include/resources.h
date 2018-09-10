@@ -3,6 +3,8 @@
 
 #include "blackrock.h"
 
+/*** IMAGES ***/
+
 typedef struct BitmapImage {
 
     u32 *pixels;
@@ -12,5 +14,6 @@ typedef struct BitmapImage {
 } BitmapImage;
 
 extern BitmapImage *loadImageFromFile (char *filename);
+extern void destroyImage (BitmapImage *);
 
 #endif

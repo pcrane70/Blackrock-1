@@ -1502,12 +1502,10 @@ void clearOldLevel (void) {
 
 }
 
-// FIXME:
-// As of 9/08/2018 -- 17:00 -- we only asks the player if he wants to play again
-// TODO: maybe later we can first display a screen with a score and then ask him to play again
+// game over logic
 void gameOver (void) {
 
-
+    toggleDeathScreen ();
 
 }
 

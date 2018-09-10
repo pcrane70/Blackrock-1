@@ -145,6 +145,39 @@ void swicthView (void) {
 
 /*** GAME EVENTS ***/
 
+extern void gameOver (void);
+
+void triggerEvent (void) {
+
+    if (activeView == inventoryView) {
+        Item *item = getInvSelectedItem ();
+        if (item != NULL) {
+            if (item->callback != NULL) item->callback (item);
+        } 
+    } 
+
+    // loop through all of our surrounding items in search for 
+    // an event listener to trigger
+    if (activeView == mapView) {
+        List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
+        if (gos != NULL) {
+            Event *ev = NULL;
+            for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
+                ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
+                // trigger just the first event we find
+                if (ev != NULL) {
+                    ev->callback (e->data);
+                    break;
+                }
+            }
+
+            if (LIST_SIZE (gos) > 0) cleanUpList (gos);
+            else free (gos);
+        }
+    }
+            
+}
+
 void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
     playerPos = player->pos;
@@ -176,34 +209,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 else if (activeView == characterView) moveInCharacter (characterXIdx + 1, characterYIdx, true);
                 break;
 
-            case SDLK_e: {
-                if (activeView == inventoryView) {
-                    Item *item = getInvSelectedItem ();
-                    if (item != NULL) {
-                        if (item->callback != NULL) item->callback (item);
-                    } 
-                } 
-
-                // loop through all of our surrounding items in search for 
-                // an event listener to trigger
-                if (activeView == mapView) {
-                    List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
-                    if (gos != NULL) {
-                        Event *ev = NULL;
-                        for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
-                            ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
-                            // trigger just the first event we find
-                            if (ev != NULL) {
-                                ev->callback (e->data);
-                                break;
-                            }
-                        }
-
-                        if (LIST_SIZE (gos) > 0) cleanUpList (gos);
-                        else free (gos);
-                    }
-                }
-            } break;
+            case SDLK_e: triggerEvent (); break;
             case SDLK_g:
                 if (activeView == lootView) getLootItem (lootYIdx);
                 else if (activeView == mapView) getItem (); 
@@ -232,6 +238,9 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_TAB: swicthView (); break;
 
             case SDLK_ESCAPE: closeUIMenu (); break;
+
+            // FIXME: this is only for testing!!
+            case SDLK_k: gameOver (); break;
 
             default: break;
         }

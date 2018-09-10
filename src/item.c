@@ -9,8 +9,6 @@
 
 #include "item.h"
 
-#include "config.h"
-
 #include "ui/gameUI.h" // for strings
 
 #include "utils/myUtils.h"
@@ -27,7 +25,7 @@ List *items = NULL;
 Pool *itemsPool = NULL;
 
 // our items db
-Config *itemsConfig = NULL;
+// Config *itemsConfig = NULL;
 
 // items components
 List *weapons = NULL;
@@ -891,9 +889,7 @@ void healPlayer (void *i) {
 void cleanUpItems (void) {
 
     destroyList (items);
-    clearPool (itemsPool);
-
-    // clearConfig (itemsConfig);
+    if (itemsPool != NULL) clearPool (itemsPool);
 
     // disconnect from the db
     sqlite3_close (itemsDb);
