@@ -417,6 +417,7 @@ void cleanUpGame (void) {
 
     // clean game ui
     cleanGameUI ();
+    fprintf (stdout, "Done cleanning up game UI\n");
 
     // clean up our lists
     destroyList (gameObjects);
@@ -446,6 +447,7 @@ void cleanUpGame (void) {
 
     fprintf (stdout, "Done cleanning up lists\n");
     
+    // FIXME: problems cleaning up pools
     // cleanup the pools
     clearPool (goPool);
     clearPool (posPool);
@@ -475,15 +477,12 @@ void cleanUpGame (void) {
 
     // clean up items
     cleanUpItems ();
-    fprintf (stdout, "Done cleanning up items\n");
+    fprintf (stdout, "Done cleaning up items.\n");
 
     // clean up enemies memory and db
     void cleanUpEnemies (void);
     cleanUpEnemies ();
     fprintf (stdout, "Done cleanning up enemies\n");
-    
-    // cleanup the message log
-    destroyList (messageLog);
 
     free (currentLevel->mapCells);
     free (currentLevel);

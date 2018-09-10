@@ -132,6 +132,15 @@ static void rednderStats (Console *console) {
 
 List *messageLog = NULL;
 
+void deleteMessage (Message *msg) {
+
+    if (msg != NULL) {
+        free (msg->msg);
+        free (msg);
+    }
+
+}
+
 // create a new message in the log
 void logMessage (char *msg, u32 color) {
 
@@ -150,7 +159,9 @@ void logMessage (char *msg, u32 color) {
     // add message to the log
     insertAfter (messageLog, LIST_END (messageLog), m);
 
-    if (LIST_SIZE (messageLog) > 15) removeElement (messageLog, NULL);  // remove the oldest message
+    // remove the oldest message
+    if (LIST_SIZE (messageLog) > 15)
+        deleteMessage ((Message *) removeElement (messageLog, NULL));
 
 }
 
@@ -183,6 +194,14 @@ static void renderLog (Console *console) {
 
 }
 
+void cleanMessageLog (void) {
+
+    while (LIST_SIZE (messageLog) > 0) 
+        deleteMessage ((Message *) removeElement (messageLog, NULL));
+
+    free (messageLog);
+
+}
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -1081,6 +1100,9 @@ UIScreen *gameScene (void) {
 void cleanGameUI (void) {
 
     if (inGameScreen != NULL) {
+        // message log
+        cleanMessageLog ();
+
         if (inventoryRects != NULL) destroyInvRects ();
         if (characterRects != NULL) destroyCharRects ();
 

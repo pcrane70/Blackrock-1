@@ -30,6 +30,7 @@ extern List *messageLog;
 extern void logMessage (char *msg, u32 color);
 extern char *createString (const char *stringWithFormat, ...);
 
+extern void cleanMessageLog (void);
 
 /*** MESSAGE COLORS ***/
 

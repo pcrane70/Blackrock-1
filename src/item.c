@@ -2,12 +2,11 @@
 
 #include "blackrock.h"
 #include "game.h"
+#include "item.h"
 #include "player.h"
 
 #include "utils/list.h"
 #include "objectPool.h"
-
-#include "item.h"
 
 #include "ui/gameUI.h" // for strings
 
@@ -51,7 +50,6 @@ void initItems (void) {
         fprintf (stderr, "%s\n", sqlite3_errmsg (itemsDb));
         die ("Problems with items db!\n");
     } 
-    else fprintf (stdout, "Succesfully connected to the items db.\n");
 
     // development functions
     // This are used only for testing and to populate our dbs
@@ -886,15 +884,14 @@ void healPlayer (void *i) {
 
 /*** CLEAN UP ***/
 
+// FIXME: problems with items pool
 void cleanUpItems (void) {
 
     destroyList (items);
-    if (itemsPool != NULL) clearPool (itemsPool);
+    // if (itemsPool != NULL) clearPool (itemsPool);
 
     // disconnect from the db
     sqlite3_close (itemsDb);
-
-    fprintf (stdout, "Done cleaning up items.\n");
 
 }
 
