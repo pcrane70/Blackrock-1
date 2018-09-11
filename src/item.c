@@ -1,3 +1,4 @@
+#include <sqlite3.h>
 #include <string.h>
 
 #include "blackrock.h"
@@ -12,27 +13,13 @@
 
 #include "utils/myUtils.h"
 
-/*** ITEMS DB ***/
 
-#include <sqlite3.h>
-
-// The path is form the makefile
-const char *itemsDbPath = "./data/items.db";
+// our items db
+const char *itemsDbPath = "./data/items.db";    // The path is form the makefile
 sqlite3 *itemsDb;
 
 List *items = NULL;
 Pool *itemsPool = NULL;
-
-// our items db
-// Config *itemsConfig = NULL;
-
-// items components
-List *weapons = NULL;
-List *equipment = NULL;
-
-// 28/08/2018 -- 09:03
-// I think we don't need a weapons or equipment pool because we are not moving so much
-// memory with them
 
 // static u32 itemsId = 0;
 
@@ -40,7 +27,7 @@ extern unsigned int newId;
 
 extern void die (char *);
 
-// FIXME: problems with items
+// FIXME: problems with items pool
 void initItems (void) {
 
     items = initList (free);
@@ -158,7 +145,6 @@ void addItemComp (Item *item, ItemComponent type, void *data) {
             newWeapon->isEquipped = weaponData->isEquipped;
             newWeapon->slot = weaponData->slot;
             item->itemComps[type] = newWeapon;
-            // insertAfter (weapons, NULL, newWeapon);
         } break;
         case ARMOUR: {
             if (getItemComponent (item, type) != NULL) return;
@@ -172,7 +158,6 @@ void addItemComp (Item *item, ItemComponent type, void *data) {
             newArmour->slot = armourData->slot;
             newArmour->isEquipped = armourData->isEquipped;
             item->itemComps[type] = newArmour;
-            insertAfter (equipment, NULL, newArmour);
         } break;
         default: break;
     }
@@ -211,22 +196,16 @@ void removeItemComponent (Item *item, ItemComponent type) {
     switch (type) {
         case WEAPON: {
             Weapon *weapon = (Weapon *) getItemComponent (item , type);
-            if (weapon == NULL) return;
-            ListElement *e = getListElement (weapons, weapon);
-            if (e != NULL) {
-                void *weaponData = removeElement (weapons, e);
-                free (weaponData);
+            if (weapon != NULL) {
                 item->itemComps[type] = NULL;
+                free (weapon);
             }
         } break;
         case ARMOUR: {
             Armour *armour = (Armour *) getItemComponent (item, type);
-            if (armour == NULL) return;
-            ListElement *e = getListElement (equipment, armour);
-            if (e != NULL) {
-                void *armourData = removeElement (equipment, e);
-                free (armourData);
+            if (armour != NULL) {
                 item->itemComps[type] = NULL;
+                free (armour);
             }
         } break;
         default: break;
@@ -244,8 +223,6 @@ Item *destroyItem (Item *item) {
     removeElement (items, e);
 
     // if (e != NULL) push (itemsPool, removeElement (items, e));
-
-    fprintf (stdout, "Item destroyed!\n");
 
     return NULL;
 
@@ -678,15 +655,16 @@ void dropItem (Item *item) {
             item->quantity--;
             dropItem = createItem (item->dbId);
         } 
-        else {
-            dropItem = removeFromInventory (item);
-            resetInventoryRects ();
-        } 
+
+        else dropItem = removeFromInventory (item);
     }
 
     else dropItem = removeFromInventory (item);
 
     inventoryItems--;
+
+    // update the UI
+    resetInventoryRects ();
 
     Position pos = { .x = player->pos->x, .y = player->pos->y, .layer = MID_LAYER };
     addGameComponent (dropItem, POSITION, &pos);
@@ -732,10 +710,6 @@ void toggleEquipWeapon (void *i) {
 
             player->weapons[weapon->slot] = NULL;
 
-            // update the UI
-            resetCharacterRects ();
-            resetInventoryRects ();
-
             weapon->isEquipped = false;
         }
     }
@@ -763,13 +737,13 @@ void toggleEquipWeapon (void *i) {
                 free (str);
             }
 
-            // update the UI
-            resetCharacterRects ();
-            resetInventoryRects ();
-
             weapon->isEquipped = true;
         }
     }
+
+    // update the UI
+    resetCharacterRects ();
+    resetInventoryRects ();
         
 }
 
@@ -800,10 +774,6 @@ void toggleEquipArmour (void *i) {
 
             player->equipment[armour->slot] = NULL;
 
-            // update the UI
-            resetCharacterRects ();
-            resetInventoryRects ();
-
             armour->isEquipped = false;
         }
     }
@@ -824,13 +794,13 @@ void toggleEquipArmour (void *i) {
                 free (str);
             }
 
-            // update the UI
-            resetCharacterRects ();
-            resetInventoryRects ();
-
             armour->isEquipped = true;
         }
     }
+
+    // update the UI
+    resetCharacterRects ();
+    resetInventoryRects ();
 
 }
 
@@ -898,8 +868,6 @@ void healPlayer (void *i) {
 
     if (*currHealth == maxHealth) logMessage ("You already have full health.", WARNING_COLOR);
     else {
-        fprintf (stdout, "Healing player\n");
-
         u16 realHp;
 
         *currHealth += health;

@@ -487,9 +487,6 @@ void cleanUpGame (void) {
     free (currentLevel->mapCells);
     free (currentLevel);
 
-    // clear the configs
-    // clearConfig (monsterConfig);
-
     fprintf (stdout, "Done cleanning up game!\n");
 
 }
