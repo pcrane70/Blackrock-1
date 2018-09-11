@@ -77,6 +77,9 @@ extern UIView *characterView;
 extern u8 characterXIdx;
 extern u8 characterYIdx;
 
+extern Item *getCharSelectedItem (void);
+
+extern void resetCharacterRects (void);
 extern void toggleCharacter (void);
 
 /*** PAUSE MENU ***/

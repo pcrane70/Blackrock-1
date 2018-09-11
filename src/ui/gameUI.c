@@ -838,7 +838,7 @@ void renderCharacterRects (Console *console) {
 }
 
 // I don't like this function...
-char *getCharRectSlot () {
+char *getCharRectSlot (void) {
 
     char slot[15];
 

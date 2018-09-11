@@ -157,9 +157,16 @@ void triggerEvent (void) {
         } 
     } 
 
+    else if (activeView == characterView) {
+        Item *item = getCharSelectedItem ();
+        if (item != NULL) {
+            if (item->callback != NULL) item->callback (item);
+        }
+    }
+
     // loop through all of our surrounding items in search for 
     // an event listener to trigger
-    if (activeView == mapView) {
+    else if (activeView == mapView) {
         List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
         if (gos != NULL) {
             Event *ev = NULL;

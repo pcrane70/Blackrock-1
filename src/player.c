@@ -148,7 +148,6 @@ Player *initPlayer (void) {
 
 }
 
-// FIXME:
 void destroyPlayer (void) {
 
     free (player->name);
@@ -156,20 +155,19 @@ void destroyPlayer (void) {
     // clean up inventory
     for (u8 y = 0; y < 3; y++) 
         for (u8 x = 0; x < 7; x++) 
-            if (player->inventory[x][y] != NULL)
-                player->inventory[x][y] = destroyItem (player->inventory[x][y]);
+            player->inventory[x][y] = NULL;
 
     free (player->inventory);
 
     // clean up weapons
-    for (u8 i = 0; i < 2; i++)
-        if (player->weapons[i] != NULL) 
-            player->weapons[i] = destroyItem (player->weapons[i]);
+    for (u8 i = 0; i < 2; i++) player->weapons[i] = NULL;
 
-    // // clean up equipment
-    for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) 
-        if (player->equipment[i] != NULL)
-            player->equipment[i] = destroyItem (player->equipment[i]);
+    free (player->weapons);
+
+    // clean up equipment
+    for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
+
+    free (player->equipment);
         
     free (player->pos);
     free (player->graphics);

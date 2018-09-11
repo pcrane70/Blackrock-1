@@ -40,10 +40,12 @@ extern unsigned int newId;
 
 extern void die (char *);
 
+// FIXME: problems with items
 void initItems (void) {
 
     items = initList (free);
     itemsPool = initPool ();
+    if (itemsPool = NULL) fprintf (stderr, "Items pool is NULL!\n");
 
     // connect to the items db
     if (sqlite3_open (itemsDbPath, &itemsDb) != SQLITE_OK) {
@@ -60,7 +62,7 @@ void initItems (void) {
 
 /*** ITEMS IN MEMORY ***/
 
-// FIXME: items pool
+// FIXME: problems with items pool!!
 Item *newItem (void) {
 
     Item *i = NULL;
@@ -138,7 +140,6 @@ void addGameComponent (Item *item, GameComponent type, void *data) {
 
 }
 
-// FIXME: do we need a list of weapons and armour??
 void addItemComp (Item *item, ItemComponent type, void *data) {
 
     if (item == NULL || data == NULL) return;
@@ -233,13 +234,18 @@ void removeItemComponent (Item *item, ItemComponent type) {
 
 }
 
+// FIXME: problems with items pool
 Item *destroyItem (Item *item) {
 
     for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
     for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
     ListElement *e = getListElement (items, item);
-    if (e != NULL) push (itemsPool, removeElement (items, e));
+    removeElement (items, e);
+
+    // if (e != NULL) push (itemsPool, removeElement (items, e));
+
+    fprintf (stdout, "Item destroyed!\n");
 
     return NULL;
 
@@ -316,6 +322,7 @@ u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
 
 void healPlayer (void *);
 void toggleEquipWeapon (void *);
+void toggleEquipArmour (void *);
 
 EventListener getItemCallback (u8 cb) {
 
@@ -325,7 +332,7 @@ EventListener getItemCallback (u8 cb) {
         case 0: callback = NULL; break;
         case 1: callback = healPlayer; break;
         case 2: callback = toggleEquipWeapon; break;
-        case 3: break;
+        case 3: callback = toggleEquipArmour; break;
         default: break;
     }
 
@@ -699,7 +706,6 @@ void dropItem (Item *item) {
 
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
-// FIXME: handle unequip an item from the character menu
 void toggleEquipWeapon (void *i) {
 
     if (i == NULL) return;
@@ -716,7 +722,6 @@ void toggleEquipWeapon (void *i) {
         Item *w = player->weapons[weapon->slot];
         if (w != NULL) {
             addToInventory (w);
-            resetInventoryRects ();
 
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
             if (g != NULL) {
@@ -726,6 +731,12 @@ void toggleEquipWeapon (void *i) {
             } 
 
             player->weapons[weapon->slot] = NULL;
+
+            // update the UI
+            resetCharacterRects ();
+            resetInventoryRects ();
+
+            weapon->isEquipped = false;
         }
     }
 
@@ -734,10 +745,8 @@ void toggleEquipWeapon (void *i) {
         Item *w = removeFromInventory (item);
         if (w != NULL) {
             // unequip our current weapon if we have one
-            if (player->weapons[weapon->slot] != NULL) {
-                fprintf (stdout, "We already have a weapon equipped!\n");
+            if (player->weapons[weapon->slot] != NULL) 
                 toggleEquipWeapon (player->weapons[weapon->slot]);
-            }
 
             // if we are equipping a two handed and we have two one handed
             if (((Weapon *) getItemComponent (w, WEAPON))->twoHanded) {
@@ -746,8 +755,6 @@ void toggleEquipWeapon (void *i) {
 
             }
 
-            resetInventoryRects ();
-
             player->weapons[weapon->slot] = w;
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
             if (g != NULL) {
@@ -755,6 +762,12 @@ void toggleEquipWeapon (void *i) {
                 logMessage (str, DEFAULT_COLOR);
                 free (str);
             }
+
+            // update the UI
+            resetCharacterRects ();
+            resetInventoryRects ();
+
+            weapon->isEquipped = true;
         }
     }
         
@@ -762,13 +775,16 @@ void toggleEquipWeapon (void *i) {
 
 // TODO: update combat stats based on armour modifiers if necessary
 // TODO: create better strings deppending on the item
-// FIXME: handle unequip an item from the character menu
 void toggleEquipArmour (void *i) {
 
     if (i == NULL) return;
 
     Item *item = (Item *) i;
     Armour *armour = (Armour *) getItemComponent (item, ARMOUR);
+    if (armour == NULL) {
+        fprintf (stderr, "No armour component!!\n");
+        return;
+    }
 
     // unequip
     if (armour->isEquipped) {
@@ -783,6 +799,12 @@ void toggleEquipArmour (void *i) {
             } 
 
             player->equipment[armour->slot] = NULL;
+
+            // update the UI
+            resetCharacterRects ();
+            resetInventoryRects ();
+
+            armour->isEquipped = false;
         }
     }
 
@@ -801,6 +823,12 @@ void toggleEquipArmour (void *i) {
                 logMessage (str, DEFAULT_COLOR);
                 free (str);
             }
+
+            // update the UI
+            resetCharacterRects ();
+            resetInventoryRects ();
+
+            armour->isEquipped = true;
         }
     }
 
@@ -868,10 +896,10 @@ void healPlayer (void *i) {
     // FIXME: 09/09/2018 -- 23:08 -- this is just for testing
     u16 health = (u16) randomInt (5, 10);
 
-    if (*currHealth == maxHealth) 
-        logMessage ("You already have full health.", WARNING_COLOR);
-
+    if (*currHealth == maxHealth) logMessage ("You already have full health.", WARNING_COLOR);
     else {
+        fprintf (stdout, "Healing player\n");
+
         u16 realHp;
 
         *currHealth += health;
@@ -907,7 +935,7 @@ void healPlayer (void *i) {
 void cleanUpItems (void) {
 
     destroyList (items);
-    // if (itemsPool != NULL) clearPool (itemsPool);
+    // clearPool (itemsPool);
 
     // disconnect from the db
     sqlite3_close (itemsDb);
