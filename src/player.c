@@ -129,11 +129,14 @@ Player *initPlayer (void) {
     p->combat->baseStats.maxHealth = (atoi (getEntityValue (playerEntity, "baseHP"))) + p->combat->defense.armor;
     p->combat->baseStats.health = p->combat->baseStats.maxHealth;
 
-    // FIXME: depending on the class, we have a different starting weapon
+    // TODO: depending on the class, we have a different starting weapon
     u16 startingWeapon = atoi (getEntityValue (playerEntity, "startingWeapon"));
     Item *weapon = createWeapon (startingWeapon);
-    if (weapon != NULL) 
-        p->weapons[((Weapon *) getItemComponent (weapon, WEAPON))->slot] = weapon;
+    if (weapon != NULL) {
+        Weapon *w = (Weapon *) getItemComponent (weapon, WEAPON);
+        p->weapons[w->slot] = weapon;
+        w->isEquipped = true;
+    }
 
     else fprintf (stderr, "Problems creating player weapon.");
 
@@ -145,6 +148,7 @@ Player *initPlayer (void) {
 
 }
 
+// FIXME:
 void destroyPlayer (void) {
 
     free (player->name);

@@ -89,6 +89,7 @@ extern void initItems (void);
 
 extern Item *createItem (int itemId);
 extern Item *createWeapon (u32 itemId);
+extern Item *createArmour (u32 itemId);
 
 extern void getItem (void);
 extern void dropItem (Item *);

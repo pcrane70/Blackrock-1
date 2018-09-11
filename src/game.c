@@ -1157,9 +1157,17 @@ List *generateLootItems (u32 *dropItems, u32 count) {
         // FIXME: 07/09/2018 -- 09:44 this is just for testing
         // we are only slectig the first items in dropItems and ignoring probs
         // FIXME: fix the drop items index
-        Item *item;
+        Item *item = NULL;
+        u8 type;
         for (u8 i = 0; i < itemsNum; i++) {
-            item = createItem (dropItems[i]);
+            type = dropItems[i] / 1000;
+            switch (type) {
+                case 1: item = createItem (dropItems[i]); break;
+                case 2: item = createWeapon (dropItems[i]); break;
+                case 3: item = createArmour (dropItems[i]); break;
+                default: break;
+            }
+
             if (item != NULL) insertAfter (lootItems, LIST_END (lootItems), item);
         }
 

@@ -250,7 +250,11 @@ Item *deleteItem (Item *item) {
     for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
     for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
-    free (item);
+    ListElement *e = getListElement (items, item);
+    if (e != NULL) {
+        void *old = removeElement (items, e);
+        if (old != NULL) free (old);
+    }
 
     return NULL;
 
@@ -526,7 +530,6 @@ char *getItemSlot (Item *item) {
 
 }
 
-// FIXME: check the destroy item function here!!
 bool itemStacked (Item *item) {
 
     bool stacked = false;
@@ -696,18 +699,25 @@ void dropItem (Item *item) {
 
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
+// FIXME: handle unequip an item from the character menu
 void toggleEquipWeapon (void *i) {
 
     if (i == NULL) return;
 
     Item *item = (Item *) i;
     Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
+    if (weapon == NULL) {
+        fprintf (stderr, "No weapon component!!\n");
+        return;
+    }
 
     // unequip
     if (weapon->isEquipped) {
         Item *w = player->weapons[weapon->slot];
         if (w != NULL) {
             addToInventory (w);
+            resetInventoryRects ();
+
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
             if (g != NULL) {
                 char *str = createString ("You unequip the %s", g->name);
@@ -724,15 +734,19 @@ void toggleEquipWeapon (void *i) {
         Item *w = removeFromInventory (item);
         if (w != NULL) {
             // unequip our current weapon if we have one
-            if (player->weapons[weapon->slot] != NULL) 
+            if (player->weapons[weapon->slot] != NULL) {
+                fprintf (stdout, "We already have a weapon equipped!\n");
                 toggleEquipWeapon (player->weapons[weapon->slot]);
+            }
 
-            // if we are equipping a two handed and we have tow one handed
+            // if we are equipping a two handed and we have two one handed
             if (((Weapon *) getItemComponent (w, WEAPON))->twoHanded) {
                 if (player->weapons[1] != NULL)
                     toggleEquipWeapon (player->weapons[1]); // unequip the off hand weapon
 
             }
+
+            resetInventoryRects ();
 
             player->weapons[weapon->slot] = w;
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
@@ -748,6 +762,7 @@ void toggleEquipWeapon (void *i) {
 
 // TODO: update combat stats based on armour modifiers if necessary
 // TODO: create better strings deppending on the item
+// FIXME: handle unequip an item from the character menu
 void toggleEquipArmour (void *i) {
 
     if (i == NULL) return;
