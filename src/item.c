@@ -311,15 +311,16 @@ u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
 }
 
 void healPlayer (void *);
+void toggleEquipWeapon (void *);
 
 EventListener getItemCallback (u8 cb) {
 
     EventListener callback = NULL;
 
     switch (cb) {
-        case 0: break;
+        case 0: callback = NULL; break;
         case 1: callback = healPlayer; break;
-        case 2: break;
+        case 2: callback = toggleEquipWeapon; break;
         case 3: break;
         default: break;
     }
