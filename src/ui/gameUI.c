@@ -409,8 +409,6 @@ void toggleLootWindow (void) {
         }
 
         activeView = lootView;
-
-        fprintf (stdout, "Displaying loot...\n");
     } 
     
     else {

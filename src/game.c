@@ -104,15 +104,8 @@ void initWorld (void) {
 
 /*** Game Object Management **/
 
-// 08/08/2018 --> we now handle some GameObjects with a llist and a Pool;
-// the map is managed using an array
-
-// 08/08/2018 -- 22:14
-// we start the program with no objects in the pool
-static unsigned int inactive = 0;
-
-// 11/08/2018 -- we will assign a new id to each new GO
-unsigned int newId = 0;
+// 11/08/2018 -- we assign a new id to each new GO
+u32 newId = 0;
 
 GameObject *createGO (void) {
 
@@ -1348,6 +1341,52 @@ char *calculateDefense (Combat *def, bool isPlayer) {
 
 }
 
+u32 getPlayerDmg (Combat *att) {
+
+    u32 damage;
+
+    Item *mainWeapon = player->weapons[MAIN_HAND];
+    if (mainWeapon != NULL) {
+        Weapon *main = (Weapon *) getItemComponent (mainWeapon, WEAPON);
+        if (main == NULL) {
+            fprintf (stderr, "No weapon component!\n");
+            return 0;
+        } 
+
+        // check if we are wielding 2 weapons
+        Item *offWeapon = NULL;
+        if (main->twoHanded == false) {
+            if (player->weapons[OFF_HAND] != NULL) offWeapon = player->weapons[OFF_HAND];
+
+            // FIXME: take into acount if it is a shield or whatever
+            // FIXME: how do we calculate the damage?
+
+            // FIXME: this is just for testing
+            // if we only have one weapon
+            if (offWeapon == NULL) damage = main->dps;
+        }  
+
+        // FIXME: this is only for testing
+        // FIXME: also create a more dynamic damage
+        // fighting with a two handed weapon
+        else damage = main->dps;
+    }
+
+    // FIXME:
+    // we are fighting we our bare hands!
+    else {
+        damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+    }
+
+
+    // FIXME:
+    // 21/08/2018 -- 23:25 -- this is for a more dynamic experience
+    // damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+
+    damage += att->baseStats.strength;
+
+}
+
 u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
     GameObject *attacker = NULL;
@@ -1358,18 +1397,8 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
     // get the damage
     u32 damage;
     // if the attacker is the player, search for weapon dps + strength
-    if (isPlayer) {
-        // FIXME: as of 01/09/2018 -- 03:47 -- we can only handle a two handed weapon
-        // FIXME: also create a more dynamic damage
-        // getting the weapon in the main hand
-        // if (player->weapons[0] != NULL)
-        //     damage = ((Weapon *) getItemComponent (player->weapons[0], WEAPON))->dps;
-
-        // 21/08/2018 -- 23:25 -- this is for a more dynamic experience
-        damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
-
-        damage += att->baseStats.strength;
-    }
+    if (isPlayer) damage = getPlayerDmg (att);
+    
     // if the attacker is a mob, just get the the base dps + strength
     else {
         // damage = att->attack.baseDps;
@@ -1591,9 +1620,7 @@ void generateLevel () {
 
     // FIXME: how do we handle how many monsters to add
     u8 monNum = 15;
-    // FIXME: better error handling
-    fprintf (stdout, "Creating monsters...\n");
-    u16 count = 0;
+    u8 count = 0;
     for (u8 i = 0; i < monNum; i++) {
         // generate a random monster
         // FIXME: create a better system
@@ -1612,7 +1639,6 @@ void generateLevel () {
     fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
 
     // we can now place the player and we are done 
-    fprintf (stdout, "Spawning the player...\n");
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
     player->pos->x = (u8) playerSpawnPos.x;
     player->pos->y = (u8) playerSpawnPos.y;

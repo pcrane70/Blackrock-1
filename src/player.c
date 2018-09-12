@@ -129,16 +129,20 @@ Player *initPlayer (void) {
     p->combat->baseStats.maxHealth = (atoi (getEntityValue (playerEntity, "baseHP"))) + p->combat->defense.armor;
     p->combat->baseStats.health = p->combat->baseStats.maxHealth;
 
+    // FIXME: problems with starting weapon!!!
     // TODO: depending on the class, we have a different starting weapon
-    u16 startingWeapon = atoi (getEntityValue (playerEntity, "startingWeapon"));
-    Item *weapon = createWeapon (startingWeapon);
-    if (weapon != NULL) {
-        Weapon *w = (Weapon *) getItemComponent (weapon, WEAPON);
-        p->weapons[w->slot] = weapon;
-        w->isEquipped = true;
-    }
+    // u16 startingWeapon = atoi (getEntityValue (playerEntity, "startingWeapon"));
+    // Item *weapon = createWeapon (startingWeapon);
+    // if (weapon != NULL) {
+    //     Weapon *w = (Weapon *) getItemComponent (weapon, WEAPON);
+    //     if (w != NULL) fprintf (stdout, "Found the weapon component!\n");
+    //     p->weapons[w->slot] = weapon;
+    //     w->isEquipped = true;
+    //     Graphics *g = (Graphics *) getGameComponent (weapon, GRAPHICS);
+    //     fprintf (stdout, "Done creating: %s\n", g->name);
+    // }
 
-    else fprintf (stderr, "Problems creating player weapon.");
+    // else fprintf (stderr, "Problems creating player weapon.");
 
     // we don't need to have this two in memory
     clearConfig (playerConfig);

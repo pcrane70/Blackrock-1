@@ -35,6 +35,9 @@ typedef struct Player {
 
 } Player;
 
+#define MAIN_HAND       0
+#define OFF_HAND        1
+
 #define EQUIPMENT_ELEMENTS      10
 
 // head         0

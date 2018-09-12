@@ -58,7 +58,7 @@ i32 roomWithPoint (Point pt, Room *first) {
 
     i32 retVal = 0;
     Room *ptr = first;
-    if (ptr == NULL) fprintf (stderr, "\nPassing a NULL rooms list!\n");
+    // if (ptr == NULL) fprintf (stderr, "\nPassing a NULL rooms list!\n");
     while (ptr != NULL) {
         if ((ptr->x <= pt.x) && ((ptr->x + ptr->w) > pt.x) &&
         (ptr->y <= pt.y) && ((ptr->y + ptr->h) > pt.y)) 
@@ -129,7 +129,7 @@ void carveCorridorVer (Point from, Point to, bool **mapCells) {
 
 void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
-    if (firstRoom == NULL) fprintf (stderr, "\nPassing a NULL room list!\n");
+    // if (firstRoom == NULL) fprintf (stderr, "\nPassing a NULL room list!\n");
 
     bool usingWayPoint = false;
     Point waypoint = to;
@@ -264,7 +264,6 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 void carveSegments (List *hallways, bool **mapCells) {
 
     ListElement *ptr = LIST_START (hallways);
-    if (ptr == NULL) fprintf (stdout, "\nHallways list is empty!\n");
     while (ptr != NULL) {
         Segment *seg = (Segment *) ptr->data;
 
@@ -329,7 +328,7 @@ void generateMap (bool **mapCells) {
     u32 cellsUsed = 0;
     
     // create room data
-    fprintf (stdout, "Generating rooms...\n");
+    // fprintf (stdout, "Generating rooms...\n");
     while (!roomsDone) {
         // generate a random width/height for a room
         u32 w = (u32) randomInt (5, 12);
@@ -355,14 +354,13 @@ void generateMap (bool **mapCells) {
     // This is a simple way of drawing corridors, is this a good way, 
     // or do we need a more advanced system??
     // join all the rooms with corridors
-    fprintf (stdout, "Generating corridors...\n");
+    // fprintf (stdout, "Generating corridors...\n");
     
     // creating corridors using the list of rooms
     // 08/08/2018 -- 7:55
     // I think we got it working the same way as the array, but we still need to tweak
     // how the map generates in general..
     List *hallways = initList (free);
-    if (hallways == NULL) fprintf (stderr, "Error creating list!!\n");
 
     Room *ptr = firstRoom->next, *preptr = firstRoom;
     while (ptr != NULL) {
@@ -432,20 +430,20 @@ unsigned int wallCount = 0;
 void initMap (bool **mapCells) {
 
     // mark all the cells as filled
-    for (u32 x = 0; x < MAP_WIDTH; x++) 
-        for (u32 y = 0; y < MAP_HEIGHT; y++) 
+    for (u8 x = 0; x < MAP_WIDTH; x++) 
+        for (u8 y = 0; y < MAP_HEIGHT; y++) 
             mapCells[x][y] = true;
 
     wallCount = 0;
 
-    fprintf (stdout, "Generating the map...\n");
+    // fprintf (stdout, "Generating the map...\n");
     generateMap (mapCells);
 
     // draw the map
-    fprintf (stdout, "Drawing the map...\n");
+    // fprintf (stdout, "Drawing the map...\n");
     // unsigned int wallCount = 0;
-    for (u32 x = 0; x < MAP_WIDTH; x++)
-        for (u32 y = 0; y < MAP_HEIGHT; y++)
+    for (u8 x = 0; x < MAP_WIDTH; x++)
+        for (u8 y = 0; y < MAP_HEIGHT; y++)
             if (mapCells[x][y]) createWall (x, y), wallCount++;
 
     fprintf (stdout, "Done creating the map!\n");
