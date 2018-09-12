@@ -1373,18 +1373,15 @@ u32 getPlayerDmg (Combat *att) {
         else damage = main->dps;
     }
 
-    // FIXME:
+    // FIXME: add a more dynamic damage
     // we are fighting we our bare hands!
-    else {
+    else 
         damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
-    }
 
-
-    // FIXME:
-    // 21/08/2018 -- 23:25 -- this is for a more dynamic experience
-    // damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
-
+    // FIXME: how do we want to handle strength
     damage += att->baseStats.strength;
+
+    return damage;
 
 }
 
@@ -1395,11 +1392,9 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
     if (isPlayer) defender = searchGameObjectById (def->objectId);
     else attacker = searchGameObjectById (att->objectId);
 
-    // get the damage
     u32 damage;
-    // if the attacker is the player, search for weapon dps + strength
+
     if (isPlayer) damage = getPlayerDmg (att);
-    
     // if the attacker is a mob, just get the the base dps + strength
     else {
         // damage = att->attack.baseDps;
@@ -1408,28 +1403,27 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
     }
 
     // take a roll to decide if we can hit a critical
-    u32 critical = (u32) randomInt (1, 100);
-    bool crit = false;
-    if (critical <= att->attack.criticalStrike) {
-        crit = true;
+    bool critical = false;
+    if (randomInt (1, 100) <= att->attack.criticalStrike) {
+        critical = true;
         damage *= 2;
     } 
 
+    char *str = NULL;
+
     if (isPlayer) {
         Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
-        char *str = createString ("You hit the %s for %i damage.", g->name, damage);
-        if (crit) logMessage (str, CRITICAL_COLOR);
-        else logMessage (str, HIT_COLOR);
-        free (str);
+        str = createString ("You hit the %s for %i damage.", g->name, damage);
     }
 
     else {
         Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
-        char *str = createString ("The %s hits you for %i damage!", g->name, damage);
-        if (crit) logMessage (str, DAMAGE_COLOR);
-        else logMessage (str, DAMAGE_COLOR);
-        free (str);
+        str = createString ("The %s hits you for %i damage!", g->name, damage);
     }
+
+    if (critical) logMessage (str, CRITICAL_COLOR);
+    else logMessage (str, HIT_COLOR);
+    free (str);
 
     return damage;
 

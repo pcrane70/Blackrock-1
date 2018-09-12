@@ -727,10 +727,12 @@ void toggleEquipWeapon (void *i) {
             player->weapons[weapon->slot] = w;
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
             if (g != NULL) {
-                char *str = createString ("You are now wielding the %s", g->name);
+                char *str = createString ("You are now wielding the %s.", g->name);
                 logMessage (str, DEFAULT_COLOR);
                 free (str);
             }
+
+            else logMessage ("You equip the weapon.", DEFAULT_COLOR);
 
             weapon->isEquipped = true;
         }
@@ -762,7 +764,7 @@ void toggleEquipArmour (void *i) {
             addToInventory (a);
             Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
             if (g != NULL) {
-                char *str = createString ("You take off the %s", g->name);
+                char *str = createString ("You take off the %s.", g->name);
                 logMessage (str, DEFAULT_COLOR);
                 free (str);
             } 
@@ -784,7 +786,7 @@ void toggleEquipArmour (void *i) {
             player->equipment[armour->slot] = a;
             Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
             if (g != NULL) {
-                char *str = createString ("Yoou are now wielding the %s", g->name);
+                char *str = createString ("You are now wielding the %s.", g->name);
                 logMessage (str, DEFAULT_COLOR);
                 free (str);
             }

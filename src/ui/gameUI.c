@@ -1093,7 +1093,8 @@ UIScreen *gameScene (void) {
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 
-    initInventoryRects ();
+    inventoryRects = initInventoryRects ();
+    characterRects = initCharacterRects ();
 
     activeLootRects = initList (free);
     lootRectsPool = initPool ();
