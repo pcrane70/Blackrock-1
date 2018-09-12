@@ -121,7 +121,7 @@ GameObject *createGO (void) {
     if (go != NULL) {
         go->id = newId;
         newId++;
-        for (short unsigned int i = 0; i < COMP_COUNT; i++) go->components[i] = NULL;
+        for (u8 i = 0; i < COMP_COUNT; i++) go->components[i] = NULL;
         insertAfter (gameObjects, LIST_END (gameObjects), go);
     }
     
@@ -372,7 +372,7 @@ GameObject *searchGameObjectById (u32 id) {
 void destroyGO (GameObject *go) {
 
     // remove all of the gos components
-    for (short unsigned int i = 0; i < COMP_COUNT; i++) 
+    for (u8 i = 0; i < COMP_COUNT; i++) 
         removeComponent (go, i);
 
     // now send the go to the pool
@@ -789,7 +789,7 @@ typedef struct {
 
 List *enemyData = NULL;
 
-int loadMonsterLoot (u32 monId, MonsterLoot *loot) {
+u8 loadMonsterLoot (u32 monId, MonsterLoot *loot) {
 
     // get the db data
     sqlite3_stmt *res;
@@ -1199,9 +1199,10 @@ bool emptyLoot (Loot *loot) {
 
     bool noItems, noMoney;
 
-    if (loot->lootItems != NULL) 
-        if (LIST_SIZE (loot->lootItems) <= 0) noItems = true;
-
+    if (loot->lootItems != NULL) {
+      if (LIST_SIZE (loot->lootItems) <= 0) noItems = true;  
+    } 
+    else noItems = true;
 
     if (loot->money[0] == 0 && loot->money[1] == 0 && loot->money[2] == 0) noMoney = true;
 
