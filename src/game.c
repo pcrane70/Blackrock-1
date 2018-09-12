@@ -1,9 +1,5 @@
 /*** GAME MANAGER ***/
 
-// 03/08/2018 -- 18:18
-// For now this will be like our Game Controller, well kind of
-// lets see how the game scales and the we will decide what to do
-
 #include <assert.h>
 
 #include "blackrock.h"
@@ -48,9 +44,6 @@ bool playerTookTurn = false;
 // Level 
 Level *currentLevel = NULL;
 
-// Configs
-// Config *monsterConfig = NULL;
-
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 bool recalculateFov = false;
@@ -85,11 +78,6 @@ void initGame (void) {
     // init the message log
     messageLog = initList (free);
 
-    // getting the data
-    // monsterConfig = parseConfigFile ("./data/monster.cfg");
-    // if (monsterConfig == NULL) 
-    //     die ("Critical Error! No monster config!\n");
-
     // connect to enemies db
     void connectEnemiesDb (void);
     connectEnemiesDb ();
@@ -111,11 +99,6 @@ void initWorld (void) {
     // game inside the dungeon
     void enterDungeon (void);
     enterDungeon ();
-
-    if (player->weapons[0] != NULL) {
-        fprintf (stdout, "Got a weapon!\n");
-    }
-    else fprintf (stdout, "No weapon!\n");
     
 }
 
@@ -128,9 +111,8 @@ void initWorld (void) {
 // we start the program with no objects in the pool
 static unsigned int inactive = 0;
 
-// 11/08/2018 -- we will assign a new id to each new GO starting at 1
-// id = 0 is the player 
-unsigned int newId = 1;
+// 11/08/2018 -- we will assign a new id to each new GO
+unsigned int newId = 0;
 
 GameObject *createGO (void) {
 
@@ -484,6 +466,10 @@ void cleanUpGame (void) {
     cleanUpEnemies ();
     fprintf (stdout, "Done cleanning up enemies\n");
 
+    // clean up pathfinding structs
+    void cleanTargetMap (void);
+    cleanTargetMap ();
+
     free (currentLevel->mapCells);
     free (currentLevel);
 
@@ -534,23 +520,38 @@ bool canMove (Position pos, bool isPlayer) {
 
 static i32 **dmap = NULL;
 
-// 13/08/2018 -- simple representation of a Dijkstra's map, maybe later we will want a more complex map 
-// or implement a more advance system
-void generateTargetMap (i32 targetX, i32 targetY) {
+i32 **initTargetMap (void) {
+
+    i32 **tmap = NULL;
+
+    tmap = (i32 **) calloc (MAP_WIDTH, sizeof (i32 *));
+    for (u8 i = 0; i < MAP_WIDTH; i++)
+        tmap[i] = (i32 *) calloc (MAP_HEIGHT, sizeof (i32));
+
+    return tmap;
+
+}
+
+void cleanTargetMap (void) {
 
     if (dmap != NULL) {
-        for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+        for (u8 i = 0; i < MAP_WIDTH; i++)
             free (dmap[i]);
 
         free (dmap);
     } 
 
-    dmap = (i32 **) calloc (MAP_WIDTH, sizeof (i32 *));
-    for (short unsigned int i = 0; i < MAP_WIDTH; i++)
-        dmap[i] = (i32 *) calloc (MAP_HEIGHT, sizeof (i32));
+}
 
-    for (short unsigned int x = 0; x < MAP_WIDTH; x++)
-        for (short unsigned int y = 0; y < MAP_HEIGHT; y++)
+// 13/08/2018 -- simple representation of a Dijkstra's map, maybe later we will want a more complex map 
+// or implement a more advance system
+void generateTargetMap (i32 targetX, i32 targetY) {
+
+    if (dmap == NULL) dmap = initTargetMap ();
+
+    // reset the target map
+    for (u8 x = 0; x < MAP_WIDTH; x++)
+        for (u8 y = 0; y < MAP_HEIGHT; y++)
             dmap[x][y] = UNSET;
 
     dmap[targetX][targetY] = 0;
@@ -559,8 +560,8 @@ void generateTargetMap (i32 targetX, i32 targetY) {
     while (changesMade) {
         changesMade = false;
 
-        for (short unsigned int x = 0; x < MAP_WIDTH; x++) {
-            for (short unsigned int y = 0; y < MAP_HEIGHT; y++) {
+        for (u8 x = 0; x < MAP_WIDTH; x++) {
+            for (u8 y = 0; y < MAP_HEIGHT; y++) {
                 i32 currCellValue = dmap[x][y];
                 // check cells around and update them if necessary
                 if (currCellValue != UNSET) {
@@ -587,8 +588,6 @@ void generateTargetMap (i32 targetX, i32 targetY) {
             }
         }
     }
-
-    // targetMap = dmap;
 
 }
 
@@ -1419,7 +1418,6 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
             removeComponent (defender, MOVEMENT);
 
-            // FIXME: better error handling
             if (createLoot (defender) != 0) fprintf (stderr, "Error creating loot!\n");
 
             Event e = { 0, displayLoot };
@@ -1498,11 +1496,22 @@ void fight (Combat *att, Combat *def, bool isPlayer) {
 // This is called every time we generate a new level to start fresh, only from data from the pool
 void clearOldLevel (void) {
 
-    if (gameObjects == NULL) return;
+    if (gameObjects != NULL) {
+        // send all of our objects and components to ther pools
+        void *data = NULL;
+        for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+            data = removeElement (gameObjects, e);
+            destroyGO ((GameObject *) data);
+        }
 
-    // send all of our objects and components to ther pools
-    for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next)
-        destroyGO ((GameObject *) e->data);
+        newId = 0; // reset the go id
+
+        // send the items to their pool
+        for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+            data = removeElement (items, e);
+            destroyItem ((Item *) data);
+        }
+    }
 
 }
 
@@ -1538,7 +1547,6 @@ void useStairs (void *goData) {
 
     currentLevel->levelNum += 1;
 
-    // FIXME: generate a new level taking into a account the new level num I guess
     void generateLevel (void);
     generateLevel ();
 
@@ -1581,12 +1589,12 @@ void generateLevel () {
     // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
     placeStairs (getFreeSpot (currentLevel->mapCells));
 
-    // FIXME: how do we handle how many monster sto add
-    u8 monNum = 10;
+    // FIXME: how do we handle how many monsters to add
+    u8 monNum = 15;
     // FIXME: better error handling
     fprintf (stdout, "Creating monsters...\n");
     u16 count = 0;
-    for (short unsigned int i = 0; i < monNum; i++) {
+    for (u8 i = 0; i < monNum; i++) {
         // generate a random monster
         // FIXME: create a better system
         GameObject *monster = createMonster (getMonsterId ());
@@ -1599,17 +1607,11 @@ void generateLevel () {
             // TODO: mark the spawnPos as filled
             count++;
         }
-
-        else fprintf (stderr, "Error creating monster!\n");
-        
     }
+
     fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
 
-    // FIXME:
-    // 20/08/2018 -- 17:24 -- our items are broken until we have a config file
-
-    // finally, we have a map full with monsters and items,
-    // so we can place the player and we are done 
+    // we can now place the player and we are done 
     fprintf (stdout, "Spawning the player...\n");
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
     player->pos->x = (u8) playerSpawnPos.x;
@@ -1625,10 +1627,9 @@ void enterDungeon (void) {
         currentLevel = (Level *) malloc (sizeof (Level));
         currentLevel->levelNum = 1;
         currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
-        for (short unsigned int i = 0; i < MAP_WIDTH; i++)
+        for (u8 i = 0; i < MAP_WIDTH; i++)
             currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
 
-        // currentLevel->levelLoot = initList (free);
     } 
     
     // generate a random world froms scratch

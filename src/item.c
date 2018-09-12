@@ -220,7 +220,8 @@ Item *destroyItem (Item *item) {
     for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
     ListElement *e = getListElement (items, item);
-    removeElement (items, e);
+    void *data = removeElement (items, e);
+    if (data != NULL) free (data);
 
     // if (e != NULL) push (itemsPool, removeElement (items, e));
 
@@ -321,8 +322,6 @@ EventListener getItemCallback (u8 cb) {
 // 05/09/2018 -- 11:04 -- creating items with a more complex db
 Item *createItem (int itemId) {
 
-    fprintf (stdout, "Creating item: %i\n", itemId);
-
     // get the db data
     sqlite3_stmt *res;
     char *sql = "SELECT * FROM Items WHERE Id = ?";
@@ -335,10 +334,8 @@ Item *createItem (int itemId) {
 
     int step = sqlite3_step (res);
 
-    fprintf (stdout, "Creating item...\n");
     Item *item = newItem ();
     if (item == NULL) return NULL;
-    fprintf (stdout, "New item created!\n");
 
     item->dbId = itemId;
 
@@ -352,8 +349,6 @@ Item *createItem (int itemId) {
     item->probability = sqlite3_column_double (res, ITEM_PROB_COL);
     item->stackable = (sqlite3_column_int (res, ITEM_STACKABLE_COL) == 0) ? false : true;
     item->quantity = (u8) sqlite3_column_int (res, ITEM_QUANTITY_COL);
-
-    fprintf (stdout, "Added data to item!\n");
     
     item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
 
