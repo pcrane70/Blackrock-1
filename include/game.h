@@ -188,6 +188,16 @@ typedef struct Loot {
 
 void collectGold (void);
 
+/*** MOVEMENT ***/
+
+extern bool canMove (Position pos, bool isPlayer);
+extern bool recalculateFov;
+
+
+/*** COMBAT ***/
+
+extern void fight (Combat *att, Combat *def, bool isPlayer);
+
 /*** LEVEL MANAGER ***/
 
 typedef struct {
@@ -201,6 +211,8 @@ extern Level *currentLevel;
 
 extern unsigned int wallCount;
 
+extern void retry (void);
+
 /*** SCORE ***/
 
 typedef struct Score {
@@ -210,15 +222,7 @@ typedef struct Score {
 
 } Score;
 
-/*** MOVEMENT ***/
-
-extern bool canMove (Position pos, bool isPlayer);
-extern bool recalculateFov;
-
-
-/*** COMBAT ***/
-
-extern void fight (Combat *att, Combat *def, bool isPlayer);
+extern void showScore (void);
 
 
 // Cleanning Up!

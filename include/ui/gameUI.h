@@ -30,6 +30,7 @@ extern List *messageLog;
 extern void logMessage (char *msg, u32 color);
 extern char *createString (const char *stringWithFormat, ...);
 
+extern void deleteMessage (Message *msg);
 extern void cleanMessageLog (void);
 
 /*** MESSAGE COLORS ***/
@@ -47,6 +48,14 @@ extern void cleanMessageLog (void);
 
 #define HEALTH_COLOR    0x00FF22FF  // player gains health
 #define DAMAGE_COLOR    0x8C2020FF  // player loses health
+
+
+/*** FULL SCREEN ***/
+
+#define FULL_SCREEN_LEFT		0
+#define FULL_SCREEN_TOP		    0
+#define FULL_SCREEN_WIDTH		80
+#define FULL_SCREEN_HEIGHT	    45
 
 
 /*** LOOT ***/
@@ -88,7 +97,11 @@ extern void togglePauseMenu (void);
 
 /*** SCREENS ***/
 
+extern UIView *deathScreen;
 extern void toggleDeathScreen (void);
+
+extern UIView *scoreScreen;
+extern void toggleScoreScreen (void);
 
 
 // THIS SHOULD ONLY BE CALLED FROM THE UI CONTROLLER

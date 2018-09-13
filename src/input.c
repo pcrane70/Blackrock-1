@@ -225,8 +225,9 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             // FIXME: add responsive ui panels
             case SDLK_c: 
-                if (activeView != lootView) toggleCharacter (); 
-                else collectGold ();
+                if (activeView == lootView) collectGold (); 
+                else if (activeView == deathScreen) showScore ();
+                else if (activeView != deathScreen) toggleCharacter ();
                 break;
 
             // drop item
@@ -245,6 +246,13 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_TAB: swicthView (); break;
 
             case SDLK_ESCAPE: closeUIMenu (); break;
+
+            // retry
+            case SDLK_r: if (activeView == scoreScreen) retry (); break;
+
+            // FIXME:
+            // quit to main menu
+            // case SDLK_q: if (activeView == scoreScreen) returnToMainMenu (); break;
 
             // FIXME: this is only for testing!!
             case SDLK_k: gameOver (); break;

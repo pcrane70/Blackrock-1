@@ -19,6 +19,8 @@
 
 /*** WORLD STATE ***/
 
+// TODO: create an object pool of list elements for forward optimization??
+
 // Components
 List *gameObjects = NULL;
 List *positions = NULL;
@@ -43,6 +45,9 @@ bool playerTookTurn = false;
 
 // Level 
 Level *currentLevel = NULL;
+
+// Score
+Score *playerScore = NULL;
 
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
@@ -92,6 +97,11 @@ void initGame (void) {
 void initWorld (void) {
 
     player = initPlayer ();
+
+    // score struct, probably we will need a more complex system later
+    playerScore = (Score *) malloc (sizeof (Score));
+    void resetScore (void);
+    resetScore ();
 
     // TODO: we will want to load the in game menu (tavern)
 
@@ -1454,6 +1464,8 @@ void checkForKill (GameObject *defender, bool isPlayer) {
             char *str = createString ("You killed the %s.", gra->name);
             logMessage (str, KILL_COLOR);
             free (str);
+
+            playerScore->killCount++;
         }
     }
 
@@ -1612,24 +1624,25 @@ void generateLevel () {
     // but we can only move forward, we can not return to the previous level
     // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
     placeStairs (getFreeSpot (currentLevel->mapCells));
+    fprintf (stdout, "Stairs placed!\n");
 
     // FIXME: how do we handle how many monsters to add
     u8 monNum = 15;
     u8 count = 0;
-    for (u8 i = 0; i < monNum; i++) {
-        // generate a random monster
-        // FIXME: create a better system
-        GameObject *monster = createMonster (getMonsterId ());
-        if (monster != NULL) {
-            // spawn in a random position
-            Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
-            Position *monsterPos = (Position *) getComponent (monster, POSITION);
-            monsterPos->x = (u8) monsterSpawnPos.x;
-            monsterPos->y = (u8) monsterSpawnPos.y;
-            // TODO: mark the spawnPos as filled
-            count++;
-        }
-    }
+    // for (u8 i = 0; i < monNum; i++) {
+    //     // generate a random monster
+    //     // FIXME: create a better system
+    //     GameObject *monster = createMonster (getMonsterId ());
+    //     if (monster != NULL) {
+    //         // spawn in a random position
+    //         // Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
+    //         // Position *monsterPos = (Position *) getComponent (monster, POSITION);
+    //         // monsterPos->x = (u8) monsterSpawnPos.x;
+    //         // monsterPos->y = (u8) monsterSpawnPos.y;
+    //         // TODO: mark the spawnPos as filled
+    //         count++;
+    //     }
+    // }
 
     fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
 
@@ -1667,5 +1680,59 @@ void enterDungeon (void) {
 
     // FIXME: add different texts here!!
     logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
+
+}
+
+// we reload the game scene as the same character
+void retry (void) {
+
+    // delete score UI and all of the structs
+    toggleScoreScreen ();
+
+    // clear the message log
+    while (LIST_SIZE (messageLog) > 0) 
+        deleteMessage ((Message *) removeElement (messageLog, NULL));
+
+    messageLog->start = NULL;
+    messageLog->end = NULL;
+    messageLog->size = 0;
+
+    void resetScore (void);
+    resetScore ();
+    resetPlayer ();
+
+    currentLevel->levelNum = 0;
+
+    // create a new level
+    enterDungeon ();
+
+    fprintf (stdout, "Retry!\n");
+
+}
+
+/*** SCORE ***/
+
+void resetScore (void) {
+
+    playerScore->killCount = 0;
+    playerScore->score = 0;
+
+}
+
+// TODO: later we will want to handle the logic of connecting to the server an retrieving data of
+// the global leaderboards
+void showScore (void) {
+
+    // clean up the level 
+    clearOldLevel ();
+
+    // delete death screen UI and image
+    toggleDeathScreen ();
+
+    // FIXME:
+    // stop rendering the game UI
+
+    // render score image with the current score struct
+    toggleScoreScreen ();
 
 }

@@ -58,24 +58,13 @@ Item ***initPlayerInventory (void) {
 
 }
 
-// TODO: check for a save file to retrive the information freom there instead
-// because the player is an special GO, we want to initialize him differently
-Player *initPlayer (void) {
-
-    getPlayerData ();
+Player *createPlayer (void) {
 
     Player *p = (Player *) malloc (sizeof (Player));
-
     p->pos = (Position *) malloc (sizeof (Position));
-    p->pos->objectId = 0;
-    p->pos->layer = TOP_LAYER;
-
     p->physics = (Physics *) malloc (sizeof (Physics));
-    p->physics->objectId = 0;
-    p->physics->blocksMovement = true;
-    p->physics->blocksSight = true;
-
-    ConfigEntity *playerEntity = getEntityWithId (playerConfig, 1);
+    p->graphics = (Graphics *) malloc (sizeof (Graphics));
+    p->combat = (Combat *) malloc (sizeof (Combat));
 
     p->inventory = initPlayerInventory ();
     p->weapons = (Item **) calloc (2, sizeof (Item *));
@@ -83,6 +72,30 @@ Player *initPlayer (void) {
     p->equipment = (Item **) calloc (EQUIPMENT_ELEMENTS, sizeof (Item *));
     for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) p->equipment[i] = NULL;
 
+    return p;
+
+}
+
+// TODO: check for a save file to retrive the information freom there instead
+// because the player is an special GO, we want to initialize him differently
+Player *initPlayer (void) {
+
+    getPlayerData ();
+
+    Player *p = NULL;
+    if (player != NULL) p = player;
+    else p = createPlayer ();
+
+    p->pos->objectId = 0;
+    p->pos->layer = TOP_LAYER;
+
+    p->physics->objectId = 0;
+    p->physics->blocksMovement = true;
+    p->physics->blocksSight = true;
+
+    ConfigEntity *playerEntity = getEntityWithId (playerConfig, 1);
+
+    if (p->name != NULL) free (p->name);
     p->name = getEntityValue (playerEntity, "name");
     p->genre = atoi (getEntityValue (playerEntity, "genre"));
     p->level = atoi (getEntityValue (playerEntity, "level"));
@@ -99,7 +112,6 @@ Player *initPlayer (void) {
     p->money[2] = atoi (getEntityValue (playerEntity, "copper"));
 
     // As of 18/08/2018 -- 23-21 -- the color of the glyph is based on the class
-    p->graphics = (Graphics *) malloc (sizeof (Graphics));
     p->graphics->objectId = 0;
     p->graphics->bgColor = 0x000000FF;
     p->graphics->fgColor = p->color;
@@ -111,7 +123,6 @@ Player *initPlayer (void) {
     // TODO: modify the combat component based on the class
     // we need to have a file where we can read the stats we have saved
     // also we need to take into account that every class has different stats
-    p->combat = (Combat *) malloc (sizeof (Combat));
     p->combat->baseStats.power = atoi (getEntityValue (playerEntity, "power"));
     p->combat->baseStats.powerRegen = atoi (getEntityValue (playerEntity, "powerRegen"));
     p->combat->baseStats.strength = atoi (getEntityValue (playerEntity, "strength"));
@@ -149,6 +160,28 @@ Player *initPlayer (void) {
     clearConfig (classesConfig);
 
     return p;
+
+}
+
+void resetPlayer (void) {
+
+    if (player != NULL) {
+        // reset inventory
+        for (u8 y = 0; y < 3; y++) 
+            for (u8 x = 0; x < 7; x++) 
+                player->inventory[x][y] = NULL;
+
+        inventoryItems = 0;
+
+        // reset weapons
+        for (u8 i = 0; i < 2; i++) player->weapons[i] = NULL;
+
+        // reset equipment
+        for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
+
+    }
+
+    player = initPlayer ();
 
 }
 

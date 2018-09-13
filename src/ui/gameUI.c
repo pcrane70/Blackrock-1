@@ -1014,11 +1014,6 @@ void togglePauseMenu (void) {
 
 /*** DEATH SCREEN ***/
 
-#define FULL_SCREEN_LEFT		0
-#define FULL_SCREEN_TOP		    0
-#define FULL_SCREEN_WIDTH		80
-#define FULL_SCREEN_HEIGHT	    45
-
 BitmapImage *deathImg = NULL;
 char *deathImgPath = "./resources/death-720.png"; 
 
@@ -1038,6 +1033,8 @@ void toggleDeathScreen (void) {
         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
         deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
         insertAfter (activeScene->views, LIST_END (activeScene->views), deathScreen);
+
+        activeView = deathScreen;
     }
 
     else {
@@ -1045,6 +1042,45 @@ void toggleDeathScreen (void) {
             ListElement *death = getListElement (activeScene->views, deathScreen);
             destroyView ((UIView *) removeElement (activeScene->views, death));
             deathScreen = NULL;
+
+            activeView = (UIView *) (LIST_END (activeScene->views))->data;
+        }
+    }
+
+}
+
+/*** SCORE SCREEN ***/
+
+BitmapImage *scoreImg = NULL;
+char *scoreImgPath = "./resources/score-720.png"; 
+
+UIView *scoreScreen = NULL;
+
+static void renderScoreScreen (Console *console) {
+
+    if (scoreImg == NULL) scoreImg = loadImageFromFile (scoreImgPath);
+
+    drawImageAt (console, scoreImg, 0, 0);
+
+}
+
+void toggleScoreScreen (void) {
+
+    if (scoreScreen == NULL) {
+        UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
+        scoreScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderScoreScreen);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), scoreScreen);
+
+        activeView = scoreScreen;
+    }
+
+    else {
+        if (scoreScreen != NULL) {
+            ListElement *death = getListElement (activeScene->views, scoreScreen);
+            destroyView ((UIView *) removeElement (activeScene->views, death));
+            scoreScreen = NULL;
+
+            activeView = (UIView *) (LIST_END (activeScene->views))->data;
         }
     }
 

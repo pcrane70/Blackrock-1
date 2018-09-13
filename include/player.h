@@ -58,5 +58,6 @@ extern Player *player;
 extern u8 inventoryItems;
 
 extern Player *initPlayer (void);
+extern void resetPlayer (void);
 extern char *getPlayerClassName (void);
 extern void destroyPlayer (void);
