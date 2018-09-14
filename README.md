@@ -82,9 +82,10 @@ Note: You also need to have installed:
 - Make
 
 _Compiling_ -> Just run make in the project folder.
-_Running_ ->  Use make run
 
-_Just give me the exe_ -> If you just want to download the executable, check the releases tab in the top of this page and select the one you want.
+_Running_ ->  Use make run.
+
+**_Just give me the exe_** -> If you just want to download the executable, check the releases tab in the top of this page and select the one you want.
 
 ## Contributing
 
