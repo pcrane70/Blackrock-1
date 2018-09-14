@@ -1,1 +1,1 @@
-Blackrock
+![Alt text](resources/blackrock-title.png?raw=true "Blackrock")
