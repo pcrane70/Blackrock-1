@@ -30,6 +30,6 @@ typedef unsigned char asciiChar;
 #define localPersist    static
 #define global  static
 
-
+#define THREAD_OK   0
 
 #endif

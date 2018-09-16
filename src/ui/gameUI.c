@@ -1089,9 +1089,6 @@ void toggleScoreScreen (void) {
 
 /*** INIT GAME SCREEN ***/
 
-extern bool inGame;
-extern bool wasInGame;
-
 UIScreen *inGameScreen = NULL;
 
 UIView *mapView = NULL;
@@ -1134,9 +1131,6 @@ UIScreen *gameScene (void) {
 
     activeLootRects = initList (free);
     lootRectsPool = initPool ();
-
-    inGame = true;
-    wasInGame = true;
 
     activeView = mapView;
 
