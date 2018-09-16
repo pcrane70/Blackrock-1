@@ -67,8 +67,10 @@ Player *createPlayer (void) {
     p->combat = (Combat *) malloc (sizeof (Combat));
 
     p->inventory = initPlayerInventory ();
+
     p->weapons = (Item **) calloc (2, sizeof (Item *));
     for (u8 i = 0; i < 2; i++) p->weapons[i] = NULL;
+
     p->equipment = (Item **) calloc (EQUIPMENT_ELEMENTS, sizeof (Item *));
     for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) p->equipment[i] = NULL;
 
@@ -78,13 +80,9 @@ Player *createPlayer (void) {
 
 // TODO: check for a save file to retrive the information freom there instead
 // because the player is an special GO, we want to initialize him differently
-Player *initPlayer (void) {
+void initPlayer (Player *p) {
 
     getPlayerData ();
-
-    Player *p = NULL;
-    if (player != NULL) p = player;
-    else p = createPlayer ();
 
     p->pos->objectId = 0;
     p->pos->layer = TOP_LAYER;
@@ -140,48 +138,43 @@ Player *initPlayer (void) {
     p->combat->baseStats.maxHealth = (atoi (getEntityValue (playerEntity, "baseHP"))) + p->combat->defense.armor;
     p->combat->baseStats.health = p->combat->baseStats.maxHealth;
 
-    // FIXME: problems with starting weapon!!!
     // TODO: depending on the class, we have a different starting weapon
-    // u16 startingWeapon = atoi (getEntityValue (playerEntity, "startingWeapon"));
-    // Item *weapon = createWeapon (startingWeapon);
-    // if (weapon != NULL) {
-    //     Weapon *w = (Weapon *) getItemComponent (weapon, WEAPON);
-    //     if (w != NULL) fprintf (stdout, "Found the weapon component!\n");
-    //     p->weapons[w->slot] = weapon;
-    //     w->isEquipped = true;
-    //     Graphics *g = (Graphics *) getGameComponent (weapon, GRAPHICS);
-    //     fprintf (stdout, "Done creating: %s\n", g->name);
-    // }
+    u16 startingWeapon = atoi (getEntityValue (playerEntity, "startingWeapon"));
+    Item *weapon = createWeapon (startingWeapon);
+    if (weapon != NULL) {
+        Weapon *w = (Weapon *) getItemComponent (weapon, WEAPON);
+        if (w != NULL) fprintf (stdout, "Found the weapon component!\n");
+        p->weapons[w->slot] = weapon;
+        w->isEquipped = true;
+        Graphics *g = (Graphics *) getGameComponent (weapon, GRAPHICS);
+        fprintf (stdout, "Done creating: %s\n", g->name);
+    }
 
-    // else fprintf (stderr, "Problems creating player weapon.");
+    else fprintf (stderr, "Problems creating player weapon.");
 
     // we don't need to have this two in memory
     clearConfig (playerConfig);
     clearConfig (classesConfig);
 
-    return p;
-
 }
 
-void resetPlayer (void) {
+void resetPlayer (Player *p) {
 
-    if (player != NULL) {
+    if (p != NULL) {
         // reset inventory
         for (u8 y = 0; y < 3; y++) 
             for (u8 x = 0; x < 7; x++) 
-                player->inventory[x][y] = NULL;
+                p->inventory[x][y] = NULL;
 
         inventoryItems = 0;
 
         // reset weapons
-        for (u8 i = 0; i < 2; i++) player->weapons[i] = NULL;
+        for (u8 i = 0; i < 2; i++) p->weapons[i] = NULL;
 
         // reset equipment
-        for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
+        for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) p->equipment[i] = NULL;
 
     }
-
-    player = initPlayer ();
 
 }
 

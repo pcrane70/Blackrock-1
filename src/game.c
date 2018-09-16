@@ -96,7 +96,7 @@ void initGame (void) {
 // TODO: this can be a good place to check if we have a save file of a map and load that from disk
 void initWorld (void) {
 
-    player = initPlayer ();
+    player = createPlayer ();
 
     // score struct, probably we will need a more complex system later
     playerScore = (Score *) malloc (sizeof (Score));
@@ -109,6 +109,10 @@ void initWorld (void) {
     // game inside the dungeon
     void enterDungeon (void);
     enterDungeon ();
+
+    // 15/09/2018 -- I don't know why, but this prevents a seg fault when initiliazing the game
+    // TODO: try creating a different thread for the player...
+    initPlayer (player);
     
 }
 
@@ -1629,20 +1633,20 @@ void generateLevel () {
     // FIXME: how do we handle how many monsters to add
     u8 monNum = 15;
     u8 count = 0;
-    // for (u8 i = 0; i < monNum; i++) {
-    //     // generate a random monster
-    //     // FIXME: create a better system
-    //     GameObject *monster = createMonster (getMonsterId ());
-    //     if (monster != NULL) {
-    //         // spawn in a random position
-    //         // Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
-    //         // Position *monsterPos = (Position *) getComponent (monster, POSITION);
-    //         // monsterPos->x = (u8) monsterSpawnPos.x;
-    //         // monsterPos->y = (u8) monsterSpawnPos.y;
-    //         // TODO: mark the spawnPos as filled
-    //         count++;
-    //     }
-    // }
+    for (u8 i = 0; i < monNum; i++) {
+        // generate a random monster
+        // FIXME: create a better system
+        GameObject *monster = createMonster (getMonsterId ());
+        if (monster != NULL) {
+            // spawn in a random position
+            Point monsterSpawnPos = getFreeSpot (currentLevel->mapCells);
+            Position *monsterPos = (Position *) getComponent (monster, POSITION);
+            monsterPos->x = (u8) monsterSpawnPos.x;
+            monsterPos->y = (u8) monsterSpawnPos.y;
+            // TODO: mark the spawnPos as filled
+            count++;
+        }
+    }
 
     fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
 
@@ -1699,7 +1703,7 @@ void retry (void) {
 
     void resetScore (void);
     resetScore ();
-    resetPlayer ();
+    resetPlayer (player);
 
     currentLevel->levelNum = 0;
 
