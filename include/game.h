@@ -164,7 +164,7 @@ extern void initGame (void);
 
 extern bool playerTookTurn;
 
-extern void updateGame (void);
+extern void *updateGame (void *);
 
 
 /*** Game Objects ***/

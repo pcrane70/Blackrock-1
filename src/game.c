@@ -1,6 +1,7 @@
 /*** GAME MANAGER ***/
 
 #include <assert.h>
+#include <pthread.h>
 
 #include "blackrock.h"
 #include "game.h"
@@ -52,6 +53,7 @@ Score *playerScore = NULL;
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 bool recalculateFov = false;
+extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 extern void die (char *);
 
@@ -92,11 +94,21 @@ void initGame (void) {
 
 }
 
+void *playerLogic (void *arg) {
+
+    player = createPlayer ();
+    initPlayer (player);
+
+}
+
 // TODO: this inits the game to the tavern/village
 // TODO: this can be a good place to check if we have a save file of a map and load that from disk
 void initWorld (void) {
 
-    player = createPlayer ();
+    pthread_t playerThread;
+
+    if (pthread_create (&playerThread, NULL, playerLogic, NULL)) 
+        die ("Error creating player thread!\n");
 
     // score struct, probably we will need a more complex system later
     playerScore = (Score *) malloc (sizeof (Score));
@@ -110,9 +122,14 @@ void initWorld (void) {
     void enterDungeon (void);
     enterDungeon ();
 
-    // 15/09/2018 -- I don't know why, but this prevents a seg fault when initiliazing the game
-    // TODO: try creating a different thread for the player...
-    initPlayer (player);
+    if (pthread_join (playerThread, NULL)) die ("Error joinning player thread!\n");
+
+    // we can now place the player and we are done 
+    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+    player->pos->x = (u8) playerSpawnPos.x;
+    player->pos->y = (u8) playerSpawnPos.y;
+
+    calculateFov (player->pos->x, player->pos->y, fovMap);
     
 }
 
@@ -949,6 +966,7 @@ u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
     char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
     strcpy (colour, c);
     u32 color = (u32) xtoi (colour);
+    char *name;     // 19/08/2018 -- 16:47
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addComponent (mon, GRAPHICS, &g);
 
@@ -1181,29 +1199,30 @@ List *generateLootItems (u32 *dropItems, u32 count) {
 
 // FIXME:
 // generate random loot based on the enemy
-u8 createLoot (GameObject *go) {
+void *createLoot (void *arg) {
+
+    GameObject *go = (GameObject *) arg;
 
     Monster *mon = searchMonById (go->dbId);
-    if (mon == NULL) return 1;
 
-    fprintf (stdout, "Creating new loot...\n");
+    if (mon != NULL) {
+        fprintf (stdout, "Creating new loot...\n");
 
-    Loot newLoot;
+        Loot newLoot;
 
-    // FIXME: create a better system
-    // generate random money directly
-    newLoot.money[0] = randomInt (mon->loot.minGold, mon->loot.maxGold);
-    newLoot.money[1] = randomInt (0, 99);
-    newLoot.money[2] = randomInt (0, 99);
+        // FIXME: create a better system
+        // generate random money directly
+        newLoot.money[0] = randomInt (mon->loot.minGold, mon->loot.maxGold);
+        newLoot.money[1] = randomInt (0, 99);
+        newLoot.money[2] = randomInt (0, 99);
 
-    newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
+        newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
 
-    // add the loot struct to the go as a component
-    addComponent (go, LOOT, &newLoot);
+        // add the loot struct to the go as a component
+        addComponent (go, LOOT, &newLoot);
 
-    fprintf (stdout, "New loot created!\n");
-
-    return 0;
+        fprintf (stdout, "New loot created!\n");
+    }
 
 }
 
@@ -1456,7 +1475,10 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
             removeComponent (defender, MOVEMENT);
 
-            if (createLoot (defender) != 0) fprintf (stderr, "Error creating loot!\n");
+            pthread_t lootThread;
+
+            if (pthread_create (&lootThread, NULL, createLoot, defender) != THREAD_OK)
+                fprintf (stderr, "Error creating loot thread!\n");
 
             Event e = { 0, displayLoot };
             addComponent (defender, EVENT, &e);
@@ -1470,6 +1492,10 @@ void checkForKill (GameObject *defender, bool isPlayer) {
             free (str);
 
             playerScore->killCount++;
+
+            if (pthread_join (lootThread, NULL) != THREAD_OK)
+                fprintf (stderr, "Error joinning loot thread!\n");
+
         }
     }
 
@@ -1562,10 +1588,9 @@ void gameOver (void) {
 
 }
 
-extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 // we will have the game update every time the player moves...
-void updateGame (void) {
+void *updateGame (void *data) {
 
     if (playerTookTurn) {
         generateTargetMap (player->pos->x, player->pos->y);
@@ -1635,7 +1660,6 @@ void generateLevel () {
     u8 count = 0;
     for (u8 i = 0; i < monNum; i++) {
         // generate a random monster
-        // FIXME: create a better system
         GameObject *monster = createMonster (getMonsterId ());
         if (monster != NULL) {
             // spawn in a random position
@@ -1649,11 +1673,6 @@ void generateLevel () {
     }
 
     fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
-
-    // we can now place the player and we are done 
-    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    player->pos->x = (u8) playerSpawnPos.x;
-    player->pos->y = (u8) playerSpawnPos.y;
 
 }
 
@@ -1677,8 +1696,6 @@ void enterDungeon (void) {
 
     // after we have allocated the new level structure, we can start generating the first level
     generateLevel ();
-
-    calculateFov (player->pos->x, player->pos->y, fovMap);
 
     fprintf (stdout, "Done initializing game!\n");
 

@@ -1,5 +1,6 @@
 #include <time.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #include "blackrock.h"
 #include "game.h"
@@ -28,8 +29,6 @@ void die (char *error) {
 // TODO: are we cleanning up the console and the screen??
 // do we want that to happen?
 void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
-
-    unsigned int test = 0;
 
     // render the views from back to front for the current screen
     for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
@@ -100,10 +99,11 @@ int main (void) {
     u32 frameStart;
     i32 sleepTime;
     UIScreen *screenForInput;
-    fprintf (stdout, "Starting main loop\n");
 
     extern UIScreen *menuScene (void);
     setActiveScene (menuScene ());
+
+    pthread_t gameThread;
 
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
@@ -121,15 +121,21 @@ int main (void) {
             screenForInput->handleEvent (screenForInput, event);
         }
 
-        // if we are inside the game (dungeon, etc)...
-        if (inGame) updateGame ();
+        if (inGame) {
+            if (pthread_create (&gameThread, NULL, updateGame, NULL) != THREAD_OK)
+                fprintf (stderr, "Error creating game thread!\n");
+        } 
 
         // render the correct screen
         renderScreen (renderer, screen, activeScene);
 
+        if (inGame)
+            if (pthread_join (gameThread, NULL) != THREAD_OK) fprintf (stderr, "Error joinning game thread!\n");
+
         // Limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
         if (sleepTime > 0) SDL_Delay (sleepTime);
+
     }
 
     cleanUp (window, renderer);

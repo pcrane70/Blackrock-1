@@ -72,11 +72,15 @@ _Build it yourself_ -> You need to install the following dependencies first:
 
 - Sdl 2.0 - libsdl2-dev
 - Sqlite3 - libsqlite3-dev
+- Pthread - libpthread-stubs0-dev
 
 If you are using Ubuntu, you can run the following commands: 
 
 ``` sudo apt-get install libsdl2-dev ```
+
 ``` sudo apt-get install sqlite3 libsqlite3-dev ```
+
+``` sudo apt-get install libpthread-stubs0-dev ```
 
 Note: You also need to have installed:
 
