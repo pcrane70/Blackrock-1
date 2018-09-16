@@ -144,7 +144,7 @@ GameObject *createGO (void) {
 
     // first check if there is an available one in the pool
     if (POOL_SIZE (goPool) > 0) {
-        go = pop (goPool);
+        go = (GameObject *) pop (goPool);
         if (go == NULL) go = (GameObject *) malloc (sizeof (GameObject));
     } 
     else go = (GameObject *) malloc (sizeof (GameObject));
@@ -170,7 +170,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Position *newPos = NULL;
 
-            if ((POOL_SIZE (posPool) > 0)) newPos = pop (posPool);
+            if ((POOL_SIZE (posPool) > 0)) newPos = (Position *) pop (posPool);
             else newPos = (Position *) malloc (sizeof (Position));
 
             Position *posData = (Position *) data;
@@ -187,7 +187,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Graphics *newGraphics = NULL;
 
-            if ((POOL_SIZE (graphicsPool) > 0)) newGraphics = pop (graphicsPool);
+            if ((POOL_SIZE (graphicsPool) > 0)) newGraphics = (Graphics *) pop (graphicsPool);
             else newGraphics = (Graphics *) malloc (sizeof (Graphics));
 
             Graphics *graphicsData = (Graphics *) data;
@@ -206,7 +206,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Physics *newPhys = NULL;
 
-            if ((POOL_SIZE (physPool) > 0)) newPhys = pop (physPool);
+            if ((POOL_SIZE (physPool) > 0)) newPhys = (Physics *) pop (physPool);
             else newPhys = (Physics *) malloc (sizeof (Physics));
 
             Physics *physData = (Physics *) data;
@@ -222,7 +222,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Movement *newMove = NULL;
 
-            if ((POOL_SIZE (movePool) > 0)) newMove = pop (movePool);
+            if ((POOL_SIZE (movePool) > 0)) newMove = (Movement *) pop (movePool);
             else newMove = (Movement *) malloc (sizeof (Movement));
 
             Movement *movData = (Movement *) data;
@@ -241,7 +241,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Combat *newCombat = NULL;
 
-            if ((POOL_SIZE (combatPool) > 0)) newCombat = pop (combatPool);
+            if ((POOL_SIZE (combatPool) > 0)) newCombat = (Combat *) pop (combatPool);
             else newCombat = (Combat *) malloc (sizeof (Combat));
 
             Combat *combatData = (Combat *) data;
@@ -261,14 +261,12 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newEvent->callback = eventData->callback;
 
             go->components[type] = newEvent;
-
-            // FIXME: do we need a list and a pool of events??
         }
         case LOOT: {
             if (getComponent (go, type) != NULL) return;
             Loot *newLoot = NULL;
 
-            if (POOL_SIZE (lootPool) > 0) newLoot = pop (lootPool);
+            if (POOL_SIZE (lootPool) > 0) newLoot = (Loot *) pop (lootPool);
             else newLoot = (Loot *) malloc (sizeof (Loot));
 
             Loot *lootData = (Loot *) data;
@@ -403,14 +401,13 @@ GameObject *searchGameObjectById (u32 id) {
 void destroyGO (GameObject *go) {
 
     // remove all of the gos components
-    for (u8 i = 0; i < COMP_COUNT; i++) 
-        removeComponent (go, i);
+    for (u8 i = 0; i < COMP_COUNT; i++) removeComponent (go, i);
 
     // now send the go to the pool
     ListElement *e = getListElement (gameObjects, go);
     if (e != NULL) {
         void *data = removeElement (gameObjects, e);
-        push (goPool, data);
+        if (data != NULL) push (goPool, data);
     }
 
 }
@@ -433,27 +430,13 @@ void cleanUpGame (void) {
     destroyList (movement);
     destroyList (combat);
 
-    // clean every list of items inside each loot object
-    if (loot != NULL) {
-        if (LIST_SIZE (loot) > 0) {
-            for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
-                if (((Loot *)(e->data))->lootItems != NULL) {
-                    if (LIST_SIZE (((Loot *)(e->data))->lootItems) > 0) {
-                        for (ListElement *le = LIST_START (((Loot *)(e->data))->lootItems); le != NULL; le = le->next) 
-                            removeElement (((Loot *)(e->data))->lootItems, le);
-                        
-                    }
-
-                    free (((Loot *)(e->data))->lootItems);
-                }   
-            }
-        }
-        destroyList (loot);
-    }
-
     fprintf (stdout, "Done cleanning up lists\n");
+
+    void destroyLoot (void);
+    destroyLoot ();
+
+    fprintf (stdout, "Done cleanning up loot!\n");
     
-    // FIXME: problems cleaning up pools
     // cleanup the pools
     clearPool (goPool);
     clearPool (posPool);
@@ -461,23 +444,6 @@ void cleanUpGame (void) {
     clearPool (physPool);
     clearPool (movePool);
     clearPool (combatPool);
-
-    // clean every list of items inside each loot object
-    if (lootPool != NULL) {
-        if (POOL_SIZE (lootPool) > 0) {
-            for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
-                if (((Loot *)(p->data))->lootItems != NULL) {
-                    if (LIST_SIZE (((Loot *)(p->data))->lootItems) > 0) {
-                        for (ListElement *le = LIST_START (((Loot *)(le->data))->lootItems); le != NULL; le = le->next) 
-                            removeElement (((Loot *)(le->data))->lootItems, le);
-                    }
-
-                    free (((Loot *)(p->data))->lootItems);
-                }
-            } 
-        }
-        clearPool (lootPool);
-    }
 
     fprintf (stdout, "Done cleanning up pools\n");
 
@@ -966,7 +932,6 @@ u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
     char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
     strcpy (colour, c);
     u32 color = (u32) xtoi (colour);
-    char *name;     // 19/08/2018 -- 16:47
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addComponent (mon, GRAPHICS, &g);
 
@@ -1315,6 +1280,50 @@ void collectGold (void) {
 
 }
 
+void destroyLoot (void) {
+
+    // clean up active loot objects
+    if (loot != NULL) {
+        if (LIST_SIZE (loot) > 0) {
+            Loot *lr = NULL;
+            for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
+                lr = (Loot *) e->data;
+                if (lr->lootItems != NULL) {
+                    if (LIST_SIZE (lr->lootItems) > 0) {
+                        for (ListElement *le = LIST_START (lr->lootItems); le != NULL; le = le->next) 
+                            removeElement (lr->lootItems, le);
+                        
+                    }
+
+                    free (lr->lootItems);
+                }   
+            }
+        }
+
+        destroyList (loot);
+    }
+
+    // clean up loot pool
+    if (lootPool != NULL) {
+        if (POOL_SIZE (lootPool) > 0) {
+            Loot *lr = NULL;
+            for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
+                lr = (Loot *) p->data;
+                if (lr->lootItems != NULL) {
+                    if (LIST_SIZE (lr->lootItems) > 0) {
+                        for (ListElement *le = LIST_START (lr->lootItems); le != NULL; le = le->next) 
+                            removeElement (lr->lootItems, le);
+                    }
+
+                    free (lr->lootItems);
+                }
+            } 
+        }
+        clearPool (lootPool);
+
+    }
+
+}
 
 /*** COMBAT ***/
 

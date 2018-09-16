@@ -285,7 +285,7 @@ LootRect *createLootRect (u8 y, Item *i) {
     LootRect *new = NULL;
 
     if (POOL_SIZE (lootRectsPool) > 0) {
-        new = pop (lootRectsPool);
+        new = (LootRect *) pop (lootRectsPool);
         if (new == NULL) {
             new = (LootRect *) malloc (sizeof (LootRect));
             new->bgRect = (UIRect *) malloc (sizeof (UIRect));
@@ -315,14 +315,35 @@ LootRect *createLootRect (u8 y, Item *i) {
 
 }
 
-// FIXME: take into account the object pool!!
-void destroyLootRect (LootRect *lr) {
+void destroyLootRects (void) {
 
-    if (lr != NULL) {
-        if (lr->bgRect != NULL) free (lr->bgRect);
-        if (lr->imgRect != NULL) free (lr->imgRect);
-        lr->item = NULL;
-    }
+    LootRect *lr = NULL;
+
+    if (activeLootRects != NULL) {
+        if (LIST_SIZE (activeLootRects) > 0) {
+            for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+                lr = (LootRect *) e->data;
+                if (lr->bgRect != NULL) free (lr->bgRect);
+                if (lr->imgRect != NULL) free (lr->imgRect);
+                lr->item = NULL;
+            }
+        }
+        
+        destroyList (activeLootRects);
+    } 
+
+    if (lootRectsPool != NULL) {
+        if (POOL_SIZE (lootRectsPool) > 0) {
+            for (PoolMember *e = POOL_TOP (lootRectsPool); e != NULL; e = e->next) {
+                lr = (LootRect *) e->data;
+                if (lr->bgRect != NULL) free (lr->bgRect);
+                if (lr->imgRect != NULL) free (lr->imgRect);
+                lr->item = NULL;
+            }
+        }
+
+        clearPool (lootRectsPool);
+    } 
 
 }
 
@@ -1149,8 +1170,7 @@ void cleanGameUI (void) {
         if (inventoryRects != NULL) destroyInvRects ();
         if (characterRects != NULL) destroyCharRects ();
 
-        if (activeLootRects != NULL) destroyList (activeLootRects);
-        if (lootRectsPool != NULL) clearPool (lootRectsPool);
+        destroyLootRects ();
 
         if (deathImg != NULL) destroyImage (deathImg);
 

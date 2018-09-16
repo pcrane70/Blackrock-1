@@ -41,11 +41,6 @@ void *pop (Pool *pool) {
 
     void *data;
 
-    if (POOL_SIZE (pool) == 0) {
-        fprintf (stderr, "\nStack underflow!!\n");
-        return NULL;
-    }
-
     data = pool->top->data;
 
     pool->top = pool->top->next;
