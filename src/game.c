@@ -966,6 +966,7 @@ u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
     char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
     strcpy (colour, c);
     u32 color = (u32) xtoi (colour);
+    char *name;     // 19/08/2018 -- 16:47
     Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
     addComponent (mon, GRAPHICS, &g);
 
@@ -1198,29 +1199,30 @@ List *generateLootItems (u32 *dropItems, u32 count) {
 
 // FIXME:
 // generate random loot based on the enemy
-u8 createLoot (GameObject *go) {
+void *createLoot (void *arg) {
+
+    GameObject *go = (GameObject *) arg;
 
     Monster *mon = searchMonById (go->dbId);
-    if (mon == NULL) return 1;
 
-    fprintf (stdout, "Creating new loot...\n");
+    if (mon != NULL) {
+        fprintf (stdout, "Creating new loot...\n");
 
-    Loot newLoot;
+        Loot newLoot;
 
-    // FIXME: create a better system
-    // generate random money directly
-    newLoot.money[0] = randomInt (mon->loot.minGold, mon->loot.maxGold);
-    newLoot.money[1] = randomInt (0, 99);
-    newLoot.money[2] = randomInt (0, 99);
+        // FIXME: create a better system
+        // generate random money directly
+        newLoot.money[0] = randomInt (mon->loot.minGold, mon->loot.maxGold);
+        newLoot.money[1] = randomInt (0, 99);
+        newLoot.money[2] = randomInt (0, 99);
 
-    newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
+        newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
 
-    // add the loot struct to the go as a component
-    addComponent (go, LOOT, &newLoot);
+        // add the loot struct to the go as a component
+        addComponent (go, LOOT, &newLoot);
 
-    fprintf (stdout, "New loot created!\n");
-
-    return 0;
+        fprintf (stdout, "New loot created!\n");
+    }
 
 }
 
@@ -1473,7 +1475,10 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
             removeComponent (defender, MOVEMENT);
 
-            if (createLoot (defender) != 0) fprintf (stderr, "Error creating loot!\n");
+            pthread_t lootThread;
+
+            if (pthread_create (&lootThread, NULL, createLoot, defender) != THREAD_OK)
+                fprintf (stderr, "Error creating loot thread!\n");
 
             Event e = { 0, displayLoot };
             addComponent (defender, EVENT, &e);
@@ -1487,6 +1492,10 @@ void checkForKill (GameObject *defender, bool isPlayer) {
             free (str);
 
             playerScore->killCount++;
+
+            if (pthread_join (lootThread, NULL) != THREAD_OK)
+                fprintf (stderr, "Error joinning loot thread!\n");
+
         }
     }
 
@@ -1581,7 +1590,7 @@ void gameOver (void) {
 
 
 // we will have the game update every time the player moves...
-void updateGame (void) {
+void *updateGame (void *data) {
 
     if (playerTookTurn) {
         generateTargetMap (player->pos->x, player->pos->y);
@@ -1651,7 +1660,6 @@ void generateLevel () {
     u8 count = 0;
     for (u8 i = 0; i < monNum; i++) {
         // generate a random monster
-        // FIXME: create a better system
         GameObject *monster = createMonster (getMonsterId ());
         if (monster != NULL) {
             // spawn in a random position

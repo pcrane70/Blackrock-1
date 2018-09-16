@@ -16,6 +16,7 @@ extern bool inGame;
 /*** MAIN MENU ***/
 
 extern bool running;
+extern bool wasInGame;
 
 extern UIView *characterMenu;
 extern void toggleCharacterMenu (void);
@@ -35,6 +36,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
                     initGame ();
                     setActiveScene (gameScene ());
                     inGame = true;
+                    wasInGame = true;
                 }
                 break;
 
