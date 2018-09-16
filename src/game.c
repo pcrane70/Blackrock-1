@@ -1389,8 +1389,11 @@ u32 getPlayerDmg (Combat *att) {
 
     // FIXME: add a more dynamic damage
     // we are fighting we our bare hands!
-    else 
-        damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+    else {
+        if (att->attack.baseDps == 1) damage = randomInt (1, 2);
+        else 
+            damage = (u32) randomInt (att->attack.baseDps - (att->attack.baseDps / 2), att->attack.baseDps);
+    }
 
     // FIXME: how do we want to handle strength
     damage += att->baseStats.strength;
