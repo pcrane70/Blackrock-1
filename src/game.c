@@ -1,6 +1,7 @@
 /*** GAME MANAGER ***/
 
 #include <assert.h>
+#include <pthread.h>
 
 #include "blackrock.h"
 #include "game.h"
@@ -52,6 +53,7 @@ Score *playerScore = NULL;
 // FOV
 u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 bool recalculateFov = false;
+extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 extern void die (char *);
 
@@ -92,11 +94,21 @@ void initGame (void) {
 
 }
 
+void *playerLogic (void *arg) {
+
+    player = createPlayer ();
+    initPlayer (player);
+
+}
+
 // TODO: this inits the game to the tavern/village
 // TODO: this can be a good place to check if we have a save file of a map and load that from disk
 void initWorld (void) {
 
-    player = createPlayer ();
+    pthread_t playerThread;
+
+    if (pthread_create (&playerThread, NULL, playerLogic, NULL)) 
+        die ("Error creating player thread!\n");
 
     // score struct, probably we will need a more complex system later
     playerScore = (Score *) malloc (sizeof (Score));
@@ -110,9 +122,14 @@ void initWorld (void) {
     void enterDungeon (void);
     enterDungeon ();
 
-    // 15/09/2018 -- I don't know why, but this prevents a seg fault when initiliazing the game
-    // TODO: try creating a different thread for the player...
-    initPlayer (player);
+    if (pthread_join (playerThread, NULL)) die ("Error joinning player thread!\n");
+
+    // we can now place the player and we are done 
+    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+    player->pos->x = (u8) playerSpawnPos.x;
+    player->pos->y = (u8) playerSpawnPos.y;
+
+    calculateFov (player->pos->x, player->pos->y, fovMap);
     
 }
 
@@ -1562,7 +1579,6 @@ void gameOver (void) {
 
 }
 
-extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 // we will have the game update every time the player moves...
 void updateGame (void) {
@@ -1650,11 +1666,6 @@ void generateLevel () {
 
     fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
 
-    // we can now place the player and we are done 
-    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    player->pos->x = (u8) playerSpawnPos.x;
-    player->pos->y = (u8) playerSpawnPos.y;
-
 }
 
 // This should only run when we enter the dungeon directly from the menu / taver or village
@@ -1677,8 +1688,6 @@ void enterDungeon (void) {
 
     // after we have allocated the new level structure, we can start generating the first level
     generateLevel ();
-
-    calculateFov (player->pos->x, player->pos->y, fovMap);
 
     fprintf (stdout, "Done initializing game!\n");
 
