@@ -57,10 +57,26 @@ extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 extern void die (char *);
 
+void *getGameData (void *data) {
+
+    // retrieves the data from the items db
+    initItems ();
+
+    // connect to enemies db
+    void connectEnemiesDb (void);
+    connectEnemiesDb ();
+
+}
+
 // This should only be called once!
 // Inits the global state of the game
 // Inits all the data and structures for an initial game
 void initGame (void) {
+
+    pthread_t dataThread;
+
+    if (pthread_create (&dataThread, NULL, getGameData, NULL) != THREAD_OK) 
+        die ("Error creating data thread!\n");
 
     gameObjects = initList (free);
     positions = initList (free);
@@ -79,15 +95,12 @@ void initGame (void) {
     combatPool = initPool ();
     lootPool = initPool ();
 
-    // retrieves the data from the items db
-    initItems ();
-
     // init the message log
     messageLog = initList (free);
 
-    // connect to enemies db
-    void connectEnemiesDb (void);
-    connectEnemiesDb ();
+    if (pthread_join (dataThread, NULL) != THREAD_OK) die ("Error joinning data thread!\n");
+
+    fprintf (stdout, "Creating world...\n");
 
     void initWorld (void);
     initWorld ();
@@ -107,7 +120,7 @@ void initWorld (void) {
 
     pthread_t playerThread;
 
-    if (pthread_create (&playerThread, NULL, playerLogic, NULL)) 
+    if (pthread_create (&playerThread, NULL, playerLogic, NULL) != THREAD_OK) 
         die ("Error creating player thread!\n");
 
     // score struct, probably we will need a more complex system later
@@ -122,7 +135,7 @@ void initWorld (void) {
     void enterDungeon (void);
     enterDungeon ();
 
-    if (pthread_join (playerThread, NULL)) die ("Error joinning player thread!\n");
+    if (pthread_join (playerThread, NULL) != THREAD_OK) die ("Error joinning player thread!\n");
 
     // we can now place the player and we are done 
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
@@ -1567,25 +1580,35 @@ void fight (Combat *att, Combat *def, bool isPlayer) {
 
 /*** LEVEL MANAGER ***/
 
+// FIXME:
 // This is called every time we generate a new level to start fresh, only from data from the pool
 void clearOldLevel (void) {
 
+    newId = 0; // reset the go id
+
+    void *data = NULL;
+
     if (gameObjects != NULL) {
-        // send all of our objects and components to ther pools
-        void *data = NULL;
-        for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
-            data = removeElement (gameObjects, e);
-            if (data != NULL) destroyGO ((GameObject *) data);
+        if (LIST_SIZE (gameObjects) > 0) {
+            // send all of our objects and components to ther pools
+            for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+                data = removeElement (gameObjects, e);
+                if (data != NULL) destroyGO ((GameObject *) data);
+            }
         }
 
-        newId = 0; // reset the go id
-
-        // send the items to their pool
-        for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
-            data = removeElement (items, e);
-            if (data != NULL) destroyItem ((Item *) data);
-        }
     }
+
+    // FIXME: what happens with items like the player weapon or inventory???
+    // if (items != NULL) {
+    //     if (LIST_SIZE (items) > 0) {
+    //         // send the items to their pool
+    //         for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+    //             data = removeElement (items, e);
+    //             if (data != NULL) destroyItem ((Item *) data);
+    //         }
+    //     }
+    // }
 
 }
 
@@ -1652,17 +1675,23 @@ void placeStairs (Point spawn) {
 // FIXME: 
 void generateLevel () {
 
+    fprintf (stdout, "Generate level!\n");
+
     // make sure we have cleaned the previous level data
     clearOldLevel ();
 
     // this is used to render the walls to the screen... but maybe it is not a perfect system
     initMap (currentLevel->mapCells);
 
+    fprintf (stdout, "Map done!\n");
+
     // TODO: create other map elements such as stairs
     // As of 20/08/2018 -- 23:18 -- we can only move through the dungeon using the stair cases
     // but we can only move forward, we can not return to the previous level
     // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
     placeStairs (getFreeSpot (currentLevel->mapCells));
+
+    fprintf (stdout, "Generating monsters...\n");
 
     // FIXME: how do we handle how many monsters to add
     u8 monNum = 15;

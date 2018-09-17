@@ -436,12 +436,9 @@ void initMap (bool **mapCells) {
 
     wallCount = 0;
 
-    // fprintf (stdout, "Generating the map...\n");
     generateMap (mapCells);
 
     // draw the map
-    // fprintf (stdout, "Drawing the map...\n");
-    // unsigned int wallCount = 0;
     for (u8 x = 0; x < MAP_WIDTH; x++)
         for (u8 y = 0; y < MAP_HEIGHT; y++)
             if (mapCells[x][y]) createWall (x, y), wallCount++;

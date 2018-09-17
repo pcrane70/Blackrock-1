@@ -29,8 +29,12 @@ extern void cleanUpMenuScene (void);
 void startGame (void) {
 
     cleanUpMenuScene ();
+    activeScene = NULL;
+
     initGame ();
+
     setActiveScene (gameScene ());
+
     inGame = true;
     wasInGame = true;
 

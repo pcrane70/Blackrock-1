@@ -202,7 +202,7 @@ extern void fight (Combat *att, Combat *def, bool isPlayer);
 
 typedef struct {
 
-    unsigned int levelNum;
+    u8 levelNum;
     bool **mapCells;    // dungeon map
 
 } Level;
