@@ -251,10 +251,11 @@ char *createString (const char *stringWithFormat, ...) {
 
 /*** LOOT ***/
 
-#define LOOT_LEFT       30
-#define LOOT_TOP        9
-#define LOOT_WIDTH      20
-#define LOOT_HEIGHT     24
+#define LOOT_LEFT           24
+#define LOOT_DUAL_LEFT      4
+#define LOOT_TOP            9
+#define LOOT_WIDTH          28
+#define LOOT_HEIGHT         24
 
 #define LOOT_COLOR     0x69777DFF
 #define LOOT_TEXT      0xEEEEEEFF
@@ -263,7 +264,7 @@ UIView *lootView = NULL;
 
 extern Loot *currentLoot;
 
-#define LOOT_RECT_WIDTH     18
+#define LOOT_RECT_WIDTH     26
 #define LOOT_RECT_HEIGHT    4
 
 #define LOOT_IMG_WIDTH    4
@@ -397,53 +398,86 @@ static void renderLoot (Console *console) {
         UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
         drawRect (console, &looRect, LOOT_COLOR, 0, 0xFF990099);
 
-        putStringAt (console, "Loot", 8, 2, LOOT_TEXT, 0x00000000);
+        putStringAt (console, "Loot", 12, 2, LOOT_TEXT, 0x00000000);
 
         if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0))
             renderLootRects (console);   
 
         // gold
         char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
-        putStringAt (console, gold, 3, 21, LOOT_TEXT, 0x00000000);
+        putStringAt (console, gold, 8, 21, LOOT_TEXT, 0x00000000);
         free (gold);
     }
 
 }
 
-void toggleLootWindow (void) {
+void hideLoot (void) {
 
-    if (lootView == NULL) {
+    ListElement *e = getListElement (activeScene->views, lootView);
+    destroyView ((UIView *) removeElement (activeScene->views, e));
+    lootView = NULL;
+
+    // deactivate the loot rects and send them to the pool
+    if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
+        for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
+            push (lootRectsPool, removeElement (activeLootRects, e));
+
+        resetList (activeLootRects);
+    }
+
+}
+
+void showLoot (bool dual) {
+
+    if (dual) {
+        UIRect lootRect = { (16 * LOOT_DUAL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+        lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
+    }
+
+    else {
         UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
         lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
         insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
+    }
 
-        lootYIdx = 0;
+    lootYIdx = 0;
 
-        if (currentLoot->lootItems != NULL && LIST_SIZE (currentLoot->lootItems) > 0) {
-            LootRect *lr = NULL;
-            u8 y = 0;
-            for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
-                lr = createLootRect (y, (Item *) e->data);
-                insertAfter (activeLootRects, LIST_END (activeLootRects), lr);
-                y++;
-            }
+    if (currentLoot->lootItems != NULL && LIST_SIZE (currentLoot->lootItems) > 0) {
+        LootRect *lr = NULL;
+        u8 y = 0;
+        for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
+            lr = createLootRect (y, (Item *) e->data);
+            insertAfter (activeLootRects, LIST_END (activeLootRects), lr);
+            y++;
         }
+    }
 
-        activeView = lootView;
-    } 
+    activeView = lootView;
+
+}
+
+void updateLootPos (bool dual) {
+
+    if (lootView != NULL) {
+        hideLoot ();
+        showLoot (dual);
+    }
+
+}
+
+void updateInventoryPos (bool);
+void updateCharacterPos (bool);
+
+void toggleLootWindow (void) {
+
+    if (lootView == NULL) showLoot (false);
     
     else {
-        ListElement *e = getListElement (activeScene->views, lootView);
-        destroyView ((UIView *) removeElement (activeScene->views, e));
-        lootView = NULL;
+        if (inventoryView != NULL) updateInventoryPos (false);
+        else if (characterView != NULL) updateCharacterPos (false);
 
-        // deactivate the loot rects and send them to the pool
-        if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
-            for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
-                push (lootRectsPool, removeElement (activeLootRects, e));
-
-            resetList (activeLootRects);
-        }
+        hideLoot ();
 
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
@@ -489,6 +523,7 @@ typedef struct {
 
 ItemRect ***inventoryRects = NULL;
 
+// TODO: image rects
 ItemRect *createInvRect (u8 x, u8 y) {
 
     ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
@@ -620,7 +655,6 @@ static void renderInventory (Console *console) {
 
     putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, 0x00000000);
     putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, 0x00000000);
-    // free (weightInfo);
     free (gold);
 
 }
@@ -628,6 +662,8 @@ static void renderInventory (Console *console) {
 void updateCharacterPos (bool);
 
 void showInventory (bool dual) {
+
+    if (lootView != NULL) dual = true;
 
     if (dual) {
         UIRect inv = { (16 * INVENTORY_DUAL_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
@@ -672,7 +708,12 @@ void updateInventoryPos (bool dual) {
 void toggleInventory (void) {
 
     if (inventoryView == NULL) {
-        if (characterView != NULL) {
+        if (lootView != NULL) {
+            updateLootPos (true);
+            showInventory (true);
+        }
+
+        else if (characterView != NULL) {
             updateCharacterPos (true);
             showInventory (true);
         }
@@ -683,7 +724,8 @@ void toggleInventory (void) {
     } 
 
     else {
-        if (characterView != NULL) updateCharacterPos (false);
+        if (lootView != NULL) updateLootPos (false);
+        else if (characterView != NULL) updateCharacterPos (false);
 
         hideInventory ();
 
@@ -724,6 +766,7 @@ u8 characterYIdx = 0;
 
 Item *getCharSelectedItem (void) { return characterRects[characterXIdx][characterYIdx]->item; }
 
+// TODO: image rects
 ItemRect *createCharRect (u8 x, u8 y) {
 
     ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
@@ -834,16 +877,8 @@ void renderCharacterRects (Console *console) {
             charRect = characterRects[x][y];
     
              // draw highlighted rect
-            if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) {
+            if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) 
                 drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, 0x000000FF);
-                // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
-                // if (charRect->item != NULL) {
-                //     // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
-                //     // Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
-                //     // if (g != NULL) 
-                //     //     putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), 0x00000000);
-                // }
-            }
 
             // draw every other rect with an item on it
             else if (charRect->item != NULL) 
@@ -1180,8 +1215,6 @@ void cleanGameUI (void) {
         destroyList (inGameScreen->views);
 
         free (inGameScreen);
-
-        fprintf (stdout, "Done cleanning up game UI.\n");
     }
 
 }

@@ -133,7 +133,7 @@ UIView *activeView = NULL;
 void swicthView (void) {
 
     // switch the views in the list
-    if ((characterView != NULL) && (inventoryView != NULL)) {
+    if ((characterView != NULL) && (inventoryView != NULL) || lootView != NULL) {
         void *prev = removeElement (activeScene->views, (LIST_END (activeScene->views))->prev);
         void *last = removeElement (activeScene->views, (LIST_END (activeScene->views)));
 
@@ -225,7 +225,7 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 else if (activeView == mapView) getItem (); 
                 break;
 
-            // FIXME: add responsive ui panels
+
             case SDLK_c: 
                 if (activeView == lootView) collectGold (); 
                 else if (activeView == deathScreen) showScore ();

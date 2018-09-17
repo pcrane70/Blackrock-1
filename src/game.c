@@ -358,13 +358,7 @@ void removeComponent (GameObject *go, GameComponent type) {
 
 }
 
-void *getComponent (GameObject *go, GameComponent type) {
-
-    void *retVal = go->components[type];
-    if (retVal == NULL) return NULL;
-    else return retVal;
-
-}
+void *getComponent (GameObject *go, GameComponent type) { return go->components[type]; }
 
 // TESTING 19/08/2018 -- 19:04
 // FIXME: HOW CAN WE MANAGE THE WALLS!!!!???
@@ -374,7 +368,8 @@ List *getObjectsAtPos (u32 x, u32 y) {
     List *retVal = initList (free);
     for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
         pos = (Position *) getComponent ((GameObject *) e->data, POSITION);
-        if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
+        if (pos != NULL)
+            if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
     }
 
     return retVal;
@@ -1579,7 +1574,7 @@ void clearOldLevel (void) {
         void *data = NULL;
         for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
             data = removeElement (gameObjects, e);
-            destroyGO ((GameObject *) data);
+            if (data != NULL) destroyGO ((GameObject *) data);
         }
 
         newId = 0; // reset the go id
@@ -1587,7 +1582,7 @@ void clearOldLevel (void) {
         // send the items to their pool
         for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
             data = removeElement (items, e);
-            destroyItem ((Item *) data);
+            if (data != NULL) destroyItem ((Item *) data);
         }
     }
 
