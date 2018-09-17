@@ -32,9 +32,13 @@ typedef struct UIScreen {
 
 } UIScreen;
 
+/*** SCREENS ***/
 
 extern UIScreen *activeScene;
 extern void setActiveScene (UIScreen *);
+extern void destroyUIScreen (UIScreen *);
+
+/*** VIEWS **/
 
 extern UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,

@@ -1077,8 +1077,6 @@ UIView *deathScreen = NULL;
 
 static void renderDeathScreen (Console *console) {
 
-    if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
-
     drawImageAt (console, deathImg, 0, 0);
 
 }
@@ -1090,11 +1088,15 @@ void toggleDeathScreen (void) {
         deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
         insertAfter (activeScene->views, LIST_END (activeScene->views), deathScreen);
 
+        if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
+
         activeView = deathScreen;
     }
 
     else {
         if (deathScreen != NULL) {
+            if (deathImg != NULL) destroyImage (deathImg);
+
             ListElement *death = getListElement (activeScene->views, deathScreen);
             destroyView ((UIView *) removeElement (activeScene->views, death));
             deathScreen = NULL;
@@ -1114,8 +1116,6 @@ UIView *scoreScreen = NULL;
 
 static void renderScoreScreen (Console *console) {
 
-    if (scoreImg == NULL) scoreImg = loadImageFromFile (scoreImgPath);
-
     drawImageAt (console, scoreImg, 0, 0);
 
 }
@@ -1127,11 +1127,15 @@ void toggleScoreScreen (void) {
         scoreScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderScoreScreen);
         insertAfter (activeScene->views, LIST_END (activeScene->views), scoreScreen);
 
+        if (scoreImg == NULL) scoreImg = loadImageFromFile (scoreImgPath);
+
         activeView = scoreScreen;
     }
 
     else {
         if (scoreScreen != NULL) {
+            if (scoreImg != NULL) destroyImage (scoreImg);
+
             ListElement *death = getListElement (activeScene->views, scoreScreen);
             destroyView ((UIView *) removeElement (activeScene->views, death));
             scoreScreen = NULL;
@@ -1149,27 +1153,32 @@ UIScreen *inGameScreen = NULL;
 
 UIView *mapView = NULL;
 
-UIScreen *gameScene (void) {
+List *initGameViews (void) {
 
-    List *igViews = initList (NULL);
+    List *views = initList (free);
 
     UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
     bool colorize = true;
-    u32 bgColor;
-
-    colorize = true;
-    bgColor = 0x000000FF;
+    u32 bgColor = 0x000000FF;
 
     mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
-    insertAfter (igViews, NULL, mapView);
+    insertAfter (views, NULL, mapView);
 
     UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
     UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
-    insertAfter (igViews, NULL, statsView);
+    insertAfter (views, NULL, statsView);
 
     UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
     UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
-    insertAfter (igViews, NULL, logView);
+    insertAfter (views, NULL, logView);
+
+    return views;
+
+}
+
+UIScreen *gameScene (void) {
+
+    List *igViews = initGameViews ();
 
     if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
     
@@ -1196,7 +1205,26 @@ UIScreen *gameScene (void) {
 
 /*** CLEAN UP ***/
 
+// clean up all the in game UI views to save resoruces
 void cleanGameUI (void) {
+
+    if (inGameScreen != NULL) {
+        // clean up the message log
+        while (LIST_SIZE (messageLog) > 0) 
+            deleteMessage ((Message *) removeElement (messageLog, NULL));
+
+        // TODO: do we want to keep the inventory and char rects in memory?
+
+        // FIXME: do we want an object pool?
+        // destroy all the views, so we don't render them
+        for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
+            destroyView ((UIView *) e->data);
+
+    }
+
+}
+
+void destroyGameUI (void) {
 
     if (inGameScreen != NULL) {
         // message log

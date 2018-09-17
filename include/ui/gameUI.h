@@ -110,5 +110,6 @@ extern UIScreen *gameScene (void);
 /*** CLEAN UP ***/
 
 extern void cleanGameUI (void);
+extern void destroyGameUI (void);
 
 #endif

@@ -47,12 +47,13 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene)
 
 /*** CLEAN UP ***/
 
+extern void cleanUpMenuScene (void);
+
 void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
-    if (wasInGame) {
-        fprintf (stdout, "Cleanning up game...\n");
-        cleanUpGame ();
-    }
+    if (wasInGame) cleanUpGame ();
+    // we are in the main menu
+    else cleanUpMenuScene ();
     
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);

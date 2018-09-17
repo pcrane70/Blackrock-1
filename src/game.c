@@ -414,7 +414,7 @@ void cleanUpGame (void) {
     fprintf (stdout, "Done cleanning up player\n");
 
     // clean game ui
-    cleanGameUI ();
+    destroyGameUI ();
     fprintf (stdout, "Done cleanning up game UI\n");
 
     // clean up our lists
@@ -1379,6 +1379,7 @@ char *calculateDefense (Combat *def, bool isPlayer) {
 
 }
 
+// FIXME:
 u32 getPlayerDmg (Combat *att) {
 
     u32 damage;
@@ -1591,6 +1592,8 @@ void clearOldLevel (void) {
 // game over logic
 void gameOver (void) {
 
+    cleanGameUI ();
+    
     toggleDeathScreen ();
 
 }
@@ -1660,7 +1663,6 @@ void generateLevel () {
     // but we can only move forward, we can not return to the previous level
     // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
     placeStairs (getFreeSpot (currentLevel->mapCells));
-    fprintf (stdout, "Stairs placed!\n");
 
     // FIXME: how do we handle how many monsters to add
     u8 monNum = 15;
@@ -1706,7 +1708,7 @@ void enterDungeon (void) {
 
     fprintf (stdout, "Done initializing game!\n");
 
-    // FIXME: add different texts here!!
+    // TODO: add different texts here!!
     logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
 
 }
@@ -1727,7 +1729,8 @@ void retry (void) {
 
     void resetScore (void);
     resetScore ();
-    resetPlayer (player);
+    resetPlayer (player);   // reset player data structs
+    initPlayer (player);    // reset player values
 
     currentLevel->levelNum = 0;
 
@@ -1756,9 +1759,6 @@ void showScore (void) {
 
     // delete death screen UI and image
     toggleDeathScreen ();
-
-    // FIXME:
-    // stop rendering the game UI
 
     // render score image with the current score struct
     toggleScoreScreen ();

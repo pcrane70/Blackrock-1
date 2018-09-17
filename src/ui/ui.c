@@ -16,12 +16,33 @@ char *tileset = "./resources/terminal-art.png";
 
 /*** SCENE MANAGER ***/
 
+void destroyUIScreen (UIScreen *screen) {
+
+    if (screen != NULL) {
+        if (screen->views != NULL) {
+            if (LIST_SIZE (screen->views) > 0) {
+                screen->activeView = NULL;
+
+                // destroy screen views
+                while (LIST_SIZE (screen->views) > 0) 
+                    destroyView ((UIView *) removeElement (screen->views, NULL));
+
+            }
+
+            destroyList (screen->views);
+        }
+
+        free (screen);
+    }
+
+}
+
 UIScreen *activeScene = NULL;
 
-void setActiveScene (UIScreen *screen) {
+void setActiveScene (UIScreen *newScreen) {
 
-    if (activeScene != NULL) free (activeScene);
-    activeScene = screen;
+    if (activeScene != NULL) destroyUIScreen (activeScene);
+    activeScene = newScreen;
 
 }
 

@@ -18,10 +18,23 @@ extern bool inGame;
 extern bool running;
 extern bool wasInGame;
 
+extern UIScreen *menuScreen;
+
 extern UIView *characterMenu;
 extern void toggleCharacterMenu (void);
 
 extern void cleanUpMenuScene (void);
+
+// TODO: do we want this here?
+void startGame (void) {
+
+    cleanUpMenuScene ();
+    initGame ();
+    setActiveScene (gameScene ());
+    inGame = true;
+    wasInGame = true;
+
+}
 
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
@@ -30,18 +43,8 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
         switch (key) {
             case SDLK_p: toggleCharacterMenu (); break; 
-            case SDLK_s: 
-                if (characterMenu != NULL) {
-                    cleanUpMenuScene ();
-                    initGame ();
-                    setActiveScene (gameScene ());
-                    inGame = true;
-                    wasInGame = true;
-                }
-                break;
-
-            // TODO: toggle credits window
-            case SDLK_c: break;
+            case SDLK_s: if (menuScreen->activeView == characterMenu) startGame (); break;
+            case SDLK_c: break;     // TODO: toggle credits window
             case SDLK_e: running = false; break;
             default: break;
         }
