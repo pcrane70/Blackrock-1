@@ -9,9 +9,12 @@
 
 #define NO_COLOR        0x00000000
 #define WHITE           0xFFFFFFFF
+
 #define FULL_GREEN      0x00FF00FF
-#define YELLOW          0xFF990099
 #define FULL_RED        0xFF0000FF
+
+#define YELLOW          0xFFD32AFF
+#define SAPPHIRE        0x1E3799FF
 
 /*** MAP ***/
 

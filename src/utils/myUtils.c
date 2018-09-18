@@ -42,7 +42,7 @@ int xtoi (char *hexString) {
 
 }
 
-char* itoa (int i, char b[]) {
+char *itoa (int i, char b[]) {
 
     char const digit[] = "0123456789";
     char *p = b;

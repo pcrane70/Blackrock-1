@@ -17,6 +17,8 @@
 #include "utils/list.h"       // for messages
 #include "objectPool.h"
 
+#include "utils/myUtils.h"
+
 extern UIView *activeView;
 
 /*** STATS ***/
@@ -555,9 +557,12 @@ typedef struct {
     char *eqDps;
     char *eqLifetime;
 
+    i8 diffDps;
+
 } CompareItems;
 
 CompareItems *comp = NULL;
+bool compWeapons;
 
 void destroyComp (void) {
 
@@ -590,7 +595,7 @@ void compareItems (CompareItems *comp) {
 
         // loot stats
         comp->lootDps = createString ("DPS: %i", lootWeapon->dps);
-        comp->lootLifetime = createString ("Lifetime: %i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
+        comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
 
         // equipped weapon
         g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
@@ -600,15 +605,17 @@ void compareItems (CompareItems *comp) {
 
         // equipped stats
         comp->eqDps = createString ("DPS: %i", equippedWeapon->dps);
-        comp->eqLifetime = createString ("Lifetime: %i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
+        comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
+
+        comp->diffDps = lootWeapon->dps - equippedWeapon->dps;
+
+        compWeapons = true;
     }
 
 }
 
 // TODO: add images
 // FIXME: add logic to handle armour
-// FIXME: add dynamic colors to the lifetimes
-// FIXME: add dynamic strings -- ability to have strings with different colors
 static void renderTooltip (Console *console) {
 
     UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
@@ -616,28 +623,37 @@ static void renderTooltip (Console *console) {
 
     // render the item comparison
     if (comp != NULL) {
-        // FIXME: center this text
         // TODO: change to color depending if we can equip it or not
         // put loot weapon info
         putStringAt (console, comp->lootName, 2, 2, getItemColor (lootItem->type), NO_COLOR);
         putStringAt (console, comp->lootType, 2, 4, TOOLTIP_TEXT, NO_COLOR);
 
         // loot stats
-        putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, comp->lootLifetime, 2, 8, getLifeTimeColor (lootItem), NO_COLOR);
+        if (compWeapons) putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, "Lifetime: ", 2, 8, WHITE, NO_COLOR);
+        putStringAt (console, comp->lootLifetime, 12, 8, getLifeTimeColor (lootItem), NO_COLOR);
 
         // put equipped weapon info
-        // FIXME: center and change color
-        putStringAt (console, "Equipped", 2, 12, TOOLTIP_TEXT, NO_COLOR);
+        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
         putStringAt (console, comp->eqName, 2, 14, getItemColor (equippedItem->type), NO_COLOR);
         putStringAt (console, comp->eqType, 2, 16, TOOLTIP_TEXT, NO_COLOR);
 
         // equipped stats
-        // FIXME: compare weapon stats and show them
+        // FIXME: better logic for comparing the stats
         // as of 18/09/2018 -- we only have dps and lifetime
-        putStringAt (console, comp->eqDps, 2, 18, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, "+1", 22, 18, FULL_GREEN, NO_COLOR);
-        putStringAt (console, comp->eqLifetime, 2, 20, getLifeTimeColor (equippedItem), NO_COLOR);
+        if (compWeapons) {
+            putStringAt (console, comp->eqDps, 2, 18, TOOLTIP_TEXT, NO_COLOR);
+            u32 dpsColor;
+            if (comp->diffDps < 0) dpsColor = FULL_RED;
+            else if (comp->diffDps == 0) dpsColor = YELLOW;
+            else dpsColor = FULL_GREEN;
+            char dpsText[5];
+            itoa (comp->diffDps, dpsText);
+            putStringAt (console, dpsText, 22, 18, dpsColor, NO_COLOR);
+        }
+        
+        putStringAt (console, "Lifetime: ", 2, 20, WHITE, NO_COLOR);
+        putStringAt (console, comp->eqLifetime, 12, 20, getLifeTimeColor (equippedItem), NO_COLOR);
     }
 
 }
@@ -654,7 +670,7 @@ void toggleTooltip (void) {
 
             // render the item stats
             UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
-            tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, 0x000000FF, true, renderTooltip);
+            tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
             insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
 
             if (lootView != NULL) updateLootPos (true);
