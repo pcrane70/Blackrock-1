@@ -68,6 +68,11 @@ extern void updateLootUI (u8 yIdx);
 extern List *activeLootRects;
 extern u8 lootYIdx;
 
+/*** TOOLTIP ***/
+
+extern UIView *tooltipView;
+extern void toggleTooltip (void);
+
 /*** INVENTORY ***/
 
 extern UIView *inventoryView;

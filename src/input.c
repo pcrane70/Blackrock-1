@@ -116,9 +116,11 @@ bool isInUI (void) {
 
 void closeUIMenu (void) {
 
-    if (inventoryView != NULL) toggleInventory ();
-
     if (lootView != NULL) toggleLootWindow ();
+
+    if (tooltipView != NULL) toggleTooltip ();
+
+    if (inventoryView != NULL) toggleInventory ();
 
     if (characterView != NULL) toggleCharacter ();
 
@@ -246,6 +248,9 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             // switch between the open windows
             case SDLK_TAB: swicthView (); break;
+
+            // toggle tooltip
+            case SDLK_LSHIFT: if (activeView == lootView) toggleTooltip (); break;
 
             case SDLK_ESCAPE: closeUIMenu (); break;
 

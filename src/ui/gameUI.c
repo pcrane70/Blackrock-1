@@ -251,7 +251,7 @@ char *createString (const char *stringWithFormat, ...) {
 
 /*** LOOT ***/
 
-#define LOOT_LEFT           24
+#define LOOT_LEFT           26
 #define LOOT_DUAL_LEFT      4
 #define LOOT_TOP            9
 #define LOOT_WIDTH          28
@@ -432,14 +432,14 @@ void showLoot (bool dual) {
     if (dual) {
         UIRect lootRect = { (16 * LOOT_DUAL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
         lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
     }
 
     else {
         UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
         lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
     }
+
+    insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
 
     lootYIdx = 0;
 
@@ -481,6 +481,107 @@ void toggleLootWindow (void) {
 
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
+
+}
+
+/*** TOOLTIP ***/
+
+#define TOOLTIP_LEFT           36
+#define TOOLTIP_DUAL_LEFT      4
+#define TOOLTIP_TOP            9
+#define TOOLTIP_WIDTH          28
+#define TOOLTIP_HEIGHT         24
+
+#define TOOLTIP_COLOR     0x69777DFF
+#define TOOLTIP_TEXT      0xEEEEEEFF
+
+// #define LOOT_RECT_WIDTH     26
+// #define LOOT_RECT_HEIGHT    4
+
+// #define LOOT_IMG_WIDTH    4
+// #define LOOT_IMG_HEIGHT   4
+
+UIView *tooltipView = NULL;
+
+// Tooltips items
+Item *lootItem = NULL;
+Item *equippedItem = NULL;
+
+// This is used to toggle the tooltip from the loot window
+bool itemsToCompare (void) {
+
+    bool found = false;
+
+    // get the current selectd item in the loot
+    u8 count = 0;
+    ListElement *e = LIST_START (activeLootRects);
+    while (e != NULL && !found) {
+        if (count == lootYIdx) {
+            LootRect *lr = (LootRect *) e->data;
+            if (lr->item != NULL) {
+                Weapon *w = (Weapon *) getItemComponent (lr->item, WEAPON);
+                if (w != NULL) {
+                    // we have a weapon, so compare it to the one we have equipped
+                    Item *equipped = player->weapons[w->slot];
+                    if (equipped != NULL) {
+                        lootItem = lr->item;
+                        equippedItem = equipped;
+                        found = true;
+                    }   
+                    
+                }
+            }
+        }
+
+        e = e->next;
+    }
+
+    return found;
+
+}
+
+static void renderTooltip (Console *console) {
+
+    UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
+    drawRect (console, &tooltipRect, TOOLTIP_COLOR, 0, 0xFF990099);
+
+    // FIXME: draw the compared items
+    if (lootItem != NULL && equippedItem != NULL) {
+
+    }
+
+}
+
+// TODO: do we need to change the active view to the tooltip view??
+void toggleTooltip (void) {
+
+    // show tooltip
+    if (tooltipView == NULL) {
+        // first check if we have items to compare
+        if (itemsToCompare ()) {
+            UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+            tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, 0x000000FF, true, renderTooltip);
+            insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+            if (lootView != NULL) updateLootPos (true);
+        }
+
+        // FIXME: else, give some feedback to the player
+        
+    }
+
+    else if (tooltipView != NULL) {
+        ListElement *e = getListElement (activeScene->views, tooltipView);
+        destroyView ((UIView *) removeElement (activeScene->views, e));
+        tooltipView = NULL;
+
+        lootItem = NULL;
+        equippedItem = NULL;
+
+        if (lootView != NULL) updateLootPos (false);
+
+        // activeView = (UIView *) (LIST_END (activeScene->views))->data;
+    }
 
 }
 
