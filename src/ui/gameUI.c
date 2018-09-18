@@ -543,8 +543,69 @@ bool itemsToCompare (void) {
 
 }
 
+typedef struct {
+
+    char *lootName;
+    char *lootType;
+    char *lootDps;
+    char *lootLifetime;
+
+    char *eqName;
+    char *eqType;
+    char *eqDps;
+    char *eqLifetime;
+
+} CompareItems;
+
+CompareItems *comp = NULL;
+
+void destroyComp (void) {
+
+    if (comp->lootName != NULL) free (comp->lootName);
+    if (comp->lootType != NULL) free (comp->lootType);
+    if (comp->lootDps != NULL) free (comp->lootDps);
+    if (comp->lootLifetime != NULL) free (comp->lootLifetime);
+    
+    if (comp->eqName != NULL) free (comp->eqName);
+    if (comp->eqType != NULL) free (comp->eqType);
+    if (comp->eqDps != NULL) free (comp->eqDps);
+    if (comp->eqLifetime != NULL) free (comp->eqLifetime);
+
+    free (comp);
+
+}
+    
+// 18/09/2018 -- 9:22 -- we are testing some efficiency with this
+void compareItems (CompareItems *comp) {
+
+    // first check if we are comparing weapons
+    Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
+    Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
+    if (lootWeapon != NULL && equippedWeapon != NULL) {
+        // loot weapon
+        Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
+        comp->lootName = (char *) calloc (strlen (g->name), sizeof (char));
+        strcpy (comp->lootName, g->name);
+        comp->lootType = getItemTypeName (lootItem);
+
+        // loot stats
+        comp->lootDps = createString ("DPS: %i", lootWeapon->dps);
+        comp->lootLifetime = createString ("Lifetime: %i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
+
+        // equipped weapon
+        g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
+        comp->eqName = (char *) calloc (strlen (g->name), sizeof (char));
+        strcpy (comp->eqName, g->name);
+        comp->eqType = getItemTypeName (equippedItem);
+
+        // equipped stats
+        comp->eqDps = createString ("DPS: %i", equippedWeapon->dps);
+        comp->eqLifetime = createString ("Lifetime: %i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
+    }
+
+}
+
 // TODO: add images
-// FIXME: we only have to get teh weapons stats once, then just render them
 // FIXME: add logic to handle armour
 // FIXME: add dynamic colors to the lifetimes
 static void renderTooltip (Console *console) {
@@ -552,43 +613,29 @@ static void renderTooltip (Console *console) {
     UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
     drawRect (console, &tooltipRect, TOOLTIP_COLOR, 0, 0xFF990099);
 
-    // FIXME: draw the compared items
-    if (lootItem != NULL && equippedItem != NULL) {
+    // render the item comparison
+    if (comp != NULL) {
         // FIXME: center this text
         // TODO: change to color depending if we can equip it or not
         // put loot weapon info
-        Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
-        putStringAt (console, g->name, 2, 2, TOOLTIP_TEXT, 0x00000000);
-        putStringAt (console, getItemTypeName (lootItem), 2, 4, TOOLTIP_TEXT, 0x00000000);
+        putStringAt (console, comp->lootName, 2, 2, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->lootType, 2, 4, TOOLTIP_TEXT, NO_COLOR);
 
-        // FIXME: stats here
-        Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
-        char *lootDps = createString ("DPS: %i", lootWeapon->dps);
-        putStringAt (console, lootDps, 2, 6, TOOLTIP_TEXT, 0x00000000);
-        char *lootLifetime = createString ("Lifetime: %i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
-        putStringAt (console, lootLifetime, 2, 8, TOOLTIP_TEXT, 0x00000000);
-
-        free (lootDps);
-        free (lootLifetime);
+        // loot stats
+        putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->lootLifetime, 2, 8, TOOLTIP_TEXT, NO_COLOR);
 
         // put equipped weapon info
         // FIXME: center and change color
-        putStringAt (console, "Equipped", 2, 12, TOOLTIP_TEXT, 0x00000000);
-        g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
-        putStringAt (console, g->name, 2, 14, TOOLTIP_TEXT, 0x00000000);
-        putStringAt (console, getItemTypeName (equippedItem), 2, 16, TOOLTIP_TEXT, 0x00000000);
+        putStringAt (console, "Equipped", 2, 12, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->eqName, 2, 14, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->eqType, 2, 16, TOOLTIP_TEXT, NO_COLOR);
 
+        // equipped stats
         // FIXME: compare weapon stats and show them
-        // put equipped weapon stats
         // as of 18/09/2018 -- we only have dps and lifetime
-        Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
-        char *equippedDps = createString ("DPS: %i", equippedWeapon->dps);
-        putStringAt (console, equippedDps, 2, 18, TOOLTIP_TEXT, 0x00000000);
-        char *equippedLifetime = createString ("Lifetime: %i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
-        putStringAt (console, equippedLifetime, 2, 20, TOOLTIP_TEXT, 0x00000000);
-
-        free (equippedDps);
-        free (equippedLifetime);
+        putStringAt (console, comp->eqDps, 2, 18, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->eqLifetime, 2, 20, TOOLTIP_TEXT, NO_COLOR);
     }
 
 }
@@ -599,6 +646,11 @@ void toggleTooltip (void) {
     if (tooltipView == NULL) {
         // first check if we have items to compare
         if (itemsToCompare ()) {
+            // compare the items stats
+            comp = (CompareItems *) malloc (sizeof (CompareItems));
+            compareItems (comp);
+
+            // render the item stats
             UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
             tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, 0x000000FF, true, renderTooltip);
             insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
@@ -611,6 +663,8 @@ void toggleTooltip (void) {
     }
 
     else if (tooltipView != NULL) {
+        destroyComp ();
+
         ListElement *e = getListElement (activeScene->views, tooltipView);
         destroyView ((UIView *) removeElement (activeScene->views, e));
         tooltipView = NULL;
@@ -747,30 +801,30 @@ void renderInventoryItems (Console *console) {
     
              // draw highlighted rect
             if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
-                drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, 0x000000FF);
+                drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
                 // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
                 if (invRect->item != NULL) {
                     // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
                     Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
                     if (g != NULL) 
-                        putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), 0x00000000);
+                        putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), NO_COLOR);
 
                     u8 quantity = ZERO_ITEMS + invRect->item->quantity;
                     // putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
-                    putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, 0xFFFFFFFF, 0x00000000);
+                    putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
                 }
             }
 
             // draw every other rect with an item on it
             else if (invRect->item != NULL) {
-                drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, 0x000000FF);
+                drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
                 u8 quantity = ZERO_ITEMS + invRect->item->quantity;
-                putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, 0xFFFFFFFF, 0x00000000);
+                putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
             }
 
             // draw the empty rects
-            else drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, 0x000000FF);
+            else drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
         }
     }
 
@@ -781,21 +835,21 @@ static void renderInventory (Console *console) {
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
     drawRect (console, &rect, INVENTORY_COLOR, 0, 0xFFFFFFFF);
 
-    putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, NO_COLOR);
 
     // draw item description rect
     UIRect descBox = { 3, 21, INV_DESC_BOX_WIDTH, INV_DESC_BOX_HEIGHT };
-    drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
+    drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
     // render items
     renderInventoryItems (console);
     
     // gold
     char *gold = createString ("%ig - %is - %ic", player->money[0], player->money[1], player->money[2]);
-    putStringAt (console, gold, 13, 25, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, gold, 13, 25, INVENTORY_TEXT, NO_COLOR);
 
-    putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, 0x00000000);
-    putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, NO_COLOR);
+    putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, NO_COLOR);
     free (gold);
 
 }
@@ -808,12 +862,12 @@ void showInventory (bool dual) {
 
     if (dual) {
         UIRect inv = { (16 * INVENTORY_DUAL_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
+        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
     }
 
     else {
         UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
+        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
     }
 
     insertAfter (activeScene->views, LIST_END (activeScene->views), inventoryView);

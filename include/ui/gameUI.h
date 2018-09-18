@@ -7,6 +7,9 @@
 
 #include "utils/list.h"
 
+#define NO_COLOR    0x00000000
+#define WHITE       0xFFFFFFFF
+
 /*** MAP ***/
 
 extern UIView *mapView;
