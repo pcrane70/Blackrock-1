@@ -99,6 +99,7 @@ extern void *getGameComponent (Item *, GameComponent);
 extern void *getItemComponent (Item *, ItemComponent);
 
 extern u32 getItemColor (u8 rarity);
+extern u32 getLifeTimeColor (Item *);
 extern char *getItemSlot (Item *);
 
 extern char *getItemTypeName (Item *);

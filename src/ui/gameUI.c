@@ -119,19 +119,19 @@ static void rednderStats (Console *console) {
     UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
     drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
 
-    putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, 0x00000000);
+    putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, NO_COLOR);
 
     int currHealth = player->combat->baseStats.health;
     int maxHealth = player->combat->baseStats.maxHealth;
     char *str = createString ("HP: %i/%i", currHealth, maxHealth);
 
     if (currHealth >= (maxHealth * 0.75)) 
-        putStringAt (console, str, 0, 1, SUCCESS_COLOR, 0x00000000);
+        putStringAt (console, str, 0, 1, SUCCESS_COLOR, NO_COLOR);
 
     else if ((currHealth < (maxHealth * 0.75)) && (currHealth >= (maxHealth * 0.25)))
-        putStringAt (console, str, 0, 1, 0xFF990099, 0x00000000);
+        putStringAt (console, str, 0, 1, 0xFF990099, NO_COLOR);
 
-    else putStringAt (console, str, 0, 1, WARNING_COLOR, 0x00000000);
+    else putStringAt (console, str, 0, 1, WARNING_COLOR, NO_COLOR);
 
     free (str);
 
@@ -351,13 +351,13 @@ void destroyLootRects (void) {
 
 void drawLootRect (Console *console, LootRect *rect, u32 bgColor) {
 
-    drawRect (console, rect->bgRect, bgColor, 0, 0x00000000);
-    drawRect (console, rect->imgRect, 0x000000FF, 0, 0x00000000);
+    drawRect (console, rect->bgRect, bgColor, 0, NO_COLOR);
+    drawRect (console, rect->imgRect, NO_COLOR, 0, NO_COLOR);
 
     Graphics *g = (Graphics *) getGameComponent (rect->item, GRAPHICS);
     if (g != NULL)        
         putStringAt (console, g->name, 7, (rect->bgRect->y) + 2,
-            getItemColor (rect->item->rarity), 0x00000000);
+            getItemColor (rect->item->rarity), NO_COLOR);
 
 }
 
@@ -608,6 +608,7 @@ void compareItems (CompareItems *comp) {
 // TODO: add images
 // FIXME: add logic to handle armour
 // FIXME: add dynamic colors to the lifetimes
+// FIXME: add dynamic strings -- ability to have strings with different colors
 static void renderTooltip (Console *console) {
 
     UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
@@ -618,24 +619,25 @@ static void renderTooltip (Console *console) {
         // FIXME: center this text
         // TODO: change to color depending if we can equip it or not
         // put loot weapon info
-        putStringAt (console, comp->lootName, 2, 2, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->lootName, 2, 2, getItemColor (lootItem->type), NO_COLOR);
         putStringAt (console, comp->lootType, 2, 4, TOOLTIP_TEXT, NO_COLOR);
 
         // loot stats
         putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, comp->lootLifetime, 2, 8, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->lootLifetime, 2, 8, getLifeTimeColor (lootItem), NO_COLOR);
 
         // put equipped weapon info
         // FIXME: center and change color
         putStringAt (console, "Equipped", 2, 12, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, comp->eqName, 2, 14, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, comp->eqName, 2, 14, getItemColor (equippedItem->type), NO_COLOR);
         putStringAt (console, comp->eqType, 2, 16, TOOLTIP_TEXT, NO_COLOR);
 
         // equipped stats
         // FIXME: compare weapon stats and show them
         // as of 18/09/2018 -- we only have dps and lifetime
         putStringAt (console, comp->eqDps, 2, 18, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, comp->eqLifetime, 2, 20, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, "+1", 22, 18, FULL_GREEN, NO_COLOR);
+        putStringAt (console, comp->eqLifetime, 2, 20, getLifeTimeColor (equippedItem), NO_COLOR);
     }
 
 }

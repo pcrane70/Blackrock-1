@@ -830,6 +830,33 @@ void repairItems (void) {
 
 }
 
+// 18/09/2018 -- i don't like this function
+u32 getLifeTimeColor (Item *item) {
+
+    u32 color = WHITE;
+
+    Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
+    if (weapon != NULL) {
+        if (weapon->lifetime >= (weapon->maxLifetime * 0.75)) color = FULL_GREEN;
+        else if ((weapon->lifetime < (weapon->maxLifetime * 0.75)) && (weapon->lifetime >= (weapon->maxLifetime * 0.25)))
+            color = YELLOW;
+        else color = FULL_RED;
+    }
+
+    else {
+        Armour *armour = (Armour *) getItemComponent (item, ARMOUR);
+        if (armour != NULL) {
+            if (armour->lifetime >= (armour->maxLifetime * 0.75)) color = FULL_GREEN;
+            else if ((armour->lifetime < (armour->maxLifetime * 0.75)) && (armour->lifetime >= (armour->maxLifetime * 0.25)))
+                color = YELLOW;
+            else color = FULL_RED;
+        }
+    }
+
+    return color;
+
+}
+
 // As of 30/08/2018 -- 11:10 -- if an item get to lifetime = 0, it will unequip and 
 // go to the inventory... if there is no space in the inventory, it will stay equipped
 // but it will loose all of its qualities
