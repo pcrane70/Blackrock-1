@@ -251,11 +251,12 @@ char *createString (const char *stringWithFormat, ...) {
 
 /*** LOOT ***/
 
-#define LOOT_LEFT           26
-#define LOOT_DUAL_LEFT      4
-#define LOOT_TOP            9
-#define LOOT_WIDTH          28
-#define LOOT_HEIGHT         24
+#define LOOT_LEFT               26
+#define LOOT_DUAL_INV_LEFT      4
+#define LOOT_DUAL_TOOL_LEFT     9
+#define LOOT_TOP                9
+#define LOOT_WIDTH              28
+#define LOOT_HEIGHT             24
 
 #define LOOT_COLOR     0x69777DFF
 #define LOOT_TEXT      0xEEEEEEFF
@@ -430,8 +431,17 @@ void hideLoot (void) {
 void showLoot (bool dual) {
 
     if (dual) {
-        UIRect lootRect = { (16 * LOOT_DUAL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-        lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        // tooltip
+        if (tooltipView != NULL) {
+            UIRect lootRect = { (16 * LOOT_DUAL_TOOL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+            lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        }
+
+        // with inventory
+        else {
+            UIRect lootRect = { (16 * LOOT_DUAL_INV_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+            lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        }
     }
 
     else {
@@ -486,20 +496,13 @@ void toggleLootWindow (void) {
 
 /*** TOOLTIP ***/
 
-#define TOOLTIP_LEFT           36
-#define TOOLTIP_DUAL_LEFT      4
+#define TOOLTIP_LEFT           43
 #define TOOLTIP_TOP            9
 #define TOOLTIP_WIDTH          28
 #define TOOLTIP_HEIGHT         24
 
 #define TOOLTIP_COLOR     0x69777DFF
 #define TOOLTIP_TEXT      0xEEEEEEFF
-
-// #define LOOT_RECT_WIDTH     26
-// #define LOOT_RECT_HEIGHT    4
-
-// #define LOOT_IMG_WIDTH    4
-// #define LOOT_IMG_HEIGHT   4
 
 UIView *tooltipView = NULL;
 
@@ -552,7 +555,6 @@ static void renderTooltip (Console *console) {
 
 }
 
-// TODO: do we need to change the active view to the tooltip view??
 void toggleTooltip (void) {
 
     // show tooltip
@@ -580,7 +582,7 @@ void toggleTooltip (void) {
 
         if (lootView != NULL) updateLootPos (false);
 
-        // activeView = (UIView *) (LIST_END (activeScene->views))->data;
+        activeView = (UIView *) (LIST_END (activeScene->views))->data;
     }
 
 }
@@ -809,6 +811,8 @@ void updateInventoryPos (bool dual) {
 void toggleInventory (void) {
 
     if (inventoryView == NULL) {
+        if (tooltipView != NULL) toggleTooltip ();
+
         if (lootView != NULL) {
             updateLootPos (true);
             showInventory (true);
