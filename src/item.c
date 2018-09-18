@@ -675,6 +675,28 @@ void dropItem (Item *item) {
 
 /*** WEAPONS -- ARMOUR ***/
 
+// FIXME: add more types
+char *getItemTypeName (Item *item) {
+
+    char typeName[15];
+
+    Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
+    if (weapon != NULL) {
+        switch (weapon->type) {
+            case 0: strcpy (typeName, "Sword"); break;
+            case 1: break;
+            case 2: break;
+            default: break;
+        }
+    }
+
+    char *retVal = (char *) calloc (strlen (typeName), sizeof (char));
+    strcpy (retVal, typeName);
+
+    return retVal;
+
+}
+
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
 void toggleEquipWeapon (void *i) {

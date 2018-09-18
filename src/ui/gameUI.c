@@ -543,6 +543,10 @@ bool itemsToCompare (void) {
 
 }
 
+// TODO: add images
+// FIXME: we only have to get teh weapons stats once, then just render them
+// FIXME: add logic to handle armour
+// FIXME: add dynamic colors to the lifetimes
 static void renderTooltip (Console *console) {
 
     UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
@@ -550,7 +554,41 @@ static void renderTooltip (Console *console) {
 
     // FIXME: draw the compared items
     if (lootItem != NULL && equippedItem != NULL) {
+        // FIXME: center this text
+        // TODO: change to color depending if we can equip it or not
+        // put loot weapon info
+        Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
+        putStringAt (console, g->name, 2, 2, TOOLTIP_TEXT, 0x00000000);
+        putStringAt (console, getItemTypeName (lootItem), 2, 4, TOOLTIP_TEXT, 0x00000000);
 
+        // FIXME: stats here
+        Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
+        char *lootDps = createString ("DPS: %i", lootWeapon->dps);
+        putStringAt (console, lootDps, 2, 6, TOOLTIP_TEXT, 0x00000000);
+        char *lootLifetime = createString ("Lifetime: %i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
+        putStringAt (console, lootLifetime, 2, 8, TOOLTIP_TEXT, 0x00000000);
+
+        free (lootDps);
+        free (lootLifetime);
+
+        // put equipped weapon info
+        // FIXME: center and change color
+        putStringAt (console, "Equipped", 2, 12, TOOLTIP_TEXT, 0x00000000);
+        g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
+        putStringAt (console, g->name, 2, 14, TOOLTIP_TEXT, 0x00000000);
+        putStringAt (console, getItemTypeName (equippedItem), 2, 16, TOOLTIP_TEXT, 0x00000000);
+
+        // FIXME: compare weapon stats and show them
+        // put equipped weapon stats
+        // as of 18/09/2018 -- we only have dps and lifetime
+        Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
+        char *equippedDps = createString ("DPS: %i", equippedWeapon->dps);
+        putStringAt (console, equippedDps, 2, 18, TOOLTIP_TEXT, 0x00000000);
+        char *equippedLifetime = createString ("Lifetime: %i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
+        putStringAt (console, equippedLifetime, 2, 20, TOOLTIP_TEXT, 0x00000000);
+
+        free (equippedDps);
+        free (equippedLifetime);
     }
 
 }
