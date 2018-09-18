@@ -535,6 +535,19 @@ bool itemsToCompare (void) {
                     }   
                     
                 }
+
+                else {
+                    Armour *a = (Armour *) getItemComponent (lr->item, ARMOUR);
+                    if (a != NULL) {
+                        // we have an armour, so compare it to the one we have equipped
+                        Item *equipped = player->equipment[a->slot];
+                        if (equipped != NULL) {
+                            lootItem = lr->item;
+                            equippedItem = equipped;
+                            found = true;
+                        }
+                    }
+                }
             }
         }
 
@@ -551,11 +564,13 @@ typedef struct {
     char *lootType;
     char *lootDps;
     char *lootLifetime;
+    bool lootTwoHanded;
 
     char *eqName;
     char *eqType;
     char *eqDps;
     char *eqLifetime;
+    bool eqTwoHanded;
 
     i8 diffDps;
 
@@ -583,27 +598,30 @@ void destroyComp (void) {
 // 18/09/2018 -- 9:22 -- we are testing some efficiency with this
 void compareItems (CompareItems *comp) {
 
+    // loot weapon
+    Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
+    comp->lootName = (char *) calloc (strlen (g->name), sizeof (char));
+    strcpy (comp->lootName, g->name);
+    comp->lootType = getItemTypeName (lootItem);
+
+    // equipped weapon
+    g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
+    comp->eqName = (char *) calloc (strlen (g->name), sizeof (char));
+    strcpy (comp->eqName, g->name);
+    comp->eqType = getItemTypeName (equippedItem);
+
     // first check if we are comparing weapons
     Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
     Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
-    if (lootWeapon != NULL && equippedWeapon != NULL) {
-        // loot weapon
-        Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
-        comp->lootName = (char *) calloc (strlen (g->name), sizeof (char));
-        strcpy (comp->lootName, g->name);
-        comp->lootType = getItemTypeName (lootItem);
 
+    if (lootWeapon != NULL && equippedWeapon != NULL) {
         // loot stats
+        if (lootWeapon->twoHanded) comp->lootTwoHanded = true;
         comp->lootDps = createString ("DPS: %i", lootWeapon->dps);
         comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
 
-        // equipped weapon
-        g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
-        comp->eqName = (char *) calloc (strlen (g->name), sizeof (char));
-        strcpy (comp->eqName, g->name);
-        comp->eqType = getItemTypeName (equippedItem);
-
         // equipped stats
+        if (equippedWeapon->twoHanded) comp->eqTwoHanded = true;
         comp->eqDps = createString ("DPS: %i", equippedWeapon->dps);
         comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
 
@@ -612,10 +630,26 @@ void compareItems (CompareItems *comp) {
         compWeapons = true;
     }
 
+    else {
+        Armour *lootArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
+        Armour *equippedArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
+
+        if (lootArmour != NULL && equippedArmour != NULL) {
+            // loot stats
+            comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
+
+            // equipped stats
+            comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
+        
+            compWeapons = false;
+        }
+    }
+
 }
 
 // TODO: add images
-// FIXME: add logic to handle armour
+// FIXME: what happens when we have 2 one handed weapons equipped
+// FIXME: add more stats to the items
 static void renderTooltip (Console *console) {
 
     UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
@@ -627,16 +661,26 @@ static void renderTooltip (Console *console) {
         // put loot weapon info
         putStringAt (console, comp->lootName, 2, 2, getItemColor (lootItem->type), NO_COLOR);
         putStringAt (console, comp->lootType, 2, 4, TOOLTIP_TEXT, NO_COLOR);
+        if (compWeapons) {
+            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
+        }
+        else putStringAt (console, getItemSlot (lootItem), 13, 4, WHITE, NO_COLOR);
 
         // loot stats
         if (compWeapons) putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, "Lifetime: ", 2, 8, WHITE, NO_COLOR);
-        putStringAt (console, comp->lootLifetime, 12, 8, getLifeTimeColor (lootItem), NO_COLOR);
+        putStringAt (console, "Durability: ", 2, 8, WHITE, NO_COLOR);
+        putStringAt (console, comp->lootLifetime, 14, 8, getLifeTimeColor (lootItem), NO_COLOR);
 
         // put equipped weapon info
         putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
         putStringAt (console, comp->eqName, 2, 14, getItemColor (equippedItem->type), NO_COLOR);
         putStringAt (console, comp->eqType, 2, 16, TOOLTIP_TEXT, NO_COLOR);
+        if (compWeapons) {
+            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
+        }
+        else putStringAt (console, getItemSlot (equippedItem), 13, 4, WHITE, NO_COLOR);
 
         // equipped stats
         // FIXME: better logic for comparing the stats
@@ -652,8 +696,8 @@ static void renderTooltip (Console *console) {
             putStringAt (console, dpsText, 22, 18, dpsColor, NO_COLOR);
         }
         
-        putStringAt (console, "Lifetime: ", 2, 20, WHITE, NO_COLOR);
-        putStringAt (console, comp->eqLifetime, 12, 20, getLifeTimeColor (equippedItem), NO_COLOR);
+        putStringAt (console, "Durability: ", 2, 20, WHITE, NO_COLOR);
+        putStringAt (console, comp->eqLifetime, 14, 20, getLifeTimeColor (equippedItem), NO_COLOR);
     }
 
 }
