@@ -114,11 +114,15 @@ bool isInUI (void) {
 
 }
 
+// FIXME: tooltip logic
 void closeUIMenu (void) {
 
-    if (lootView != NULL) toggleLootWindow ();
+    if (tooltipView != NULL) {
+        if (lootView != NULL) toggleTooltip (0);
+        else toggleTooltip (1);
+    } 
 
-    if (tooltipView != NULL) toggleTooltip ();
+    if (lootView != NULL) toggleLootWindow ();
 
     if (inventoryView != NULL) toggleInventory ();
 
@@ -250,7 +254,11 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_TAB: swicthView (); break;
 
             // toggle tooltip
-            case SDLK_LSHIFT: if (activeView == lootView) toggleTooltip (); break;
+            case SDLK_LSHIFT: 
+                if (activeView == lootView) toggleTooltip (0);
+                else if (activeView == inventoryView) toggleTooltip (1);
+                else if (activeView == characterView) toggleTooltip (2);
+                break;
 
             case SDLK_ESCAPE: closeUIMenu (); break;
 

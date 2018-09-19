@@ -80,7 +80,9 @@ extern u8 lootYIdx;
 /*** TOOLTIP ***/
 
 extern UIView *tooltipView;
-extern void toggleTooltip (void);
+extern void toggleTooltip (u8);
+
+extern Item *lootItem;
 
 /*** INVENTORY ***/
 

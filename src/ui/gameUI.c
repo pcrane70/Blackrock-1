@@ -702,30 +702,59 @@ static void renderTooltip (Console *console) {
 
 }
 
-void toggleTooltip (void) {
+void lootTooltip (void) {
 
-    // show tooltip
-    if (tooltipView == NULL) {
-        // first check if we have items to compare
-        if (itemsToCompare ()) {
-            // compare the items stats
-            comp = (CompareItems *) malloc (sizeof (CompareItems));
-            compareItems (comp);
+    // first check if we have items to compare
+    if (itemsToCompare ()) {
+        // compare the items stats
+        comp = (CompareItems *) malloc (sizeof (CompareItems));
+        compareItems (comp);
 
-            // render the item stats
-            UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
-            tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-            insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+        // render the item stats
+        UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+        tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
 
-            if (lootView != NULL) updateLootPos (true);
-        }
-
-        // FIXME: else, give some feedback to the player
-        
+        if (lootView != NULL) updateLootPos (true);
     }
 
+    // FIXME: else, give some feedback to the player
+
+}
+
+void invTooltip (void) {
+
+
+
+}
+
+void characterTooltip (void) {
+
+    UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+    tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+    insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+    if (comp != NULL) destroyComp ();
+
+    // FIXME: don't move the character view, just show the tooltip
+    if (characterView != NULL) updateCharacterPos (true);
+
+}
+
+void toggleTooltip (u8 view) {
+
+    if (tooltipView == NULL) {
+        switch (view) {
+            case 0: lootTooltip (); break;
+            case 1: invTooltip (); break;
+            case 2: characterTooltip (); break;
+            default: break;
+        }
+    }
+
+    // FIXME: handle character, inventory and tooltip at the same time
     else if (tooltipView != NULL) {
-        destroyComp ();
+        if (view == 0) destroyComp ();
 
         ListElement *e = getListElement (activeScene->views, tooltipView);
         destroyView ((UIView *) removeElement (activeScene->views, e));
@@ -735,6 +764,7 @@ void toggleTooltip (void) {
         equippedItem = NULL;
 
         if (lootView != NULL) updateLootPos (false);
+        if (characterView != NULL) updateCharacterPos (false);
 
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     }
@@ -965,7 +995,10 @@ void updateInventoryPos (bool dual) {
 void toggleInventory (void) {
 
     if (inventoryView == NULL) {
-        if (tooltipView != NULL) toggleTooltip ();
+        if (tooltipView != NULL) {
+            if (lootView != NULL) toggleTooltip (true);
+            else toggleTooltip (false);
+        } 
 
         if (lootView != NULL) {
             updateLootPos (true);

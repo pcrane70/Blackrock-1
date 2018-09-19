@@ -626,6 +626,10 @@ void getLootItem (u8 lootYIdx) {
 
             // update Loot UI
             updateLootUI (lootYIdx);
+
+            // update tooltip UI
+            if (tooltipView != NULL) if (lootItem == item) toggleTooltip (true);
+            
         }
 
         else logMessage ("There are no items to pick up!", WARNING_COLOR);
