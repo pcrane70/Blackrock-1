@@ -399,7 +399,7 @@ static void renderLoot (Console *console) {
 
     if (currentLoot != NULL) {
         UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
-        drawRect (console, &looRect, LOOT_COLOR, 0, 0xFF990099);
+        drawRect (console, &looRect, LOOT_COLOR, 1, 0xFF990099);
 
         putStringAt (console, "Loot", 12, 2, LOOT_TEXT, 0x00000000);
 
@@ -493,281 +493,6 @@ void toggleLootWindow (void) {
 
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
-
-}
-
-/*** TOOLTIP ***/
-
-#define TOOLTIP_LEFT           43
-#define TOOLTIP_TOP            9
-#define TOOLTIP_WIDTH          28
-#define TOOLTIP_HEIGHT         24
-
-#define TOOLTIP_COLOR     0x69777DFF
-#define TOOLTIP_TEXT      0xEEEEEEFF
-
-UIView *tooltipView = NULL;
-
-// Tooltips items
-Item *lootItem = NULL;
-Item *equippedItem = NULL;
-
-// This is used to toggle the tooltip from the loot window
-bool itemsToCompare (void) {
-
-    bool found = false;
-
-    // get the current selectd item in the loot
-    u8 count = 0;
-    ListElement *e = LIST_START (activeLootRects);
-    while (e != NULL && !found) {
-        if (count == lootYIdx) {
-            LootRect *lr = (LootRect *) e->data;
-            if (lr->item != NULL) {
-                Weapon *w = (Weapon *) getItemComponent (lr->item, WEAPON);
-                if (w != NULL) {
-                    // we have a weapon, so compare it to the one we have equipped
-                    Item *equipped = player->weapons[w->slot];
-                    if (equipped != NULL) {
-                        lootItem = lr->item;
-                        equippedItem = equipped;
-                        found = true;
-                    }   
-                    
-                }
-
-                else {
-                    Armour *a = (Armour *) getItemComponent (lr->item, ARMOUR);
-                    if (a != NULL) {
-                        // we have an armour, so compare it to the one we have equipped
-                        Item *equipped = player->equipment[a->slot];
-                        if (equipped != NULL) {
-                            lootItem = lr->item;
-                            equippedItem = equipped;
-                            found = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        e = e->next;
-    }
-
-    return found;
-
-}
-
-typedef struct {
-
-    char *lootName;
-    char *lootType;
-    char *lootDps;
-    char *lootLifetime;
-    bool lootTwoHanded;
-
-    char *eqName;
-    char *eqType;
-    char *eqDps;
-    char *eqLifetime;
-    bool eqTwoHanded;
-
-    i8 diffDps;
-
-} CompareItems;
-
-CompareItems *comp = NULL;
-bool compWeapons;
-
-void destroyComp (void) {
-
-    if (comp->lootName != NULL) free (comp->lootName);
-    if (comp->lootType != NULL) free (comp->lootType);
-    if (comp->lootDps != NULL) free (comp->lootDps);
-    if (comp->lootLifetime != NULL) free (comp->lootLifetime);
-    
-    if (comp->eqName != NULL) free (comp->eqName);
-    if (comp->eqType != NULL) free (comp->eqType);
-    if (comp->eqDps != NULL) free (comp->eqDps);
-    if (comp->eqLifetime != NULL) free (comp->eqLifetime);
-
-    free (comp);
-
-}
-    
-// 18/09/2018 -- 9:22 -- we are testing some efficiency with this
-void compareItems (CompareItems *comp) {
-
-    // loot weapon
-    Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
-    comp->lootName = (char *) calloc (strlen (g->name), sizeof (char));
-    strcpy (comp->lootName, g->name);
-    comp->lootType = getItemTypeName (lootItem);
-
-    // equipped weapon
-    g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
-    comp->eqName = (char *) calloc (strlen (g->name), sizeof (char));
-    strcpy (comp->eqName, g->name);
-    comp->eqType = getItemTypeName (equippedItem);
-
-    // first check if we are comparing weapons
-    Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
-    Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
-
-    if (lootWeapon != NULL && equippedWeapon != NULL) {
-        // loot stats
-        if (lootWeapon->twoHanded) comp->lootTwoHanded = true;
-        comp->lootDps = createString ("DPS: %i", lootWeapon->dps);
-        comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
-
-        // equipped stats
-        if (equippedWeapon->twoHanded) comp->eqTwoHanded = true;
-        comp->eqDps = createString ("DPS: %i", equippedWeapon->dps);
-        comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
-
-        comp->diffDps = lootWeapon->dps - equippedWeapon->dps;
-
-        compWeapons = true;
-    }
-
-    else {
-        Armour *lootArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
-        Armour *equippedArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
-
-        if (lootArmour != NULL && equippedArmour != NULL) {
-            // loot stats
-            comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
-
-            // equipped stats
-            comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
-        
-            compWeapons = false;
-        }
-    }
-
-}
-
-// TODO: add images
-// FIXME: what happens when we have 2 one handed weapons equipped
-// FIXME: add more stats to the items
-static void renderTooltip (Console *console) {
-
-    UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
-    drawRect (console, &tooltipRect, TOOLTIP_COLOR, 0, 0xFF990099);
-
-    // render the item comparison
-    if (comp != NULL) {
-        // TODO: change to color depending if we can equip it or not
-        // put loot weapon info
-        putStringAt (console, comp->lootName, 2, 2, getItemColor (lootItem->type), NO_COLOR);
-        putStringAt (console, comp->lootType, 2, 4, TOOLTIP_TEXT, NO_COLOR);
-        if (compWeapons) {
-            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
-            else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
-        }
-        else putStringAt (console, getItemSlot (lootItem), 13, 4, WHITE, NO_COLOR);
-
-        // loot stats
-        if (compWeapons) putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, "Durability: ", 2, 8, WHITE, NO_COLOR);
-        putStringAt (console, comp->lootLifetime, 14, 8, getLifeTimeColor (lootItem), NO_COLOR);
-
-        // put equipped weapon info
-        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
-        putStringAt (console, comp->eqName, 2, 14, getItemColor (equippedItem->type), NO_COLOR);
-        putStringAt (console, comp->eqType, 2, 16, TOOLTIP_TEXT, NO_COLOR);
-        if (compWeapons) {
-            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
-            else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
-        }
-        else putStringAt (console, getItemSlot (equippedItem), 13, 4, WHITE, NO_COLOR);
-
-        // equipped stats
-        // FIXME: better logic for comparing the stats
-        // as of 18/09/2018 -- we only have dps and lifetime
-        if (compWeapons) {
-            putStringAt (console, comp->eqDps, 2, 18, TOOLTIP_TEXT, NO_COLOR);
-            u32 dpsColor;
-            if (comp->diffDps < 0) dpsColor = FULL_RED;
-            else if (comp->diffDps == 0) dpsColor = YELLOW;
-            else dpsColor = FULL_GREEN;
-            char dpsText[5];
-            itoa (comp->diffDps, dpsText);
-            putStringAt (console, dpsText, 22, 18, dpsColor, NO_COLOR);
-        }
-        
-        putStringAt (console, "Durability: ", 2, 20, WHITE, NO_COLOR);
-        putStringAt (console, comp->eqLifetime, 14, 20, getLifeTimeColor (equippedItem), NO_COLOR);
-    }
-
-}
-
-void lootTooltip (void) {
-
-    // first check if we have items to compare
-    if (itemsToCompare ()) {
-        // compare the items stats
-        comp = (CompareItems *) malloc (sizeof (CompareItems));
-        compareItems (comp);
-
-        // render the item stats
-        UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
-        tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
-
-        if (lootView != NULL) updateLootPos (true);
-    }
-
-    // FIXME: else, give some feedback to the player
-
-}
-
-void invTooltip (void) {
-
-
-
-}
-
-void characterTooltip (void) {
-
-    UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
-    tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-    insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
-
-    if (comp != NULL) destroyComp ();
-
-    // FIXME: don't move the character view, just show the tooltip
-    if (characterView != NULL) updateCharacterPos (true);
-
-}
-
-void toggleTooltip (u8 view) {
-
-    if (tooltipView == NULL) {
-        switch (view) {
-            case 0: lootTooltip (); break;
-            case 1: invTooltip (); break;
-            case 2: characterTooltip (); break;
-            default: break;
-        }
-    }
-
-    // FIXME: handle character, inventory and tooltip at the same time
-    else if (tooltipView != NULL) {
-        if (view == 0) destroyComp ();
-
-        ListElement *e = getListElement (activeScene->views, tooltipView);
-        destroyView ((UIView *) removeElement (activeScene->views, e));
-        tooltipView = NULL;
-
-        lootItem = NULL;
-        equippedItem = NULL;
-
-        if (lootView != NULL) updateLootPos (false);
-        if (characterView != NULL) updateCharacterPos (false);
-
-        activeView = (UIView *) (LIST_END (activeScene->views))->data;
-    }
 
 }
 
@@ -1316,6 +1041,391 @@ void toggleCharacter (void) {
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
      
+}
+
+/*** TOOLTIP ***/
+
+#define TOOLTIP_LEFT           43
+#define TOOLTIP_TOP            9
+#define TOOLTIP_WIDTH          28
+#define TOOLTIP_HEIGHT         24
+
+#define TOOLTIP_COLOR     0x69777DFF
+#define TOOLTIP_TEXT      0xEEEEEEFF
+
+#define TTIP_CHAR_LEFT      3
+#define TTIP_CHAR_RIGHT     57
+#define TTIP_CHAR_WIDTH     20
+#define TTIP_CHAR_HEIGHT    18
+
+UIView *tooltipView = NULL;
+
+// Tooltips items
+Item *lootItem = NULL;
+Item *equippedItem = NULL;
+
+// This is used to toggle the tooltip from the loot window
+bool itemsToCompare (void) {
+
+    bool found = false;
+
+    // get the current selectd item in the loot
+    u8 count = 0;
+    ListElement *e = LIST_START (activeLootRects);
+    while (e != NULL && !found) {
+        if (count == lootYIdx) {
+            LootRect *lr = (LootRect *) e->data;
+            if (lr->item != NULL) {
+                Weapon *w = (Weapon *) getItemComponent (lr->item, WEAPON);
+                if (w != NULL) {
+                    // we have a weapon, so compare it to the one we have equipped
+                    Item *equipped = player->weapons[w->slot];
+                    if (equipped != NULL) {
+                        lootItem = lr->item;
+                        equippedItem = equipped;
+                        found = true;
+                    }   
+                    
+                }
+
+                else {
+                    Armour *a = (Armour *) getItemComponent (lr->item, ARMOUR);
+                    if (a != NULL) {
+                        // we have an armour, so compare it to the one we have equipped
+                        Item *equipped = player->equipment[a->slot];
+                        if (equipped != NULL) {
+                            lootItem = lr->item;
+                            equippedItem = equipped;
+                            found = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        e = e->next;
+    }
+
+    return found;
+
+}
+
+typedef struct {
+
+    char *lootName;
+    char *lootType;
+    char *lootDps;
+    char *lootLifetime;
+    bool lootTwoHanded;
+
+    char *eqName;
+    char *eqType;
+    char *eqDps;
+    char *eqLifetime;
+    bool eqTwoHanded;
+
+    i8 diffDps;
+
+} CompareItems;
+
+CompareItems *comp = NULL;
+bool compWeapons;
+
+void destroyComp (void) {
+
+    if (comp->lootName != NULL) free (comp->lootName);
+    if (comp->lootType != NULL) free (comp->lootType);
+    if (comp->lootDps != NULL) free (comp->lootDps);
+    if (comp->lootLifetime != NULL) free (comp->lootLifetime);
+    
+    if (comp->eqName != NULL) free (comp->eqName);
+    if (comp->eqType != NULL) free (comp->eqType);
+    if (comp->eqDps != NULL) free (comp->eqDps);
+    if (comp->eqLifetime != NULL) free (comp->eqLifetime);
+
+    free (comp);
+
+}
+    
+// 18/09/2018 -- 9:22 -- we are testing some efficiency with this
+void compareItems (CompareItems *comp) {
+
+    // loot weapon
+    Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
+    comp->lootName = (char *) calloc (strlen (g->name), sizeof (char));
+    strcpy (comp->lootName, g->name);
+    comp->lootType = getItemTypeName (lootItem);
+
+    // equipped weapon
+    g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
+    comp->eqName = (char *) calloc (strlen (g->name), sizeof (char));
+    strcpy (comp->eqName, g->name);
+    comp->eqType = getItemTypeName (equippedItem);
+
+    // first check if we are comparing weapons
+    Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
+    Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
+
+    if (lootWeapon != NULL && equippedWeapon != NULL) {
+        // loot stats
+        if (lootWeapon->twoHanded) comp->lootTwoHanded = true;
+        comp->lootDps = createString ("DPS: %i", lootWeapon->dps);
+        comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
+
+        // equipped stats
+        if (equippedWeapon->twoHanded) comp->eqTwoHanded = true;
+        comp->eqDps = createString ("DPS: %i", equippedWeapon->dps);
+        comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
+
+        comp->diffDps = lootWeapon->dps - equippedWeapon->dps;
+
+        compWeapons = true;
+    }
+
+    else {
+        Armour *lootArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
+        Armour *equippedArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
+
+        if (lootArmour != NULL && equippedArmour != NULL) {
+            // loot stats
+            comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
+
+            // equipped stats
+            comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
+        
+            compWeapons = false;
+        }
+    }
+
+}
+
+u8 tooltip;
+
+// FIXME: what happens when we have 2 one handed weapons equipped
+void renderLootTooltip (Console *console) {
+
+    // render the item comparison
+    if (comp != NULL) {
+        // TODO: change to color depending if we can equip it or not
+        // put loot weapon info
+        putStringAt (console, comp->lootName, 2, 2, getItemColor (lootItem->type), NO_COLOR);
+        putStringAt (console, comp->lootType, 2, 4, TOOLTIP_TEXT, NO_COLOR);
+        if (compWeapons) {
+            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
+        }
+        else putStringAt (console, getItemSlot (lootItem), 13, 4, WHITE, NO_COLOR);
+
+        // loot stats
+        if (compWeapons) putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, "Durability: ", 2, 8, WHITE, NO_COLOR);
+        putStringAt (console, comp->lootLifetime, 14, 8, getLifeTimeColor (lootItem), NO_COLOR);
+
+        // put equipped weapon info
+        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
+        putStringAt (console, comp->eqName, 2, 14, getItemColor (equippedItem->type), NO_COLOR);
+        putStringAt (console, comp->eqType, 2, 16, TOOLTIP_TEXT, NO_COLOR);
+        if (compWeapons) {
+            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
+        }
+        else putStringAt (console, getItemSlot (equippedItem), 13, 4, WHITE, NO_COLOR);
+
+        // equipped stats
+        // FIXME: better logic for comparing the stats
+        // as of 18/09/2018 -- we only have dps and lifetime
+        if (compWeapons) {
+            putStringAt (console, comp->eqDps, 2, 18, TOOLTIP_TEXT, NO_COLOR);
+            u32 dpsColor;
+            if (comp->diffDps < 0) dpsColor = FULL_RED;
+            else if (comp->diffDps == 0) dpsColor = YELLOW;
+            else dpsColor = FULL_GREEN;
+            char dpsText[5];
+            itoa (comp->diffDps, dpsText);
+            putStringAt (console, dpsText, 22, 18, dpsColor, NO_COLOR);
+        }
+        
+        putStringAt (console, "Durability: ", 2, 20, WHITE, NO_COLOR);
+        putStringAt (console, comp->eqLifetime, 14, 20, getLifeTimeColor (equippedItem), NO_COLOR);
+    }
+
+}
+
+// FIXME:
+void renderInventoryTooltip (Console *console) {
+
+
+}
+
+// FIXME: what if the name doesn't fit in the tooltip?
+void renderCharacterTooltip (Console *console) {
+
+    if (equippedItem != NULL) {
+        Graphics *g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
+        bool weapon;
+        Weapon *w = (Weapon *) getItemComponent (equippedItem, WEAPON);
+        Armour *a = (Armour *) getItemComponent (equippedItem, ARMOUR);
+        if (w != NULL) weapon = true;
+        else if (a != NULL) weapon = false;
+
+        putStringAt (console, g->name, 1, 2, getItemColor (equippedItem->type), NO_COLOR);
+        putStringAt (console, getItemTypeName (equippedItem), 1, 4, TOOLTIP_TEXT, NO_COLOR);
+
+        if (weapon) {
+            if (w->twoHanded) putStringAt (console, "Two-Handed", 1, 4, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 8, 4, WHITE, NO_COLOR);
+        }
+
+        // stats
+        if (weapon) {
+            char *dps = createString ("Dps: %i", w->dps);
+            putStringAt (console, dps, 1, 6, WHITE, NO_COLOR);
+            free (dps);
+        }
+        
+        char *durability = NULL;
+        putStringAt (console, "Lifetime: ", 1, 15, WHITE, NO_COLOR);
+        if (weapon) {
+            durability = createString ("%i / %i", w->lifetime, w->maxLifetime);
+            putStringAt (console, durability, 12, 15, getLifeTimeColor (equippedItem), NO_COLOR);
+        } 
+
+        else {
+            durability = createString ("%i / %i", a->lifetime, a->maxLifetime);
+            putStringAt (console, durability, 11, 15, getLifeTimeColor (equippedItem), NO_COLOR);
+        } 
+
+        if (durability != NULL) free (durability);
+    }
+
+}
+
+static void renderTooltip (Console *console) {
+
+    switch (tooltip) {
+        // loot tooltip
+        case 0: {
+            UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
+            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+
+            renderLootTooltip (console);
+        } break;
+
+        // inventory tooltip
+        case 1: {
+            UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
+            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+
+            renderInventoryTooltip (console);
+        } break;
+
+        // character tooltip
+        case 2: {
+            UIRect tooltipRect = { 0, 0, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT };
+            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+
+            renderCharacterTooltip (console);
+            } break;
+        default: break;
+    }
+
+}
+
+void lootTooltip (void) {
+
+    // first check if we have items to compare
+    if (itemsToCompare ()) {
+        // compare the items stats
+        comp = (CompareItems *) malloc (sizeof (CompareItems));
+        compareItems (comp);
+
+        // render the item stats
+        UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+        tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+        if (lootView != NULL) updateLootPos (true);
+    }
+
+    // FIXME: else, give some feedback to the player
+
+}
+
+void invTooltip (void) {
+
+    // check if we have a selecte item
+    equippedItem = getInvSelectedItem ();
+    if (equippedItem != NULL) {
+        UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+        tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+        if (comp != NULL) destroyComp ();
+
+        // FIXME: where do we want to render the tooltip???
+    }
+
+    // FIXME: give some feedback to the player
+    // else   
+
+}
+
+void characterTooltip (void) {
+
+    // first check if we have an item selected
+    equippedItem = getCharSelectedItem ();
+    if (equippedItem != NULL) {
+        if (characterXIdx == 0) {
+            UIRect lootRect = { (16 * TTIP_CHAR_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
+            tooltipView = newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        }
+
+        else {
+            UIRect lootRect = { (16 * TTIP_CHAR_RIGHT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
+            tooltipView = newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        }
+        
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+        if (comp != NULL) destroyComp ();
+    }
+
+    // FIXME: give some feedback to the player
+    // else     
+
+}
+
+void toggleTooltip (u8 view) {
+
+    if (tooltipView == NULL) {
+        switch (view) {
+            case 0: lootTooltip (); tooltip = 0; break;
+            case 1: invTooltip (); tooltip = 1; break;
+            case 2: characterTooltip (); tooltip = 2; break;
+            default: break;
+        }
+    }
+
+    // FIXME: handle character, inventory and tooltip at the same time
+    else if (tooltipView != NULL) {
+        if (comp != NULL) {
+            destroyComp ();
+            comp = NULL;
+        } 
+
+        ListElement *e = getListElement (activeScene->views, tooltipView);
+        destroyView ((UIView *) removeElement (activeScene->views, e));
+        tooltipView = NULL;
+
+        lootItem = NULL;
+        equippedItem = NULL;
+
+        if (lootView != NULL) updateLootPos (false);
+        if (characterView != NULL) updateCharacterPos (false);
+
+        activeView = (UIView *) (LIST_END (activeScene->views))->data;
+    }
+
 }
 
 /*** PAUSE MENU ***/
