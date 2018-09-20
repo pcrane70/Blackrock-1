@@ -75,8 +75,15 @@ void initGame (void) {
 
     pthread_t dataThread;
 
-    if (pthread_create (&dataThread, NULL, getGameData, NULL) != THREAD_OK) 
-        die ("Error creating data thread!\n");
+    // if (pthread_create (&dataThread, NULL, getGameData, NULL) != THREAD_OK) 
+    //     die ("Error creating data thread!\n");
+
+    // retrieves the data from the items db
+    initItems ();
+
+    // connect to enemies db
+    void connectEnemiesDb (void);
+    connectEnemiesDb ();
 
     gameObjects = initList (free);
     positions = initList (free);
@@ -98,7 +105,7 @@ void initGame (void) {
     // init the message log
     messageLog = initList (free);
 
-    if (pthread_join (dataThread, NULL) != THREAD_OK) die ("Error joinning data thread!\n");
+    // if (pthread_join (dataThread, NULL) != THREAD_OK) die ("Error joinning data thread!\n");
 
     fprintf (stdout, "Creating world...\n");
 

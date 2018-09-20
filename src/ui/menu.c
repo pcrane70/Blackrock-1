@@ -29,6 +29,8 @@ BitmapImage *bgImage = NULL;
 
 static void renderLaunch (Console *console) {
 
+    if (bgImage == NULL) bgImage = loadImageFromFile (launchImg);
+
     drawImageAt (console, bgImage, 0, 0);
 
 }
@@ -40,14 +42,12 @@ void toggleLaunch (void) {
         launchView = newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, 0x000000FF, true, renderLaunch);
         insertAfter (menuScreen->views, NULL, launchView);
 
-        if (bgImage == NULL) bgImage = loadImageFromFile (launchImg);
-
-        menuScreen->activeView = launchView;
+        // menuScreen->activeView = launchView;
     }
 
     else {
         if (launchView != NULL) {
-            if (bgImage != NULL) destroyImage (bgImage);
+            // if (bgImage != NULL) destroyImage (bgImage);
 
             ListElement *launch = getListElement (activeScene->views, launchView);
             destroyView ((UIView *) removeElement (activeScene->views, launch));
@@ -113,7 +113,7 @@ void toggleCharacterMenu (void) {
 UIScreen *menuScene (void) {
 
     menuScreen = (UIScreen *) malloc (sizeof (UIScreen));
-    menuScreen->views = initList (free);
+    menuScreen->views = initList (NULL);
     menuScreen->handleEvent = hanldeMenuEvent;
 
     toggleLaunch ();
@@ -122,7 +122,7 @@ UIScreen *menuScene (void) {
 
 }
 
-void cleanUpMenuScene (void) {
+/* void cleanUpMenuScene (void) {
 
     // clean up all the images used in the menu
     if (bgImage != NULL) {
@@ -133,5 +133,25 @@ void cleanUpMenuScene (void) {
     destroyUIScreen (menuScreen);
 
     fprintf (stdout, "Done cleaning up menu.\n");
+
+} */
+
+void cleanUpMenuScene (void) {
+
+    if (menuScreen != NULL) {
+        if (bgImage != NULL) {
+            free (bgImage->pixels);
+            free (bgImage);
+        }
+
+        for (ListElement *e = LIST_START (menuScreen->views); e != NULL; e = e->next) 
+            destroyView ((UIView *) e->data);
+
+        destroyList (menuScreen->views);
+
+        free (menuScreen);
+
+        fprintf (stdout, "Done cleaning up menu.\n");
+    }
 
 }

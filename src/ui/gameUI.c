@@ -1153,7 +1153,7 @@ UIScreen *inGameScreen = NULL;
 
 UIView *mapView = NULL;
 
-List *initGameViews (void) {
+/* List *initGameViews (void) {
 
     List *views = initList (free);
 
@@ -1201,7 +1201,53 @@ UIScreen *gameScene (void) {
 
     return inGameScreen;
 
+} */
+
+UIScreen *gameScene (void) {
+
+    List *igViews = initList (NULL);
+
+    UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
+    bool colorize = true;
+    u32 bgColor;
+
+    colorize = true;
+    bgColor = 0x000000FF;
+
+    mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
+    insertAfter (igViews, NULL, mapView);
+
+    UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
+    UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
+    insertAfter (igViews, NULL, statsView);
+
+    UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
+    UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
+    insertAfter (igViews, NULL, logView);
+
+    if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    
+    inGameScreen->views = igViews;
+    // FIXME: do we need this?
+    inGameScreen->activeView = mapView;
+    inGameScreen->handleEvent = hanldeGameEvent;
+
+    statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName ());
+
+    wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
+
+    inventoryRects = initInventoryRects ();
+    characterRects = initCharacterRects ();
+
+    activeLootRects = initList (free);
+    lootRectsPool = initPool ();
+
+    activeView = mapView;
+
+    return inGameScreen;
+
 }
+
 
 /*** CLEAN UP ***/
 

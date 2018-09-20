@@ -42,6 +42,7 @@ UIScreen *activeScene = NULL;
 void setActiveScene (UIScreen *newScreen) {
 
     // if (activeScene != NULL) destroyUIScreen (activeScene);
+    if (activeScene != NULL) free (activeScene);
     activeScene = newScreen;
 
 }

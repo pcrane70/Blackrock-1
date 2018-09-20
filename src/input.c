@@ -47,7 +47,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
         switch (key) {
             case SDLK_p: toggleCharacterMenu (); break; 
-            case SDLK_s: if (menuScreen->activeView == characterMenu) startGame (); break;
+            case SDLK_s: if (characterMenu != NULL) startGame (); break;
             case SDLK_c: break;     // TODO: toggle credits window
             case SDLK_e: running = false; break;
             default: break;
