@@ -1063,6 +1063,7 @@ UIView *tooltipView = NULL;
 // Tooltips items
 Item *lootItem = NULL;
 Item *equippedItem = NULL;
+Item *selectedItem = NULL;
 
 // This is used to toggle the tooltip from the loot window
 bool itemsToCompare (void) {
@@ -1202,6 +1203,7 @@ void compareItems (CompareItems *comp) {
 u8 tooltip;
 
 // FIXME: what happens when we have 2 one handed weapons equipped
+// FIXME: add value?
 void renderLootTooltip (Console *console) {
 
     // render the item comparison
@@ -1251,13 +1253,87 @@ void renderLootTooltip (Console *console) {
 
 }
 
+typedef struct {
+
+    char *name;
+    u32 rarityColor;
+    u16 value[3];
+    bool isEquipment;
+    bool isWeapon;
+    char *slotName;
+    Weapon *w;
+    u8 dps;
+    Armour *a;
+    char *lifeTxt;
+
+} uiItemData;
+
+uiItemData *iData = NULL;
+
+void cleanItemData (uiItemData *data) {
+
+    if (data != NULL) {
+        if (data->name != NULL) free (data->name);
+        if (data->slotName != NULL) free (data->slotName);
+
+        data->w = NULL;
+        data->a = NULL;
+
+        if (data->lifeTxt != NULL) free (data->lifeTxt);
+
+        free (data);
+    }
+
+}
+
+// FIXME: add more stats
+// FIXME: how to handle item stats??
+uiItemData *getItemData (Item *item) {
+
+    uiItemData *data = (uiItemData *) malloc (sizeof (uiItemData));
+
+    Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
+    data->w = (Weapon *) getItemComponent (item, WEAPON);
+    data->a = (Armour *) getItemComponent (item, ARMOUR);
+
+    if (data->w != NULL) data->isWeapon = true;
+    else if (data->a != NULL) data->isWeapon = false;
+
+    if (data->isWeapon) data->isEquipment = true;
+    else data->isEquipment = false;
+
+    data->name = (char *) calloc (strlen (g->name), sizeof (char));
+    strcpy (data->name, g->name);
+
+    data->slotName = getItemSlot (item);
+
+    data->rarityColor = getItemColor (item->rarity);
+
+    data->value[0] = item->value[0];
+    data->value[1] = item->value[1];
+    data->value[2] = item->value[2];
+
+    if (data->isEquipment) {
+        if (data->isWeapon) data->dps = data->w->dps;
+
+        if (data->isWeapon) data->lifeTxt = createString ("%i / %i", data->w->lifetime, data->w->maxLifetime);
+        else data->lifeTxt = createString ("%i / %i", data->a->lifetime, data->a->maxLifetime);
+    }
+
+    return data;
+
+}
+
 // FIXME:
 void renderInventoryTooltip (Console *console) {
+
+
 
 
 }
 
 // FIXME: what if the name doesn't fit in the tooltip?
+// FIXME: add value?
 void renderCharacterTooltip (Console *console) {
 
     if (equippedItem != NULL) {
@@ -1354,8 +1430,9 @@ void lootTooltip (void) {
 void invTooltip (void) {
 
     // check if we have a selecte item
-    equippedItem = getInvSelectedItem ();
-    if (equippedItem != NULL) {
+    selectedItem = getInvSelectedItem ();
+    if (selectedItem != NULL) {
+        iData = getItemData (selectedItem);
         UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
         tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
         insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
@@ -1408,6 +1485,8 @@ void toggleTooltip (u8 view) {
 
     // FIXME: handle character, inventory and tooltip at the same time
     else if (tooltipView != NULL) {
+        if (iData != NULL) cleanItemData (iData);
+
         if (comp != NULL) {
             destroyComp ();
             comp = NULL;
@@ -1603,6 +1682,8 @@ void cleanGameUI (void) {
     if (inGameScreen != NULL) {
         // message log
         cleanMessageLog ();
+
+        if (iData != NULL) cleanItemData (iData);
 
         if (inventoryRects != NULL) destroyInvRects ();
         if (characterRects != NULL) destroyCharRects ();
