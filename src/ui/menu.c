@@ -122,20 +122,6 @@ UIScreen *menuScene (void) {
 
 }
 
-/* void cleanUpMenuScene (void) {
-
-    // clean up all the images used in the menu
-    if (bgImage != NULL) {
-        free (bgImage->pixels);
-        free (bgImage);
-    }
-
-    destroyUIScreen (menuScreen);
-
-    fprintf (stdout, "Done cleaning up menu.\n");
-
-} */
-
 void cleanUpMenuScene (void) {
 
     if (menuScreen != NULL) {

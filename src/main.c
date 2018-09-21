@@ -31,8 +31,9 @@ void die (char *error) {
 void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
 
     // render the views from back to front for the current screen
+    UIView *v = NULL;
     for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
-        UIView *v = (UIView *) LIST_DATA (e);
+        v = (UIView *) LIST_DATA (e);
         clearConsole (v->console);
         v->render (v->console);
         SDL_UpdateTexture (screen, v->pixelRect, v->console->pixels, v->pixelRect->w * sizeof (u32));

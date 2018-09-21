@@ -76,7 +76,7 @@ UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount,
 void destroyView (UIView *view) {
 
     if (view != NULL) {
-        free (view->pixelRect);
+        if (view->pixelRect) free (view->pixelRect);
         destroyConsole (view->console);
         free (view);
     }

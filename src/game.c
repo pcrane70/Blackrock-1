@@ -1539,6 +1539,7 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
 }
 
+// FIXME:
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
 void fight (Combat *att, Combat *def, bool isPlayer) {
 
@@ -1606,25 +1607,25 @@ void clearOldLevel (void) {
 
     }
 
-    // FIXME: what happens with items like the player weapon or inventory???
-    // if (items != NULL) {
-    //     if (LIST_SIZE (items) > 0) {
-    //         // send the items to their pool
-    //         for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
-    //             data = removeElement (items, e);
-    //             if (data != NULL) destroyItem ((Item *) data);
-    //         }
-    //     }
-    // }
+    if (items != NULL) {
+        if (LIST_SIZE (items) > 0) {
+            // send the items to their pool
+            for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+                // data = removeElement (items, e);
+                // if (data != NULL) destroyItem ((Item *) data);
+                destroyItem ((Item *) e->data);
+            }
+        }
+    }
 
 }
 
 // game over logic
 void gameOver (void) {
 
-    cleanGameUI ();
-    
     toggleDeathScreen ();
+
+    cleanGameUI ();
 
 }
 
@@ -1682,23 +1683,17 @@ void placeStairs (Point spawn) {
 // FIXME: 
 void generateLevel () {
 
-    fprintf (stdout, "Generate level!\n");
-
     // make sure we have cleaned the previous level data
     clearOldLevel ();
 
     // this is used to render the walls to the screen... but maybe it is not a perfect system
     initMap (currentLevel->mapCells);
 
-    fprintf (stdout, "Map done!\n");
-
     // TODO: create other map elements such as stairs
     // As of 20/08/2018 -- 23:18 -- we can only move through the dungeon using the stair cases
     // but we can only move forward, we can not return to the previous level
     // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
     placeStairs (getFreeSpot (currentLevel->mapCells));
-
-    fprintf (stdout, "Generating monsters...\n");
 
     // FIXME: how do we handle how many monsters to add
     u8 monNum = 15;
@@ -1742,10 +1737,10 @@ void enterDungeon (void) {
     // after we have allocated the new level structure, we can start generating the first level
     generateLevel ();
 
-    fprintf (stdout, "Done initializing game!\n");
-
     // TODO: add different texts here!!
     logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
+
+    fprintf (stdout, "Done initializing game!\n");
 
 }
 
@@ -1793,10 +1788,10 @@ void showScore (void) {
     // clean up the level 
     clearOldLevel ();
 
-    // delete death screen UI and image
-    toggleDeathScreen ();
-
     // render score image with the current score struct
     toggleScoreScreen ();
+
+    // delete death screen UI and image
+    toggleDeathScreen ();
 
 }
