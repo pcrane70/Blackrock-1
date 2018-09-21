@@ -231,12 +231,9 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
                 if (activeView == lootView) getLootItem (lootYIdx);
                 else if (activeView == mapView) getItem (); 
                 break;
-
-
             case SDLK_c: 
                 if (activeView == lootView) collectGold (); 
-                else if (activeView == deathScreen) showScore ();
-                else if (activeView != deathScreen) toggleCharacter ();
+                else toggleCharacter ();
                 break;
 
             // drop item
@@ -256,9 +253,6 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
             case SDLK_ESCAPE: closeUIMenu (); break;
 
-            // retry
-            case SDLK_r: if (activeView == scoreScreen) retry (); break;
-
             // FIXME:
             // quit to main menu
             // case SDLK_q: if (activeView == scoreScreen) returnToMainMenu (); break;
@@ -269,5 +263,20 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
             default: break;
         }
     }
+
+}
+
+/*** POST GAME ***/
+
+// retry
+// case SDLK_r: if (activeView == scoreScreen) retry (); break;
+
+// FIXME:
+// quit to main menu
+// case SDLK_q: if (activeView == scoreScreen) returnToMainMenu (); break;
+
+void handlePostGameEvent (UIScreen *activeScreen, SDL_Event event) {
+
+
 
 }

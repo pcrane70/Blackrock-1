@@ -110,18 +110,6 @@ void toggleCharacterMenu (void) {
 
 /*** MENU SCENE ***/
 
-UIScreen *menuScene (void) {
-
-    menuScreen = (UIScreen *) malloc (sizeof (UIScreen));
-    menuScreen->views = initList (NULL);
-    menuScreen->handleEvent = hanldeMenuEvent;
-
-    toggleLaunch ();
-
-    return menuScreen;
-
-}
-
 void cleanUpMenuScene (void) {
 
     if (menuScreen != NULL) {
@@ -139,5 +127,19 @@ void cleanUpMenuScene (void) {
 
         fprintf (stdout, "Done cleaning up menu.\n");
     }
+
+}
+
+UIScreen *menuScene (void) {
+
+    menuScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    menuScreen->views = initList (NULL);
+    menuScreen->handleEvent = hanldeMenuEvent;
+
+    toggleLaunch ();
+
+    destroyCurrentScreen = cleanUpMenuScene;
+
+    return menuScreen;
 
 }

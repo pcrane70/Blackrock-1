@@ -1068,6 +1068,96 @@ void togglePauseMenu (void) {
 
 }
 
+/*** INIT GAME SCREEN ***/
+
+UIScreen *inGameScreen = NULL;
+
+UIView *mapView = NULL;
+
+List *initGameViews (void) {
+
+    List *views = initList (free);
+
+    UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
+    bool colorize = true;
+    u32 bgColor = 0x000000FF;
+
+    mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
+    insertAfter (views, NULL, mapView);
+
+    UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
+    UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
+    insertAfter (views, NULL, statsView);
+
+    UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
+    UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
+    insertAfter (views, NULL, logView);
+
+    return views;
+
+}
+
+void destroyGameUI (void);
+
+UIScreen *gameScene (void) {
+
+    List *igViews = initGameViews ();
+
+    if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    
+    inGameScreen->views = igViews;
+    inGameScreen->activeView = mapView;
+    inGameScreen->handleEvent = hanldeGameEvent;
+
+    statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName ());
+
+    wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
+
+    inventoryRects = initInventoryRects ();
+    characterRects = initCharacterRects ();
+
+    activeLootRects = initList (free);
+    lootRectsPool = initPool ();
+
+    activeView = mapView;
+
+    destroyCurrentScreen = destroyGameUI;
+
+    return inGameScreen;
+
+}
+
+/*** CLEAN UP ***/
+
+void destroyGameUI (void) {
+
+    if (inGameScreen != NULL) {
+        // message log
+        cleanMessageLog ();
+
+        if (inventoryRects != NULL) destroyInvRects ();
+        if (characterRects != NULL) destroyCharRects ();
+
+        destroyLootRects ();
+
+        UIView *v = NULL;
+        for (ListElement *e = LIST_START (inGameScreen->views); e != LIST_END (inGameScreen->views); e = e->next) 
+            destroyView ((UIView *) removeElement (inGameScreen->views, e));
+        
+        free (inGameScreen->views);
+
+        free (inGameScreen);
+        inGameScreen = NULL;
+
+        fprintf (stdout, "Done cleanning up game UI!\n");
+    }
+
+}
+
+/*** POST GAME SCREEN ***/
+
+UIScreen *postGameScene = NULL;
+
 /*** DEATH SCREEN ***/
 
 BitmapImage *deathImg = NULL;
@@ -1081,29 +1171,28 @@ static void renderDeathScreen (Console *console) {
 
 }
 
+// FIXME:
 void toggleDeathScreen (void) {
 
     if (deathScreen == NULL) {
         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
         deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), deathScreen);
+        insertAfter (postGameScene->views, LIST_END (postGameScene->views), deathScreen);
 
         activeView = deathScreen;
 
         if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
-
-        fprintf (stdout, "Toggle death!\n");
     }
 
     else {
         if (deathScreen != NULL) {
             if (deathImg != NULL) destroyImage (deathImg);
 
-            ListElement *death = getListElement (activeScene->views, deathScreen);
-            destroyView ((UIView *) removeElement (activeScene->views, death));
+            ListElement *death = getListElement (postGameScene->views, deathScreen);
+            destroyView ((UIView *) removeElement (postGameScene->views, death));
             deathScreen = NULL;
 
-            activeView = (UIView *) (LIST_END (activeScene->views))->data;
+            activeView = (UIView *) (LIST_END (postGameScene->views))->data;
         }
     }
 
@@ -1148,100 +1237,48 @@ void toggleScoreScreen (void) {
 
 }
 
+// TODO:
+/*** LEADERBOARDS ***/
 
-/*** INIT GAME SCREEN ***/
 
-UIScreen *inGameScreen = NULL;
+// TODO: delete all other UI elements!!
+void destroyPostGameScreen (void) {
 
-UIView *mapView = NULL;
+    if (postGameScene != NULL) {
+        if (deathImg != NULL) destroyImage (deathImg);
+        if (scoreImg != NULL) destroyImage (scoreImg);
 
-List *initGameViews (void) {
+        UIView *v = NULL;
+        for (ListElement *e = LIST_START (postGameScene->views); e != LIST_END (postGameScene->views); e = e->next) 
+            destroyView ((UIView *) removeElement (postGameScene->views, e));
+        
+        destroyList (postGameScene->views);
+
+        free (postGameScene);
+        postGameScene = NULL;
+    }
+
+}
+
+// default view is the game death screen
+UIScreen *postGameScreen (void) {
 
     List *views = initList (free);
 
-    UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
-    bool colorize = true;
-    u32 bgColor = 0x000000FF;
+    UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
+    deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
+    insertAfter (views, NULL, deathScreen);
 
-    mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
-    insertAfter (views, NULL, mapView);
+    if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
 
-    UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
-    UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
-    insertAfter (views, NULL, statsView);
-
-    UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
-    UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
-    insertAfter (views, NULL, logView);
-
-    return views;
-
-}
-
-UIScreen *gameScene (void) {
-
-    List *igViews = initGameViews ();
-
-    if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
+    postGameScene = (UIScreen *) malloc (sizeof (UIScreen));
     
-    inGameScreen->views = igViews;
-    // FIXME: do we need this?
-    inGameScreen->activeView = mapView;
-    inGameScreen->handleEvent = hanldeGameEvent;
+    postGameScene->views = views;
+    postGameScene->activeView = deathScreen;
+    postGameScene->handleEvent = handlePostGameEvent;
 
-    statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName ());
+    destroyCurrentScreen = destroyPostGameScreen;
 
-    wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
-
-    inventoryRects = initInventoryRects ();
-    characterRects = initCharacterRects ();
-
-    activeLootRects = initList (free);
-    lootRectsPool = initPool ();
-
-    activeView = mapView;
-
-    return inGameScreen;
-
-}
-
-/*** CLEAN UP ***/
-
-// clean up all the in game UI views to save resoruces
-void cleanGameUI (void) {
-
-    if (inGameScreen != NULL) {
-        // clean up the message log
-        while (LIST_SIZE (messageLog) > 0) 
-            deleteMessage ((Message *) removeElement (messageLog, NULL));
-
-        UIView *v = NULL;
-        for (ListElement *e = LIST_START (inGameScreen->views); e != LIST_END (inGameScreen->views); e = e->next) 
-            destroyView ((UIView *) removeElement (inGameScreen->views, e));
-            
-    }
-
-}
-
-void destroyGameUI (void) {
-
-    if (inGameScreen != NULL) {
-        // message log
-        cleanMessageLog ();
-
-        if (inventoryRects != NULL) destroyInvRects ();
-        if (characterRects != NULL) destroyCharRects ();
-
-        destroyLootRects ();
-
-        if (deathImg != NULL) destroyImage (deathImg);
-
-        for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
-            destroyView ((UIView *) e->data);
-        
-        free (inGameScreen->views);
-
-        free (inGameScreen);
-    }
+    return postGameScene;
 
 }

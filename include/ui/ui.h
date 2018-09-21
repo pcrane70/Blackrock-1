@@ -38,6 +38,9 @@ extern UIScreen *activeScene;
 extern void setActiveScene (UIScreen *);
 extern void destroyUIScreen (UIScreen *);
 
+typedef void (*CleanUI)(void);
+extern CleanUI destroyCurrentScreen;
+
 /*** VIEWS **/
 
 extern UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount, 

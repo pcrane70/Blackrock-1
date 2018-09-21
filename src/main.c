@@ -53,8 +53,9 @@ extern void cleanUpMenuScene (void);
 void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
     if (wasInGame) cleanUpGame ();
-    // we are in the main menu
-    else cleanUpMenuScene ();
+
+    // clean the UI
+    destroyCurrentScreen ();
     
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);

@@ -7,5 +7,6 @@
 
 extern void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event);
 extern void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event);
+extern void handlePostGameEvent (UIScreen *activeScreen, SDL_Event event);
 
 #endif

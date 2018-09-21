@@ -433,10 +433,6 @@ void cleanUpGame (void) {
     destroyPlayer ();
     fprintf (stdout, "Done cleanning up player\n");
 
-    // clean game ui
-    destroyGameUI ();
-    fprintf (stdout, "Done cleanning up game UI\n");
-
     // clean up our lists
     destroyList (gameObjects);
     destroyList (positions);
@@ -1621,11 +1617,11 @@ void clearOldLevel (void) {
 }
 
 // game over logic
-void gameOver (void) {
+void gameOver (void) {  
 
-    toggleDeathScreen ();
+    setActiveScene (postGameScreen ());
 
-    cleanGameUI ();
+    destroyGameUI ();
 
 }
 

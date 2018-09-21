@@ -16,6 +16,11 @@ char *tileset = "./resources/terminal-art.png";
 
 /*** SCENE MANAGER ***/
 
+UIScreen *activeScene = NULL;
+
+// don't forget to manually clean the previous screen
+void setActiveScene (UIScreen *newScreen) { activeScene = newScreen; }
+
 void destroyUIScreen (UIScreen *screen) {
 
     if (screen != NULL) {
@@ -37,15 +42,7 @@ void destroyUIScreen (UIScreen *screen) {
 
 }
 
-UIScreen *activeScene = NULL;
-
-void setActiveScene (UIScreen *newScreen) {
-
-    // if (activeScene != NULL) destroyUIScreen (activeScene);
-    if (activeScene != NULL) free (activeScene);
-    activeScene = newScreen;
-
-}
+CleanUI destroyCurrentScreen;
 
 /*** UI ***/
 

@@ -95,7 +95,13 @@ extern void toggleCharacter (void);
 
 extern void togglePauseMenu (void);
 
-/*** SCREENS ***/
+extern UIScreen *gameScene (void);
+
+/*** CLEAN UP GAME UI ***/
+
+extern void destroyGameUI (void);
+
+/*** POST GAME ***/
 
 extern UIView *deathScreen;
 extern void toggleDeathScreen (void);
@@ -103,13 +109,6 @@ extern void toggleDeathScreen (void);
 extern UIView *scoreScreen;
 extern void toggleScoreScreen (void);
 
-
-// THIS SHOULD ONLY BE CALLED FROM THE UI CONTROLLER
-extern UIScreen *gameScene (void);
-
-/*** CLEAN UP ***/
-
-extern void cleanGameUI (void);
-extern void destroyGameUI (void);
+extern UIScreen *postGameScreen (void);
 
 #endif
