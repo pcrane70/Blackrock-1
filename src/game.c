@@ -116,7 +116,10 @@ void initGame (void) {
 
 void *playerLogic (void *arg) {
 
+    if (player != NULL) destroyPlayer ();
+    
     player = createPlayer ();
+
     initPlayer (player);
 
 }
@@ -1621,7 +1624,7 @@ void gameOver (void) {
 
     setActiveScene (postGameScreen ());
 
-    destroyGameUI ();
+    // destroyGameUI ();
 
 }
 
@@ -1680,7 +1683,7 @@ void placeStairs (Point spawn) {
 void generateLevel () {
 
     // make sure we have cleaned the previous level data
-    clearOldLevel ();
+    // clearOldLevel ();
 
     // this is used to render the walls to the screen... but maybe it is not a perfect system
     initMap (currentLevel->mapCells);
@@ -1690,6 +1693,8 @@ void generateLevel () {
     // but we can only move forward, we can not return to the previous level
     // Point stairsPoint = getFreeSpot (currentLevel->mapCells);
     placeStairs (getFreeSpot (currentLevel->mapCells));
+
+    fprintf (stdout, "Creating monsters...\n");
 
     // FIXME: how do we handle how many monsters to add
     u8 monNum = 15;
@@ -1712,8 +1717,6 @@ void generateLevel () {
 
 }
 
-// This should only run when we enter the dungeon directly from the menu / taver or village
-// IT SHOULD NOT BE CALLED FROM INSIDE THE DUNGEON!!
 void enterDungeon (void) {
 
     if (currentLevel == NULL) {
@@ -1732,39 +1735,44 @@ void enterDungeon (void) {
 
     // after we have allocated the new level structure, we can start generating the first level
     generateLevel ();
-
+    
     // TODO: add different texts here!!
     logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
 
-    fprintf (stdout, "Done initializing game!\n");
+    fprintf (stdout, "You have entered the dungeon!\n");
 
 }
 
+// TODO: add a loading window??
 // we reload the game scene as the same character
 void retry (void) {
 
-    // delete score UI and all of the structs
-    toggleScoreScreen ();
+    if (messageLog == NULL) messageLog = initList (free);
 
-    // clear the message log
-    while (LIST_SIZE (messageLog) > 0) 
-        deleteMessage ((Message *) removeElement (messageLog, NULL));
+    pthread_t playerThread;
 
-    messageLog->start = NULL;
-    messageLog->end = NULL;
-    messageLog->size = 0;
+    if (pthread_create (&playerThread, NULL, playerLogic, NULL) != THREAD_OK) 
+        die ("Error creating player thread!\n");
 
     void resetScore (void);
     resetScore ();
-    resetPlayer (player);   // reset player data structs
-    initPlayer (player);    // reset player values
 
     currentLevel->levelNum = 0;
 
     // create a new level
     enterDungeon ();
 
-    fprintf (stdout, "Retry!\n");
+    if (pthread_join (playerThread, NULL) != THREAD_OK) die ("Error joinning player thread!\n");
+
+    // we can now place the player and we are done 
+    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+    player->pos->x = (u8) playerSpawnPos.x;
+    player->pos->y = (u8) playerSpawnPos.y;
+
+    calculateFov (player->pos->x, player->pos->y, fovMap);
+
+    setActiveScene (gameScene ());
+    destroyPostGameScreen ();
 
 }
 
@@ -1788,6 +1796,6 @@ void showScore (void) {
     toggleScoreScreen ();
 
     // delete death screen UI and image
-    toggleDeathScreen ();
+    deleteDeathScreen ();
 
 }

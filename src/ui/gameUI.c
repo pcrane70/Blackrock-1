@@ -1171,29 +1171,19 @@ static void renderDeathScreen (Console *console) {
 
 }
 
-// FIXME:
-void toggleDeathScreen (void) {
+void deleteDeathScreen (void) {
 
-    if (deathScreen == NULL) {
-        UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-        deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
-        insertAfter (postGameScene->views, LIST_END (postGameScene->views), deathScreen);
+    if (deathScreen != NULL) {
+        if (deathImg != NULL) {
+            destroyImage (deathImg);
+            deathImg = NULL;
+        } 
 
-        activeView = deathScreen;
+        ListElement *death = getListElement (postGameScene->views, deathScreen);
+        destroyView ((UIView *) removeElement (postGameScene->views, death));
+        deathScreen = NULL;
 
-        if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
-    }
-
-    else {
-        if (deathScreen != NULL) {
-            if (deathImg != NULL) destroyImage (deathImg);
-
-            ListElement *death = getListElement (postGameScene->views, deathScreen);
-            destroyView ((UIView *) removeElement (postGameScene->views, death));
-            deathScreen = NULL;
-
-            activeView = (UIView *) (LIST_END (postGameScene->views))->data;
-        }
+        postGameScene->activeView = (UIView *) (LIST_END (postGameScene->views))->data;
     }
 
 }
@@ -1211,6 +1201,7 @@ static void renderScoreScreen (Console *console) {
 
 }
 
+// FIXME: handle the active view when toggling
 void toggleScoreScreen (void) {
 
     if (scoreScreen == NULL) {
@@ -1220,18 +1211,21 @@ void toggleScoreScreen (void) {
 
         if (scoreImg == NULL) scoreImg = loadImageFromFile (scoreImgPath);
 
-        activeView = scoreScreen;
+        postGameScene->activeView = scoreScreen;
     }
 
     else {
         if (scoreScreen != NULL) {
-            if (scoreImg != NULL) destroyImage (scoreImg);
+            if (scoreImg != NULL) {
+                destroyImage (scoreImg);
+                scoreImg = NULL;
+            } 
 
             ListElement *death = getListElement (activeScene->views, scoreScreen);
             destroyView ((UIView *) removeElement (activeScene->views, death));
             scoreScreen = NULL;
 
-            activeView = (UIView *) (LIST_END (activeScene->views))->data;
+            // activeView = (UIView *) (LIST_END (activeScene->views))->data;
         }
     }
 
@@ -1240,22 +1234,29 @@ void toggleScoreScreen (void) {
 // TODO:
 /*** LEADERBOARDS ***/
 
-
+// FIXME:
 // TODO: delete all other UI elements!!
 void destroyPostGameScreen (void) {
 
     if (postGameScene != NULL) {
-        if (deathImg != NULL) destroyImage (deathImg);
-        if (scoreImg != NULL) destroyImage (scoreImg);
+        if (deathImg != NULL) {
+            destroyImage (deathImg);
+            deathImg = NULL;
+        } 
+        if (scoreImg != NULL) {
+            destroyImage (scoreImg);
+            scoreImg = NULL;
+        } 
 
-        UIView *v = NULL;
-        for (ListElement *e = LIST_START (postGameScene->views); e != LIST_END (postGameScene->views); e = e->next) 
-            destroyView ((UIView *) removeElement (postGameScene->views, e));
+        // UIView *v = NULL;
+        // for (ListElement *e = LIST_START (postGameScene->views); e != LIST_END (postGameScene->views); e = e->next) 
+        //     destroyView ((UIView *) removeElement (postGameScene->views, e));
         
-        destroyList (postGameScene->views);
-
+        free (postGameScene->views);
         free (postGameScene);
         postGameScene = NULL;
+
+        fprintf (stdout, "Post game screen destroyed!\n");
     }
 
 }
@@ -1278,6 +1279,8 @@ UIScreen *postGameScreen (void) {
     postGameScene->handleEvent = handlePostGameEvent;
 
     destroyCurrentScreen = destroyPostGameScreen;
+
+    fprintf (stdout, "Post game init!\n");
 
     return postGameScene;
 

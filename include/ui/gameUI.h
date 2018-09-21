@@ -103,12 +103,16 @@ extern void destroyGameUI (void);
 
 /*** POST GAME ***/
 
+extern UIScreen *postGameScene;
+
 extern UIView *deathScreen;
-extern void toggleDeathScreen (void);
+extern void  deleteDeathScreen (void);
 
 extern UIView *scoreScreen;
 extern void toggleScoreScreen (void);
 
 extern UIScreen *postGameScreen (void);
+
+extern void destroyPostGameScreen (void);
 
 #endif

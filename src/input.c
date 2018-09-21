@@ -268,15 +268,18 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
 /*** POST GAME ***/
 
-// retry
-// case SDLK_r: if (activeView == scoreScreen) retry (); break;
-
-// FIXME:
-// quit to main menu
-// case SDLK_q: if (activeView == scoreScreen) returnToMainMenu (); break;
-
 void handlePostGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
+    if (event.type == SDL_KEYDOWN) {
+        SDL_Keycode key = event.key.keysym.sym;
 
+        switch (key) {
+            case SDLK_c: if (postGameScene->activeView == deathScreen) showScore (); break;
+            case SDLK_r: if (postGameScene->activeView == scoreScreen) retry (); break;
+
+            // FIXME:
+            // case SDLK_q: returnToMainMenu (); break;
+        }
+    }
 
 }

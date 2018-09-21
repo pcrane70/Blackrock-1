@@ -156,6 +156,8 @@ void initPlayer (Player *p) {
     clearConfig (playerConfig);
     clearConfig (classesConfig);
 
+    fprintf (stdout, "Init player done!\n");
+
 }
 
 void resetPlayer (Player *p) {
