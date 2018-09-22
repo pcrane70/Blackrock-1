@@ -507,6 +507,27 @@ char *getItemSlot (Item *item) {
 
 }
 
+// FIXME:
+char *getEquipmentTypeName (Item *item) {
+
+    char slot[15];
+
+    Weapon *w = getItemComponent (item, WEAPON);
+    if (w != NULL) {
+        switch (w->type) {
+            case 0: strcpy (slot, "Sword"); break;
+            // case 1: strcpy (slot, "Off"); break;
+            default: break;
+        }
+    }
+
+    char *retVal = (char *) calloc (strlen (slot), sizeof (char));
+    strcpy (retVal, slot);
+
+    return retVal;
+
+}
+
 bool itemStacked (Item *item) {
 
     bool stacked = false;
@@ -627,8 +648,9 @@ void getLootItem (u8 lootYIdx) {
             // update Loot UI
             updateLootUI (lootYIdx);
 
+            // FIXME:
             // update tooltip UI
-            if (tooltipView != NULL) if (lootItem == item) toggleTooltip (true);
+            // if (tooltipView != NULL) if (lootItem == item) toggleTooltip (true);
             
         }
 

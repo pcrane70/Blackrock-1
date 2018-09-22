@@ -1101,10 +1101,10 @@ typedef struct {
 
     char *name;
     u32 rarityColor;
+    char *typeName;
     char *valueTxt;
     bool isEquipment;
     bool isWeapon;
-    char *slotName;
     Weapon *w;
     Armour *a;
     ItemStatsUI stats;
@@ -1113,20 +1113,17 @@ typedef struct {
 
 } UIItemData;
 
-// FIXME:
-UIItemData *iData = NULL;
-
 // Tooltips items
 UIItemData *lootItemUI = NULL;
 UIItemData *equippedItemUI = NULL;
-UIItemData *selectedItemUI = NULL;
+UIItemData *iData = NULL;
 
 void cleanItemData (UIItemData *data) {
 
     if (data != NULL) {
         if (data->name) free (data->name);
         if (data->valueTxt) free (data->valueTxt);
-        if (data->slotName) free (data->slotName);
+        if (data->typeName) free (data->typeName);
 
         data->w = NULL;
         data->a = NULL;
@@ -1155,11 +1152,14 @@ UIItemData *getUIItemData (Item *item) {
     data->w = (Weapon *) getItemComponent (item, WEAPON);
     data->a = (Armour *) getItemComponent (item, ARMOUR);
 
-    if (data->w != NULL) data->isWeapon = true;
-    else if (data->a != NULL) data->isWeapon = false;
-
-    if (data->isWeapon) data->isEquipment = true;
+    if (data->w != NULL || data->a != NULL) {
+        data->isEquipment = true;
+        data->typeName = getEquipmentTypeName (item);
+    } 
     else data->isEquipment = false;
+
+    if (data->w != NULL) data->isWeapon = true;
+    else data->isWeapon = false;
 
     data->name = (char *) calloc (strlen (g->name), sizeof (char));
     strcpy (data->name, g->name);
@@ -1171,10 +1171,7 @@ UIItemData *getUIItemData (Item *item) {
     // FIXME:
     // get the item stats modifiers modifiers, this is for a food or a potion
 
-
     if (data->isEquipment) {
-        data->slotName = getItemSlot (item);
-
         if (data->isWeapon) data->stats.dps = createString ("Dps: %i", data->w->dps);
 
         if (data->isWeapon) data->lifeTxt = createString ("Lifetime: %i / %i", data->w->lifetime, data->w->maxLifetime);
@@ -1269,9 +1266,9 @@ CompareItems *compareItems (Item *lootItem, Item *compareTo) {
 
     // first check if we are comparing weapons
     Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
-    Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
+    Weapon *equippedWeapon = (Weapon *) getItemComponent (compareTo, WEAPON);
 
-    if ((lootWeapon != NULL) && (equippedItem != NULL)) {
+    if ((lootWeapon != NULL) && (equippedWeapon != NULL)) {
         i8 diff;
 
         // dps
@@ -1291,72 +1288,53 @@ CompareItems *compareItems (Item *lootItem, Item *compareTo) {
 // FIXME: what happens when we have 2 one handed weapons equipped
 // FIXME: add value?
 // FIXME: how to handle the y idx??
+// TODO: change to color depending if we can equip it or not
 void renderLootTooltip (Console *console) {
 
     // render the loot item first
     if (lootItemUI != NULL) {
+        putStringAt (console, lootItemUI->name, 2, 2, lootItemUI->rarityColor, NO_COLOR);
+        if (lootItemUI->isEquipment)
+            putStringAt (console, lootItemUI->typeName, 2, 4, TOOLTIP_TEXT, NO_COLOR);
 
+        if (lootItemUI->isWeapon) {
+            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
+        }
+
+        // FIXME: loot stats
+
+        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 8, lootItemUI->lifeColor, NO_COLOR);
     }
 
     // render the equipped item
     if (equippedItemUI != NULL) {
-
-    }
-
-    // render the item comparison
-    if (comp != NULL) {
-        // TODO: change to color depending if we can equip it or not
-        // put loot weapon info
-        putStringAt (console, comp->lootName, 2, 2, getItemColor (lootItem->type), NO_COLOR);
-        putStringAt (console, comp->lootType, 2, 4, TOOLTIP_TEXT, NO_COLOR);
-        if (compWeapons) {
-            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
-            else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
-        }
-        else putStringAt (console, getItemSlot (lootItem), 13, 4, WHITE, NO_COLOR);
-
-        // loot stats
-        if (compWeapons) putStringAt (console, comp->lootDps, 2, 6, TOOLTIP_TEXT, NO_COLOR);
-        putStringAt (console, "Durability: ", 2, 8, WHITE, NO_COLOR);
-        putStringAt (console, comp->lootLifetime, 14, 8, getLifeTimeColor (lootItem), NO_COLOR);
-
-        // put equipped weapon info
         putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
-        putStringAt (console, comp->eqName, 2, 14, getItemColor (equippedItem->type), NO_COLOR);
-        putStringAt (console, comp->eqType, 2, 16, TOOLTIP_TEXT, NO_COLOR);
-        if (compWeapons) {
-            if (comp->lootTwoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
+        putStringAt (console, lootItemUI->name, 2, 14, lootItemUI->rarityColor, NO_COLOR);
+        if (lootItemUI->isEquipment)
+            putStringAt (console, lootItemUI->typeName, 2, 16, TOOLTIP_TEXT, NO_COLOR);
+
+        if (lootItemUI->isWeapon) {
+            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
             else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
         }
-        else putStringAt (console, getItemSlot (equippedItem), 13, 4, WHITE, NO_COLOR);
 
-        // equipped stats
-        // FIXME: better logic for comparing the stats
-        // as of 18/09/2018 -- we only have dps and lifetime
-        if (compWeapons) {
-            putStringAt (console, comp->eqDps, 2, 18, TOOLTIP_TEXT, NO_COLOR);
-            u32 dpsColor;
-            if (comp->diffDps < 0) dpsColor = FULL_RED;
-            else if (comp->diffDps == 0) dpsColor = YELLOW;
-            else dpsColor = FULL_GREEN;
-            char dpsText[5];
-            itoa (comp->diffDps, dpsText);
-            putStringAt (console, dpsText, 22, 18, dpsColor, NO_COLOR);
-        }
-        
-        putStringAt (console, "Durability: ", 2, 20, WHITE, NO_COLOR);
-        putStringAt (console, comp->eqLifetime, 14, 20, getLifeTimeColor (equippedItem), NO_COLOR);
+        // FIXME: equipped stats
+        // FIXME: stats comparison
+
+        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 20, lootItemUI->lifeColor, NO_COLOR);
     }
 
 }
 
+// FIXME: render stats
 // FIXME: what happens if the name doesn't fit?
 void renderInventoryTooltip (Console *console) {
 
     if (iData != NULL) {
         putStringAt (console, iData->name, 1, 2, iData->rarityColor, NO_COLOR);
         if (iData->isEquipment) {
-            putStringAt (console, iData->slotName, 1, 3, TOOLTIP_TEXT, NO_COLOR);
+            putStringAt (console, iData->typeName, 1, 3, TOOLTIP_TEXT, NO_COLOR);
             if (iData->isWeapon) {
                 if (iData->w->twoHanded) putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
                 else putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
@@ -1366,8 +1344,26 @@ void renderInventoryTooltip (Console *console) {
         }
 
         putStringAt (console, iData->valueTxt, 1, 9, TOOLTIP_TEXT, NO_COLOR);
-
     }
+
+    // FIXME:
+    // render the equipped item
+    /* if (equippedItemUI != NULL) {
+        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
+        putStringAt (console, lootItemUI->name, 2, 14, lootItemUI->rarityColor, NO_COLOR);
+        if (lootItemUI->isEquipment)
+            putStringAt (console, lootItemUI->typeName, 2, 16, TOOLTIP_TEXT, NO_COLOR);
+
+        if (lootItemUI->isWeapon) {
+            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
+        }
+
+        // FIXME: equipped stats
+        // FIXME: stats comparison
+
+        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 20, lootItemUI->lifeColor, NO_COLOR);
+    } */
 
 }
 
@@ -1375,46 +1371,25 @@ void renderInventoryTooltip (Console *console) {
 // FIXME: add value?
 void renderCharacterTooltip (Console *console) {
 
-    if (equippedItem != NULL) {
-        Graphics *g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
-        bool weapon;
-        Weapon *w = (Weapon *) getItemComponent (equippedItem, WEAPON);
-        Armour *a = (Armour *) getItemComponent (equippedItem, ARMOUR);
-        if (w != NULL) weapon = true;
-        else if (a != NULL) weapon = false;
+    if (equippedItemUI != NULL) {
+        putStringAt (console, lootItemUI->name, 1, 2, lootItemUI->rarityColor, NO_COLOR);
+        if (lootItemUI->isEquipment)
+            putStringAt (console, lootItemUI->typeName, 1, 4, TOOLTIP_TEXT, NO_COLOR);
 
-        putStringAt (console, g->name, 1, 2, getItemColor (equippedItem->type), NO_COLOR);
-        putStringAt (console, getItemTypeName (equippedItem), 1, 4, TOOLTIP_TEXT, NO_COLOR);
-
-        if (weapon) {
-            if (w->twoHanded) putStringAt (console, "Two-Handed", 1, 4, WHITE, NO_COLOR);
+        if (lootItemUI->isWeapon) {
+            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 8, 4, WHITE, NO_COLOR);
             else putStringAt (console, "One-Handed", 8, 4, WHITE, NO_COLOR);
         }
 
-        // stats
-        if (weapon) {
-            char *dps = createString ("Dps: %i", w->dps);
-            putStringAt (console, dps, 1, 6, WHITE, NO_COLOR);
-            free (dps);
-        }
-        
-        char *durability = NULL;
-        putStringAt (console, "Lifetime: ", 1, 15, WHITE, NO_COLOR);
-        if (weapon) {
-            durability = createString ("%i / %i", w->lifetime, w->maxLifetime);
-            putStringAt (console, durability, 12, 15, getLifeTimeColor (equippedItem), NO_COLOR);
-        } 
+        // FIXME: equipped stats
+        // FIXME: stats comparison
 
-        else {
-            durability = createString ("%i / %i", a->lifetime, a->maxLifetime);
-            putStringAt (console, durability, 11, 15, getLifeTimeColor (equippedItem), NO_COLOR);
-        } 
-
-        if (durability != NULL) free (durability);
+        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 1, 12, lootItemUI->lifeColor, NO_COLOR);
     }
 
 }
 
+// FIXME: create a more efficent way for the rect
 static void renderTooltip (Console *console) {
 
     switch (tooltip) {
@@ -1467,44 +1442,56 @@ void lootTooltip (void) {
             comp = compareItems (lootItem, compareTo);
         }
 
+        // as of 21/09/2018 -- we are displaying the same window size, no matter if we only have one item
+        // render the item stats
+        UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+        tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+        if (lootView != NULL) updateLootPos (true);
+
     }
-
-    // as of 21/09/2018 -- we are displaying the same window size, no matter if we only have one item
-    // render the item stats
-    UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
-    tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-    insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
-
-    if (lootView != NULL) updateLootPos (true);
 
 }
 
-// FIXME: add the ability to compare to the equipped item
 void invTooltip (void) {
 
-    // check if we have a selecte item
-    selectedItem = getInvSelectedItem ();
+    // check if we have a selected item
+    Item *selectedItem = getInvSelectedItem ();
     if (selectedItem != NULL) {
-        iData = getItemData (selectedItem);
-        UIRect lootRect = { (16 * TTIP_INV_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TOOLTIP_HEIGHT) };
+        if (iData != NULL) cleanItemData (iData);
+        iData = getUIItemData (selectedItem);
+
+        // check if we have items to compate
+        Item *compareTo = itemToCompare (selectedItem);
+
+        if (compareTo != NULL) {
+            if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+            equippedItemUI = getUIItemData (compareTo);
+
+            // compare the two items
+            if (comp != NULL) destroyComp ();
+            comp = compareItems (selectedItem, compareTo);
+        }
+
+        // FIXME: we are displaying the same window size as in the loot menu
+        UIRect lootRect = { (16 * TTIP_INV_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_INV_WIDTH), (16 * TOOLTIP_HEIGHT) };
         tooltipView = newView (lootRect, TTIP_INV_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
         insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
 
-        if (comp != NULL) destroyComp ();
-
         if (inventoryView != NULL) updateInventoryPos (true);
     }
-
-    // FIXME: give some feedback to the player
-    // else   
 
 }
 
 void characterTooltip (void) {
 
     // first check if we have an item selected
-    equippedItem = getCharSelectedItem ();
-    if (equippedItem != NULL) {
+    Item *selectedItem = getCharSelectedItem ();
+    if (selectedItem != NULL) {
+        if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+        equippedItemUI = getUIItemData (selectedItem);
+
         if (characterXIdx == 0) {
             UIRect lootRect = { (16 * TTIP_CHAR_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
             tooltipView = newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
@@ -1516,12 +1503,17 @@ void characterTooltip (void) {
         }
         
         insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+    }  
 
-        if (comp != NULL) destroyComp ();
-    }
+}
 
-    // FIXME: give some feedback to the player
-    // else     
+void cleanTooltipData (void) {
+
+    if (lootItemUI != NULL) cleanItemData (lootItemUI);
+    if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+    if (iData != NULL) cleanItemData (iData);
+
+    if (comp != NULL) destroyComp ();
 
 }
 
@@ -1538,25 +1530,16 @@ void toggleTooltip (u8 view) {
 
     // FIXME: handle character, inventory and tooltip at the same time
     else if (tooltipView != NULL) {
-        if (iData != NULL) cleanItemData (iData);
-
-        if (comp != NULL) {
-            destroyComp ();
-            comp = NULL;
-        } 
+        cleanTooltipData ();
 
         ListElement *e = getListElement (activeScene->views, tooltipView);
         destroyView ((UIView *) removeElement (activeScene->views, e));
         tooltipView = NULL;
-
-        lootItem = NULL;
-        equippedItem = NULL;
+        activeView = (UIView *) (LIST_END (activeScene->views))->data;
 
         if (lootView != NULL) updateLootPos (false);
         if (characterView != NULL) updateCharacterPos (false);
         if (inventoryView != NULL) updateInventoryPos (false);
-
-        activeView = (UIView *) (LIST_END (activeScene->views))->data;
     }
 
 }
@@ -1734,22 +1717,21 @@ UIScreen *gameScene (void) {
 void cleanGameUI (void) {
 
     if (inGameScreen != NULL) {
-        // // message log
-        // cleanMessageLog ();
+        // message log
+        cleanMessageLog ();
 
-        // if (iData != NULL) cleanItemData (iData);
+        // tooltip
+        cleanTooltipData ();
 
-        // if (inventoryRects != NULL) destroyInvRects ();
-        // if (characterRects != NULL) destroyCharRects ();
+        if (inventoryRects != NULL) destroyInvRects ();
+        if (characterRects != NULL) destroyCharRects ();
 
-        // destroyLootRects ();
+        destroyLootRects ();
 
-        // if (deathImg != NULL) destroyImage (deathImg);
-
-        // for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
-        //     destroyView ((UIView *) e->data);
+        for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
+            destroyView ((UIView *) e->data);
         
-        // destroyList (inGameScreen->views);
+        destroyList (inGameScreen->views);
 
         free (inGameScreen);
     }

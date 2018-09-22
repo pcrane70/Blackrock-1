@@ -101,6 +101,7 @@ extern void *getItemComponent (Item *, ItemComponent);
 extern u32 getItemColor (u8 rarity);
 extern u32 getLifeTimeColor (Item *);
 extern char *getItemSlot (Item *);
+extern char *getEquipmentTypeName (Item *);
 
 extern char *getItemTypeName (Item *);
 
