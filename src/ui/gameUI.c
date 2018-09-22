@@ -1087,6 +1087,18 @@ u8 tooltip;
 
 typedef struct {
 
+    char *health;
+    char *dps;
+    char *armor;
+    char *strength;
+    char *stamina;
+    char *agility;
+    char *intellect;
+
+} ItemStatsUI;
+
+typedef struct {
+
     char *name;
     u32 rarityColor;
     char *valueTxt;
@@ -1094,26 +1106,40 @@ typedef struct {
     bool isWeapon;
     char *slotName;
     Weapon *w;
-    u8 dps;
     Armour *a;
+    ItemStatsUI stats;
     char *lifeTxt;
     u32 lifeColor;
 
-} uiItemData;
+} UIItemData;
 
-uiItemData *iData = NULL;
+// FIXME:
+UIItemData *iData = NULL;
 
-void cleanItemData (uiItemData *data) {
+// Tooltips items
+UIItemData *lootItemUI = NULL;
+UIItemData *equippedItemUI = NULL;
+UIItemData *selectedItemUI = NULL;
+
+void cleanItemData (UIItemData *data) {
 
     if (data != NULL) {
-        if (data->name != NULL) free (data->name);
-        if (data->valueTxt != NULL) free (data->valueTxt);
-        if (data->slotName != NULL) free (data->slotName);
+        if (data->name) free (data->name);
+        if (data->valueTxt) free (data->valueTxt);
+        if (data->slotName) free (data->slotName);
 
         data->w = NULL;
         data->a = NULL;
 
-        if (data->lifeTxt != NULL) free (data->lifeTxt);
+        if (data->stats.health) free (data->stats.health);
+        if (data->stats.dps) free (data->stats.dps);
+        if (data->stats.armor) free (data->stats.armor);
+        if (data->stats.strength) free (data->stats.strength);
+        if (data->stats.stamina) free (data->stats.stamina);
+        if (data->stats.agility) free (data->stats.agility);
+        if (data->stats.intellect) free (data->stats.intellect);
+
+        if (data->lifeTxt) free (data->lifeTxt);
 
         free (data);
     }
@@ -1121,10 +1147,9 @@ void cleanItemData (uiItemData *data) {
 }
 
 // FIXME: add more stats
-// FIXME: how to handle item stats??
-uiItemData *getItemData (Item *item) {
+UIItemData *getUIItemData (Item *item) {
 
-    uiItemData *data = (uiItemData *) malloc (sizeof (uiItemData));
+    UIItemData *data = (UIItemData *) malloc (sizeof (UIItemData));
 
     Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
     data->w = (Weapon *) getItemComponent (item, WEAPON);
@@ -1143,10 +1168,14 @@ uiItemData *getItemData (Item *item) {
 
     data->valueTxt = createString ("%ig - %is - %ic", item->value[0], item->value[1], item->value[2]);
 
+    // FIXME:
+    // get the item stats modifiers modifiers, this is for a food or a potion
+
+
     if (data->isEquipment) {
         data->slotName = getItemSlot (item);
 
-        if (data->isWeapon) data->dps = data->w->dps;
+        if (data->isWeapon) data->stats.dps = createString ("Dps: %i", data->w->dps);
 
         if (data->isWeapon) data->lifeTxt = createString ("Lifetime: %i / %i", data->w->lifetime, data->w->maxLifetime);
         else data->lifeTxt = createString ("Lifetime: %i / %i", data->a->lifetime, data->a->maxLifetime);
@@ -1158,10 +1187,54 @@ uiItemData *getItemData (Item *item) {
 
 }
 
-// Tooltips items
-Item *lootItem = NULL;
-Item *equippedItem = NULL;
-Item *selectedItem = NULL;
+// TODO: do we also add the colors here?
+// This stores the difference in stats between the compared items
+typedef struct {
+
+    char *dpsDiff;
+    char *armorDiff;
+    char *strengthDiff;
+    char *staminaDiff;
+    char *agilityDiff;
+    char *intellectDiff;
+
+} CompareItems;
+
+CompareItems *comp = NULL;
+bool compWeapons;
+
+// just to be sure...
+CompareItems *newComp (void) {
+
+    CompareItems *comp = (CompareItems *) malloc (sizeof (CompareItems));
+
+    if (comp != NULL) {
+        comp->dpsDiff = NULL;
+        comp->armorDiff = NULL;
+        comp->strengthDiff = NULL;
+        comp->staminaDiff = NULL;
+        comp->agilityDiff = NULL;
+        comp->intellectDiff = NULL;
+    }
+
+    else fprintf (stderr, "Comp items is NULL!\n");
+
+    return comp;
+
+}
+
+void destroyComp (void) {
+
+    if (comp->dpsDiff) free (comp->dpsDiff);
+    if (comp->armorDiff) free (comp->armorDiff);
+    if (comp->strengthDiff) free (comp->strengthDiff);
+    if (comp->staminaDiff) free (comp->staminaDiff);
+    if (comp->agilityDiff) free (comp->agilityDiff);
+    if (comp->intellectDiff) free (comp->intellectDiff);
+    
+    free (comp);
+
+}
 
 // search an equipped item to compare to
 Item *itemToCompare (Item *item) {
@@ -1188,99 +1261,47 @@ Item *itemToCompare (Item *item) {
     return compareTo;
 
 }
-
-typedef struct {
-
-    char *lootName;
-    char *lootType;
-    char *lootDps;
-    char *lootLifetime;
-    bool lootTwoHanded;
-
-    char *eqName;
-    char *eqType;
-    char *eqDps;
-    char *eqLifetime;
-    bool eqTwoHanded;
-
-    i8 diffDps;
-
-} CompareItems;
-
-CompareItems *comp = NULL;
-bool compWeapons;
-
-void destroyComp (void) {
-
-    if (comp->lootName != NULL) free (comp->lootName);
-    if (comp->lootType != NULL) free (comp->lootType);
-    if (comp->lootDps != NULL) free (comp->lootDps);
-    if (comp->lootLifetime != NULL) free (comp->lootLifetime);
     
-    if (comp->eqName != NULL) free (comp->eqName);
-    if (comp->eqType != NULL) free (comp->eqType);
-    if (comp->eqDps != NULL) free (comp->eqDps);
-    if (comp->eqLifetime != NULL) free (comp->eqLifetime);
+// FIXME: add more stats here!!
+CompareItems *compareItems (Item *lootItem, Item *compareTo) {
 
-    free (comp);
-
-}
-    
-// 18/09/2018 -- 9:22 -- we are testing some efficiency with this
-void compareItems (CompareItems *comp) {
-
-    // loot weapon
-    Graphics *g = (Graphics *) getGameComponent (lootItem, GRAPHICS);
-    comp->lootName = (char *) calloc (strlen (g->name), sizeof (char));
-    strcpy (comp->lootName, g->name);
-    comp->lootType = getItemTypeName (lootItem);
-
-    // equipped weapon
-    g = (Graphics *) getGameComponent (equippedItem, GRAPHICS);
-    comp->eqName = (char *) calloc (strlen (g->name), sizeof (char));
-    strcpy (comp->eqName, g->name);
-    comp->eqType = getItemTypeName (equippedItem);
+    CompareItems *comp = newComp ();
 
     // first check if we are comparing weapons
     Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
     Weapon *equippedWeapon = (Weapon *) getItemComponent (equippedItem, WEAPON);
 
-    if (lootWeapon != NULL && equippedWeapon != NULL) {
-        // loot stats
-        if (lootWeapon->twoHanded) comp->lootTwoHanded = true;
-        comp->lootDps = createString ("DPS: %i", lootWeapon->dps);
-        comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
+    if ((lootWeapon != NULL) && (equippedItem != NULL)) {
+        i8 diff;
 
-        // equipped stats
-        if (equippedWeapon->twoHanded) comp->eqTwoHanded = true;
-        comp->eqDps = createString ("DPS: %i", equippedWeapon->dps);
-        comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
-
-        comp->diffDps = lootWeapon->dps - equippedWeapon->dps;
-
-        compWeapons = true;
-    }
-
-    else {
-        Armour *lootArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
-        Armour *equippedArmour = (Armour *) getItemComponent (lootItem, ARMOUR);
-
-        if (lootArmour != NULL && equippedArmour != NULL) {
-            // loot stats
-            comp->lootLifetime = createString ("%i / %i", lootWeapon->lifetime, lootWeapon->maxLifetime);
-
-            // equipped stats
-            comp->eqLifetime = createString ("%i / %i", equippedWeapon->lifetime, equippedWeapon->maxLifetime);
-        
-            compWeapons = false;
+        // dps
+        diff = lootWeapon->dps - equippedWeapon->dps;
+        if (diff < 0) comp->dpsDiff = createString ("-%i", diff);
+        else if (diff > 0) comp->dpsDiff = createString ("+%i", diff);
+        else {
+            comp->dpsDiff = (char *) calloc (3, sizeof (char));
+            strcpy (comp->dpsDiff, "--");
         }
-    }
+    }    
+
+    return comp;
 
 }
 
 // FIXME: what happens when we have 2 one handed weapons equipped
 // FIXME: add value?
+// FIXME: how to handle the y idx??
 void renderLootTooltip (Console *console) {
+
+    // render the loot item first
+    if (lootItemUI != NULL) {
+
+    }
+
+    // render the equipped item
+    if (equippedItemUI != NULL) {
+
+    }
 
     // render the item comparison
     if (comp != NULL) {
@@ -1394,7 +1415,6 @@ void renderCharacterTooltip (Console *console) {
 
 }
 
-// FIXME: show info an indiviaudl item such as a food
 static void renderTooltip (Console *console) {
 
     switch (tooltip) {
@@ -1430,21 +1450,26 @@ void lootTooltip (void) {
 
     // get the selected loot item
     Item *lootItem = getSelectedLootItem ();
+    if (lootItem != NULL) {
+        if (lootItemUI != NULL) cleanItemData (lootItemUI);
+        lootItemUI = getUIItemData (lootItem);
 
-    // check if we have items to compare
-    Item *compareTo = itemToCompare (lootItem);
+        // check if we have items to compare
+        Item *compareTo = itemToCompare (lootItem);
 
-    // we can compare two items
-    if (compareTo != NULL) {
-        // compare the items stats
-        comp = (CompareItems *) malloc (sizeof (CompareItems));
-        compareItems (comp, lootItem, compareTo);
+        // get equipped item stats
+        if (compareTo != NULL) {
+            if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+            equippedItemUI = getUIItemData (compareTo);
+
+            // compare the two item stats
+            if (comp != NULL) destroyComp ();
+            comp = compareItems (lootItem, compareTo);
+        }
+
     }
 
-    else {
-
-    }
-
+    // as of 21/09/2018 -- we are displaying the same window size, no matter if we only have one item
     // render the item stats
     UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
     tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
