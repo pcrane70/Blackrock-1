@@ -6,7 +6,6 @@
 [Installing](#installing)  
 [Contributing](#contributing)  
 [Copyright & Licensing](#copyright--licensing)
-
 [Contact](#contact)
 
 ## About
@@ -18,8 +17,6 @@
 This game is also intended to serve as a much more complex tutorial for anyone that would like to sharpen his or her skills in C. It includes many topics that I have had a hard time finding out how to implement them in C such as a database using Sqlite or some object pooling and an ECS. In the future it will feature a full wiki for any topic related to the game and its development. For now the code is heavily commented and I will try to keep that way trough its development. If you have any question please contact me.
 
 ## Current Features
-
-v 1.0  
   
 - ECS  (Entity Component System)
 - Object Pooling  
@@ -34,35 +31,22 @@ v 1.0
 - Simple UI  
 - Only one class -> warrior  
 - Only one race -> human  
+- Leaderboards
 - Support for Linux
 
 ## Upcoming Features
-
-v 2.0  
   
- - Better UI
+- Better UI
 - New player profile    
-- New player level system  
 - Bosses!  
-- Better item system  
-- Crafting system  and resources gathering 
-- More classes:
-- Under the hood performance optimizations like multi-threading  
+- Crafting system and resources gathering 
+- More classes
 - Adding sounds!  
 - Adding new and better graphics  
-- Fully support for mac  
-  
-v 3.0  
-  
-- New player profile creation  
-- New game mechanics  
+- Support for Mac and Windows
 - Bigger open world  
 - Multiplayer
 - Achievements  
-- Global Leader boards
-- More dungeons!  
-- More bosses!  
-- More items!
 
 ## Installing
 
@@ -86,9 +70,9 @@ Note: You also need to have installed:
 
 - Make
 
-_Compiling_ -> Just run make in the project folder.
+_Compiling_ -> Just use 'make' in the project folder.
 
-_Running_ ->  Use make run.
+_Running_ ->  Use 'make run'.
 
 **_Just give me the exe_** -> If you just want to download the executable, check the releases tab in the top of this page and select the one you want.
 
