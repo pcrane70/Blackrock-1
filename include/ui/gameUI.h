@@ -9,6 +9,7 @@
 
 #define NO_COLOR        0x00000000
 #define WHITE           0xFFFFFFFF
+#define BLACK           0x000000FF
 
 #define FULL_GREEN      0x00FF00FF
 #define FULL_RED        0xFF0000FF

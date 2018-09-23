@@ -387,8 +387,8 @@ void renderLootRects (Console *console) {
 
     u8 count = 0;
     for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
-        if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, 0x000000FF);
-        else drawLootRect (console, (LootRect *) e->data, 0xFFFFFFFF);
+        if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, BLACK);
+        else drawLootRect (console, (LootRect *) e->data, WHITE);
         
         count++;
     }
@@ -509,6 +509,8 @@ Item *getSelectedLootItem (void) {
                 break;
             } 
         }
+
+        count++;
     }
 
     return retVal;
@@ -669,7 +671,7 @@ void renderInventoryItems (Console *console) {
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
-    drawRect (console, &rect, INVENTORY_COLOR, 0, 0xFFFFFFFF);
+    drawRect (console, &rect, INVENTORY_COLOR, 0, NO_COLOR);
 
     putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, NO_COLOR);
 
@@ -914,14 +916,14 @@ void renderCharacterRects (Console *console) {
     
              // draw highlighted rect
             if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) 
-                drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, 0x000000FF);
+                drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, NO_COLOR);
 
             // draw every other rect with an item on it
             else if (charRect->item != NULL) 
-                drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, 0x000000FF);
+                drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
 
             // draw the empty rects
-            else drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, 0x000000FF);
+            else drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
         }
     }
 
@@ -993,15 +995,15 @@ void showCharacter (bool dual) {
 
     if (dual) {
         UIRect c = { (16 * CHARACTER_DUAL_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
+        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
     }
 
     else {
         UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
+        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
     }
 
-    insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
+    insertAfter (activeScene->views, LIST_END (activeScene->views), characterView);
 
     if (characterRects == NULL) {
         characterRects = initCharacterRects ();
@@ -1118,6 +1120,34 @@ UIItemData *lootItemUI = NULL;
 UIItemData *equippedItemUI = NULL;
 UIItemData *iData = NULL;
 
+// just to be sure...
+UIItemData *newItemUIData (void) {
+
+    UIItemData *data = (UIItemData *) malloc (sizeof (UIItemData));
+
+    if (data != NULL) {
+        data->name = NULL;
+        data->valueTxt = NULL;
+        data->typeName = NULL;
+
+        data->w = NULL;
+        data->a = NULL;
+
+        data->stats.health = NULL;
+        data->stats.dps = NULL;
+        data->stats.armor = NULL;
+        data->stats.strength = NULL;
+        data->stats.stamina = NULL;
+        data->stats.agility = NULL;
+        data->stats.intellect = NULL;
+
+        data->lifeTxt = NULL;
+    }
+
+    return data;
+
+}
+
 void cleanItemData (UIItemData *data) {
 
     if (data != NULL) {
@@ -1146,7 +1176,7 @@ void cleanItemData (UIItemData *data) {
 // FIXME: add more stats
 UIItemData *getUIItemData (Item *item) {
 
-    UIItemData *data = (UIItemData *) malloc (sizeof (UIItemData));
+    UIItemData *data = newItemUIData ();
 
     Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
     data->w = (Weapon *) getItemComponent (item, WEAPON);
@@ -1372,19 +1402,19 @@ void renderInventoryTooltip (Console *console) {
 void renderCharacterTooltip (Console *console) {
 
     if (equippedItemUI != NULL) {
-        putStringAt (console, lootItemUI->name, 1, 2, lootItemUI->rarityColor, NO_COLOR);
-        if (lootItemUI->isEquipment)
-            putStringAt (console, lootItemUI->typeName, 1, 4, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, equippedItemUI->name, 1, 2, equippedItemUI->rarityColor, NO_COLOR);
+        if (equippedItemUI->isEquipment)
+            putStringAt (console, equippedItemUI->typeName, 1, 4, TOOLTIP_TEXT, NO_COLOR);
 
-        if (lootItemUI->isWeapon) {
-            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 8, 4, WHITE, NO_COLOR);
+        if (equippedItemUI->isWeapon) {
+            if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 8, 4, WHITE, NO_COLOR);
             else putStringAt (console, "One-Handed", 8, 4, WHITE, NO_COLOR);
         }
 
         // FIXME: equipped stats
         // FIXME: stats comparison
 
-        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 1, 12, lootItemUI->lifeColor, NO_COLOR);
+        if (equippedItemUI->isEquipment) putStringAt (console, equippedItemUI->lifeTxt, 1, 12, equippedItemUI->lifeColor, NO_COLOR);
     }
 
 }
@@ -1510,10 +1540,14 @@ void characterTooltip (void) {
 void cleanTooltipData (void) {
 
     if (lootItemUI != NULL) cleanItemData (lootItemUI);
+    lootItemUI = NULL;
     if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+    equippedItemUI = NULL;
     if (iData != NULL) cleanItemData (iData);
+    iData = NULL;
 
     if (comp != NULL) destroyComp ();
+    comp = NULL;
 
 }
 
@@ -1533,13 +1567,15 @@ void toggleTooltip (u8 view) {
         cleanTooltipData ();
 
         ListElement *e = getListElement (activeScene->views, tooltipView);
-        destroyView ((UIView *) removeElement (activeScene->views, e));
+        if (e != NULL) destroyView ((UIView *) removeElement (activeScene->views, e));
+        else destroyView (tooltipView);
         tooltipView = NULL;
-        activeView = (UIView *) (LIST_END (activeScene->views))->data;
 
         if (lootView != NULL) updateLootPos (false);
         if (characterView != NULL) updateCharacterPos (false);
         if (inventoryView != NULL) updateInventoryPos (false);
+
+        activeView = (UIView *) LIST_END (activeScene->views)->data;
     }
 
 }
