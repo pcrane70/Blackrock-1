@@ -1591,9 +1591,9 @@ UIView *pauseMenu = NULL;
 static void renderPauseMenu (Console *console) {
 
     UIRect rect = { 0, 0, PAUSE_WIDTH, PAUSE_HEIGHT };
-    drawRect (console, &rect, PAUSE_COLOR, 0, 0xFFFFFFFF);
+    drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
 
-    putStringAt (console, "Pause Menu", 15, 2, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, "Pause Menu", 15, 2, INVENTORY_TEXT, NO_COLOR);
 
 }
 
@@ -1803,8 +1803,109 @@ void toggleScoreScreen (void) {
 
 }
 
-// TODO:
+
 /*** LEADERBOARDS ***/
+
+// FIXME: where do we want this?
+typedef struct {
+
+    char *name;
+    char *race;
+    u8 level;
+    u32 score;
+    // u16 kills?
+    // FIXME: time?
+    // date?
+
+} LBEntry;
+
+UIView *leaderBoardView = NULL;
+bool local;
+
+List *localLB = NULL;
+List *globalLB = NULL;
+
+// FIXME: where do we want this?
+List *getLocalLBData (void) {
+
+    // check if we have a .conf file
+    // do we have data in there?
+    // parse the config file 
+    // get the data into a list
+    // return the list for display
+
+}
+
+List *getGlobalLBData (void) {
+
+    // check if we have already a .conf file
+    // check the date of the file
+    // if it is to old, connect to the server and request the file
+    // check that we have got a valid file
+
+    // get the data in the same way as in the local leaderboard
+
+}
+
+void renderLocalLB (Console *console) {
+
+    // FIXME: where do we want this?
+    if (localLB == NULL) localLB = getLocalLBData ();
+    else {
+        // TODO: render the list of players
+        // we have a list of players
+        // display each player and its data in its own rect
+        LBEntry *entry = NULL;
+        for (ListElement *e = LIST_START (localLB); e != NULL; e = e->next) {
+            entry = (LBEntry *) e->data;
+            
+        }
+    }
+
+}
+
+void renderGlobalLb (Console *console) {
+
+    // FIXME: where do we want this?
+    if (globalLB == NULL) globalLB = getGlobalLBData ();
+    else {
+        // TODO: render the list of players
+    }
+
+}
+
+static void renderLeaderboard (Console *console) {
+
+    UIRect rect = { 0, 0, PAUSE_WIDTH, PAUSE_HEIGHT };
+    drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
+
+    if (local) renderLocalLB (console);
+    else renderGlobalLb (console);
+
+}
+
+void toggleLeaderboard (void) {
+
+    if (leaderBoardView == NULL) {
+        UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
+        leaderBoardView = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderLeaderboard);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), scoreScreen);
+        postGameScene->activeView = leaderBoardView;
+    }
+
+    else {
+        if (leaderBoardView != NULL) {
+            ListElement *leader = getListElement (activeScene->views, leaderBoardView);
+            if (leader != NULL) removeElement (activeScene->views, leader);
+            destroyView (leaderBoardView);
+            leaderBoardView = NULL;
+
+            // FIXME: do we need this?
+            // activeView = (UIView *) (LIST_END (activeScene->views))->data;
+        }
+    }
+
+}
 
 // FIXME:
 // TODO: delete all other UI elements!!
