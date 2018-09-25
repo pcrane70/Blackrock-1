@@ -1683,13 +1683,20 @@ UIScreen *gameScene (void) {
 void destroyGameUI (void) {
 
     if (inGameScreen != NULL) {
+        fprintf (stdout, "Cleanning up in game UI...\n");
+
         // message log
         cleanMessageLog ();
+
+        // tooltip
+        cleanTooltipData ();
 
         if (inventoryRects != NULL) destroyInvRects ();
         if (characterRects != NULL) destroyCharRects ();
 
         destroyLootRects ();
+
+        fprintf (stdout, "Cleanning up in game views...\n");
 
         UIView *v = NULL;
         for (ListElement *e = LIST_START (inGameScreen->views); e != LIST_END (inGameScreen->views); e = e->next) 
@@ -1821,11 +1828,7 @@ UIScreen *postGameScreen (void) {
     deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
     insertAfter (views, NULL, deathScreen);
 
-        // tooltip
-        cleanTooltipData ();
-
-        if (inventoryRects != NULL) destroyInvRects ();
-        if (characterRects != NULL) destroyCharRects ();
+    if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
 
     postGameScene = (UIScreen *) malloc (sizeof (UIScreen));
     
@@ -1833,10 +1836,9 @@ UIScreen *postGameScreen (void) {
     postGameScene->activeView = deathScreen;
     postGameScene->handleEvent = handlePostGameEvent;
 
-        for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
-            destroyView ((UIView *) e->data);
-        
-        destroyList (inGameScreen->views);
+    destroyCurrentScreen = destroyPostGameScreen;
+
+    fprintf (stdout, "Post game init!\n");
 
     return postGameScene;
 
