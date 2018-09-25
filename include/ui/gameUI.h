@@ -7,6 +7,16 @@
 
 #include "utils/list.h"
 
+#define NO_COLOR        0x00000000
+#define WHITE           0xFFFFFFFF
+#define BLACK           0x000000FF
+
+#define FULL_GREEN      0x00FF00FF
+#define FULL_RED        0xFF0000FF
+
+#define YELLOW          0xFFD32AFF
+#define SAPPHIRE        0x1E3799FF
+
 /*** MAP ***/
 
 extern UIView *mapView;
@@ -67,6 +77,13 @@ extern void updateLootUI (u8 yIdx);
 
 extern List *activeLootRects;
 extern u8 lootYIdx;
+
+/*** TOOLTIP ***/
+
+extern UIView *tooltipView;
+extern void toggleTooltip (u8);
+
+extern Item *lootItem;
 
 /*** INVENTORY ***/
 

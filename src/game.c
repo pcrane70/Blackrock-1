@@ -1474,15 +1474,16 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
     if (isPlayer) {
         Graphics *g = (Graphics *) getComponent (defender, GRAPHICS);
         str = createString ("You hit the %s for %i damage.", g->name, damage);
+        if (critical) logMessage (str, CRITICAL_COLOR);
+        else logMessage (str, HIT_COLOR);
     }
 
     else {
         Graphics *g = (Graphics *) getComponent (attacker, GRAPHICS);
         str = createString ("The %s hits you for %i damage!", g->name, damage);
+        logMessage (str, DAMAGE_COLOR);
     }
 
-    if (critical) logMessage (str, CRITICAL_COLOR);
-    else logMessage (str, HIT_COLOR);
     free (str);
 
     return damage;

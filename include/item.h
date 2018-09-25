@@ -71,6 +71,7 @@ typedef struct Armour {
 } Armour;
 
 // TODO: add class specific weapons
+// TODO: add modifiers
 typedef struct Weapon {
 
     u32 itemId;     
@@ -98,7 +99,11 @@ extern void *getGameComponent (Item *, GameComponent);
 extern void *getItemComponent (Item *, ItemComponent);
 
 extern u32 getItemColor (u8 rarity);
+extern u32 getLifeTimeColor (Item *);
 extern char *getItemSlot (Item *);
+extern char *getEquipmentTypeName (Item *);
+
+extern char *getItemTypeName (Item *);
 
 extern Item *destroyItem (Item *);
 extern Item *deleteItem (Item *);

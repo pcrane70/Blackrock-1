@@ -17,6 +17,8 @@
 #include "utils/list.h"       // for messages
 #include "objectPool.h"
 
+#include "utils/myUtils.h"
+
 extern UIView *activeView;
 
 /*** STATS ***/
@@ -119,19 +121,19 @@ static void rednderStats (Console *console) {
     UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
     drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
 
-    putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, 0x00000000);
+    putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, NO_COLOR);
 
     int currHealth = player->combat->baseStats.health;
     int maxHealth = player->combat->baseStats.maxHealth;
     char *str = createString ("HP: %i/%i", currHealth, maxHealth);
 
     if (currHealth >= (maxHealth * 0.75)) 
-        putStringAt (console, str, 0, 1, SUCCESS_COLOR, 0x00000000);
+        putStringAt (console, str, 0, 1, SUCCESS_COLOR, NO_COLOR);
 
     else if ((currHealth < (maxHealth * 0.75)) && (currHealth >= (maxHealth * 0.25)))
-        putStringAt (console, str, 0, 1, 0xFF990099, 0x00000000);
+        putStringAt (console, str, 0, 1, 0xFF990099, NO_COLOR);
 
-    else putStringAt (console, str, 0, 1, WARNING_COLOR, 0x00000000);
+    else putStringAt (console, str, 0, 1, WARNING_COLOR, NO_COLOR);
 
     free (str);
 
@@ -251,11 +253,12 @@ char *createString (const char *stringWithFormat, ...) {
 
 /*** LOOT ***/
 
-#define LOOT_LEFT           24
-#define LOOT_DUAL_LEFT      4
-#define LOOT_TOP            9
-#define LOOT_WIDTH          28
-#define LOOT_HEIGHT         24
+#define LOOT_LEFT               26
+#define LOOT_DUAL_INV_LEFT      4
+#define LOOT_DUAL_TOOL_LEFT     9
+#define LOOT_TOP                9
+#define LOOT_WIDTH              28
+#define LOOT_HEIGHT             24
 
 #define LOOT_COLOR     0x69777DFF
 #define LOOT_TEXT      0xEEEEEEFF
@@ -350,13 +353,13 @@ void destroyLootRects (void) {
 
 void drawLootRect (Console *console, LootRect *rect, u32 bgColor) {
 
-    drawRect (console, rect->bgRect, bgColor, 0, 0x00000000);
-    drawRect (console, rect->imgRect, 0x000000FF, 0, 0x00000000);
+    drawRect (console, rect->bgRect, bgColor, 0, NO_COLOR);
+    drawRect (console, rect->imgRect, NO_COLOR, 0, NO_COLOR);
 
     Graphics *g = (Graphics *) getGameComponent (rect->item, GRAPHICS);
     if (g != NULL)        
         putStringAt (console, g->name, 7, (rect->bgRect->y) + 2,
-            getItemColor (rect->item->rarity), 0x00000000);
+            getItemColor (rect->item->rarity), NO_COLOR);
 
 }
 
@@ -384,8 +387,8 @@ void renderLootRects (Console *console) {
 
     u8 count = 0;
     for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
-        if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, 0x000000FF);
-        else drawLootRect (console, (LootRect *) e->data, 0xFFFFFFFF);
+        if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, BLACK);
+        else drawLootRect (console, (LootRect *) e->data, WHITE);
         
         count++;
     }
@@ -396,7 +399,7 @@ static void renderLoot (Console *console) {
 
     if (currentLoot != NULL) {
         UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
-        drawRect (console, &looRect, LOOT_COLOR, 0, 0xFF990099);
+        drawRect (console, &looRect, LOOT_COLOR, 1, 0xFF990099);
 
         putStringAt (console, "Loot", 12, 2, LOOT_TEXT, 0x00000000);
 
@@ -430,16 +433,25 @@ void hideLoot (void) {
 void showLoot (bool dual) {
 
     if (dual) {
-        UIRect lootRect = { (16 * LOOT_DUAL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-        lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
+        // tooltip
+        if (tooltipView != NULL) {
+            UIRect lootRect = { (16 * LOOT_DUAL_TOOL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+            lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        }
+
+        // with inventory
+        else {
+            UIRect lootRect = { (16 * LOOT_DUAL_INV_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+            lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        }
     }
 
     else {
         UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
         lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
     }
+
+    insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
 
     lootYIdx = 0;
 
@@ -481,6 +493,27 @@ void toggleLootWindow (void) {
 
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
+
+}
+
+Item *getSelectedLootItem (void) {
+
+    Item *retVal = NULL;
+
+    u8 count = 0;
+    for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+        if (count == lootYIdx) {
+            LootRect *lr = (LootRect *) e->data;
+            if (lr->item != NULL) {
+                retVal = lr->item;
+                break;
+            } 
+        }
+
+        count++;
+    }
+
+    return retVal;
 
 }
 
@@ -606,30 +639,30 @@ void renderInventoryItems (Console *console) {
     
              // draw highlighted rect
             if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
-                drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, 0x000000FF);
+                drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
                 // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
                 if (invRect->item != NULL) {
                     // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
                     Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
                     if (g != NULL) 
-                        putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), 0x00000000);
+                        putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), NO_COLOR);
 
                     u8 quantity = ZERO_ITEMS + invRect->item->quantity;
                     // putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
-                    putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, 0xFFFFFFFF, 0x00000000);
+                    putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
                 }
             }
 
             // draw every other rect with an item on it
             else if (invRect->item != NULL) {
-                drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, 0x000000FF);
+                drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
                 u8 quantity = ZERO_ITEMS + invRect->item->quantity;
-                putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, 0xFFFFFFFF, 0x00000000);
+                putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
             }
 
             // draw the empty rects
-            else drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, 0x000000FF);
+            else drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
         }
     }
 
@@ -638,23 +671,23 @@ void renderInventoryItems (Console *console) {
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
-    drawRect (console, &rect, INVENTORY_COLOR, 0, 0xFFFFFFFF);
+    drawRect (console, &rect, INVENTORY_COLOR, 0, NO_COLOR);
 
-    putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, NO_COLOR);
 
     // draw item description rect
     UIRect descBox = { 3, 21, INV_DESC_BOX_WIDTH, INV_DESC_BOX_HEIGHT };
-    drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
+    drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
     // render items
     renderInventoryItems (console);
     
     // gold
     char *gold = createString ("%ig - %is - %ic", player->money[0], player->money[1], player->money[2]);
-    putStringAt (console, gold, 13, 25, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, gold, 13, 25, INVENTORY_TEXT, NO_COLOR);
 
-    putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, 0x00000000);
-    putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, 0x00000000);
+    putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, NO_COLOR);
+    putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, NO_COLOR);
     free (gold);
 
 }
@@ -667,12 +700,12 @@ void showInventory (bool dual) {
 
     if (dual) {
         UIRect inv = { (16 * INVENTORY_DUAL_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
+        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
     }
 
     else {
         UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, 0x000000FF, true, renderInventory);
+        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
     }
 
     insertAfter (activeScene->views, LIST_END (activeScene->views), inventoryView);
@@ -708,6 +741,11 @@ void updateInventoryPos (bool dual) {
 void toggleInventory (void) {
 
     if (inventoryView == NULL) {
+        if (tooltipView != NULL) {
+            if (lootView != NULL) toggleTooltip (true);
+            else toggleTooltip (false);
+        } 
+
         if (lootView != NULL) {
             updateLootPos (true);
             showInventory (true);
@@ -878,14 +916,14 @@ void renderCharacterRects (Console *console) {
     
              // draw highlighted rect
             if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) 
-                drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, 0x000000FF);
+                drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, NO_COLOR);
 
             // draw every other rect with an item on it
             else if (charRect->item != NULL) 
-                drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, 0x000000FF);
+                drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
 
             // draw the empty rects
-            else drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, 0x000000FF);
+            else drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
         }
     }
 
@@ -957,15 +995,15 @@ void showCharacter (bool dual) {
 
     if (dual) {
         UIRect c = { (16 * CHARACTER_DUAL_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
+        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
     }
 
     else {
         UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacter);
+        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
     }
 
-    insertAfter(activeScene->views, LIST_END (activeScene->views), characterView);
+    insertAfter (activeScene->views, LIST_END (activeScene->views), characterView);
 
     if (characterRects == NULL) {
         characterRects = initCharacterRects ();
@@ -1024,6 +1062,519 @@ void toggleCharacter (void) {
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     } 
      
+}
+
+/*** TOOLTIP ***/
+
+#define TOOLTIP_LEFT           43
+#define TOOLTIP_TOP            9
+#define TOOLTIP_WIDTH          28
+#define TOOLTIP_HEIGHT         24
+
+#define TOOLTIP_COLOR     0x69777DFF
+#define TOOLTIP_TEXT      0xEEEEEEFF
+
+#define TTIP_CHAR_LEFT      3
+#define TTIP_CHAR_RIGHT     57
+#define TTIP_CHAR_WIDTH     20
+#define TTIP_CHAR_HEIGHT    18
+
+#define TTIP_INV_LEFT       10
+#define TTIP_INV_WIDTH      20
+#define TTIP_INV_HEIGHT     18
+
+UIView *tooltipView = NULL;
+
+u8 tooltip;
+
+typedef struct {
+
+    char *health;
+    char *dps;
+    char *armor;
+    char *strength;
+    char *stamina;
+    char *agility;
+    char *intellect;
+
+} ItemStatsUI;
+
+typedef struct {
+
+    char *name;
+    u32 rarityColor;
+    char *typeName;
+    char *valueTxt;
+    bool isEquipment;
+    bool isWeapon;
+    Weapon *w;
+    Armour *a;
+    ItemStatsUI stats;
+    char *lifeTxt;
+    u32 lifeColor;
+
+} UIItemData;
+
+// Tooltips items
+UIItemData *lootItemUI = NULL;
+UIItemData *equippedItemUI = NULL;
+UIItemData *iData = NULL;
+
+// just to be sure...
+UIItemData *newItemUIData (void) {
+
+    UIItemData *data = (UIItemData *) malloc (sizeof (UIItemData));
+
+    if (data != NULL) {
+        data->name = NULL;
+        data->valueTxt = NULL;
+        data->typeName = NULL;
+
+        data->w = NULL;
+        data->a = NULL;
+
+        data->stats.health = NULL;
+        data->stats.dps = NULL;
+        data->stats.armor = NULL;
+        data->stats.strength = NULL;
+        data->stats.stamina = NULL;
+        data->stats.agility = NULL;
+        data->stats.intellect = NULL;
+
+        data->lifeTxt = NULL;
+    }
+
+    return data;
+
+}
+
+void cleanItemData (UIItemData *data) {
+
+    if (data != NULL) {
+        if (data->name) free (data->name);
+        if (data->valueTxt) free (data->valueTxt);
+        if (data->typeName) free (data->typeName);
+
+        data->w = NULL;
+        data->a = NULL;
+
+        if (data->stats.health) free (data->stats.health);
+        if (data->stats.dps) free (data->stats.dps);
+        if (data->stats.armor) free (data->stats.armor);
+        if (data->stats.strength) free (data->stats.strength);
+        if (data->stats.stamina) free (data->stats.stamina);
+        if (data->stats.agility) free (data->stats.agility);
+        if (data->stats.intellect) free (data->stats.intellect);
+
+        if (data->lifeTxt) free (data->lifeTxt);
+
+        free (data);
+    }
+
+}
+
+// FIXME: add more stats
+UIItemData *getUIItemData (Item *item) {
+
+    UIItemData *data = newItemUIData ();
+
+    Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
+    data->w = (Weapon *) getItemComponent (item, WEAPON);
+    data->a = (Armour *) getItemComponent (item, ARMOUR);
+
+    if (data->w != NULL || data->a != NULL) {
+        data->isEquipment = true;
+        data->typeName = getEquipmentTypeName (item);
+    } 
+    else data->isEquipment = false;
+
+    if (data->w != NULL) data->isWeapon = true;
+    else data->isWeapon = false;
+
+    data->name = (char *) calloc (strlen (g->name), sizeof (char));
+    strcpy (data->name, g->name);
+
+    data->rarityColor = getItemColor (item->rarity);
+
+    data->valueTxt = createString ("%ig - %is - %ic", item->value[0], item->value[1], item->value[2]);
+
+    // FIXME:
+    // get the item stats modifiers modifiers, this is for a food or a potion
+
+    if (data->isEquipment) {
+        if (data->isWeapon) data->stats.dps = createString ("Dps: %i", data->w->dps);
+
+        if (data->isWeapon) data->lifeTxt = createString ("Lifetime: %i / %i", data->w->lifetime, data->w->maxLifetime);
+        else data->lifeTxt = createString ("Lifetime: %i / %i", data->a->lifetime, data->a->maxLifetime);
+
+        data->lifeColor = getLifeTimeColor (item);
+    }
+
+    return data;
+
+}
+
+// TODO: do we also add the colors here?
+// This stores the difference in stats between the compared items
+typedef struct {
+
+    char *dpsDiff;
+    char *armorDiff;
+    char *strengthDiff;
+    char *staminaDiff;
+    char *agilityDiff;
+    char *intellectDiff;
+
+} CompareItems;
+
+CompareItems *comp = NULL;
+bool compWeapons;
+
+// just to be sure...
+CompareItems *newComp (void) {
+
+    CompareItems *comp = (CompareItems *) malloc (sizeof (CompareItems));
+
+    if (comp != NULL) {
+        comp->dpsDiff = NULL;
+        comp->armorDiff = NULL;
+        comp->strengthDiff = NULL;
+        comp->staminaDiff = NULL;
+        comp->agilityDiff = NULL;
+        comp->intellectDiff = NULL;
+    }
+
+    else fprintf (stderr, "Comp items is NULL!\n");
+
+    return comp;
+
+}
+
+void destroyComp (void) {
+
+    if (comp->dpsDiff) free (comp->dpsDiff);
+    if (comp->armorDiff) free (comp->armorDiff);
+    if (comp->strengthDiff) free (comp->strengthDiff);
+    if (comp->staminaDiff) free (comp->staminaDiff);
+    if (comp->agilityDiff) free (comp->agilityDiff);
+    if (comp->intellectDiff) free (comp->intellectDiff);
+    
+    free (comp);
+
+}
+
+// search an equipped item to compare to
+Item *itemToCompare (Item *item) {
+
+    Item *compareTo = NULL;
+
+    Weapon *w = (Weapon *) getItemComponent (item, WEAPON);
+    if (w != NULL) {
+        // we have a weapon, so compare it to the one we have equipped
+        Item *equipped = player->weapons[w->slot];
+        if (equipped != NULL) compareTo = equipped;
+        
+    }
+
+    else {
+        Armour *a = (Armour *) getItemComponent (item, ARMOUR);
+        if (a != NULL) {
+            // we have an armour, so compare it to the one we have equipped
+            Item *equipped = player->equipment[a->slot];
+            if (equipped != NULL) compareTo = equipped;
+        }
+    }
+
+    return compareTo;
+
+}
+    
+// FIXME: add more stats here!!
+CompareItems *compareItems (Item *lootItem, Item *compareTo) {
+
+    CompareItems *comp = newComp ();
+
+    // first check if we are comparing weapons
+    Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
+    Weapon *equippedWeapon = (Weapon *) getItemComponent (compareTo, WEAPON);
+
+    if ((lootWeapon != NULL) && (equippedWeapon != NULL)) {
+        i8 diff;
+
+        // dps
+        diff = lootWeapon->dps - equippedWeapon->dps;
+        if (diff < 0) comp->dpsDiff = createString ("-%i", diff);
+        else if (diff > 0) comp->dpsDiff = createString ("+%i", diff);
+        else {
+            comp->dpsDiff = (char *) calloc (3, sizeof (char));
+            strcpy (comp->dpsDiff, "--");
+        }
+    }    
+
+    return comp;
+
+}
+
+// FIXME: what happens when we have 2 one handed weapons equipped
+// FIXME: add value?
+// FIXME: how to handle the y idx??
+// TODO: change to color depending if we can equip it or not
+void renderLootTooltip (Console *console) {
+
+    // render the loot item first
+    if (lootItemUI != NULL) {
+        putStringAt (console, lootItemUI->name, 2, 2, lootItemUI->rarityColor, NO_COLOR);
+        if (lootItemUI->isEquipment)
+            putStringAt (console, lootItemUI->typeName, 2, 4, TOOLTIP_TEXT, NO_COLOR);
+
+        if (lootItemUI->isWeapon) {
+            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
+        }
+
+        // FIXME: loot stats
+
+        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 8, lootItemUI->lifeColor, NO_COLOR);
+    }
+
+    // render the equipped item
+    if (equippedItemUI != NULL) {
+        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
+        putStringAt (console, lootItemUI->name, 2, 14, lootItemUI->rarityColor, NO_COLOR);
+        if (lootItemUI->isEquipment)
+            putStringAt (console, lootItemUI->typeName, 2, 16, TOOLTIP_TEXT, NO_COLOR);
+
+        if (lootItemUI->isWeapon) {
+            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
+        }
+
+        // FIXME: equipped stats
+        // FIXME: stats comparison
+
+        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 20, lootItemUI->lifeColor, NO_COLOR);
+    }
+
+}
+
+// FIXME: render stats
+// FIXME: what happens if the name doesn't fit?
+void renderInventoryTooltip (Console *console) {
+
+    if (iData != NULL) {
+        putStringAt (console, iData->name, 1, 2, iData->rarityColor, NO_COLOR);
+        if (iData->isEquipment) {
+            putStringAt (console, iData->typeName, 1, 3, TOOLTIP_TEXT, NO_COLOR);
+            if (iData->isWeapon) {
+                if (iData->w->twoHanded) putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
+                else putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
+            }
+
+            putStringAt (console, iData->lifeTxt, 1, 7, iData->lifeColor, NO_COLOR);
+        }
+
+        putStringAt (console, iData->valueTxt, 1, 9, TOOLTIP_TEXT, NO_COLOR);
+    }
+
+    if (equippedItemUI != NULL) {
+        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
+        putStringAt (console, equippedItemUI->name, 1, 14, equippedItemUI->rarityColor, NO_COLOR);
+        if (iData->isEquipment) {
+            putStringAt (console, equippedItemUI->typeName, 1, 15, TOOLTIP_TEXT, NO_COLOR);
+            if (equippedItemUI->isWeapon) {
+                if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
+                else putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
+            }
+
+            putStringAt (console, equippedItemUI->lifeTxt, 1, 17, equippedItemUI->lifeColor, NO_COLOR);
+        }
+
+        putStringAt (console, equippedItemUI->valueTxt, 1, 18, TOOLTIP_TEXT, NO_COLOR);
+    }
+
+}
+
+// FIXME: what if the name doesn't fit in the tooltip?
+// FIXME: add value?
+void renderCharacterTooltip (Console *console) {
+
+    if (equippedItemUI != NULL) {
+        putStringAt (console, equippedItemUI->name, 1, 2, equippedItemUI->rarityColor, NO_COLOR);
+        if (equippedItemUI->isEquipment)
+            putStringAt (console, equippedItemUI->typeName, 1, 4, TOOLTIP_TEXT, NO_COLOR);
+
+        if (equippedItemUI->isWeapon) {
+            if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 8, 4, WHITE, NO_COLOR);
+            else putStringAt (console, "One-Handed", 8, 4, WHITE, NO_COLOR);
+        }
+
+        // FIXME: equipped stats
+        // FIXME: stats comparison
+
+        if (equippedItemUI->isEquipment) putStringAt (console, equippedItemUI->lifeTxt, 1, 12, equippedItemUI->lifeColor, NO_COLOR);
+    }
+
+}
+
+// FIXME: create a more efficent way for the rect
+static void renderTooltip (Console *console) {
+
+    switch (tooltip) {
+        // loot tooltip
+        case 0: {
+            UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
+            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+
+            renderLootTooltip (console);
+        } break;
+
+        // inventory tooltip
+        case 1: {
+            UIRect tooltipRect = { 0, 0, TTIP_INV_WIDTH, TOOLTIP_HEIGHT };
+            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+
+            renderInventoryTooltip (console);
+        } break;
+
+        // character tooltip
+        case 2: {
+            UIRect tooltipRect = { 0, 0, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT };
+            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+
+            renderCharacterTooltip (console);
+            } break;
+        default: break;
+    }
+
+}
+
+void lootTooltip (void) {
+
+    // get the selected loot item
+    Item *lootItem = getSelectedLootItem ();
+    if (lootItem != NULL) {
+        if (lootItemUI != NULL) cleanItemData (lootItemUI);
+        lootItemUI = getUIItemData (lootItem);
+
+        // check if we have items to compare
+        Item *compareTo = itemToCompare (lootItem);
+
+        // get equipped item stats
+        if (compareTo != NULL) {
+            if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+            equippedItemUI = getUIItemData (compareTo);
+
+            // compare the two item stats
+            if (comp != NULL) destroyComp ();
+            comp = compareItems (lootItem, compareTo);
+        }
+
+        // as of 21/09/2018 -- we are displaying the same window size, no matter if we only have one item
+        // render the item stats
+        UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+        tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+        if (lootView != NULL) updateLootPos (true);
+
+    }
+
+}
+
+void invTooltip (void) {
+
+    // check if we have a selected item
+    Item *selectedItem = getInvSelectedItem ();
+    if (selectedItem != NULL) {
+        if (iData != NULL) cleanItemData (iData);
+        iData = getUIItemData (selectedItem);
+
+        // check if we have items to compate
+        Item *compareTo = itemToCompare (selectedItem);
+
+        if (compareTo != NULL) {
+            if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+            equippedItemUI = getUIItemData (compareTo);
+
+            // compare the two items
+            if (comp != NULL) destroyComp ();
+            comp = compareItems (selectedItem, compareTo);
+        }
+
+        // FIXME: we are displaying the same window size as in the loot menu
+        UIRect lootRect = { (16 * TTIP_INV_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_INV_WIDTH), (16 * TOOLTIP_HEIGHT) };
+        tooltipView = newView (lootRect, TTIP_INV_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+
+        if (inventoryView != NULL) updateInventoryPos (true);
+    }
+
+}
+
+void characterTooltip (void) {
+
+    // first check if we have an item selected
+    Item *selectedItem = getCharSelectedItem ();
+    if (selectedItem != NULL) {
+        if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+        equippedItemUI = getUIItemData (selectedItem);
+
+        if (characterXIdx == 0) {
+            UIRect lootRect = { (16 * TTIP_CHAR_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
+            tooltipView = newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        }
+
+        else {
+            UIRect lootRect = { (16 * TTIP_CHAR_RIGHT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
+            tooltipView = newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        }
+        
+        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+    }  
+
+}
+
+void cleanTooltipData (void) {
+
+    if (lootItemUI != NULL) cleanItemData (lootItemUI);
+    lootItemUI = NULL;
+    if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+    equippedItemUI = NULL;
+    if (iData != NULL) cleanItemData (iData);
+    iData = NULL;
+
+    if (comp != NULL) destroyComp ();
+    comp = NULL;
+
+}
+
+void toggleTooltip (u8 view) {
+
+    if (tooltipView == NULL) {
+        switch (view) {
+            case 0: lootTooltip (); tooltip = 0; break;
+            case 1: invTooltip (); tooltip = 1; break;
+            case 2: characterTooltip (); tooltip = 2; break;
+            default: break;
+        }
+    }
+
+    // FIXME: handle character, inventory and tooltip at the same time
+    else if (tooltipView != NULL) {
+        cleanTooltipData ();
+
+        ListElement *e = getListElement (activeScene->views, tooltipView);
+        if (e != NULL) destroyView ((UIView *) removeElement (activeScene->views, e));
+        else destroyView (tooltipView);
+        tooltipView = NULL;
+
+        if (lootView != NULL) updateLootPos (false);
+        if (characterView != NULL) updateCharacterPos (false);
+        if (inventoryView != NULL) updateInventoryPos (false);
+
+        activeView = (UIView *) LIST_END (activeScene->views)->data;
+    }
+
 }
 
 /*** PAUSE MENU ***/
@@ -1270,7 +1821,11 @@ UIScreen *postGameScreen (void) {
     deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
     insertAfter (views, NULL, deathScreen);
 
-    if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
+        // tooltip
+        cleanTooltipData ();
+
+        if (inventoryRects != NULL) destroyInvRects ();
+        if (characterRects != NULL) destroyCharRects ();
 
     postGameScene = (UIScreen *) malloc (sizeof (UIScreen));
     
@@ -1278,9 +1833,10 @@ UIScreen *postGameScreen (void) {
     postGameScene->activeView = deathScreen;
     postGameScene->handleEvent = handlePostGameEvent;
 
-    destroyCurrentScreen = destroyPostGameScreen;
-
-    fprintf (stdout, "Post game init!\n");
+        for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
+            destroyView ((UIView *) e->data);
+        
+        destroyList (inGameScreen->views);
 
     return postGameScene;
 

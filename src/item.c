@@ -507,6 +507,27 @@ char *getItemSlot (Item *item) {
 
 }
 
+// FIXME:
+char *getEquipmentTypeName (Item *item) {
+
+    char slot[15];
+
+    Weapon *w = getItemComponent (item, WEAPON);
+    if (w != NULL) {
+        switch (w->type) {
+            case 0: strcpy (slot, "Sword"); break;
+            // case 1: strcpy (slot, "Off"); break;
+            default: break;
+        }
+    }
+
+    char *retVal = (char *) calloc (strlen (slot), sizeof (char));
+    strcpy (retVal, slot);
+
+    return retVal;
+
+}
+
 bool itemStacked (Item *item) {
 
     bool stacked = false;
@@ -626,6 +647,11 @@ void getLootItem (u8 lootYIdx) {
 
             // update Loot UI
             updateLootUI (lootYIdx);
+
+            // FIXME:
+            // update tooltip UI
+            // if (tooltipView != NULL) if (lootItem == item) toggleTooltip (true);
+            
         }
 
         else logMessage ("There are no items to pick up!", WARNING_COLOR);
@@ -674,6 +700,28 @@ void dropItem (Item *item) {
 }
 
 /*** WEAPONS -- ARMOUR ***/
+
+// FIXME: add more types
+char *getItemTypeName (Item *item) {
+
+    char typeName[15];
+
+    Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
+    if (weapon != NULL) {
+        switch (weapon->type) {
+            case 0: strcpy (typeName, "Sword"); break;
+            case 1: break;
+            case 2: break;
+            default: break;
+        }
+    }
+
+    char *retVal = (char *) calloc (strlen (typeName), sizeof (char));
+    strcpy (retVal, typeName);
+
+    return retVal;
+
+}
 
 // TODO: check for specific class weapons
 // TODO: update combat stats based on weapon modifiers if necessary
@@ -805,6 +853,33 @@ void toggleEquipArmour (void *i) {
 // but only if they are above 0, if you don't repair your items soon enough, 
 // you will lose them
 void repairItems (void) {
+
+}
+
+// 18/09/2018 -- i don't like this function
+u32 getLifeTimeColor (Item *item) {
+
+    u32 color = WHITE;
+
+    Weapon *weapon = (Weapon *) getItemComponent (item, WEAPON);
+    if (weapon != NULL) {
+        if (weapon->lifetime >= (weapon->maxLifetime * 0.75)) color = FULL_GREEN;
+        else if ((weapon->lifetime < (weapon->maxLifetime * 0.75)) && (weapon->lifetime >= (weapon->maxLifetime * 0.25)))
+            color = YELLOW;
+        else color = FULL_RED;
+    }
+
+    else {
+        Armour *armour = (Armour *) getItemComponent (item, ARMOUR);
+        if (armour != NULL) {
+            if (armour->lifetime >= (armour->maxLifetime * 0.75)) color = FULL_GREEN;
+            else if ((armour->lifetime < (armour->maxLifetime * 0.75)) && (armour->lifetime >= (armour->maxLifetime * 0.25)))
+                color = YELLOW;
+            else color = FULL_RED;
+        }
+    }
+
+    return color;
 
 }
 
