@@ -216,15 +216,15 @@ void removeItemComponent (Item *item, ItemComponent type) {
 // FIXME: problems with items pool
 Item *destroyItem (Item *item) {
 
-    for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
-    for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
+    if (item != NULL) {
+        for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
+        for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
-    ListElement *e = getListElement (items, item);
-
-    if (e != NULL) push (itemsPool, removeElement (items, e));
+        push (itemsPool, item);
+    }
 
     return NULL;
-
+    
 }
 
 Item *deleteItem (Item *item) {

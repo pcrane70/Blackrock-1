@@ -1149,7 +1149,7 @@ List *generateLootItems (u32 *dropItems, u32 count) {
 
     if (itemsNum == 0) return NULL;
     else {
-        fprintf (stdout, "Creating loot items!\n");
+        fprintf (stdout, "Creating loot items...\n");
 
         List *lootItems = initList (free);
 
@@ -1611,9 +1611,8 @@ void clearOldLevel (void) {
         if (LIST_SIZE (items) > 0) {
             // send the items to their pool
             for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
-                // data = removeElement (items, e);
-                // if (data != NULL) destroyItem ((Item *) data);
-                destroyItem ((Item *) e->data);
+                data = removeElement (items, e);
+                if (data != NULL) destroyItem ((Item *) data);
             }
         }
     }
@@ -1625,7 +1624,8 @@ void gameOver (void) {
 
     setActiveScene (postGameScreen ());
 
-    // destroyGameUI ();
+    destroyGameUI ();
+    resetGameUI ();
 
 }
 
@@ -1772,7 +1772,9 @@ void retry (void) {
 
     calculateFov (player->pos->x, player->pos->y, fovMap);
 
+    fprintf (stdout, "Setting active scene...\n");
     setActiveScene (gameScene ());
+    fprintf (stdout, "Destroying post gam screen...\n");
     destroyPostGameScreen ();
 
 }

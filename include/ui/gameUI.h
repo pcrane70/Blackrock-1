@@ -116,6 +116,7 @@ extern UIScreen *gameScene (void);
 
 /*** CLEAN UP GAME UI ***/
 
+extern void resetGameUI (void);
 extern void destroyGameUI (void);
 
 /*** POST GAME ***/

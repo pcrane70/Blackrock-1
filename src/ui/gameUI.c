@@ -1680,6 +1680,20 @@ UIScreen *gameScene (void) {
 
 /*** CLEAN UP ***/
 
+void resetGameUI (void) {
+
+    messageLog = NULL;
+
+    iData = NULL;
+    lootItemUI = NULL;
+    equippedItemUI = NULL;
+    comp = NULL;
+
+    inventoryRects = NULL;
+    characterRects = NULL;
+
+}
+
 void destroyGameUI (void) {
 
     if (inGameScreen != NULL) {
@@ -1698,9 +1712,9 @@ void destroyGameUI (void) {
 
         fprintf (stdout, "Cleanning up in game views...\n");
 
-        UIView *v = NULL;
-        for (ListElement *e = LIST_START (inGameScreen->views); e != LIST_END (inGameScreen->views); e = e->next) 
-            destroyView ((UIView *) removeElement (inGameScreen->views, e));
+        // UIView *v = NULL;
+        // for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
+        //     destroyView ((UIView *) removeElement (inGameScreen->views, e));
         
         free (inGameScreen->views);
 
