@@ -1376,24 +1376,21 @@ void renderInventoryTooltip (Console *console) {
         putStringAt (console, iData->valueTxt, 1, 9, TOOLTIP_TEXT, NO_COLOR);
     }
 
-    // FIXME:
-    // render the equipped item
-    /* if (equippedItemUI != NULL) {
+    if (equippedItemUI != NULL) {
         putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
-        putStringAt (console, lootItemUI->name, 2, 14, lootItemUI->rarityColor, NO_COLOR);
-        if (lootItemUI->isEquipment)
-            putStringAt (console, lootItemUI->typeName, 2, 16, TOOLTIP_TEXT, NO_COLOR);
+        putStringAt (console, equippedItemUI->name, 1, 14, equippedItemUI->rarityColor, NO_COLOR);
+        if (iData->isEquipment) {
+            putStringAt (console, equippedItemUI->typeName, 1, 15, TOOLTIP_TEXT, NO_COLOR);
+            if (equippedItemUI->isWeapon) {
+                if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
+                else putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
+            }
 
-        if (lootItemUI->isWeapon) {
-            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
-            else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
+            putStringAt (console, equippedItemUI->lifeTxt, 1, 17, equippedItemUI->lifeColor, NO_COLOR);
         }
 
-        // FIXME: equipped stats
-        // FIXME: stats comparison
-
-        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 20, lootItemUI->lifeColor, NO_COLOR);
-    } */
+        putStringAt (console, equippedItemUI->valueTxt, 1, 18, TOOLTIP_TEXT, NO_COLOR);
+    }
 
 }
 
