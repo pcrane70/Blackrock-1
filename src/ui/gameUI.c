@@ -1806,46 +1806,14 @@ void toggleScoreScreen (void) {
 
 /*** LEADERBOARDS ***/
 
-// FIXME: where do we want this?
 typedef struct {
 
-    char *name;
-    char *race;
-    u8 level;
-    u32 score;
-    // u16 kills?
-    // FIXME: time?
-    // date?
 
-} LBEntry;
+
+} LBRect;
 
 UIView *leaderBoardView = NULL;
 bool local;
-
-List *localLB = NULL;
-List *globalLB = NULL;
-
-// FIXME: where do we want this?
-List *getLocalLBData (void) {
-
-    // check if we have a .conf file
-    // do we have data in there?
-    // parse the config file 
-    // get the data into a list
-    // return the list for display
-
-}
-
-List *getGlobalLBData (void) {
-
-    // check if we have already a .conf file
-    // check the date of the file
-    // if it is to old, connect to the server and request the file
-    // check that we have got a valid file
-
-    // get the data in the same way as in the local leaderboard
-
-}
 
 void renderLocalLB (Console *console) {
 

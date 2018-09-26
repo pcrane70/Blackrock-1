@@ -1802,3 +1802,72 @@ void showScore (void) {
     deleteDeathScreen ();
 
 }
+
+/*** LEADERBOARDS ***/
+
+// FIXME: how do we insert a new value into the lb??
+
+Config *localLBConfig = NULL;
+Config *globalLBConfig = NULL;
+
+List *localLB = NULL;
+List *globalLB = NULL;
+
+// get the config data into a list
+// we expect the data to be already sorted!!
+List *getLBData (Config *config) {
+
+    List *lbData = initList (free);
+
+    ConfigEntity *entity = NULL;
+    for (ListElement *e = LIST_START (localLBConfig->entities); e != NULL; e = e->next) {
+        entity = (ConfigEntity *) e->data;
+        LBEntry *lbEntry = (LBEntry *) malloc (sizeof (LBEntry));
+        lbEntry->name = getEntityValue (entity, "name");
+        lbEntry->class = getEntityValue (entity, "class");
+        lbEntry->level = atoi (getEntityValue (entity, "level"));
+        lbEntry->score = atoi (getEntityValue (entity, "score"));
+
+        insertAfter (lbData, LIST_END (lbData), lbEntry);
+    }
+
+    return lbData;
+
+}
+
+// FIXME: how do we update the leaderboard?
+List *getLocalLBData (void) {
+
+    List *lbData = NULL;
+
+    // check if we have a .conf file
+    localLBConfig = parseConfigFile ("./data/localLB.cfg");
+    if (localLBConfig != NULL) lbData = getLBData (localLBConfig);
+
+    else {
+        // FIXME: we don't have a local leaderboard, so create one
+    }
+
+    // return the list for display
+    return lbData;
+
+}
+
+// FIXME: check the date of the file
+List *getGlobalLBData (void) {
+
+    List *globalData = NULL;
+
+    // check if we have already a .conf file
+    globalLBConfig = parseConfigFile ("./data/globalLB.cfg");
+    if (globalLBConfig != NULL) globalData = getLBData (globalLBConfig);
+
+    // FIXME: we don't have a global lb file, so connect to the server
+    else {
+        // check that we have got a valid file
+        // get the data in the same way as in the local leaderboard
+    }
+
+    return globalData;
+
+}

@@ -224,6 +224,25 @@ typedef struct Score {
 
 extern void showScore (void);
 
+/*** LEADERBOARDS ***/
+
+typedef struct LBEntry {
+
+    char *name;
+    char *class;
+    u8 level;
+    u32 score;
+    // u16 kills?
+    // FIXME: time?
+    // date?
+
+} LBEntry;
+
+extern List *localLB;
+extern List *globalLB;
+
+extern List *getLocalLBData (void);
+extern List *getGlobalLBData (void);
 
 // Cleanning Up!
 extern void cleanUpGame (void);
