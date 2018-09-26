@@ -1665,7 +1665,7 @@ void resetGameUI (void) {
 void destroyGameUI (void) {
 
     if (inGameScreen != NULL) {
-        fprintf (stdout, "Cleanning up in game UI...\n");
+        fprintf (stdout, "Cleaning in game UI...\n");
 
         // message log
         cleanMessageLog ();
@@ -1678,14 +1678,12 @@ void destroyGameUI (void) {
 
         destroyLootRects ();
 
-        fprintf (stdout, "Cleanning up in game views...\n");
+        fprintf (stdout, "Cleaning in game views...\n");
 
-        // UIView *v = NULL;
-        // for (ListElement *e = LIST_START (inGameScreen->views); e != NULL; e = e->next) 
-        //     destroyView ((UIView *) removeElement (inGameScreen->views, e));
+        while (LIST_SIZE (inGameScreen->views) > 0)
+            destroyView ((UIView *) removeElement (inGameScreen->views, LIST_END (inGameScreen->views)));
         
         free (inGameScreen->views);
-
         free (inGameScreen);
         inGameScreen = NULL;
 
@@ -1857,9 +1855,8 @@ void destroyPostGameScreen (void) {
             scoreImg = NULL;
         } 
 
-        // UIView *v = NULL;
-        // for (ListElement *e = LIST_START (postGameScene->views); e != LIST_END (postGameScene->views); e = e->next) 
-        //     destroyView ((UIView *) removeElement (postGameScene->views, e));
+        while (LIST_SIZE (postGameScene->views) > 0) 
+            destroyView ((UIView *) removeElement (postGameScene->views, LIST_END (postGameScene->views)));
         
         free (postGameScene->views);
         free (postGameScene);

@@ -434,7 +434,7 @@ void cleanUpGame (void) {
 
     // clean up the player
     destroyPlayer ();
-    fprintf (stdout, "Done cleanning up player\n");
+    fprintf (stdout, "Done cleanning up player.\n");
 
     // clean up our lists
     destroyList (gameObjects);
@@ -444,12 +444,12 @@ void cleanUpGame (void) {
     destroyList (movement);
     destroyList (combat);
 
-    fprintf (stdout, "Done cleanning up lists\n");
+    fprintf (stdout, "Done cleanning up lists.\n");
 
     void destroyLoot (void);
     destroyLoot ();
 
-    fprintf (stdout, "Done cleanning up loot!\n");
+    fprintf (stdout, "Done cleanning up loot.\n");
     
     // cleanup the pools
     clearPool (goPool);
@@ -459,7 +459,7 @@ void cleanUpGame (void) {
     clearPool (movePool);
     clearPool (combatPool);
 
-    fprintf (stdout, "Done cleanning up pools\n");
+    fprintf (stdout, "Done cleaning up pools.\n");
 
     // clean up items
     cleanUpItems ();
@@ -468,7 +468,7 @@ void cleanUpGame (void) {
     // clean up enemies memory and db
     void cleanUpEnemies (void);
     cleanUpEnemies ();
-    fprintf (stdout, "Done cleanning up enemies\n");
+    fprintf (stdout, "Done cleaning up enemies.\n");
 
     // clean up pathfinding structs
     void cleanTargetMap (void);
@@ -476,8 +476,14 @@ void cleanUpGame (void) {
 
     free (currentLevel->mapCells);
     free (currentLevel);
+    fprintf (stdout, "Done cleaning up map.\n");
 
-    fprintf (stdout, "Done cleanning up game!\n");
+    // clear all leaderboard data
+    void cleanLeaderBoardData (void);
+    cleanLeaderBoardData ();
+    fprintf (stdout, "Done cleaning up leaderboard data.\n");
+
+    fprintf (stdout, "Done cleaning up game!\n");
 
 }
 
@@ -1869,5 +1875,34 @@ List *getGlobalLBData (void) {
     }
 
     return globalData;
+
+}
+
+void destroyLeaderBoard (List *lb) {
+
+    LBEntry *entry = NULL;
+    while (LIST_START (lb) != NULL) {
+        entry = (LBEntry *) removeElement (lb, LIST_END (lb));
+        if (entry != NULL) {
+            if (entry->name) free (entry->name);
+            if (entry->class) free (entry->class);
+
+            free (entry);
+        }
+    } 
+
+    free (lb);
+
+}
+
+void cleanLeaderBoardData (void) {
+
+    // delete config data
+    if (localLBConfig != NULL) clearConfig (localLBConfig);
+    if (globalLBConfig != NULL) clearConfig (globalLBConfig);
+
+    // delete parsed data
+    if (localLB != NULL) destroyLeaderBoard (localLB);
+    if (globalLB != NULL) destroyLeaderBoard (globalLB);
 
 }
