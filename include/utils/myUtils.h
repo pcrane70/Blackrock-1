@@ -11,4 +11,6 @@ extern char **splitString (char *str, const char delim);
 
 extern bool system_is_little_endian (void);
 
+extern char *createString (const char *stringWithFormat, ...);
+
 #endif
