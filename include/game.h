@@ -239,8 +239,8 @@ typedef struct LBEntry {
 
 } LBEntry;
 
-extern List *localLB;
-extern List *globalLB;
+extern List *localLBData;
+extern List *globalLBData;
 
 extern List *getLocalLBData (void);
 extern List *getGlobalLBData (void);

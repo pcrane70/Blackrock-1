@@ -1598,6 +1598,16 @@ void fight (Combat *att, Combat *def, bool isPlayer) {
 
 /*** LEVEL MANAGER ***/
 
+void updateLeaderBoards (void);
+
+// TODO: wrap all the things up before we return to the main menu
+void returnToMenu (void) {
+
+    // update the leaderboards files
+    updateLeaderBoards ();
+
+}
+
 // FIXME:
 // This is called every time we generate a new level to start fresh, only from data from the pool
 void clearOldLevel (void) {
@@ -1691,10 +1701,10 @@ void placeStairs (Point spawn) {
 }
 
 // FIXME: 
-void generateLevel () {
+void generateLevel (void) {
 
     // make sure we have cleaned the previous level data
-    // clearOldLevel ();
+    clearOldLevel ();
 
     // this is used to render the walls to the screen... but maybe it is not a perfect system
     initMap (currentLevel->mapCells);
@@ -1851,13 +1861,20 @@ void showScore (void) {
 
 /*** LEADERBOARDS ***/
 
-// FIXME: how do we want to update the global leaderboard??
+// this are from the makefile
+const char localLBFilePath[64] = "./data/localLB.cfg";
+const char globalLBFilePath[64] = "./data/globalLB.cfg";
+
+// FIXME: USE THIS!!!
+bool changedLocalLB = false;
+
+bool updateGlobalLb = false;
 
 Config *localLBConfig = NULL;
 Config *globalLBConfig = NULL;
 
-List *localLB = NULL;
-List *globalLB = NULL;
+List *localLBData = NULL;
+List *globalLBData = NULL;
 
 // get the config data into a list
 // we expect the data to be already sorted!!
@@ -1979,6 +1996,8 @@ List *getGlobalLBData (void) {
                 globalData->start = mergeSort (LIST_START (globalData));
             } 
         } 
+
+        closeConnection ();
     }
 
     return globalData;
@@ -2017,15 +2036,35 @@ Config *createNewLBCfg (List *lbData) {
 
 }
 
-// FIXME:
-void updateLBFile (char *filename, Config *cfg, bool globalLB) {   
+// TODO: maybe make an async call to the server to upload the file
+void updateLBFile (const char *filename, Config *cfg, bool globalLB) {   
 
     // write out the cfg file
     writeConfigFile (filename, cfg);
 
     if (globalLB) {
-        // FIXME: send the data to the server
+        if (!connectedToServer) {
+            if (initConnection ()) {
+                fprintf (stderr, "Failed to retrieve global LB!\n");
+                // FIXME: give feedback to the player
+            }
+        }
+
+        // we are connected, so post the file
+        if (makeRequest (POST_GLOBAL_LB) != 0) fprintf (stderr, "Failed post request!\n");
+
+        closeConnection ();
     }
+
+}
+
+void updateLeaderBoards (void) {
+
+    // update local
+    updateLBFile (localLBFilePath, createNewLBCfg (localLBData), false);
+
+    if (updateGlobalLb)
+        updateLBFile (globalLBFilePath, createNewLBCfg (globalLBData), true);
 
 }
 
@@ -2059,7 +2098,7 @@ void cleanLeaderBoardData (void) {
     if (globalLBConfig != NULL) clearConfig (globalLBConfig);
 
     // delete parsed data
-    if (localLB != NULL) destroyLeaderBoard (localLB);
-    if (globalLB != NULL) destroyLeaderBoard (globalLB);
+    if (localLBData != NULL) destroyLeaderBoard (localLBData);
+    if (globalLBData != NULL) destroyLeaderBoard (globalLBData);
 
 }

@@ -6,7 +6,8 @@ SRCDIR = ./src/
 
 SOURCES = $(SRCDIR)*.c \
 		  $(SRCDIR)utils/*.c \
-		  $(SRCDIR)ui/*.c
+		  $(SRCDIR)ui/*.c \
+		  $(SRCDIR)network/*.c
 
 all: blackrock #run #clean
 

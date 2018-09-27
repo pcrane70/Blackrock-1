@@ -12,6 +12,7 @@
 #include <errno.h>
 
 #include "network/client.h"
+#include "network/requests.h"
 
 #include "utils/myUtils.h"
 
@@ -84,55 +85,13 @@ int closeConnection (void) {
 
     close (clientSocket);
 
+    connectedToServer = false;
+
     return 0;
 
 }
 
 /*** REQUESTS ***/
-
-const char filepath[64] = "foo.txt";
-
-// FIXME: file path and file name
-int recieveFile (char *request) {
-
-    // FIXME: make sure that we create a new file if it does not exists
-    // prepare the file where we are copying to
-    FILE *file = fopen (filepath, "w");
-    if (file == NULL) {
-        fprintf (stderr, "%s\n", strerror (errno));
-        return 1;
-    }
-
-    if (write (clientSocket, request, strlen (request)) < 0) {
-        fprintf (stderr, "Error on writing!\n\n");
-        return 1; 
-    }
-
-    size_t len;
-    char buffer[BUFSIZ];
-    int fileSize;
-    int remainData = 0;
-
-    //fprintf(stdout, "\nFile size : %d\n", file_size);
-    recv (clientSocket, buffer, BUFSIZ, 0);
-    fileSize = atoi (buffer);
-    fprintf (stdout, "\nRecieved file size : %d\n", fileSize);
-
-    remainData = fileSize;
-
-    // get the file data
-    while (((len = recv (clientSocket, buffer, BUFSIZ, 0)) > 0) && (remainData > 0)) {
-            fwrite (buffer, sizeof (char), len, file);
-            remainData -= len;
-            fprintf (stdout, "Received %ld bytes and we hope %d more bytes\n", len, remainData);
-    }
-
-    fprintf (stdout, "Done!");
-
-    fclose (file);
-    return 0;
-
-}
 
 int makeRequest (RequestType type) {
 
@@ -145,7 +104,9 @@ int makeRequest (RequestType type) {
             if (retval == 0) fprintf (stdout, "Got the file!\n");
             else fprintf (stderr, "Error recieving file!\n");
             break;
-        case 2: break;
+        case 2: 
+            // FIXME: post global db file
+            break;
         case 3: break;
         default: fprintf (stderr, "Invalid request!\n"); break;
     }

@@ -1855,11 +1855,11 @@ void renderLBRects (Console *console) {
 void renderLocalLB (Console *console) {
 
     // FIXME: where do we want this?
-    if (localLB == NULL) {
+    if (localLBData == NULL) {
         fprintf (stdout, "Getting local leaderboard data...\n");
-        localLB = getLocalLBData ();
-        if (localLB != NULL) {
-            lbRects = createLBUI (localLB);
+        localLBData = getLocalLBData ();
+        if (localLBData != NULL) {
+            lbRects = createLBUI (localLBData);
             fprintf (stdout, "Lb rects: %i!\n", LIST_SIZE (lbRects));
         } 
         // FIXME: DISPLAY AN ERROR else 
@@ -1883,7 +1883,7 @@ void renderLocalLB (Console *console) {
 void renderGlobalLb (Console *console) {
 
     // FIXME: where do we want this?
-    if (globalLB == NULL) globalLB = getGlobalLBData ();
+    if (globalLBData == NULL) globalLBData = getGlobalLBData ();
     else {
         // TODO: render the list of players
     }

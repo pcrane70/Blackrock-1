@@ -132,7 +132,7 @@ void setEntityValue (ConfigEntity *entity, char *key, char *value) {
 
 }
 
-void writeConfigFile (char *filename, Config *config) {
+void writeConfigFile (const char *filename, Config *config) {
 
     FILE *configFile = fopen (filename, "w+");
     if (configFile == NULL) return;
