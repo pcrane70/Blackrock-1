@@ -231,8 +231,9 @@ typedef struct LBEntry {
     char *name;
     u32 nameColor;
     char *level;
-    char* kills;
-    char *score;
+    char *kills;
+    u32 score;
+    char *reverseScore;
 
 } LBEntry;
 

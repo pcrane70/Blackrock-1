@@ -206,3 +206,67 @@ ListElement *getListElement (List *list, void *data) {
 
 }
 
+/*** SORTING ***/
+
+// FIXME: as of 27/09/2018 this only works for sorting the leaderboard data!!
+
+// Split a doubly linked list (DLL) into 2 DLLs of half sizes 
+ListElement *split (ListElement *head) { 
+
+    ListElement *fast = head, *slow = head; 
+
+    while (fast->next && fast->next->next) { 
+        fast = fast->next->next; 
+        slow = slow->next; 
+    } 
+
+    ListElement *temp = slow->next; 
+    slow->next = NULL; 
+
+    return temp; 
+
+}  
+  
+// Function to merge two linked lists 
+ListElement *merge (ListElement *first, ListElement *second)  { 
+
+    // If first linked list is empty 
+    if (!first) return second; 
+  
+    // If second linked list is empty 
+    if (!second) return first; 
+
+    u32 firstScore = ((LBEntry *) first->data)->score;
+    u32 secondScore = ((LBEntry *) second->data)->score;
+  
+    // Pick the smallest value 
+    if (firstScore < secondScore)  { 
+        first->next = merge (first->next, second); 
+        first->next->prev = first; 
+        first->prev = NULL; 
+        return first; 
+    } 
+
+    else { 
+        second->next = merge (first,second->next); 
+        second->next->prev = second; 
+        second->prev = NULL; 
+        return second; 
+    } 
+
+} 
+  
+ListElement *mergeSort (ListElement *head) {
+
+    if (!head || !head->next) return head;
+
+    ListElement *second = split (head);
+
+    // recursivly sort each half
+    head = mergeSort (head);
+    second = mergeSort (second);
+
+    // Merge the two sorted halves 
+    return merge (head, second);
+
+}

@@ -1810,7 +1810,8 @@ List *createLBUI (List *lbData) {
     LBEntry *entry = NULL;
     u8 yIdx = 10;
 
-    for (ListElement *e = LIST_START (lbData); e != NULL; e = e->next) {
+    // the list is sorted from the smallest to the biggest
+    for (ListElement *e = LIST_END (lbData); e != NULL; e = e->prev) {
         insertAfter (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
         yIdx += 3;
     }
@@ -1834,7 +1835,7 @@ void renderLBRects (Console *console) {
             putStringAt (console, rect->entry->name, 5, yIdx, rect->entry->nameColor, NO_COLOR);
             putStringAt (console, rect->entry->level, 37, yIdx, WHITE, NO_COLOR);
             putStringAt (console, rect->entry->kills, 50, yIdx, WHITE, NO_COLOR);
-            putReverseString (console, rect->entry->score, 68, yIdx, WHITE, NO_COLOR);
+            putReverseString (console, rect->entry->reverseScore, 68, yIdx, WHITE, NO_COLOR);
 
             count++;
             yIdx += 3;

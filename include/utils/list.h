@@ -45,5 +45,8 @@ extern void *searchList (List *, void *data);
 extern bool isInList (List *, void *data);
 ListElement *getListElement (List *, void *data);
 
+/*** SORTING ***/
+
+extern ListElement *mergeSort (ListElement *head);
 
 #endif

@@ -1787,6 +1787,29 @@ void retry (void) {
 
 /*** SCORE ***/
 
+LBEntry *playerEntry = NULL;
+
+// we need to modify this when we add multiplayer i guess...
+LBEntry *getPlayerEntry (void) {
+
+    LBEntry *entry = (LBEntry *) malloc (sizeof (LBEntry));
+
+    entry->name = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
+
+    entry->nameColor = getPlayerClassColor (player->cClass);
+
+    entry->level = createString ("%i", currentLevel->levelNum);
+
+    entry->kills = createString ("%i", playerScore->killCount);
+
+    entry->score = playerScore->score;
+    // 26/09/2018 -- we are reversing the string for a better display in the UI
+    entry->reverseScore = reverseString (createString ("%i", playerScore->score));
+
+    return entry;
+
+}
+
 void resetScore (void) {
 
     playerScore->killCount = 0;
@@ -1800,6 +1823,9 @@ void showScore (void) {
 
     // clean up the level 
     clearOldLevel ();
+
+    // get player score ready for display
+    playerEntry = getPlayerEntry ();
 
     // render score image with the current score struct
     toggleScoreScreen ();
@@ -1818,6 +1844,21 @@ Config *globalLBConfig = NULL;
 
 List *localLB = NULL;
 List *globalLB = NULL;
+
+// FIXME: this is just for testing
+void printLBData (List *lbData) {
+
+    LBEntry *entry = NULL;
+    u8 count = 1;
+    for (ListElement *e = LIST_START (lbData); e != NULL; e = e->next) {
+        entry = e->data;
+        if (entry != NULL) {
+            fprintf (stdout, "[%i] %i\n", count, entry->score);
+        }
+        count++;
+    }
+
+}
 
 // get the config data into a list
 // we expect the data to be already sorted!!
@@ -1854,10 +1895,15 @@ List *getLBData (Config *config) {
 
         lbEntry->kills = getEntityValue (entity, "kills");
 
+        // this is used for the sort
+        char *score = getEntityValue (entity, "score");
+        lbEntry->score = atoi (score);
         // 26/09/2018 -- we are reversing the string for a better display in the UI
-        lbEntry->score = reverseString (getEntityValue (entity, "score"));
+        lbEntry->reverseScore = reverseString (score);
 
         insertAfter (lbData, LIST_END (lbData), lbEntry);
+        
+        free (score);
     }
 
     return lbData;
@@ -1871,7 +1917,14 @@ List *getLocalLBData (void) {
 
     // check if we have a .conf file
     localLBConfig = parseConfigFile ("./data/localLB.cfg");
-    if (localLBConfig != NULL) lbData = getLBData (localLBConfig);
+    if (localLBConfig != NULL) {
+        lbData = getLBData (localLBConfig);
+        fprintf (stdout, "\n\nBEFORE Sort:\n\n");
+        printLBData (lbData);
+        lbData->start = mergeSort (LIST_START (lbData));
+        fprintf (stdout, "\n\nAFTER Sort:\n\n");
+        printLBData (lbData);
+    } 
 
     else {
         // FIXME: we don't have a local leaderboard, so create one
@@ -1901,26 +1954,30 @@ List *getGlobalLBData (void) {
 
 }
 
+void deleteLBEntry (LBEntry *entry) {
+
+    if (entry != NULL) {
+        if (entry->name) free (entry->name);
+        if (entry->level) free (entry->level);
+        if (entry->kills) free (entry->kills);
+        if (entry->reverseScore) free (entry->reverseScore);
+
+        free (entry);
+    }
+
+}
+
 void destroyLeaderBoard (List *lb) {
 
-    LBEntry *entry = NULL;
-    while (LIST_START (lb) != NULL) {
-        entry = (LBEntry *) removeElement (lb, LIST_END (lb));
-        if (entry != NULL) {
-            if (entry->name) free (entry->name);
-            if (entry->level) free (entry->level);
-            if (entry->kills) free (entry->kills);
-            if (entry->score) free (entry->score);
-
-            free (entry);
-        }
-    } 
+    while (LIST_START (lb) != NULL) deleteLBEntry ((LBEntry *) removeElement (lb, LIST_END (lb)));
 
     free (lb);
 
 }
 
 void cleanLeaderBoardData (void) {
+
+    deleteLBEntry (playerEntry);
 
     // delete config data
     if (localLBConfig != NULL) clearConfig (localLBConfig);
