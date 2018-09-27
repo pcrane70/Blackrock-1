@@ -29,17 +29,42 @@ void getPlayerData (void) {
 
 }
 
-char *getPlayerClassName (void) {
+char *getPlayerClassName (u8 c) {
 
-    switch (player->cClass) {
-        case WARRIOR: return "Warrior"; break;
-        case PALADIN: return "Paladin"; break;
-        case ROGUE: return "Rogue"; break;
-        case PRIEST: return "Priest"; break;
-        case DEATH_KNIGHT: return "Death Knight"; break;
-        case MAGE: return "Mage"; break;
-        default: return NULL; break;    
+    char class[15];
+
+    switch (c) {
+        case WARRIOR: strcpy (class, "Warrior"); break;
+        case PALADIN: strcpy (class, "Paladin"); break;
+        case ROGUE: strcpy (class, "Rogue"); break;
+        case PRIEST: strcpy (class, "Priest"); break;
+        case DEATH_KNIGHT: strcpy (class, "Death Knight"); break;
+        case MAGE: strcpy (class, "Mage"); break;
+        default: break;    
     }
+
+    char *retVal = (char *) calloc (strlen (class), sizeof (char));
+    strcpy (retVal, class);
+
+    return retVal;
+
+}
+
+u32 getPlayerClassColor (u8 c) {
+
+    u32 retVal;
+
+    switch (c) {
+        case WARRIOR: retVal = 0xD63031FF; break;
+        case PALADIN: retVal = 0xFD79A8FF; break;
+        case ROGUE: retVal = 0xFFC048FF; break;
+        case PRIEST: retVal = 0x05C46B; break;
+        case DEATH_KNIGHT: retVal = 0x0A3D62FF; break;
+        case MAGE: retVal = 0x7158E2FF; break;
+        default: break;    
+    }
+
+    return retVal;
 
 }
 

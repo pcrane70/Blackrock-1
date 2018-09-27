@@ -68,12 +68,45 @@ char *itoa (int i, char b[]) {
 
 }
 
-void copy (char *to, const char *from) {
+bool system_is_little_endian (void) {
 
-    while (*from)
-        *to++ = *from++;
+    unsigned int x = 0x76543210;
+    char *c = (char *) &x;
+    if (*c == 0x10) return true;
+    else return false;
 
-    *to = '\0';
+}
+
+/*** STRINGS ***/
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+char *createString (const char *stringWithFormat, ...) {
+
+    char *fmt;
+
+    if (stringWithFormat != NULL) fmt = strdup (stringWithFormat);
+    else fmt = strdup ("");
+
+    va_list argp;
+    va_start (argp, stringWithFormat);
+    char oneChar[1];
+    int len = vsnprintf (oneChar, 1, fmt, argp);
+    if (len < 1) return NULL;
+    va_end (argp);
+
+    char *str = (char *) calloc (len + 1, sizeof (char));
+    if (!str) return NULL;
+
+    va_start (argp, stringWithFormat);
+    vsnprintf (str, len + 1, fmt, argp);
+    va_end (argp);
+
+    free (fmt);
+
+    return str;
 
 }
 
@@ -121,43 +154,33 @@ char **splitString (char *str, const char delim) {
 
 }
 
+void copy (char *to, const char *from) {
 
-bool system_is_little_endian (void) {
+    while (*from)
+        *to++ = *from++;
 
-    unsigned int x = 0x76543210;
-    char *c = (char *) &x;
-    if (*c == 0x10) return true;
-    else return false;
+    *to = '\0';
 
 }
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
+char *reverseString (char *str) {
 
-char *createString (const char *stringWithFormat, ...) {
+    if (str == NULL) return NULL;
 
-    char *fmt;
+    char reverse[20];
+    int len = strlen (str);
+    short int end = len - 1;
+    short int begin = 0;
+    for ( ; begin < len; begin++) {
+        reverse[begin] = str[end];
+        end--;
+    }
 
-    if (stringWithFormat != NULL) fmt = strdup (stringWithFormat);
-    else fmt = strdup ("");
+    reverse[begin] = '\0';
 
-    va_list argp;
-    va_start (argp, stringWithFormat);
-    char oneChar[1];
-    int len = vsnprintf (oneChar, 1, fmt, argp);
-    if (len < 1) return NULL;
-    va_end (argp);
+    char *retval = (char *) calloc (len + 1, sizeof (char));
+    copy (retval, reverse);
 
-    char *str = (char *) calloc (len + 1, sizeof (char));
-    if (!str) return NULL;
-
-    va_start (argp, stringWithFormat);
-    vsnprintf (str, len + 1, fmt, argp);
-    va_end (argp);
-
-    free (fmt);
-
-    return str;
+    return retval;
 
 }

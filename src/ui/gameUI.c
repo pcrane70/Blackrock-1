@@ -1628,7 +1628,7 @@ UIScreen *gameScene (void) {
     inGameScreen->activeView = mapView;
     inGameScreen->handleEvent = hanldeGameEvent;
 
-    statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName ());
+    statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 
@@ -1772,8 +1772,78 @@ void toggleScoreScreen (void) {
 
 /*** LEADERBOARDS ***/
 
+#define ODD_ROW_COLOR       0x485460FF
+#define EVEN_ROW_COLOR      0X3C6382FF
+
 UIView *leaderBoardView = NULL;
 bool isLocalLB;
+
+typedef struct {
+
+    UIRect *bgRect;
+    LBEntry *entry;
+
+} LBRect;
+
+List *lbRects = NULL;
+
+LBRect *createLBRect (u8 y, LBEntry *entry) {
+
+    LBRect *new = (LBRect *) malloc (sizeof (LBRect));
+
+    new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+    new->bgRect->x = 4;
+    new->bgRect->y = y;
+    new->bgRect->w = 72;
+    new->bgRect->h = 3;
+
+    new->entry = entry;
+
+    return new;
+
+}
+
+List *createLBUI (List *lbData) {
+
+    List *rects = initList (free);
+
+    LBEntry *entry = NULL;
+    u8 yIdx = 10;
+
+    for (ListElement *e = LIST_START (lbData); e != NULL; e = e->next) {
+        insertAfter (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
+        yIdx += 3;
+    }
+
+    return rects;
+
+}
+
+void renderLBRects (Console *console) {
+
+    if (lbRects != NULL) {
+        LBRect *rect = NULL;
+        u8 count = 1;
+        u8 yIdx = 11;
+        for (ListElement *e = LIST_START (lbRects); e != NULL; e = e->next) {
+            rect = (LBRect *) e->data;
+
+            if (count % 2 == 0) drawRect (console, rect->bgRect, EVEN_ROW_COLOR, 0, NO_COLOR);
+            else drawRect (console, rect->bgRect, ODD_ROW_COLOR, 0, NO_COLOR);
+
+            putStringAt (console, rect->entry->name, 5, yIdx, rect->entry->nameColor, NO_COLOR);
+            putStringAt (console, rect->entry->level, 37, yIdx, WHITE, NO_COLOR);
+            putStringAt (console, rect->entry->kills, 50, yIdx, WHITE, NO_COLOR);
+            putReverseString (console, rect->entry->score, 68, yIdx, WHITE, NO_COLOR);
+
+            count++;
+            yIdx += 3;
+        }
+    }
+
+    // FIXME: else NO DATA!!
+
+}
 
 void renderLocalLB (Console *console) {
 
@@ -1781,29 +1851,21 @@ void renderLocalLB (Console *console) {
     if (localLB == NULL) {
         fprintf (stdout, "Getting local leaderboard data...\n");
         localLB = getLocalLBData ();
+        if (localLB != NULL) lbRects = createLBUI (localLB);
+        // FIXME: DISPLAY AN ERROR else 
     } 
     
     else {
         putStringAtCenter (console, "Local LeaderBoards", 2, WHITE, NO_COLOR);
 
         // display table titles
-        putStringAt (console, "Name", 15, 7, WHITE, NO_COLOR);
-        putStringAt (console, "Class", 32, 7, WHITE, NO_COLOR);
-        putStringAt (console, "Level", 45, 7, WHITE, NO_COLOR);
-        putStringAt (console, "Score", 58, 7, WHITE, NO_COLOR);
+        putStringAt (console, "Name", 17, 7, WHITE, NO_COLOR);
+        putStringAt (console, "Level", 35, 7, WHITE, NO_COLOR);
+        putStringAt (console, "Kills", 48, 7, WHITE, NO_COLOR);
+        putStringAt (console, "Score", 62, 7, WHITE, NO_COLOR);
 
-        // display each player and its data
-        LBEntry *entry = NULL;
-        u8 yIdx = 10;
-        for (ListElement *e = LIST_START (localLB); e != NULL; e = e->next) {
-            entry = (LBEntry *) e->data;
-            putStringAt (console, entry->name, 5, yIdx, WHITE, NO_COLOR);
-            putStringAt (console, entry->class, 30, yIdx, WHITE, NO_COLOR);
-            putStringAt (console, entry->level, 47, yIdx, WHITE, NO_COLOR);
-            // putStringAt (console, entry->score, 50, yIdx, WHITE, NO_COLOR);
-            putReverseString (console, entry->score, 72, yIdx, WHITE, NO_COLOR);
-            yIdx += 3;
-        }
+        // display each player and its data on their rects
+        renderLBRects (console);
     }
 
 }
@@ -1855,6 +1917,24 @@ void toggleLeaderBoards (void) {
 
 }
 
+void destroyLBUI (void) {
+
+    if (lbRects != NULL) {
+        LBRect *rect = NULL;
+        while (LIST_SIZE (lbRects) > 0) {
+            rect = (LBRect *) removeElement (lbRects, LIST_END (lbRects));
+            if (rect != NULL) {
+                free (rect->bgRect);
+                rect->entry = NULL;
+                free (rect);
+            }
+        }
+
+        destroyList (lbRects);
+    }
+
+}
+
 // FIXME:
 // TODO: delete all other UI elements!!
 void destroyPostGameScreen (void) {
@@ -1864,10 +1944,13 @@ void destroyPostGameScreen (void) {
             destroyImage (deathImg);
             deathImg = NULL;
         } 
+        
         if (scoreImg != NULL) {
             destroyImage (scoreImg);
             scoreImg = NULL;
         } 
+
+        destroyLBUI ();
 
         while (LIST_SIZE (postGameScene->views) > 0) 
             destroyView ((UIView *) removeElement (postGameScene->views, LIST_END (postGameScene->views)));

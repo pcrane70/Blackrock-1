@@ -60,5 +60,6 @@ extern u8 inventoryItems;
 extern Player *createPlayer (void);
 void initPlayer (Player *);
 extern void resetPlayer (Player *);
-extern char *getPlayerClassName (void);
+extern char *getPlayerClassName (u8);
+extern u32 getPlayerClassColor (u8);
 extern void destroyPlayer (void);

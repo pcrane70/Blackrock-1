@@ -229,12 +229,10 @@ extern void showScore (void);
 typedef struct LBEntry {
 
     char *name;
-    char *class;
+    u32 nameColor;
     char *level;
+    char* kills;
     char *score;
-    // u16 kills?
-    // FIXME: time?
-    // date?
 
 } LBEntry;
 

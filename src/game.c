@@ -1826,28 +1826,36 @@ List *getLBData (Config *config) {
     List *lbData = initList (free);
 
     ConfigEntity *entity = NULL;
+    char *name = NULL;
+    char *class = NULL;
+    u8 c;
+
     for (ListElement *e = LIST_START (localLBConfig->entities); e != NULL; e = e->next) {
         entity = (ConfigEntity *) e->data;
         LBEntry *lbEntry = (LBEntry *) malloc (sizeof (LBEntry));
-        lbEntry->name = getEntityValue (entity, "name");
-        lbEntry->class = getEntityValue (entity, "class");
-        lbEntry->level = getEntityValue (entity, "level");
+ 
+        name = getEntityValue (entity, "name");
+        c = atoi (getEntityValue (entity, "class"));
+        class = getPlayerClassName (c);
 
-        // 26/09/2018 -- we are reversing the string for a better display in the UI
-        char reverse[20];
-        char *score = getEntityValue (entity, "score");
-        i32 len = strlen (score);
-        u8 end = len - 1;
-        u8 begin = 0;
-        for ( ; begin < len; begin++) {
-            reverse[begin] = score[end];
-            end--;
+        if ((name != NULL) && (class != NULL)) lbEntry->name = createString ("%s the %s", name, class);
+        else if (name != NULL) {
+            lbEntry->name = (char *) calloc (strlen (name) + 1, sizeof (char));
+            strcpy (lbEntry->name, name);
+        }
+        else {
+            lbEntry->name = (char *) calloc (10, sizeof (char));
+            strcpy (lbEntry->name, "Anonymous");
         }
 
-        reverse[begin] = '\0';
+        lbEntry->nameColor = getPlayerClassColor (c);
 
-        lbEntry->score = (char *) calloc (len, sizeof (char));
-        strcpy (lbEntry->score, reverse);
+        lbEntry->level = getEntityValue (entity, "level");
+
+        lbEntry->kills = getEntityValue (entity, "kills");
+
+        // 26/09/2018 -- we are reversing the string for a better display in the UI
+        lbEntry->score = reverseString (getEntityValue (entity, "score"));
 
         insertAfter (lbData, LIST_END (lbData), lbEntry);
     }
@@ -1900,8 +1908,8 @@ void destroyLeaderBoard (List *lb) {
         entry = (LBEntry *) removeElement (lb, LIST_END (lb));
         if (entry != NULL) {
             if (entry->name) free (entry->name);
-            if (entry->class) free (entry->class);
             if (entry->level) free (entry->level);
+            if (entry->kills) free (entry->kills);
             if (entry->score) free (entry->score);
 
             free (entry);
