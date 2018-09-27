@@ -129,6 +129,8 @@ extern void  deleteDeathScreen (void);
 extern UIView *scoreScreen;
 extern void toggleScoreScreen (void);
 
+extern void toggleLeaderBoards (void);
+
 extern UIScreen *postGameScreen (void);
 
 extern void destroyPostGameScreen (void);

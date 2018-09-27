@@ -289,6 +289,9 @@ void handlePostGameEvent (UIScreen *activeScreen, SDL_Event event) {
         switch (key) {
             case SDLK_c: if (postGameScene->activeView == deathScreen) showScore (); break;
             case SDLK_r: if (postGameScene->activeView == scoreScreen) retry (); break;
+            case SDLK_l: 
+                if (postGameScene->activeView == scoreScreen) toggleLeaderBoards (); 
+                break;
 
             // FIXME:
             // case SDLK_q: returnToMainMenu (); break;

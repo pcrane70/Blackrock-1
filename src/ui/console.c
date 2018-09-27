@@ -248,6 +248,14 @@ void putStringAt (Console *con, char *string, i32 x, i32 y, u32 fgColor, u32 bgC
 
 }
 
+void putReverseString (Console *con, char *string, i32 x, i32 y, u32 fgColor, u32 bgColor) {
+
+    i32 len = strlen (string);
+    for (i32 i = len - 1; i >= 0; i--)
+        putCharAt (con, (asciiChar) string[i], x - i, y, fgColor, bgColor);
+
+}
+
 void putStringAtCenter (Console *con, char *string, i32 y, u32 fgColor, u32 bgColor) {
 
     u32 stringLen = strlen (string);

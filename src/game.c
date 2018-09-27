@@ -1831,8 +1831,23 @@ List *getLBData (Config *config) {
         LBEntry *lbEntry = (LBEntry *) malloc (sizeof (LBEntry));
         lbEntry->name = getEntityValue (entity, "name");
         lbEntry->class = getEntityValue (entity, "class");
-        lbEntry->level = atoi (getEntityValue (entity, "level"));
-        lbEntry->score = atoi (getEntityValue (entity, "score"));
+        lbEntry->level = getEntityValue (entity, "level");
+
+        // 26/09/2018 -- we are reversing the string for a better display in the UI
+        char reverse[20];
+        char *score = getEntityValue (entity, "score");
+        i32 len = strlen (score);
+        u8 end = len - 1;
+        u8 begin = 0;
+        for ( ; begin < len; begin++) {
+            reverse[begin] = score[end];
+            end--;
+        }
+
+        reverse[begin] = '\0';
+
+        lbEntry->score = (char *) calloc (len, sizeof (char));
+        strcpy (lbEntry->score, reverse);
 
         insertAfter (lbData, LIST_END (lbData), lbEntry);
     }
@@ -1886,6 +1901,8 @@ void destroyLeaderBoard (List *lb) {
         if (entry != NULL) {
             if (entry->name) free (entry->name);
             if (entry->class) free (entry->class);
+            if (entry->level) free (entry->level);
+            if (entry->score) free (entry->score);
 
             free (entry);
         }

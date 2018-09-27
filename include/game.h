@@ -230,8 +230,8 @@ typedef struct LBEntry {
 
     char *name;
     char *class;
-    u8 level;
-    u32 score;
+    char *level;
+    char *score;
     // u16 kills?
     // FIXME: time?
     // date?

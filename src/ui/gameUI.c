@@ -1772,27 +1772,37 @@ void toggleScoreScreen (void) {
 
 /*** LEADERBOARDS ***/
 
-typedef struct {
-
-
-
-} LBRect;
-
 UIView *leaderBoardView = NULL;
-bool local;
+bool isLocalLB;
 
 void renderLocalLB (Console *console) {
 
     // FIXME: where do we want this?
-    if (localLB == NULL) localLB = getLocalLBData ();
+    if (localLB == NULL) {
+        fprintf (stdout, "Getting local leaderboard data...\n");
+        localLB = getLocalLBData ();
+    } 
+    
     else {
-        // TODO: render the list of players
-        // we have a list of players
-        // display each player and its data in its own rect
+        putStringAtCenter (console, "Local LeaderBoards", 2, WHITE, NO_COLOR);
+
+        // display table titles
+        putStringAt (console, "Name", 15, 7, WHITE, NO_COLOR);
+        putStringAt (console, "Class", 32, 7, WHITE, NO_COLOR);
+        putStringAt (console, "Level", 45, 7, WHITE, NO_COLOR);
+        putStringAt (console, "Score", 58, 7, WHITE, NO_COLOR);
+
+        // display each player and its data
         LBEntry *entry = NULL;
+        u8 yIdx = 10;
         for (ListElement *e = LIST_START (localLB); e != NULL; e = e->next) {
             entry = (LBEntry *) e->data;
-            
+            putStringAt (console, entry->name, 5, yIdx, WHITE, NO_COLOR);
+            putStringAt (console, entry->class, 30, yIdx, WHITE, NO_COLOR);
+            putStringAt (console, entry->level, 47, yIdx, WHITE, NO_COLOR);
+            // putStringAt (console, entry->score, 50, yIdx, WHITE, NO_COLOR);
+            putReverseString (console, entry->score, 72, yIdx, WHITE, NO_COLOR);
+            yIdx += 3;
         }
     }
 
@@ -1810,21 +1820,25 @@ void renderGlobalLb (Console *console) {
 
 static void renderLeaderboard (Console *console) {
 
-    UIRect rect = { 0, 0, PAUSE_WIDTH, PAUSE_HEIGHT };
+    // FIXME: color
+    UIRect rect = { 0, 0, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT };
     drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
 
-    if (local) renderLocalLB (console);
+    if (isLocalLB) renderLocalLB (console);
     else renderGlobalLb (console);
 
 }
 
-void toggleLeaderboard (void) {
+void toggleLeaderBoards (void) {
 
     if (leaderBoardView == NULL) {
         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
         leaderBoardView = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderLeaderboard);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), scoreScreen);
+        insertAfter (activeScene->views, LIST_END (activeScene->views), leaderBoardView);
         postGameScene->activeView = leaderBoardView;
+
+        // render local leaderboard by default
+        isLocalLB = true;
     }
 
     else {
@@ -1873,7 +1887,7 @@ UIScreen *postGameScreen (void) {
     List *views = initList (free);
 
     UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-    deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderDeathScreen);
+    deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderDeathScreen);
     insertAfter (views, NULL, deathScreen);
 
     if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);

@@ -62,6 +62,7 @@ extern void setConsoleBitmapFont (Console *, char *, asciiChar, int, int);
 
 extern void putCharAt (Console *, asciiChar, i32 cellX, i32 cellY, u32 fgColor, u32 bgColor);
 extern void putStringAt (Console *con, char *string, i32 x, i32 y, u32 fgColor, u32 bgColor);
+extern void putReverseString (Console *con, char *string, i32 x, i32 y, u32 fgColor, u32 bgColor);
 void putStringAtCenter (Console *con, char *string, i32 y, u32 fgColor, u32 bgColor);
 extern void putStringAtRect (Console *con, char *string, Rect rect, bool wrap, u32 fgColor, u32 bgColor);
 
