@@ -1787,10 +1787,10 @@ void retry (void) {
 
 /*** SCORE ***/
 
-LBEntry *playerEntry = NULL;
+LBEntry *playerLBEntry = NULL;
 
 // we need to modify this when we add multiplayer i guess...
-LBEntry *getPlayerEntry (void) {
+LBEntry *getPlayerLBEntry (void) {
 
     LBEntry *entry = (LBEntry *) malloc (sizeof (LBEntry));
 
@@ -1825,7 +1825,7 @@ void showScore (void) {
     clearOldLevel ();
 
     // get player score ready for display
-    playerEntry = getPlayerEntry ();
+    playerLBEntry = getPlayerLBEntry ();
 
     // render score image with the current score struct
     toggleScoreScreen ();
@@ -1837,7 +1837,7 @@ void showScore (void) {
 
 /*** LEADERBOARDS ***/
 
-// FIXME: how do we insert a new value into the lb??
+// FIXME: how do we want to update the global leaderboard??
 
 Config *localLBConfig = NULL;
 Config *globalLBConfig = NULL;
@@ -1910,7 +1910,7 @@ List *getLBData (Config *config) {
 
 }
 
-// FIXME: how do we update the leaderboard?
+// FIXME: do we want to first check if the new player score can enter the leaderboard??
 List *getLocalLBData (void) {
 
     List *lbData = NULL;
@@ -1919,11 +1919,12 @@ List *getLocalLBData (void) {
     localLBConfig = parseConfigFile ("./data/localLB.cfg");
     if (localLBConfig != NULL) {
         lbData = getLBData (localLBConfig);
-        fprintf (stdout, "\n\nBEFORE Sort:\n\n");
-        printLBData (lbData);
+
+        // insert the current player score at the end no matter what
+        insertAfter (lbData, LIST_END (lbData), playerLBEntry);
+
+        // then sort the list
         lbData->start = mergeSort (LIST_START (lbData));
-        fprintf (stdout, "\n\nAFTER Sort:\n\n");
-        printLBData (lbData);
     } 
 
     else {
@@ -1954,6 +1955,50 @@ List *getGlobalLBData (void) {
 
 }
 
+Config *createNewLBCfg (List *lbData) {
+
+    // make sure that we are only wrtitting the 10 best scores...
+    // don't forget that the data is sorted like < 
+
+    Config *cfg = (Config *) malloc (sizeof (Config));
+    cfg->entities = initList (free);
+
+    u8 count = 0;
+    ListElement *e = LIST_END (lbData);
+    LBEntry *entry = NULL;
+    while (count < 10 && e != NULL) {
+        entry = (LBEntry *) e->data;
+
+        ConfigEntity *newEntity = (ConfigEntity *) malloc (sizeof (ConfigEntity));
+        newEntity->name = createString ("%s", "ENTRY");
+        setEntityValue (newEntity, "name", entry->playerName);
+        setEntityValue (newEntity, "class", createString ("%i", entry->charClass));
+        setEntityValue (newEntity, "level", entry->level);
+        setEntityValue (newEntity, "kills", entry->kills);
+        setEntityValue (newEntity, "score", entry->score);
+
+        insertAfter (cfg->entities, LIST_START (cfg->entities), newEntity);
+
+        e = e->prev;
+        count++;
+    }
+
+    return cfg;
+
+}
+
+// FIXME:
+void updateLBFile (char *filename, Config *cfg, bool globalLB) {   
+
+    // write out the cfg file
+    writeConfigFile (filename, cfg);
+
+    if (globalLB) {
+        // FIXME: send the data to the server
+    }
+
+}
+
 void deleteLBEntry (LBEntry *entry) {
 
     if (entry != NULL) {
@@ -1977,7 +2022,7 @@ void destroyLeaderBoard (List *lb) {
 
 void cleanLeaderBoardData (void) {
 
-    deleteLBEntry (playerEntry);
+    deleteLBEntry (playerLBEntry);
 
     // delete config data
     if (localLBConfig != NULL) clearConfig (localLBConfig);

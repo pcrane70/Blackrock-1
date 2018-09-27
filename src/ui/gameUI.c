@@ -1811,9 +1811,15 @@ List *createLBUI (List *lbData) {
     u8 yIdx = 10;
 
     // the list is sorted from the smallest to the biggest
-    for (ListElement *e = LIST_END (lbData); e != NULL; e = e->prev) {
+    // only display the top 10 scores
+    u8 i = 0;
+    ListElement *e = LIST_END (lbData);
+    while (i < 10 && e != NULL) {
         insertAfter (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
+
         yIdx += 3;
+        i++;
+        e = e->prev;
     }
 
     return rects;

@@ -228,7 +228,9 @@ extern void showScore (void);
 
 typedef struct LBEntry {
 
-    char *name;
+    char *playerName;
+    char *completeName;
+    u8 charClass;
     u32 nameColor;
     char *level;
     char *kills;

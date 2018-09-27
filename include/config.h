@@ -30,6 +30,9 @@ extern Config *parseConfigFile (char *filename);
 extern char *getEntityValue (ConfigEntity *entity, char *key);
 extern ConfigEntity *getEntityWithId (Config *cfg, u8 id);
 
+extern void setEntityValue (ConfigEntity *entity, char *key, char *value);
+extern void writeConfigFile (char *filename, Config *config);
+
 extern void clearConfig (Config *);
 
 
