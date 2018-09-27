@@ -18,6 +18,8 @@
 
 #include "config.h"     // for getting the data
 
+#include "network/client.h"
+
 /*** WORLD STATE ***/
 
 // TODO: create an object pool of list elements for forward optimization??
@@ -1496,6 +1498,8 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
 }
 
+void updatePlayerScore (GameObject *);
+
 void checkForKill (GameObject *defender, bool isPlayer) {
 
     // check for monster kill
@@ -1525,7 +1529,7 @@ void checkForKill (GameObject *defender, bool isPlayer) {
             logMessage (str, KILL_COLOR);
             free (str);
 
-            playerScore->killCount++;
+            updatePlayerScore (defender);
 
             if (pthread_join (lootThread, NULL) != THREAD_OK)
                 fprintf (stderr, "Error joinning loot thread!\n");
@@ -1794,7 +1798,9 @@ LBEntry *getPlayerLBEntry (void) {
 
     LBEntry *entry = (LBEntry *) malloc (sizeof (LBEntry));
 
-    entry->name = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
+    entry->playerName = (char *) calloc (strlen (player->name) + 1, sizeof (char));
+    strcpy (entry->playerName, player->name);
+    entry->completeName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
 
     entry->nameColor = getPlayerClassColor (player->cClass);
 
@@ -1807,6 +1813,14 @@ LBEntry *getPlayerLBEntry (void) {
     entry->reverseScore = reverseString (createString ("%i", playerScore->score));
 
     return entry;
+
+}
+
+void updatePlayerScore (GameObject *monster) {
+
+    playerScore->score += monster->dbId;
+
+    playerScore->killCount++;
 
 }
 
@@ -1845,21 +1859,6 @@ Config *globalLBConfig = NULL;
 List *localLB = NULL;
 List *globalLB = NULL;
 
-// FIXME: this is just for testing
-void printLBData (List *lbData) {
-
-    LBEntry *entry = NULL;
-    u8 count = 1;
-    for (ListElement *e = LIST_START (lbData); e != NULL; e = e->next) {
-        entry = e->data;
-        if (entry != NULL) {
-            fprintf (stdout, "[%i] %i\n", count, entry->score);
-        }
-        count++;
-    }
-
-}
-
 // get the config data into a list
 // we expect the data to be already sorted!!
 List *getLBData (Config *config) {
@@ -1867,7 +1866,6 @@ List *getLBData (Config *config) {
     List *lbData = initList (free);
 
     ConfigEntity *entity = NULL;
-    char *name = NULL;
     char *class = NULL;
     u8 c;
 
@@ -1875,18 +1873,22 @@ List *getLBData (Config *config) {
         entity = (ConfigEntity *) e->data;
         LBEntry *lbEntry = (LBEntry *) malloc (sizeof (LBEntry));
  
-        name = getEntityValue (entity, "name");
+        lbEntry->playerName = getEntityValue (entity, "name");
         c = atoi (getEntityValue (entity, "class"));
         class = getPlayerClassName (c);
 
-        if ((name != NULL) && (class != NULL)) lbEntry->name = createString ("%s the %s", name, class);
-        else if (name != NULL) {
-            lbEntry->name = (char *) calloc (strlen (name) + 1, sizeof (char));
-            strcpy (lbEntry->name, name);
+        if ((lbEntry->playerName != NULL) && (class != NULL)) 
+            lbEntry->completeName = createString ("%s the %s", lbEntry->playerName, class);
+        else if (lbEntry->playerName != NULL) {
+            lbEntry->completeName = (char *) calloc (strlen (lbEntry->playerName) + 1, sizeof (char));
+            strcpy (lbEntry->completeName, lbEntry->playerName);
         }
+        // if some how the data got corrupted...
         else {
-            lbEntry->name = (char *) calloc (10, sizeof (char));
-            strcpy (lbEntry->name, "Anonymous");
+            lbEntry->playerName = (char *) calloc (10, sizeof (char));
+            strcpy (lbEntry->playerName, "Anonymous");
+            lbEntry->completeName = (char *) calloc (10, sizeof (char));
+            strcpy (lbEntry->completeName, "Anonymous");
         }
 
         lbEntry->nameColor = getPlayerClassColor (c);
@@ -1910,7 +1912,6 @@ List *getLBData (Config *config) {
 
 }
 
-// FIXME: do we want to first check if the new player score can enter the leaderboard??
 List *getLocalLBData (void) {
 
     List *lbData = NULL;
@@ -1921,7 +1922,7 @@ List *getLocalLBData (void) {
         lbData = getLBData (localLBConfig);
 
         // insert the current player score at the end no matter what
-        insertAfter (lbData, LIST_END (lbData), playerLBEntry);
+        insertAfter (lbData, NULL, playerLBEntry);
 
         // then sort the list
         lbData->start = mergeSort (LIST_START (lbData));
@@ -1943,12 +1944,41 @@ List *getGlobalLBData (void) {
 
     // check if we have already a .conf file
     globalLBConfig = parseConfigFile ("./data/globalLB.cfg");
-    if (globalLBConfig != NULL) globalData = getLBData (globalLBConfig);
+    if (globalLBConfig != NULL) {
+        globalData = getLBData (globalLBConfig);
 
-    // FIXME: we don't have a global lb file, so connect to the server
+        // insert the player score no matter what
+        insertAfter (globalData, NULL, playerLBEntry);
+
+        // then sort the list
+        globalData->start = mergeSort (LIST_START (globalData));
+    } 
+
+    // we don't have a global lb file, so connect to the server
     else {
-        // check that we have got a valid file
-        // get the data in the same way as in the local leaderboard
+        if (!connectedToServer) {
+            if (initConnection ()) {
+                fprintf (stderr, "Failed to retrieve global LB!\n");
+                // FIXME: give feedback to the player
+            }
+        }
+
+        // we are connected, so request the file
+        if (makeRequest (REQ_GLOBAL_LB) != 0) fprintf (stderr, "Failed request!\n");
+        else {
+             // FIXME: check that we have got a valid file
+
+            globalLBConfig = parseConfigFile ("./data/globalLB.cfg");
+            if (globalLBConfig != NULL) {
+                globalData = getLBData (globalLBConfig);
+
+                // insert the player score no matter what
+                insertAfter (globalData, NULL, playerLBEntry);
+
+                // then sort the list
+                globalData->start = mergeSort (LIST_START (globalData));
+            } 
+        } 
     }
 
     return globalData;
@@ -1975,7 +2005,7 @@ Config *createNewLBCfg (List *lbData) {
         setEntityValue (newEntity, "class", createString ("%i", entry->charClass));
         setEntityValue (newEntity, "level", entry->level);
         setEntityValue (newEntity, "kills", entry->kills);
-        setEntityValue (newEntity, "score", entry->score);
+        setEntityValue (newEntity, "score", createString ("%i", entry->score));
 
         insertAfter (cfg->entities, LIST_START (cfg->entities), newEntity);
 
@@ -2002,7 +2032,8 @@ void updateLBFile (char *filename, Config *cfg, bool globalLB) {
 void deleteLBEntry (LBEntry *entry) {
 
     if (entry != NULL) {
-        if (entry->name) free (entry->name);
+        if (entry->playerName) free (entry->playerName);
+        if (entry->completeName) free (entry->completeName);
         if (entry->level) free (entry->level);
         if (entry->kills) free (entry->kills);
         if (entry->reverseScore) free (entry->reverseScore);
@@ -2014,15 +2045,14 @@ void deleteLBEntry (LBEntry *entry) {
 
 void destroyLeaderBoard (List *lb) {
 
-    while (LIST_START (lb) != NULL) deleteLBEntry ((LBEntry *) removeElement (lb, LIST_END (lb)));
-
+    while (LIST_SIZE (lb) > 0) 
+        deleteLBEntry ((LBEntry *) removeElement (lb, LIST_END (lb)));
+        
     free (lb);
 
 }
 
 void cleanLeaderBoardData (void) {
-
-    deleteLBEntry (playerLBEntry);
 
     // delete config data
     if (localLBConfig != NULL) clearConfig (localLBConfig);

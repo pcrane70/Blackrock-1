@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -20,6 +21,8 @@
 // #define SERVER_ADDRESS  "192.168.1.7
 
 int clientSocket;
+
+bool connectedToServer = false;
 
 /*** CONNECTION ***/
 
@@ -68,6 +71,8 @@ int initConnection (void) {
 
     // handle the server response
     printf ("\n\nThe server sent the data:\n\n%s\n\n", serverResponse);
+
+    connectedToServer = true;
 
     // connection is successfull
     return 0;
@@ -131,12 +136,14 @@ int recieveFile (char *request) {
 
 int makeRequest (RequestType type) {
 
+    int retval;
     char *request = createString ("%i", type);
 
     switch (type) {
         case 1: 
-            if (recieveFile (request) == 0) fprintf (stdout, "Got the file!\n");
-            else  fprintf (stderr, "Error recieving file!\n");
+            retval = recieveFile (request);
+            if (retval == 0) fprintf (stdout, "Got the file!\n");
+            else fprintf (stderr, "Error recieving file!\n");
             break;
         case 2: break;
         case 3: break;
@@ -147,6 +154,6 @@ int makeRequest (RequestType type) {
         // FIXME:
     // } while (request != 0);
 
-    return 0;
+    return retval;
 
 }

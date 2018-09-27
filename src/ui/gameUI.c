@@ -1838,7 +1838,7 @@ void renderLBRects (Console *console) {
             if (count % 2 == 0) drawRect (console, rect->bgRect, EVEN_ROW_COLOR, 0, NO_COLOR);
             else drawRect (console, rect->bgRect, ODD_ROW_COLOR, 0, NO_COLOR);
 
-            putStringAt (console, rect->entry->name, 5, yIdx, rect->entry->nameColor, NO_COLOR);
+            putStringAt (console, rect->entry->completeName, 5, yIdx, rect->entry->nameColor, NO_COLOR);
             putStringAt (console, rect->entry->level, 37, yIdx, WHITE, NO_COLOR);
             putStringAt (console, rect->entry->kills, 50, yIdx, WHITE, NO_COLOR);
             putReverseString (console, rect->entry->reverseScore, 68, yIdx, WHITE, NO_COLOR);
@@ -1858,7 +1858,10 @@ void renderLocalLB (Console *console) {
     if (localLB == NULL) {
         fprintf (stdout, "Getting local leaderboard data...\n");
         localLB = getLocalLBData ();
-        if (localLB != NULL) lbRects = createLBUI (localLB);
+        if (localLB != NULL) {
+            lbRects = createLBUI (localLB);
+            fprintf (stdout, "Lb rects: %i!\n", LIST_SIZE (lbRects));
+        } 
         // FIXME: DISPLAY AN ERROR else 
     } 
     
