@@ -1,6 +1,6 @@
 /*** This handles the functions for rendering ui stuff to the screen ***/
 
-#include <string.h>     // for memcpy
+#include <string.h>
 
 #include "blackrock.h"
 
@@ -21,16 +21,17 @@ UIScreen *activeScene = NULL;
 // don't forget to manually clean the previous screen
 void setActiveScene (UIScreen *newScreen) { activeScene = newScreen; }
 
+// FIXME:
 void destroyUIScreen (UIScreen *screen) {
 
-    if (screen != NULL) {
+    /* if (screen != NULL) {
         if (screen->views != NULL) {
             if (LIST_SIZE (screen->views) > 0) {
                 screen->activeView = NULL;
 
                 // destroy screen views
                 while (LIST_SIZE (screen->views) > 0) 
-                    destroyView ((UIView *) removeElement (screen->views, NULL));
+                    ui_destroyView ((UIView *) removeElement (screen->views, NULL));
 
             }
 
@@ -38,7 +39,7 @@ void destroyUIScreen (UIScreen *screen) {
         }
 
         free (screen);
-    }
+    } */
 
 }
 
@@ -46,7 +47,7 @@ CleanUI destroyCurrentScreen;
 
 /*** UI ***/
 
-UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
+UIView *ui_newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
      UIRenderFunction renderFunc) {
 
@@ -70,11 +71,10 @@ UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount,
 
 }
 
-void destroyView (void *data) {
+void ui_destroyView (void *data) {
 
-    UIView *view = (UIView *) data;
-
-    if (view != NULL) {
+    if (data) {
+        UIView *view = (UIView *) data;
         if (view->pixelRect) free (view->pixelRect);
         destroyConsole (view->console);
         free (view);
@@ -82,7 +82,7 @@ void destroyView (void *data) {
 
 }
 
-void drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor) {
+void ui_drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor) {
 
     char c;
     for (u32 y = rect->y; y < rect->y + rect->h; y++) {
@@ -127,7 +127,7 @@ void drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borde
 
 /*** IMAGE DRAWING ***/
 
-void drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY) {
+void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY) {
 
     u32 dstX = cellX * console->cellWidth;
     for (u32 srcY = 0; srcY < image->height; srcY++) {

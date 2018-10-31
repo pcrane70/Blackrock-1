@@ -7,7 +7,7 @@
 #include "ui/menu.h"
 #include "ui/console.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 MenuView activeMenuView;
 UIScreen *menuScreen = NULL;
@@ -28,28 +28,25 @@ static void renderLaunch (Console *console) {
 
     if (!bgImage) bgImage = loadImageFromFile (launchImg);
 
-    drawImageAt (console, bgImage, 0, 0);
+    ui_drawImageAt (console, bgImage, 0, 0);
 
 }
 
-// FIXME: where are we destroying the image?
 void toggleLaunch (void) {
 
-    if (launchView == NULL) {
+    if (!launchView) {
         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
-        launchView = newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, NO_COLOR, true, renderLaunch);
-        insertAfter (menuScreen->views, NULL, launchView);
+        launchView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, NO_COLOR, true, renderLaunch);
+        dlist_insert_after (menuScreen->views, NULL, launchView);
 
         // menuScreen->activeView = launchView;
         activeMenuView = LAUNCH_VIEW;
     }
 
     else {
-        if (launchView != NULL) {
-            // if (bgImage != NULL) destroyImage (bgImage);
-
-            ListElement *launch = getListElement (activeScene->views, launchView);
-            destroyView ((UIView *) removeElement (activeScene->views, launch));
+        if (launchView) {
+            ListElement *launch = dlist_get_ListElement (activeScene->views, launchView);
+            ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, launch));
             launchView = NULL;
         }
     }
@@ -77,8 +74,8 @@ static void renderMainMenu (Console *console) {
 void createMainMenu (void) {
 
     UIRect menu = { (16 * FULL_SCREEN_LEFT), (16 * FULL_SCREEN_TOP), (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-    UIView *mainMenu = newView (menu, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, MAIN_MENU_COLOR, true, renderMainMenu);
-    insertAfter (menuScreen->views, LIST_END (menuScreen->views), mainMenu);
+    UIView *mainMenu = ui_newView (menu, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, MAIN_MENU_COLOR, true, renderMainMenu);
+    dlist_insert_after (menuScreen->views, LIST_END (menuScreen->views), mainMenu);
 
     // FIXME:
     // menuScreen->activeView = MAIN_MENU_VIEW; 
@@ -111,16 +108,16 @@ void toggleMultiplayerMenu (void) {
 
     if (multiMenu == NULL) {
         UIRect menu = { (16 * MULTI_MENU_LEFT), (16 * MULTI_MENU_TOP), (16 * MULTI_MENU_WIDTH), (16 * MULTI_MENU_HEIGHT) };
-        multiMenu = newView (menu, MULTI_MENU_WIDTH, MULTI_MENU_HEIGHT, tileset, 0, MULTI_MENU_COLOR, true, renderMultiplayerMenu);
-        insertAfter (menuScreen->views, LIST_END (menuScreen->views), multiMenu);
+        multiMenu = ui_newView (menu, MULTI_MENU_WIDTH, MULTI_MENU_HEIGHT, tileset, 0, MULTI_MENU_COLOR, true, renderMultiplayerMenu);
+        dlist_insert_after (menuScreen->views, LIST_END (menuScreen->views), multiMenu);
 
         // menuScreen->activeView = MULTI_MENU_VIEW;
         activeMenuView = MULTI_MENU_VIEW;
     }
 
     else {
-        ListElement *multi = getListElement (activeScene->views, multiMenu);
-        destroyView ((UIView *) removeElement (activeScene->views, multi));
+        ListElement *multi = dlist_get_ListElement (activeScene->views, multiMenu);
+        ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, multi));
         multiMenu = NULL;
 
         activeMenuView = MAIN_MENU_VIEW;
@@ -146,20 +143,22 @@ UIView *characterMenu = NULL;
 static void renderCharacterMenu (Console *console) {
 
     UIRect rect = { 0, 0, CHAR_CREATION_WIDTH, CHAR_CREATION_HEIGHT };
-    drawRect (console, &rect, CHAR_CREATION_COLOR, 0, 0xFFFFFFFF);
+    ui_drawRect (console, &rect, CHAR_CREATION_COLOR, 0, 0xFFFFFFFF);
 
     putStringAtCenter (console, "Character Creation", 2, CHAR_CREATION_TEXT, 0x00000000);
 
 }
 
+
+// FIXME:
 void toggleCharacterMenu (void) {
 
     if (characterMenu == NULL) {
         toggleLaunch ();
 
         UIRect charMenu = { (16 * CHAR_CREATION_LEFT), (16 * CHAR_CREATION_TOP), (16 * CHAR_CREATION_WIDTH), (16 * CHAR_CREATION_HEIGHT) };
-        characterMenu = newView (charMenu, CHAR_CREATION_WIDTH, CHAR_CREATION_HEIGHT, tileset, 0, 0x000000FF, true, renderCharacterMenu);
-        insertAfter(activeScene->views, LIST_END (activeScene->views), characterMenu);
+        characterMenu = ui_newView (charMenu, CHAR_CREATION_WIDTH, CHAR_CREATION_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacterMenu);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), characterMenu);
 
         menuScreen->activeView = characterMenu;
     }
@@ -168,8 +167,8 @@ void toggleCharacterMenu (void) {
         if (characterMenu != NULL) {
             toggleLaunch ();
 
-            ListElement *charMenu = getListElement (activeScene->views, characterMenu);
-            destroyView ((UIView *) removeElement (activeScene->views, charMenu));
+            ListElement *charMenu = dlist_get_ListElement (activeScene->views, characterMenu);
+            ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, charMenu));
             characterMenu = NULL;
         }
     }
@@ -188,13 +187,7 @@ void destroyMenuScene (void) {
     if (menuScreen) {
         destroyImage (bgImage);
 
-        UIView *view = NULL;
-        while (LIST_SIZE (menuScreen->views) > 0) {
-            view = (UIView *) removeElement (menuScreen->views, LIST_END (menuScreen->views));
-            if (view) destroyView (view);
-        }
-
-        destroyList (menuScreen->views);
+        dlist_destroy (menuScreen->views);
         free (menuScreen);
 
         fprintf (stdout, "Done cleaning up menu.\n");
@@ -202,11 +195,10 @@ void destroyMenuScene (void) {
 
 }
 
-// FIXME: destroy list function
 UIScreen *menuScene (void) {
 
     menuScreen = (UIScreen *) malloc (sizeof (UIScreen));
-    menuScreen->views = initList (free);
+    menuScreen->views = dlist_init (ui_destroyView);
     menuScreen->handleEvent = hanldeMenuEvent;
 
     toggleLaunch ();

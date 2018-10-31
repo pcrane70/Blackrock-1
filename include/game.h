@@ -5,7 +5,7 @@
 
 #include "map.h"    // for Point
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 #include "objectPool.h"
 
 #define COMP_COUNT      7
@@ -133,22 +133,22 @@ typedef struct Entity {
 
 /*** EVENTS ***/
 
-typedef void (*EventListener)(void *);
+typedef void (*EventDoubleListener)(void *);
 
 typedef struct Event {
 
     u32 objectId;
-    EventListener callback;
+    EventDoubleListener callback;
 
 } Event;
 
 
 /*** OUR LISTS ***/
 
-extern List *gameObjects;
-extern List *positions;
-extern List *graphics;
-extern List *physics;
+extern DoubleList *gameObjects;
+extern DoubleList *positions;
+extern DoubleList *graphics;
+extern DoubleList *physics;
 
 /*** POOLS ***/
 
@@ -172,7 +172,7 @@ extern void *updateGame (void *);
 extern GameObject *createGO (void);
 extern void *getComponent (GameObject *, GameComponent);
 extern void addComponent (GameObject *go, GameComponent type, void *data);
-extern List *getObjectsAtPos (u32 x, u32 y);
+extern DoubleList *getObjectsAtPos (u32 x, u32 y);
 extern GameObject *searchGameObjectById (u32);
 
 /*** LOOT ***/
@@ -181,7 +181,7 @@ typedef struct Loot {
 
     u32 objectId;
     u8 money[3];
-    List *lootItems;
+    DoubleList *lootItems;
     bool empty;
 
 } Loot;
@@ -239,11 +239,11 @@ typedef struct LBEntry {
 
 } LBEntry;
 
-extern List *localLBData;
-extern List *globalLBData;
+extern DoubleList *localLBData;
+extern DoubleList *globalLBData;
 
-extern List *getLocalLBData (void);
-extern List *getGlobalLBData (void);
+extern DoubleList *getLocalLBData (void);
+extern DoubleList *getGlobalLBData (void);
 
 // Cleanning Up!
 extern void cleanUpGame (void);

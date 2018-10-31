@@ -13,7 +13,7 @@
 #include "room.h"
 #include "map.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 #include "utils/myUtils.h"
 
@@ -125,7 +125,7 @@ void carveCorridorVer (Point from, Point to, bool **mapCells) {
 
 /*** SEGMENTS ***/ 
 
-void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
+void getSegments (DoubleList *segments, Point from, Point to, Room *firstRoom) {
 
     // if (firstRoom == NULL) fprintf (stderr, "\nPassing a NULL room list!\n");
 
@@ -171,7 +171,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    insertAfter (segments, NULL, s);
+                    dlist_insert_after (segments, NULL, s);
                     currRoom = rm;
                 }
 
@@ -208,7 +208,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     // we already have a partial segment, so now complete it
                     turnSegment->end = curr;
                     turnSegment->roomTo = rm;
-                    insertAfter (segments, NULL, turnSegment);
+                    dlist_insert_after (segments, NULL, turnSegment);
                     turnSegment = NULL;
                 }
 
@@ -220,7 +220,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    insertAfter (segments, NULL, s);
+                    dlist_insert_after (segments, NULL, s);
                 }
             }
 
@@ -233,7 +233,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     // complete the partial segment
                     turnSegment->end = curr;
                     turnSegment->roomTo = rm;
-                    insertAfter (segments, NULL, turnSegment);
+                    dlist_insert_after (segments, NULL, turnSegment);
                     turnSegment = NULL;
                 }
 
@@ -245,7 +245,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
                     s->roomFrom = currRoom;
                     s->roomTo = rm;
                     s->hasWayPoint = false;
-                    insertAfter (segments, NULL, s);
+                    dlist_insert_after (segments, NULL, s);
                 }
 
                 currRoom = rm;
@@ -259,7 +259,7 @@ void getSegments (List *segments, Point from, Point to, Room *firstRoom) {
 
 }
 
-void carveSegments (List *hallways, bool **mapCells) {
+void carveSegments (DoubleList *hallways, bool **mapCells) {
 
     ListElement *ptr = LIST_START (hallways);
     while (ptr != NULL) {
@@ -358,7 +358,7 @@ void generateMap (bool **mapCells) {
     // 08/08/2018 -- 7:55
     // I think we got it working the same way as the array, but we still need to tweak
     // how the map generates in general..
-    List *hallways = initList (free);
+    DoubleList *hallways = dlist_init (free);
 
     Room *ptr = firstRoom->next, *preptr = firstRoom;
     while (ptr != NULL) {
@@ -368,7 +368,7 @@ void generateMap (bool **mapCells) {
         Point fromPt = randomRoomPoint (from);
         Point toPt = randomRoomPoint (to);
 
-        List *segments = initList (free);
+        DoubleList *segments = dlist_init (free);
 
         // break the proposed hallway into segments
         getSegments (segments, fromPt, toPt, firstRoom);
@@ -398,12 +398,11 @@ void generateMap (bool **mapCells) {
             if (uSeg != NULL) {
                 Segment *segCopy = (Segment *) malloc (sizeof (Segment));
                 memcpy (segCopy, uSeg, sizeof (Segment));
-                insertAfter (hallways, NULL, segCopy);
+                dlist_insert_after (hallways, NULL, segCopy);
             }
         }    
 
-        // clean up lists
-        destroyList (segments);
+        dlist_destroy (segments);
 
         // continue looping through the rooms
         preptr = preptr->next;
@@ -415,7 +414,7 @@ void generateMap (bool **mapCells) {
 
     // cleanning up 
     firstRoom = deleteList (firstRoom);
-    destroyList (hallways);
+    dlist_destroy (hallways);
 
 }
 

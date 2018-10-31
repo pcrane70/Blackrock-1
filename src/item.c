@@ -6,7 +6,7 @@
 #include "item.h"
 #include "player.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 #include "objectPool.h"
 
 #include "ui/gameUI.h" // for strings
@@ -18,7 +18,7 @@
 const char *itemsDbPath = "./data/items.db";    // The path is form the makefile
 sqlite3 *itemsDb;
 
-List *items = NULL;
+DoubleList *items = NULL;
 Pool *itemsPool = NULL;
 
 // static u32 itemsId = 0;
@@ -30,7 +30,7 @@ extern void die (char *);
 // FIXME: problems with items pool
 void initItems (void) {
 
-    items = initList (free);
+    items = dlist_init (free);
     itemsPool = initPool ();
 
     // connect to the items db
@@ -67,7 +67,7 @@ Item *newItem (void) {
         newId++;
         for (u8 u = 0; u < GAME_OBJECT_COMPS; u++) i->components[u] = NULL;
         for (u8 u = 0; u < ITEM_COMPS; u++) i->itemComps[u] = NULL;
-        insertAfter (items, NULL, i);
+        dlist_insert_after (items, NULL, i);
     }
 
     return i;
@@ -99,7 +99,7 @@ void addGameComponent (Item *item, GameComponent type, void *data) {
             newPos->layer = posData->layer;
 
             item->components[type] = newPos;
-            insertAfter (positions, NULL, newPos);
+            dlist_insert_after (positions, NULL, newPos);
         } break;
         case GRAPHICS: {
             if (getGameComponent (item, type) != NULL) return;
@@ -119,7 +119,7 @@ void addGameComponent (Item *item, GameComponent type, void *data) {
             newGraphics->bgColor = graphicsData->bgColor;
 
             item->components[type] = newGraphics;
-            insertAfter (graphics, NULL, newGraphics);
+            dlist_insert_after (graphics, NULL, newGraphics);
         } break;
         default: break;
     }
@@ -171,16 +171,16 @@ void removeGameComponent (Item *item, GameComponent type) {
         case POSITION: {
             Position *posComp = (Position *) getGameComponent (item, type);
             if (posComp != NULL) {
-                ListElement *e = getListElement (positions, posComp);
-                if (e != NULL) push (posPool, removeElement (positions, e));
+                ListElement *e = dlist_get_ListElement (positions, posComp);
+                if (e != NULL) push (posPool, dlist_remove_element (positions, e));
                 item->components[type] = NULL;
             }
         } break;
         case GRAPHICS: {
             Graphics *graComp = (Graphics *) getGameComponent (item, type);
             if (graComp != NULL) {
-                ListElement *e = getListElement (graphics, graComp);
-                if (e != NULL) push (graphicsPool, removeElement (graphics, e));
+                ListElement *e = dlist_get_ListElement (graphics, graComp);
+                if (e != NULL) push (graphicsPool, dlist_remove_element (graphics, e));
                 item->components[type] = NULL;
             }
         } break;
@@ -232,9 +232,9 @@ Item *deleteItem (Item *item) {
     for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
     for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
-    ListElement *e = getListElement (items, item);
+    ListElement *e = dlist_get_ListElement (items, item);
     if (e != NULL) {
-        void *old = removeElement (items, e);
+        void *old = dlist_remove_element (items, e);
         if (old != NULL) free (old);
     }
 
@@ -300,7 +300,8 @@ void healPlayer (void *);
 void toggleEquipWeapon (void *);
 void toggleEquipArmour (void *);
 
-EventListener getItemCallback (u8 cb) {
+// FIXME:
+/* EventListener getItemCallback (u8 cb) {
 
     EventListener callback = NULL;
 
@@ -314,7 +315,7 @@ EventListener getItemCallback (u8 cb) {
 
     return callback;
 
-}
+} */
 
 // 29/08/2018 -- 23:34 -- new way of creating an item using sqlite db
 // 05/09/2018 -- 11:04 -- creating items with a more complex db
@@ -347,8 +348,9 @@ Item *createItem (int itemId) {
     item->probability = sqlite3_column_double (res, ITEM_PROB_COL);
     item->stackable = (sqlite3_column_int (res, ITEM_STACKABLE_COL) == 0) ? false : true;
     item->quantity = (u8) sqlite3_column_int (res, ITEM_QUANTITY_COL);
-    
-    item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
+
+    // FIXME: 
+    // item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
 
     // graphics
     if (addGraphicsToItem (itemId, item, name) != 0) {
@@ -434,17 +436,17 @@ Item *createArmour (u32 itemId) {
 
 /*** ITEMS FUNCS ***/
 
-List *getItemsAtPos (u8 x, u8 y) {
+DoubleList *getItemsAtPos (u8 x, u8 y) {
 
     Position *pos = NULL;
     if (items == NULL || (LIST_SIZE (items) == 0)) return NULL;
 
-    List *retVal = initList (free);
+    DoubleList *retVal = dlist_init (free);
     for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
         pos = (Position *) getGameComponent ((Item *) e->data, POSITION);
         // inventory items do NOT have a pos comp
         if (pos != NULL) {
-            if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
+            if (pos->x == x && pos->y == y) dlist_insert_after (retVal, NULL, e->data);
         }
     }
 
@@ -609,7 +611,7 @@ void pickUp (Item *item) {
 void getItem (void) {
 
     // get a list of items nearby the player
-    List *objects = getItemsAtPos (player->pos->x, player->pos->y);
+    DoubleList *objects = getItemsAtPos (player->pos->x, player->pos->y);
 
     if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
         if (objects != NULL) free (objects);
@@ -619,8 +621,8 @@ void getItem (void) {
 
     // we only pick one item each time
     else {
-        pickUp ((Item *) removeElement (objects, (LIST_START (objects))));
-        if (objects != NULL) cleanUpList (objects);
+        pickUp ((Item *) dlist_remove_element (objects, (LIST_START (objects))));
+        if (objects) dlist_clean (objects);
     } 
 
 }
@@ -636,7 +638,7 @@ void getLootItem (u8 lootYIdx) {
             u8 count = 0;
             for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
                 if (count == lootYIdx) {
-                    item = (Item *) removeElement (currentLoot->lootItems, e);
+                    item = (Item *) dlist_remove_element (currentLoot->lootItems, e);
                     break;
                 }
 
@@ -972,7 +974,7 @@ void healPlayer (void *i) {
 // FIXME: problems with items pool
 void cleanUpItems (void) {
 
-    destroyList (items);
+    dlist_destroy (items);
     // clearPool (itemsPool);
 
     // disconnect from the db

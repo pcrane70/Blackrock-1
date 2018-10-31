@@ -14,7 +14,7 @@
 
 #include "input.h"
 
-#include "utils/list.h"       // for messages
+#include "utils/dlist.h"       // for messages
 #include "objectPool.h"
 
 #include "utils/myUtils.h"
@@ -119,7 +119,7 @@ static void renderMap (Console *console) {
 static void rednderStats (Console *console) {
 
     UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
-    drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
+    ui_drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
 
     putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, NO_COLOR);
 
@@ -146,11 +146,11 @@ static void rednderStats (Console *console) {
 
 // TODO: after a while of inactivity, vanish the log until new activity -- just for astethics
 
-List *messageLog = NULL;
+DoubleList *messageLog = NULL;
 
 void deleteMessage (Message *msg) {
 
-    if (msg != NULL) {
+    if (msg) {
         free (msg->msg);
         free (msg);
     }
@@ -173,11 +173,11 @@ void logMessage (char *msg, u32 color) {
     m->fgColor = color;
 
     // add message to the log
-    insertAfter (messageLog, LIST_END (messageLog), m);
+    dlist_insert_after (messageLog, LIST_END (messageLog), m);
 
     // remove the oldest message
     if (LIST_SIZE (messageLog) > 15)
-        deleteMessage ((Message *) removeElement (messageLog, NULL));
+        deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
 
 }
 
@@ -185,7 +185,7 @@ void logMessage (char *msg, u32 color) {
 static void renderLog (Console *console) {
 
     UIRect rect = { 0, 0, LOG_WIDTH, LOG_HEIGHT };
-    drawRect (console, &rect, 0x191919FF, 0, 0xFF990099);
+    ui_drawRect (console, &rect, 0x191919FF, 0, 0xFF990099);
 
     if (messageLog == NULL) return; // we don't have any messages to display
 
@@ -213,7 +213,7 @@ static void renderLog (Console *console) {
 void cleanMessageLog (void) {
 
     while (LIST_SIZE (messageLog) > 0) 
-        deleteMessage ((Message *) removeElement (messageLog, NULL));
+        deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
 
     free (messageLog);
 
@@ -249,7 +249,7 @@ typedef struct LootRect {
 
 } LootRect;
 
-List *activeLootRects = NULL;
+DoubleList *activeLootRects = NULL;
 Pool *lootRectsPool = NULL;
 
 LootRect *createLootRect (u8 y, Item *i) {
@@ -301,7 +301,7 @@ void destroyLootRects (void) {
             }
         }
         
-        destroyList (activeLootRects);
+        dlist_destroy (activeLootRects);
     } 
 
     if (lootRectsPool != NULL) {
@@ -321,8 +321,8 @@ void destroyLootRects (void) {
 
 void drawLootRect (Console *console, LootRect *rect, u32 bgColor) {
 
-    drawRect (console, rect->bgRect, bgColor, 0, NO_COLOR);
-    drawRect (console, rect->imgRect, NO_COLOR, 0, NO_COLOR);
+    ui_drawRect (console, rect->bgRect, bgColor, 0, NO_COLOR);
+    ui_drawRect (console, rect->imgRect, NO_COLOR, 0, NO_COLOR);
 
     Graphics *g = (Graphics *) getGameComponent (rect->item, GRAPHICS);
     if (g != NULL)        
@@ -339,7 +339,7 @@ void updateLootUI (u8 yIdx) {
     if (activeLootRects != NULL && (LIST_SIZE (activeLootRects) > 0)) {
         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
             if (count == yIdx) {
-                push (lootRectsPool, removeElement (activeLootRects, e));
+                push (lootRectsPool, dlist_remove_element (activeLootRects, e));
                 break;
             }
 
@@ -367,7 +367,7 @@ static void renderLoot (Console *console) {
 
     if (currentLoot != NULL) {
         UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
-        drawRect (console, &looRect, LOOT_COLOR, 1, 0xFF990099);
+        ui_drawRect (console, &looRect, LOOT_COLOR, 1, 0xFF990099);
 
         putStringAt (console, "Loot", 12, 2, LOOT_TEXT, 0x00000000);
 
@@ -384,16 +384,16 @@ static void renderLoot (Console *console) {
 
 void hideLoot (void) {
 
-    ListElement *e = getListElement (activeScene->views, lootView);
-    destroyView ((UIView *) removeElement (activeScene->views, e));
+    ListElement *e = dlist_get_ListElement (activeScene->views, lootView);
+    ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, e));
     lootView = NULL;
 
     // deactivate the loot rects and send them to the pool
     if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
-            push (lootRectsPool, removeElement (activeLootRects, e));
+            push (lootRectsPool, dlist_remove_element (activeLootRects, e));
 
-        resetList (activeLootRects);
+        dlist_reset (activeLootRects);
     }
 
 }
@@ -404,22 +404,22 @@ void showLoot (bool dual) {
         // tooltip
         if (tooltipView != NULL) {
             UIRect lootRect = { (16 * LOOT_DUAL_TOOL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-            lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+            lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
         }
 
         // with inventory
         else {
             UIRect lootRect = { (16 * LOOT_DUAL_INV_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-            lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+            lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
         }
     }
 
     else {
         UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-        lootView = newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+        lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
     }
 
-    insertAfter (activeScene->views, LIST_END (activeScene->views), lootView);
+    dlist_insert_after (activeScene->views, LIST_END (activeScene->views), lootView);
 
     lootYIdx = 0;
 
@@ -428,7 +428,7 @@ void showLoot (bool dual) {
         u8 y = 0;
         for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
             lr = createLootRect (y, (Item *) e->data);
-            insertAfter (activeLootRects, LIST_END (activeLootRects), lr);
+            dlist_insert_after (activeLootRects, LIST_END (activeLootRects), lr);
             y++;
         }
     }
@@ -607,7 +607,7 @@ void renderInventoryItems (Console *console) {
     
              // draw highlighted rect
             if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
-                drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
+                ui_drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
                 // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
                 if (invRect->item != NULL) {
                     // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
@@ -623,14 +623,14 @@ void renderInventoryItems (Console *console) {
 
             // draw every other rect with an item on it
             else if (invRect->item != NULL) {
-                drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+                ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
                 u8 quantity = ZERO_ITEMS + invRect->item->quantity;
                 putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
             }
 
             // draw the empty rects
-            else drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+            else ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
         }
     }
 
@@ -639,13 +639,13 @@ void renderInventoryItems (Console *console) {
 static void renderInventory (Console *console) {
 
     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
-    drawRect (console, &rect, INVENTORY_COLOR, 0, NO_COLOR);
+    ui_drawRect (console, &rect, INVENTORY_COLOR, 0, NO_COLOR);
 
     putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, NO_COLOR);
 
     // draw item description rect
     UIRect descBox = { 3, 21, INV_DESC_BOX_WIDTH, INV_DESC_BOX_HEIGHT };
-    drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+    ui_drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
     // render items
     renderInventoryItems (console);
@@ -664,19 +664,19 @@ void updateCharacterPos (bool);
 
 void showInventory (bool dual) {
 
-    if (lootView != NULL) dual = true;
+    if (lootView) dual = true;
 
     if (dual) {
         UIRect inv = { (16 * INVENTORY_DUAL_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
+        inventoryView = ui_newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
     }
 
     else {
         UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
+        inventoryView = ui_newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
     }
 
-    insertAfter (activeScene->views, LIST_END (activeScene->views), inventoryView);
+    dlist_insert_after (activeScene->views, LIST_END (activeScene->views), inventoryView);
 
     if (inventoryRects == NULL) {
         inventoryRects = initInventoryRects ();
@@ -690,8 +690,8 @@ void showInventory (bool dual) {
 void hideInventory (void) {
 
     if (inventoryView != NULL) {
-        ListElement *inv = getListElement (activeScene->views, inventoryView);
-        destroyView ((UIView *) removeElement (activeScene->views, inv));
+        ListElement *inv = dlist_get_ListElement (activeScene->views, inventoryView);
+        ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, inv));
         inventoryView = NULL;
     }
 
@@ -884,14 +884,14 @@ void renderCharacterRects (Console *console) {
     
              // draw highlighted rect
             if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) 
-                drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, NO_COLOR);
+                ui_drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, NO_COLOR);
 
             // draw every other rect with an item on it
             else if (charRect->item != NULL) 
-                drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
+                ui_drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
 
             // draw the empty rects
-            else drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
+            else ui_drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
         }
     }
 
@@ -926,7 +926,7 @@ char *getCharRectSlot (void) {
 static void renderCharacter (Console *console) {
 
     UIRect rect = { 0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT };
-    drawRect (console, &rect, CHARACTER_COLOR, 0, 0xFFFFFFFF);
+    ui_drawRect (console, &rect, CHARACTER_COLOR, 0, 0xFFFFFFFF);
 
     // render character info
     putStringAt (console, statsPlayerName, 6, 2, CHARACTER_TEXT, 0x00000000);
@@ -935,7 +935,7 @@ static void renderCharacter (Console *console) {
 
     // draw item description rect
     UIRect descBox = { 2, 36, CHAR_DESC_BOX_WIDTH, CHAR_DESC_BOX_HEIGHT };
-    drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
+    ui_drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
     Item *selected = getCharSelectedItem ();
     if (selected != NULL) {
         Graphics *g = (Graphics *) getGameComponent (selected, GRAPHICS);
@@ -963,15 +963,15 @@ void showCharacter (bool dual) {
 
     if (dual) {
         UIRect c = { (16 * CHARACTER_DUAL_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
+        characterView = ui_newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
     }
 
     else {
         UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
+        characterView = ui_newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
     }
 
-    insertAfter (activeScene->views, LIST_END (activeScene->views), characterView);
+    dlist_insert_after (activeScene->views, LIST_END (activeScene->views), characterView);
 
     if (characterRects == NULL) {
         characterRects = initCharacterRects ();
@@ -984,9 +984,9 @@ void showCharacter (bool dual) {
 
 void hideCharacter () {
 
-    if (characterView != NULL) {
-        ListElement *c = getListElement (activeScene->views, characterView);
-        destroyView ((UIView *) removeElement (activeScene->views, c));
+    if (characterView) {
+        ListElement *c = dlist_get_ListElement (activeScene->views, characterView);
+        ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, c));
         characterView = NULL;
     }
 
@@ -1391,7 +1391,7 @@ static void renderTooltip (Console *console) {
         // loot tooltip
         case 0: {
             UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
-            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+            ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
 
             renderLootTooltip (console);
         } break;
@@ -1399,7 +1399,7 @@ static void renderTooltip (Console *console) {
         // inventory tooltip
         case 1: {
             UIRect tooltipRect = { 0, 0, TTIP_INV_WIDTH, TOOLTIP_HEIGHT };
-            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+            ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
 
             renderInventoryTooltip (console);
         } break;
@@ -1407,7 +1407,7 @@ static void renderTooltip (Console *console) {
         // character tooltip
         case 2: {
             UIRect tooltipRect = { 0, 0, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT };
-            drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+            ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
 
             renderCharacterTooltip (console);
             } break;
@@ -1440,8 +1440,8 @@ void lootTooltip (void) {
         // as of 21/09/2018 -- we are displaying the same window size, no matter if we only have one item
         // render the item stats
         UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
-        tooltipView = newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+        tooltipView = ui_newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
 
         if (lootView != NULL) updateLootPos (true);
 
@@ -1471,10 +1471,10 @@ void invTooltip (void) {
 
         // FIXME: we are displaying the same window size as in the loot menu
         UIRect lootRect = { (16 * TTIP_INV_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_INV_WIDTH), (16 * TOOLTIP_HEIGHT) };
-        tooltipView = newView (lootRect, TTIP_INV_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+        tooltipView = ui_newView (lootRect, TTIP_INV_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
 
-        if (inventoryView != NULL) updateInventoryPos (true);
+        if (inventoryView) updateInventoryPos (true);
     }
 
 }
@@ -1489,15 +1489,15 @@ void characterTooltip (void) {
 
         if (characterXIdx == 0) {
             UIRect lootRect = { (16 * TTIP_CHAR_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
-            tooltipView = newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+            tooltipView = ui_newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
         }
 
         else {
             UIRect lootRect = { (16 * TTIP_CHAR_RIGHT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
-            tooltipView = newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+            tooltipView = ui_newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
         }
         
-        insertAfter (activeScene->views, LIST_END (activeScene->views), tooltipView);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
     }  
 
 }
@@ -1528,17 +1528,17 @@ void toggleTooltip (u8 view) {
     }
 
     // FIXME: handle character, inventory and tooltip at the same time
-    else if (tooltipView != NULL) {
+    else if (tooltipView) {
         cleanTooltipData ();
 
-        ListElement *e = getListElement (activeScene->views, tooltipView);
-        if (e != NULL) destroyView ((UIView *) removeElement (activeScene->views, e));
-        else destroyView (tooltipView);
+        ListElement *e = dlist_get_ListElement (activeScene->views, tooltipView);
+        if (e != NULL) ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, e));
+        else ui_destroyView (tooltipView);
         tooltipView = NULL;
 
-        if (lootView != NULL) updateLootPos (false);
-        if (characterView != NULL) updateCharacterPos (false);
-        if (inventoryView != NULL) updateInventoryPos (false);
+        if (lootView) updateLootPos (false);
+        if (characterView) updateCharacterPos (false);
+        if (inventoryView) updateInventoryPos (false);
 
         activeView = (UIView *) LIST_END (activeScene->views)->data;
     }
@@ -1559,7 +1559,7 @@ UIView *pauseMenu = NULL;
 static void renderPauseMenu (Console *console) {
 
     UIRect rect = { 0, 0, PAUSE_WIDTH, PAUSE_HEIGHT };
-    drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
+    ui_drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
 
     putStringAt (console, "Pause Menu", 15, 2, INVENTORY_TEXT, NO_COLOR);
 
@@ -1569,16 +1569,16 @@ void togglePauseMenu (void) {
 
     if (pauseMenu == NULL) {
         UIRect pause = { (16 * PAUSE_LEFT), (16 * PAUSE_TOP), (16 * PAUSE_WIDTH), (16 * PAUSE_HEIGHT) };
-        pauseMenu = newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
-        insertAfter(activeScene->views, LIST_END (activeScene->views), pauseMenu);
+        pauseMenu = ui_newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), pauseMenu);
 
         activeView = pauseMenu;
     }
 
     else {
         if (pauseMenu != NULL) {
-            ListElement *pause = getListElement (activeScene->views, pauseMenu);
-            destroyView ((UIView *) removeElement (activeScene->views, pause));
+            ListElement *pause = dlist_get_ListElement (activeScene->views, pauseMenu);
+            ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, pause));
             pauseMenu = NULL;
 
             activeView = (UIView *) (LIST_END (activeScene->views))->data;
@@ -1593,24 +1593,25 @@ UIScreen *inGameScreen = NULL;
 
 UIView *mapView = NULL;
 
-List *initGameViews (void) {
+// FIXME: destroy function
+DoubleList *initGameViews (void) {
 
-    List *views = initList (free);
+    DoubleList *views = dlist_init (free);
 
     UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
     bool colorize = true;
-    u32 bgColor = 0x000000FF;
+    u32 bgColor = BLACK;
 
-    mapView = newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
-    insertAfter (views, NULL, mapView);
+    mapView = ui_newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
+    dlist_insert_after (views, NULL, mapView);
 
     UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
-    UIView *statsView = newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, 0x000000FF, true, rednderStats);
-    insertAfter (views, NULL, statsView);
+    UIView *statsView = ui_newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, BLACK, true, rednderStats);
+    dlist_insert_after (views, NULL, statsView);
 
     UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
-    UIView *logView = newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, 0x000000FF, true, renderLog);
-    insertAfter (views, NULL, logView);
+    UIView *logView = ui_newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, BLACK, true, renderLog);
+    dlist_insert_after (views, NULL, logView);
 
     return views;
 
@@ -1618,9 +1619,10 @@ List *initGameViews (void) {
 
 void destroyGameUI (void);
 
+// FIXME: destroy list function
 UIScreen *gameScene (void) {
 
-    List *igViews = initGameViews ();
+    DoubleList *igViews = initGameViews ();
 
     if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
     
@@ -1635,7 +1637,8 @@ UIScreen *gameScene (void) {
     inventoryRects = initInventoryRects ();
     characterRects = initCharacterRects ();
 
-    activeLootRects = initList (free);
+    // FIXME:
+    activeLootRects = dlist_init (free);
     lootRectsPool = initPool ();
 
     activeView = mapView;
@@ -1662,26 +1665,25 @@ void resetGameUI (void) {
 
 }
 
+// FIXME: destroy list
 void destroyGameUI (void) {
 
     if (inGameScreen != NULL) {
         fprintf (stdout, "Cleaning in game UI...\n");
 
-        // message log
-        cleanMessageLog ();
+        cleanMessageLog ();     // message log
+        cleanTooltipData ();    // tooltip
 
-        // tooltip
-        cleanTooltipData ();
-
-        if (inventoryRects != NULL) destroyInvRects ();
-        if (characterRects != NULL) destroyCharRects ();
+        if (inventoryRects) destroyInvRects ();
+        if (characterRects) destroyCharRects ();
 
         destroyLootRects ();
 
         fprintf (stdout, "Cleaning in game views...\n");
 
-        while (LIST_SIZE (inGameScreen->views) > 0)
-            destroyView ((UIView *) removeElement (inGameScreen->views, LIST_END (inGameScreen->views)));
+        // FIXME:
+        // while (LIST_SIZE (inGameScreen->views) > 0)
+        //     destroyView ((UIView *) removeElement (inGameScreen->views, LIST_END (inGameScreen->views)));
         
         free (inGameScreen->views);
         free (inGameScreen);
@@ -1703,22 +1705,18 @@ char *deathImgPath = "./resources/death-720.png";
 
 UIView *deathScreen = NULL;
 
-static void renderDeathScreen (Console *console) {
-
-    drawImageAt (console, deathImg, 0, 0);
-
-}
+static void renderDeathScreen (Console *console) { ui_drawImageAt (console, deathImg, 0, 0); }
 
 void deleteDeathScreen (void) {
 
-    if (deathScreen != NULL) {
-        if (deathImg != NULL) {
+    if (deathScreen) {
+        if (deathImg) {
             destroyImage (deathImg);
             deathImg = NULL;
         } 
 
-        ListElement *death = getListElement (postGameScene->views, deathScreen);
-        destroyView ((UIView *) removeElement (postGameScene->views, death));
+        ListElement *death = dlist_get_ListElement (postGameScene->views, deathScreen);
+        ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, death));
         deathScreen = NULL;
 
         postGameScene->activeView = (UIView *) (LIST_END (postGameScene->views))->data;
@@ -1733,9 +1731,10 @@ char *scoreImgPath = "./resources/score-720.png";
 
 UIView *scoreScreen = NULL;
 
+// FIXME: render the actual player score
 static void renderScoreScreen (Console *console) {
 
-    drawImageAt (console, scoreImg, 0, 0);
+    ui_drawImageAt (console, scoreImg, 0, 0);
 
 }
 
@@ -1744,23 +1743,23 @@ void toggleScoreScreen (void) {
 
     if (scoreScreen == NULL) {
         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-        scoreScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, 0x000000FF, true, renderScoreScreen);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), scoreScreen);
+        scoreScreen = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderScoreScreen);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), scoreScreen);
 
-        if (scoreImg == NULL) scoreImg = loadImageFromFile (scoreImgPath);
+        if (!scoreImg) scoreImg = loadImageFromFile (scoreImgPath);
 
         postGameScene->activeView = scoreScreen;
     }
 
     else {
-        if (scoreScreen != NULL) {
-            if (scoreImg != NULL) {
+        if (scoreScreen) {
+            if (scoreImg) {
                 destroyImage (scoreImg);
                 scoreImg = NULL;
             } 
 
-            ListElement *death = getListElement (activeScene->views, scoreScreen);
-            destroyView ((UIView *) removeElement (activeScene->views, death));
+            ListElement *death = dlist_get_ListElement (activeScene->views, scoreScreen);
+            ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, death));
             scoreScreen = NULL;
 
             // activeView = (UIView *) (LIST_END (activeScene->views))->data;
@@ -1785,7 +1784,7 @@ typedef struct {
 
 } LBRect;
 
-List *lbRects = NULL;
+DoubleList *lbRects = NULL;
 
 LBRect *createLBRect (u8 y, LBEntry *entry) {
 
@@ -1803,9 +1802,10 @@ LBRect *createLBRect (u8 y, LBEntry *entry) {
 
 }
 
-List *createLBUI (List *lbData) {
+// FIXME: destroy list
+DoubleList *createLBUI (DoubleList *lbData) {
 
-    List *rects = initList (free);
+    DoubleList *rects = dlist_init (free);
 
     LBEntry *entry = NULL;
     u8 yIdx = 10;
@@ -1815,7 +1815,7 @@ List *createLBUI (List *lbData) {
     u8 i = 0;
     ListElement *e = LIST_END (lbData);
     while (i < 10 && e != NULL) {
-        insertAfter (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
+        dlist_insert_after (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
 
         yIdx += 3;
         i++;
@@ -1835,8 +1835,8 @@ void renderLBRects (Console *console) {
         for (ListElement *e = LIST_START (lbRects); e != NULL; e = e->next) {
             rect = (LBRect *) e->data;
 
-            if (count % 2 == 0) drawRect (console, rect->bgRect, EVEN_ROW_COLOR, 0, NO_COLOR);
-            else drawRect (console, rect->bgRect, ODD_ROW_COLOR, 0, NO_COLOR);
+            if (count % 2 == 0) ui_drawRect (console, rect->bgRect, EVEN_ROW_COLOR, 0, NO_COLOR);
+            else ui_drawRect (console, rect->bgRect, ODD_ROW_COLOR, 0, NO_COLOR);
 
             putStringAt (console, rect->entry->completeName, 5, yIdx, rect->entry->nameColor, NO_COLOR);
             putStringAt (console, rect->entry->level, 37, yIdx, WHITE, NO_COLOR);
@@ -1860,7 +1860,7 @@ void renderLocalLB (Console *console) {
         localLBData = getLocalLBData ();
         if (localLBData != NULL) {
             lbRects = createLBUI (localLBData);
-            fprintf (stdout, "Lb rects: %i!\n", LIST_SIZE (lbRects));
+            fprintf (stdout, "Lb rects: %li!\n", LIST_SIZE (lbRects));
         } 
         // FIXME: DISPLAY AN ERROR else 
     } 
@@ -1894,7 +1894,7 @@ static void renderLeaderboard (Console *console) {
 
     // FIXME: color
     UIRect rect = { 0, 0, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT };
-    drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
+    ui_drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
 
     if (isLocalLB) renderLocalLB (console);
     else renderGlobalLb (console);
@@ -1905,8 +1905,8 @@ void toggleLeaderBoards (void) {
 
     if (leaderBoardView == NULL) {
         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-        leaderBoardView = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderLeaderboard);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), leaderBoardView);
+        leaderBoardView = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderLeaderboard);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), leaderBoardView);
         postGameScene->activeView = leaderBoardView;
 
         // render local leaderboard by default
@@ -1914,10 +1914,10 @@ void toggleLeaderBoards (void) {
     }
 
     else {
-        if (leaderBoardView != NULL) {
-            ListElement *leader = getListElement (activeScene->views, leaderBoardView);
-            if (leader != NULL) removeElement (activeScene->views, leader);
-            destroyView (leaderBoardView);
+        if (leaderBoardView) {
+            ListElement *leader = dlist_get_ListElement (activeScene->views, leaderBoardView);
+            if (leader) dlist_remove_element (activeScene->views, leader);
+            ui_destroyView (leaderBoardView);
             leaderBoardView = NULL;
 
             // FIXME: do we need this?
@@ -1932,7 +1932,7 @@ void destroyLBUI (void) {
     if (lbRects != NULL) {
         LBRect *rect = NULL;
         while (LIST_SIZE (lbRects) > 0) {
-            rect = (LBRect *) removeElement (lbRects, LIST_END (lbRects));
+            rect = (LBRect *) dlist_remove_element (lbRects, LIST_END (lbRects));
             if (rect != NULL) {
                 free (rect->bgRect);
                 rect->entry = NULL;
@@ -1940,30 +1940,31 @@ void destroyLBUI (void) {
             }
         }
 
-        destroyList (lbRects);
+        dlist_destroy (lbRects);
     }
 
 }
 
-// FIXME:
+// FIXME: destroy list function
 // TODO: delete all other UI elements!!
 void destroyPostGameScreen (void) {
 
-    if (postGameScene != NULL) {
-        if (deathImg != NULL) {
+    if (postGameScene) {
+        if (deathImg) {
             destroyImage (deathImg);
             deathImg = NULL;
         } 
         
-        if (scoreImg != NULL) {
+        if (scoreImg) {
             destroyImage (scoreImg);
             scoreImg = NULL;
         } 
 
         destroyLBUI ();
 
+        // FIXME:
         while (LIST_SIZE (postGameScene->views) > 0) 
-            destroyView ((UIView *) removeElement (postGameScene->views, LIST_END (postGameScene->views)));
+            ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, LIST_END (postGameScene->views)));
         
         free (postGameScene->views);
         free (postGameScene);
@@ -1974,16 +1975,18 @@ void destroyPostGameScreen (void) {
 
 }
 
+// FIXME:
 // default view is the game death screen
 UIScreen *postGameScreen (void) {
 
-    List *views = initList (free);
+    // FIXME:
+    DoubleList *views = dlist_init (free);
 
     UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-    deathScreen = newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderDeathScreen);
-    insertAfter (views, NULL, deathScreen);
+    deathScreen = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderDeathScreen);
+    dlist_insert_after (views, NULL, deathScreen);
 
-    if (deathImg == NULL) deathImg = loadImageFromFile (deathImgPath);
+    if (!deathImg) deathImg = loadImageFromFile (deathImgPath);
 
     postGameScene = (UIScreen *) malloc (sizeof (UIScreen));
     

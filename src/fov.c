@@ -8,7 +8,7 @@
 #include "blackrock.h"
 #include "game.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 #define FOV_DISTANCE    8
 
@@ -87,7 +87,7 @@ FovCell mapCellForLocalCell (u8 sector, FovCell heroMapCell, FovCell cellToTrans
 
 bool cellBlocksSight (u32 x, u32 y) {
 
-    List *gos = getObjectsAtPos (x, y);
+    DoubleList *gos = getObjectsAtPos (x, y);
     if (gos != NULL) {
         for (ListElement *e = LIST_START (gos); e != NULL; e = e->next) {
             if (((Physics *) getComponent ((GameObject *) LIST_DATA (e), PHYSICS))->blocksSight) {

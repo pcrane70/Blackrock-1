@@ -5,7 +5,7 @@
 
 #include "item.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 #define NO_COLOR        0x00000000
 #define WHITE           0xFFFFFFFF
@@ -34,7 +34,7 @@ typedef struct Message {
 
 // TODO: maybe later, if we add multiplayer, we might wanna have a more advanced message log like in wow
 // think about a similar functionality to fprintf
-extern List *messageLog;
+extern DoubleList *messageLog;
 
 // create a new message in the log
 extern void logMessage (char *msg, u32 color);
@@ -75,7 +75,7 @@ extern UIView *lootView;
 extern void toggleLootWindow (void);
 extern void updateLootUI (u8 yIdx);
 
-extern List *activeLootRects;
+extern DoubleList *activeLootRects;
 extern u8 lootYIdx;
 
 /*** TOOLTIP ***/

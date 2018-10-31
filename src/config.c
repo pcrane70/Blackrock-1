@@ -1,22 +1,10 @@
-/*** This file is used to read .cfg files to retrive data for our items, monsters, etc. 
- * 
- * As of 15/08/2018 -- 23:02 -- we will be reading from hardcoded internal files to retriev some
- * information of our various entities. Maybe later we will want to have a more advanced system
- * and even have the server with this type of data.
- * 
- * We also have to think of a better way for adding new stuff in our game in an easier way.
- * We will also want to have more values to tweak by config files.
- * 
- * ***/
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "blackrock.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 #include "config.h"
 
@@ -32,8 +20,8 @@ ConfigEntity *newEntity (char *buffer, Config *cfg) {
     char *copy = (char *) calloc (strlen (name) + 1, sizeof (char));
     strcpy (copy, name);
     entity->name = copy;
-    entity->keyValuePairs = initList (free);
-    insertAfter (cfg->entities, LIST_END (cfg->entities), entity);
+    entity->keyValuePairs = dlist_init (free);
+    dlist_insert_after (cfg->entities, LIST_END (cfg->entities), entity);
     
     return entity;
 
@@ -53,7 +41,7 @@ void getData (char *buffer, ConfigEntity *currentEntity) {
         strcpy (copyValue, value);
         kvp->value = copyValue;
 
-        insertAfter (currentEntity->keyValuePairs, LIST_END (currentEntity->keyValuePairs), kvp);
+        dlist_insert_after (currentEntity->keyValuePairs, LIST_END (currentEntity->keyValuePairs), kvp);
     }
 
 }
@@ -69,7 +57,7 @@ Config *parseConfigFile (char *filename) {
     if (configFile == NULL) return NULL;
 
     cfg = (Config *) malloc (sizeof (Config));
-    cfg->entities = initList (free);
+    cfg->entities = dlist_init (free);
 
     char buffer[CONFIG_MAX_LINE_LEN];
 
@@ -122,13 +110,13 @@ ConfigEntity *getEntityWithId (Config *cfg, u8 id) {
 // add a new key-value pair to the entity
 void setEntityValue (ConfigEntity *entity, char *key, char *value) {
 
-    if (entity->keyValuePairs == NULL) entity->keyValuePairs = initList (free);
+    if (entity->keyValuePairs == NULL) entity->keyValuePairs = dlist_init (free);
 
     ConfigKeyValuePair *kv = (ConfigKeyValuePair *) malloc (sizeof (ConfigKeyValuePair));
     kv->key = strdup (key);
     kv->value = strdup (value);
 
-    insertAfter (entity->keyValuePairs, LIST_END (entity->keyValuePairs), kv);
+    dlist_insert_after (entity->keyValuePairs, LIST_END (entity->keyValuePairs), kv);
 
 }
 
@@ -155,13 +143,13 @@ void writeConfigFile (const char *filename, Config *config) {
 
 void clearConfig (Config *cfg) {
 
-    if (cfg == NULL) return;
-
-    // clear each entity values
-    for (ListElement *e = LIST_START (cfg->entities); e != NULL; e = e->next) 
-        destroyList (((ConfigEntity *) e->data)->keyValuePairs);
-    
-    destroyList (cfg->entities);
-    free (cfg);
+    if (cfg) {
+        // clear each entity values
+        for (ListElement *e = LIST_START (cfg->entities); e != NULL; e = e->next) 
+            dlist_destroy (((ConfigEntity *) e->data)->keyValuePairs);
+        
+        dlist_destroy (cfg->entities);
+        free (cfg);
+    }
 
 }

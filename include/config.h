@@ -15,13 +15,13 @@ typedef struct ConfigKeyValuePair {
 typedef struct ConfigEntity {
 
     char *name;
-    List *keyValuePairs;
+    DoubleList *keyValuePairs;
 
 } ConfigEntity;
 
 typedef struct Config {
 
-    List *entities;
+    DoubleList *entities;
 
 } Config;
 

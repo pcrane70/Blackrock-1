@@ -12,7 +12,7 @@
 #include "objectPool.h"
 
 #include "utils/myUtils.h"
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 #include "ui/gameUI.h"  // for the message log
 
@@ -25,13 +25,13 @@
 // TODO: create an object pool of list elements for forward optimization??
 
 // Components
-List *gameObjects = NULL;
-List *positions = NULL;
-List *graphics = NULL;
-List *physics = NULL;
-List *movement = NULL;
-List *combat = NULL;
-List *loot = NULL;
+DoubleList *gameObjects = NULL;
+DoubleList *positions = NULL;
+DoubleList *graphics = NULL;
+DoubleList *physics = NULL;
+DoubleList *movement = NULL;
+DoubleList *combat = NULL;
+DoubleList *loot = NULL;
 
 // Pools
 Pool *goPool = NULL;
@@ -87,13 +87,13 @@ void initGame (void) {
     void connectEnemiesDb (void);
     connectEnemiesDb ();
 
-    gameObjects = initList (free);
-    positions = initList (free);
-    graphics = initList (free);
-    physics = initList (free);
-    movement = initList (free);
-    combat = initList (free);
-    loot = initList (free);
+    gameObjects = dlist_init (free);
+    positions = dlist_init (free);
+    graphics = dlist_init (free);
+    physics = dlist_init (free);
+    movement = dlist_init (free);
+    combat = dlist_init (free);
+    loot = dlist_init (free);
 
     // init our pools
     goPool = initPool ();
@@ -105,7 +105,7 @@ void initGame (void) {
     lootPool = initPool ();
 
     // init the message log
-    messageLog = initList (free);
+    messageLog = dlist_init (free);
 
     // if (pthread_join (dataThread, NULL) != THREAD_OK) die ("Error joinning data thread!\n");
 
@@ -178,7 +178,7 @@ GameObject *createGO (void) {
         go->id = newId;
         newId++;
         for (u8 i = 0; i < COMP_COUNT; i++) go->components[i] = NULL;
-        insertAfter (gameObjects, LIST_END (gameObjects), go);
+        dlist_insert_after (gameObjects, LIST_END (gameObjects), go);
     }
     
     return go;
@@ -205,7 +205,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPos->layer = posData->layer;
 
             go->components[type] = newPos;
-            insertAfter (positions, NULL, newPos);
+            dlist_insert_after (positions, NULL, newPos);
         } break;
         case GRAPHICS: {
             if (getComponent (go, type) != NULL) return;
@@ -224,7 +224,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newGraphics->bgColor = graphicsData->bgColor;
 
             go->components[type] = newGraphics;
-            insertAfter (graphics, NULL, newGraphics);
+            dlist_insert_after (graphics, NULL, newGraphics);
         } break;
         case PHYSICS: {
             if (getComponent (go, type) != NULL) return;
@@ -240,7 +240,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newPhys->blocksMovement = physData->blocksMovement;
 
             go->components[type] = newPhys;
-            insertAfter (physics, NULL, newPhys);
+            dlist_insert_after (physics, NULL, newPhys);
         } break;
         case MOVEMENT: {
             if (getComponent (go, type) != NULL) return;
@@ -259,7 +259,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newMove->turnsSincePlayerSeen = movData->turnsSincePlayerSeen;
 
             go->components[type] = newMove;
-            insertAfter (movement, NULL, newMove);
+            dlist_insert_after (movement, NULL, newMove);
         } break;
         case COMBAT: {
             if (getComponent (go, type) != NULL) return;
@@ -276,7 +276,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newCombat->defense = combatData->defense;
 
             go->components[type] = newCombat;
-            insertAfter (combat, NULL, newCombat);
+            dlist_insert_after (combat, NULL, newCombat);
         } break;
         case EVENT: {
             if (getComponent (go, type) != NULL) return;
@@ -302,7 +302,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             newLoot->lootItems = lootData->lootItems;
 
             go->components[type] = newLoot;
-            insertAfter (loot, NULL, newLoot);
+            dlist_insert_after (loot, NULL, newLoot);
         } break;
 
         // We have an invalid GameComponent type, so don't do anything
@@ -319,54 +319,54 @@ void removeComponent (GameObject *go, GameComponent type) {
         case POSITION: {
             Position *posComp = (Position *) getComponent (go, type);
             if (posComp == NULL) return;
-            ListElement *e = getListElement (positions, posComp);
+            ListElement *e = dlist_get_ListElement (positions, posComp);
             void *posData = NULL;
-            if (e != NULL) posData = removeElement (positions, e);
+            if (e != NULL) posData = dlist_remove_element (positions, e);
             push (posPool, posData);
             go->components[type] = NULL;
         } break;
         case GRAPHICS: {
             Graphics *graComp = (Graphics *) getComponent (go, type);
             if (graComp == NULL) return;
-            ListElement *e = getListElement (graphics, graComp);
+            ListElement *e = dlist_get_ListElement (graphics, graComp);
             void *graData = NULL;
-            if (e != NULL) graData = removeElement (graphics, e);
+            if (e != NULL) graData = dlist_remove_element (graphics, e);
             push (graphicsPool, graData);
             go->components[type] = NULL;
         } break;
         case PHYSICS: {
             Physics *physComp = (Physics *) getComponent (go, type);
             if (physComp == NULL) return;
-            ListElement *e = getListElement (physics, physComp);
+            ListElement *e = dlist_get_ListElement (physics, physComp);
             void *physData = NULL;
-            if (e != NULL) physData = removeElement (physics, e);
+            if (e != NULL) physData = dlist_remove_element (physics, e);
             push (physPool, physData);
             go->components[type] = NULL;
         } break;
         case MOVEMENT: {
             Movement *moveComp = (Movement *) getComponent (go, type);
             if (moveComp == NULL) return;
-            ListElement *e = getListElement (movement, moveComp);
+            ListElement *e = dlist_get_ListElement (movement, moveComp);
             void *moveData = NULL;
-            if (e != NULL) moveData = removeElement (movement, e);
+            if (e != NULL) moveData = dlist_remove_element (movement, e);
             push (movePool, moveData);
             go->components[type] = NULL;
         } break;
         case COMBAT: {
             Combat *combatComp = (Combat *) getComponent (go, type);
             if (combatComp == NULL) return;
-            ListElement *e = getListElement (combat, combatComp);
+            ListElement *e = dlist_get_ListElement (combat, combatComp);
             void *combatData = NULL;
-            if (e != NULL) combatData = removeElement (combat, e);
+            if (e != NULL) combatData = dlist_remove_element (combat, e);
             push (combatPool, combatData);
             go->components[type] = NULL;
         } break;
         case LOOT: {
             Loot *lootComp = (Loot *) getComponent (go, type);
             if (lootComp == NULL) return;
-            ListElement *e = getListElement (loot, lootComp);
+            ListElement *e = dlist_get_ListElement (loot, lootComp);
             void *lootData = NULL;
-            if (e != NULL) lootData = removeElement (loot, e);
+            if (e != NULL) lootData = dlist_remove_element (loot, e);
             push (lootPool, lootData);
             go->components[type] = NULL;
         } break;
@@ -387,14 +387,14 @@ void *getComponent (GameObject *go, GameComponent type) { return go->components[
 
 // TESTING 19/08/2018 -- 19:04
 // FIXME: HOW CAN WE MANAGE THE WALLS!!!!???
-List *getObjectsAtPos (u32 x, u32 y) {
+DoubleList *getObjectsAtPos (u32 x, u32 y) {
 
     Position *pos = NULL;
-    List *retVal = initList (free);
+    DoubleList *retVal = dlist_init (free);
     for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
         pos = (Position *) getComponent ((GameObject *) e->data, POSITION);
         if (pos != NULL)
-            if (pos->x == x && pos->y == y) insertAfter (retVal, NULL, e->data);
+            if (pos->x == x && pos->y == y) dlist_insert_after (retVal, NULL, e->data);
     }
 
     return retVal;
@@ -424,9 +424,9 @@ void destroyGO (GameObject *go) {
     for (u8 i = 0; i < COMP_COUNT; i++) removeComponent (go, i);
 
     // now send the go to the pool
-    ListElement *e = getListElement (gameObjects, go);
+    ListElement *e = dlist_get_ListElement (gameObjects, go);
     if (e != NULL) {
-        void *data = removeElement (gameObjects, e);
+        void *data = dlist_remove_element (gameObjects, e);
         if (data != NULL) push (goPool, data);
     }
 
@@ -439,12 +439,12 @@ void cleanUpGame (void) {
     fprintf (stdout, "Done cleanning up player.\n");
 
     // clean up our lists
-    destroyList (gameObjects);
-    destroyList (positions);
-    destroyList (graphics);
-    destroyList (physics);
-    destroyList (movement);
-    destroyList (combat);
+    dlist_destroy (gameObjects);
+    dlist_destroy (positions);
+    dlist_destroy (graphics);
+    dlist_destroy (physics);
+    dlist_destroy (movement);
+    dlist_destroy (combat);
 
     fprintf (stdout, "Done cleanning up lists.\n");
 
@@ -806,7 +806,7 @@ typedef struct {
 
 #define MONSTER_COUNT       9
 
-List *enemyData = NULL;
+DoubleList *enemyData = NULL;
 
 u8 loadMonsterLoot (u32 monId, MonsterLoot *loot) {
 
@@ -886,7 +886,7 @@ static int loadEnemyData (void *data, int argc, char **argv, char **azColName) {
     if (loadMonsterLoot (mon->id, &mon->loot) != 0)
         fprintf (stderr, "Error getting monster loot. Monster id: %i.\n", mon->id);
 
-    insertAfter (enemyData, LIST_END (enemyData), mon);
+    dlist_insert_after (enemyData, LIST_END (enemyData), mon);
 
    return 0;
 
@@ -904,7 +904,7 @@ void connectEnemiesDb () {
     // createEnemiesDb ();
 
     // enemies in memory
-    enemyData = initList (free);
+    enemyData = dlist_init (free);
 
     // load the enemies data into memory
     char *err = 0;
@@ -1118,7 +1118,7 @@ u32 getMonsterId (void) {
 
 void cleanUpEnemies (void) {
 
-    destroyList (enemyData);
+    dlist_destroy (enemyData);
     sqlite3_close (enemiesDb);
 
 }
@@ -1126,7 +1126,7 @@ void cleanUpEnemies (void) {
 /*** LOOT - ITEMS ***/
 
 // FIXME:
-List *generateLootItems (u32 *dropItems, u32 count) {
+DoubleList *generateLootItems (u32 *dropItems, u32 count) {
 
     // FIXME: take into account that we have differente tables for weapons
     // and armour and for normal items
@@ -1159,7 +1159,7 @@ List *generateLootItems (u32 *dropItems, u32 count) {
     else {
         fprintf (stdout, "Creating loot items...\n");
 
-        List *lootItems = initList (free);
+        DoubleList *lootItems = dlist_init (free);
 
         // generate random loot drops based on items probability
         // FIXME: 07/09/2018 -- 09:44 this is just for testing
@@ -1176,7 +1176,7 @@ List *generateLootItems (u32 *dropItems, u32 count) {
                 default: break;
             }
 
-            if (item != NULL) insertAfter (lootItems, LIST_END (lootItems), item);
+            if (item) dlist_insert_after (lootItems, LIST_END (lootItems), item);
         }
 
         return lootItems;
@@ -1313,7 +1313,7 @@ void destroyLoot (void) {
                 if (lr->lootItems != NULL) {
                     if (LIST_SIZE (lr->lootItems) > 0) {
                         for (ListElement *le = LIST_START (lr->lootItems); le != NULL; le = le->next) 
-                            removeElement (lr->lootItems, le);
+                            dlist_remove_element (lr->lootItems, le);
                         
                     }
 
@@ -1322,7 +1322,7 @@ void destroyLoot (void) {
             }
         }
 
-        destroyList (loot);
+        dlist_destroy (loot);
     }
 
     // clean up loot pool
@@ -1334,7 +1334,7 @@ void destroyLoot (void) {
                 if (lr->lootItems != NULL) {
                     if (LIST_SIZE (lr->lootItems) > 0) {
                         for (ListElement *le = LIST_START (lr->lootItems); le != NULL; le = le->next) 
-                            removeElement (lr->lootItems, le);
+                            dlist_remove_element (lr->lootItems, le);
                     }
 
                     free (lr->lootItems);
@@ -1620,7 +1620,7 @@ void clearOldLevel (void) {
         if (LIST_SIZE (gameObjects) > 0) {
             // send all of our objects and components to ther pools
             for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
-                data = removeElement (gameObjects, e);
+                data = dlist_remove_element (gameObjects, e);
                 if (data != NULL) destroyGO ((GameObject *) data);
             }
         }
@@ -1631,7 +1631,7 @@ void clearOldLevel (void) {
         if (LIST_SIZE (items) > 0) {
             // send the items to their pool
             for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
-                data = removeElement (items, e);
+                data = dlist_remove_element (items, e);
                 if (data != NULL) destroyItem ((Item *) data);
             }
         }
@@ -1768,7 +1768,7 @@ void enterDungeon (void) {
 // we reload the game scene as the same character
 void retry (void) {
 
-    if (messageLog == NULL) messageLog = initList (free);
+    if (!messageLog) messageLog = dlist_init (free);
 
     pthread_t playerThread;
 
@@ -1873,14 +1873,14 @@ bool updateGlobalLb = false;
 Config *localLBConfig = NULL;
 Config *globalLBConfig = NULL;
 
-List *localLBData = NULL;
-List *globalLBData = NULL;
+DoubleList *localLBData = NULL;
+DoubleList *globalLBData = NULL;
 
 // get the config data into a list
 // we expect the data to be already sorted!!
-List *getLBData (Config *config) {
+DoubleList *getLBData (Config *config) {
 
-    List *lbData = initList (free);
+    DoubleList *lbData = dlist_init (free);
 
     ConfigEntity *entity = NULL;
     char *class = NULL;
@@ -1920,7 +1920,7 @@ List *getLBData (Config *config) {
         // 26/09/2018 -- we are reversing the string for a better display in the UI
         lbEntry->reverseScore = reverseString (score);
 
-        insertAfter (lbData, LIST_END (lbData), lbEntry);
+        dlist_insert_after (lbData, LIST_END (lbData), lbEntry);
         
         free (score);
     }
@@ -1929,9 +1929,9 @@ List *getLBData (Config *config) {
 
 }
 
-List *getLocalLBData (void) {
+DoubleList *getLocalLBData (void) {
 
-    List *lbData = NULL;
+    DoubleList *lbData = NULL;
 
     // check if we have a .conf file
     localLBConfig = parseConfigFile ("./data/localLB.cfg");
@@ -1939,10 +1939,10 @@ List *getLocalLBData (void) {
         lbData = getLBData (localLBConfig);
 
         // insert the current player score at the end no matter what
-        insertAfter (lbData, NULL, playerLBEntry);
+        dlist_insert_after (lbData, NULL, playerLBEntry);
 
         // then sort the list
-        lbData->start = mergeSort (LIST_START (lbData));
+        // lbData->start = mergeSort (LIST_START (lbData));
     } 
 
     else {
@@ -1954,10 +1954,11 @@ List *getLocalLBData (void) {
 
 }
 
+// FIXME:
 // FIXME: check the date of the file
-List *getGlobalLBData (void) {
+DoubleList *getGlobalLBData (void) {
 
-    List *globalData = NULL;
+    DoubleList *globalData = NULL;
 
     // check if we have already a .conf file
     globalLBConfig = parseConfigFile ("./data/globalLB.cfg");
@@ -1965,19 +1966,19 @@ List *getGlobalLBData (void) {
         globalData = getLBData (globalLBConfig);
 
         // insert the player score no matter what
-        insertAfter (globalData, NULL, playerLBEntry);
+        dlist_insert_after (globalData, NULL, playerLBEntry);
 
         // then sort the list
-        globalData->start = mergeSort (LIST_START (globalData));
+        // globalData->start = mergeSort (LIST_START (globalData));
     } 
 
     // we don't have a global lb file, so connect to the server
     else {
         if (!connectedToServer) {
-            if (initConnection ()) {
-                fprintf (stderr, "Failed to retrieve global LB!\n");
-                // FIXME: give feedback to the player
-            }
+            // if (initConnection ()) {
+            //     fprintf (stderr, "Failed to retrieve global LB!\n");
+            //     // FIXME: give feedback to the player
+            // }
         }
 
         // we are connected, so request the file
@@ -1990,10 +1991,10 @@ List *getGlobalLBData (void) {
                 globalData = getLBData (globalLBConfig);
 
                 // insert the player score no matter what
-                insertAfter (globalData, NULL, playerLBEntry);
+                dlist_insert_after (globalData, NULL, playerLBEntry);
 
                 // then sort the list
-                globalData->start = mergeSort (LIST_START (globalData));
+                // globalData->start = mergeSort (LIST_START (globalData));
             } 
         } 
 
@@ -2004,13 +2005,14 @@ List *getGlobalLBData (void) {
 
 }
 
-Config *createNewLBCfg (List *lbData) {
+// FIXME:
+Config *createNewLBCfg (DoubleList *lbData) {
 
     // make sure that we are only wrtitting the 10 best scores...
     // don't forget that the data is sorted like < 
 
     Config *cfg = (Config *) malloc (sizeof (Config));
-    cfg->entities = initList (free);
+    cfg->entities = dlist_init (free);
 
     u8 count = 0;
     ListElement *e = LIST_END (lbData);
@@ -2026,7 +2028,7 @@ Config *createNewLBCfg (List *lbData) {
         setEntityValue (newEntity, "kills", entry->kills);
         setEntityValue (newEntity, "score", createString ("%i", entry->score));
 
-        insertAfter (cfg->entities, LIST_START (cfg->entities), newEntity);
+        dlist_insert_after (cfg->entities, LIST_START (cfg->entities), newEntity);
 
         e = e->prev;
         count++;
@@ -2082,10 +2084,10 @@ void deleteLBEntry (LBEntry *entry) {
 
 }
 
-void destroyLeaderBoard (List *lb) {
+void destroyLeaderBoard (DoubleList *lb) {
 
     while (LIST_SIZE (lb) > 0) 
-        deleteLBEntry ((LBEntry *) removeElement (lb, LIST_END (lb)));
+        deleteLBEntry ((LBEntry *) dlist_remove_element (lb, LIST_END (lb)));
         
     free (lb);
 
@@ -2094,11 +2096,11 @@ void destroyLeaderBoard (List *lb) {
 void cleanLeaderBoardData (void) {
 
     // delete config data
-    if (localLBConfig != NULL) clearConfig (localLBConfig);
-    if (globalLBConfig != NULL) clearConfig (globalLBConfig);
+    if (localLBConfig) clearConfig (localLBConfig);
+    if (globalLBConfig) clearConfig (globalLBConfig);
 
     // delete parsed data
-    if (localLBData != NULL) destroyLeaderBoard (localLBData);
-    if (globalLBData != NULL) destroyLeaderBoard (globalLBData);
+    if (localLBData) destroyLeaderBoard (localLBData);
+    if (globalLBData) destroyLeaderBoard (globalLBData);
 
 }

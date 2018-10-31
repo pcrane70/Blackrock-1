@@ -7,7 +7,7 @@
 
 #include "console.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 /*** COMMON COLORS ***/
 
@@ -45,7 +45,7 @@ typedef struct UIView {
 
 typedef struct UIScreen {
 
-    List *views;
+    DoubleList *views;
     UIView *activeView;
     UIEventHandler handleEvent;
 
@@ -62,15 +62,15 @@ extern CleanUI destroyCurrentScreen;
 
 /*** VIEWS **/
 
-extern UIView *newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
+extern UIView *ui_newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
      UIRenderFunction renderFunc);
 
-extern void destroyView (UIView *view);
+extern void ui_destroyView (void *data);
 
-extern void drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor);
+extern void ui_drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor);
 
-extern void drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY);
+extern void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY);
 
 
 extern char *tileset;

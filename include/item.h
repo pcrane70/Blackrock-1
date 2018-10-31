@@ -1,7 +1,7 @@
 #ifndef ITEM_H
 #define ITEM_H
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 #include "objectPool.h"
 
 /*** ITEM RARITY ***/
@@ -36,7 +36,7 @@ typedef enum ItemComponent {
 
 #define GAME_OBJECT_COMPS   2
 
-extern List *items;
+extern DoubleList *items;
 extern Pool *itemsPool;
 
 #define MAX_STACK   20
@@ -51,7 +51,7 @@ typedef struct Item {
     u8 quantity;    
     u32 value[3];   // gold, silver, copper
     double probability;
-    EventListener callback;   
+    // EventListener callback;      // FIXME:
     void *components[GAME_OBJECT_COMPS];  
     void *itemComps[ITEM_COMPS];
 

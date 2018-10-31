@@ -1,15 +1,13 @@
 #ifndef RESOURCES_H
 #define RESOURCES_H
 
-#include "blackrock.h"
-
 /*** IMAGES ***/
 
 typedef struct BitmapImage {
 
-    u32 *pixels;
-    u32 width;
-    u32 height;
+    uint32_t *pixels;
+    uint32_t width;
+    uint32_t height;
 
 } BitmapImage;
 

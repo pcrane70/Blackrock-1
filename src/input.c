@@ -6,7 +6,7 @@
 #include "player.h"
 #include "item.h"
 
-#include "utils/list.h"
+#include "utils/dlist.h"
 
 #include "ui/ui.h"
 #include "ui/gameUI.h"
@@ -69,7 +69,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 void resolveCombat (Position newPos) {
 
     // check what is blocking the movement
-    List *blockers = getObjectsAtPos (newPos.x, newPos.y);
+    DoubleList *blockers = getObjectsAtPos (newPos.x, newPos.y);
 
     if (blockers == NULL || LIST_SIZE (blockers) <= 0) {
         free (blockers);
@@ -84,7 +84,7 @@ void resolveCombat (Position newPos) {
         }
     }
 
-    cleanUpList (blockers);
+    dlist_clean (blockers);
 
 }
 
@@ -154,11 +154,11 @@ void swicthView (void) {
 
     // switch the views in the list
     if ((characterView != NULL) && (inventoryView != NULL) || lootView != NULL) {
-        void *prev = removeElement (activeScene->views, (LIST_END (activeScene->views))->prev);
-        void *last = removeElement (activeScene->views, (LIST_END (activeScene->views)));
+        void *prev = dlist_remove_element (activeScene->views, (LIST_END (activeScene->views))->prev);
+        void *last = dlist_remove_element (activeScene->views, (LIST_END (activeScene->views)));
 
-        insertAfter (activeScene->views, LIST_END (activeScene->views), last);
-        insertAfter (activeScene->views, LIST_END (activeScene->views), prev);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), last);
+        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), prev);
 
         activeView = (UIView *) (LIST_END (activeScene->views))->data;
     }
@@ -169,27 +169,28 @@ void swicthView (void) {
 
 extern void gameOver (void);
 
+// FIXME:
 void triggerEvent (void) {
 
     if (activeView == inventoryView) {
         Item *item = getInvSelectedItem ();
-        if (item != NULL) {
-            if (item->callback != NULL) item->callback (item);
+        if (item) {
+            // if (item->callback != NULL) item->callback (item);
 
         } 
     } 
 
     else if (activeView == characterView) {
         Item *item = getCharSelectedItem ();
-        if (item != NULL) {
-            if (item->callback != NULL) item->callback (item);
+        if (item) {
+            // if (item->callback != NULL) item->callback (item);
         }
     }
 
     // loop through all of our surrounding items in search for 
     // an event listener to trigger
     else if (activeView == mapView) {
-        List *gos = getObjectsAtPos (playerPos->x, playerPos->y);
+        DoubleList *gos = getObjectsAtPos (playerPos->x, playerPos->y);
         if (gos != NULL) {
             Event *ev = NULL;
             for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
@@ -201,7 +202,7 @@ void triggerEvent (void) {
                 }
             }
 
-            if (LIST_SIZE (gos) > 0) cleanUpList (gos);
+            if (LIST_SIZE (gos) > 0) dlist_clean (gos);
             else free (gos);
         }
     }
