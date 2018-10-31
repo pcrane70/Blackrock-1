@@ -26,7 +26,10 @@ BitmapImage *bgImage = NULL;
 
 static void renderLaunch (Console *console) {
 
-    if (!bgImage) bgImage = loadImageFromFile (launchImg);
+    if (!bgImage) {
+        bgImage = loadImageFromFile (launchImg);
+        printf ("hola");
+    } 
 
     ui_drawImageAt (console, bgImage, 0, 0);
 
@@ -36,8 +39,8 @@ void toggleLaunch (void) {
 
     if (!launchView) {
         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
-        launchView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, NO_COLOR, true, renderLaunch);
-        dlist_insert_after (menuScreen->views, NULL, launchView);
+        launchView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, BLACK, true, renderLaunch);
+        dlist_insert_after (menuScreen->views, LIST_START (menuScreen->views), launchView);
 
         // menuScreen->activeView = launchView;
         activeMenuView = LAUNCH_VIEW;

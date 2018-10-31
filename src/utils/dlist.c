@@ -71,7 +71,7 @@ void dlist_destroy (DoubleList *list) {
 
 bool dlist_insert_after (DoubleList *list, ListElement *element, void *data) {
 
-    if (list && element && data) {
+    if (list && data) {
         ListElement *new;
         if ((new = (ListElement *) malloc (sizeof (ListElement))) == NULL) 
             return false;
@@ -82,9 +82,9 @@ bool dlist_insert_after (DoubleList *list, ListElement *element, void *data) {
             if (LIST_SIZE (list) == 0) list->end = new;
             else list->start->prev = new;
         
-        new->next = list->start;
-        new->prev = NULL;
-        list->start = new;
+            new->next = list->start;
+            new->prev = NULL;
+            list->start = new;
         }
 
         else {
@@ -107,7 +107,7 @@ bool dlist_insert_after (DoubleList *list, ListElement *element, void *data) {
 // removes the list element from the list and returns the data
 void *dlist_remove_element (DoubleList *list, ListElement *element) {
 
-    if (list && element) {
+    if (list) {
         ListElement *old;
         void *data = NULL;
 
