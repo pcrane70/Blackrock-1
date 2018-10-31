@@ -18,17 +18,10 @@ extern bool inGame;
 extern bool running;
 extern bool wasInGame;
 
-extern UIScreen *menuScreen;
-
-extern UIView *characterMenu;
-extern void toggleCharacterMenu (void);
-
-extern void cleanUpMenuScene (void);
-
 // TODO: do we want this here?
 void startGame (void) {
 
-    cleanUpMenuScene ();
+    /* cleanUpMenuScene ();
     activeScene = NULL;
 
     initGame ();
@@ -36,9 +29,13 @@ void startGame (void) {
     setActiveScene (gameScene ());
 
     inGame = true;
-    wasInGame = true;
+    wasInGame = true;  */
 
 }
+
+#pragma region MAIN MENU 
+
+#include "ui/menu.h"
 
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
@@ -46,10 +43,16 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
-            case SDLK_p: toggleCharacterMenu (); break; 
-            case SDLK_s: if (characterMenu != NULL) startGame (); break;
-            case SDLK_c: break;     // TODO: toggle credits window
-            case SDLK_e: running = false; break;
+            case SDLK_p: createMainMenu (); break;
+            case SDLK_m: if (activeMenuView != MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
+            case SDLK_b: if (activeMenuView == MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
+            // case SDLK_c: if (activeMenuView == MULTI_MENU_VIEW) createGame (); break;
+            // case SDLK_j: if (activeMenuView == MULTI_MENU_VIEW) joinGame (); break;
+
+            // old events
+            // FIXME: case SDLK_s: if (characterMenu != NULL) startGame (); break;
+            // case SDLK_c: break;     // TODO: toggle credits window
+            // case SDLK_e: running = false; break;
             default: break;
         }
 
@@ -57,7 +60,11 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
 }
 
+#pragma endregion
+
 /*** GAME ***/
+
+#pragma region GAME
 
 void resolveCombat (Position newPos) {
 
@@ -279,7 +286,11 @@ void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
 }
 
+#pragma endregion
+
 /*** POST GAME ***/
+
+#pragma region POST GAME
 
 void handlePostGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
@@ -299,3 +310,5 @@ void handlePostGameEvent (UIScreen *activeScreen, SDL_Event event) {
     }
 
 }
+
+#pragma endregion

@@ -43,7 +43,7 @@ BitmapImage *loadImageFromFile (char *filename) {
 
 void destroyImage (BitmapImage *image) {
 
-    if (image != NULL) {
+    if (image) {
         free (image->pixels);
         free (image);
     }
