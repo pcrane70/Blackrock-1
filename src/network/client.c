@@ -17,13 +17,60 @@
 #include "config.h"
 #include "utils/log.h"
 
-bool connected = false;     // connected to server?
+// this must be the same as in the server, if not, the packets will be ignored
+ProtocolId PROTOCOL_ID = 0x4CA140FF; // randomly chosen
+Version PROTOCOL_VERSION = { 1, 1 };
 
-#pragma PACKETS
+#pragma region PACKETS
+
+void initPacketHeader (void *header, PacketType type) {
+
+    PacketHeader h;
+    h.protocolID = PROTOCOL_ID;
+    h.protocolVersion = PROTOCOL_VERSION;
+    h.packetType = type;
+
+    memcpy (header, &h, sizeof (PacketHeader));
+
+}
+
+// generates a generic packet with the specified packet type
+void *generatePacket (PacketType packetType) {
+
+    size_t packetSize = sizeof (PacketHeader);
+
+    void *packetBuffer = malloc (packetSize);
+    void *begin = packetBuffer;
+    char *end = begin; 
+
+    PacketHeader *header = (PacketHeader *) end;
+    end += sizeof (PacketHeader);
+    initPacketHeader (header, packetType); 
+
+    return begin;
+
+}
+
+// send a packet to the specified address
+void sendPacket (i32 sock, void *begin, size_t packetSize, struct sockaddr_storage address) {
+
+    ssize_t sentBytes = sendto (sock, (const char *) begin, packetSize, 0,
+		       (struct sockaddr *) &address, sizeof (struct sockaddr_storage));
+
+	if (sentBytes < 0 || (unsigned) sentBytes != packetSize)
+        logMsg (stderr, ERROR, PACKET, "Failed to send packet!") ;
+
+}
 
 #pragma endregion
 
-#pragma CLIENT
+/*** CLIENT LOGIC ***/
+
+// TODO: maybe set the socket to nonblocking, because it might interfere with other game processes
+// TODO: but not all of our requests are async, when we want to create or join a game, 
+// we need to wait for the sever reponse
+
+#pragma region CLIENT
 
 // TODO: 31/10/2018 -- we only handle the logic for a connection using tcp
 // we need to add the logic to be able to send packets via udp
@@ -316,5 +363,47 @@ u8 client_disconnectFromServer (Client *client) {
     return 0;
 
 }
+
+#pragma endregion
+
+/*** MULTIPLAYER ***/
+
+// Here goes all the multiplayer logic and requests we need
+
+#pragma region MULTIPLAYER
+
+// FIXME: Move this from here
+typedef enum GameType {
+
+	ARCADE = 0,
+
+} GameType;
+
+// send a valid client authentication
+u8 client_authentication () {}
+
+// request to create a new multiplayer game
+u8 client_createLobby (Client *owner, GameType gametype) {
+
+    if (!owner) {
+        logMsg (stderr, ERROR, GAME, "A NULL client can't create a lobby!");
+        return 1;
+    }
+
+
+
+}
+
+// request to join an on going game
+u8 client_joinLobby () {}
+
+// the owner of the lobby can request to init the game
+u8 client_startGame () {}
+
+// request leaderboard data
+u8 client_getLeaderBoard () {}
+
+// request to send new leaderboard data
+u8 client_sendLeaderBoard () {}
 
 #pragma endregion

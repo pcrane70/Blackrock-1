@@ -10,6 +10,8 @@
 #define DEFAULT_PROTOCOL                IPPROTO_TCP
 #define DEFAULT_PORT                    7001
 
+#pragma region CLIENT
+
 typedef struct Client {
 
     i32 clientSock;
@@ -39,5 +41,45 @@ extern Client *client_create (Client *);
 
 extern u8 client_connectToServer (Client *);
 extern u8 client_disconnectFromServer (Client *);
+
+#pragma endregion
+
+#pragma region PACKETS
+
+typedef u32 ProtocolId;
+
+typedef struct Version {
+
+	u16 major;
+	u16 minor;
+	
+} Version;
+
+typedef enum PacketType {
+
+    ERROR_PACKET = 1,
+    SERVER_TEARDOWN,
+	REQUEST,
+    AUTHENTICATION,
+    CREATE_GAME,
+    LOBBY_CREATE,
+    LOBBY_UPDATE,
+    LOBBY_DESTROY,
+	GAME_UPDATE_TYPE,
+	PLAYER_INPUT_TYPE,
+
+    TEST_PACKET_TYPE = 100
+
+} PacketType;
+
+typedef struct PacketHeader {
+
+	ProtocolId protocolID;
+	Version protocolVersion;
+	PacketType packetType;
+
+} PacketHeader;
+
+#pragma endregion
 
 #endif
