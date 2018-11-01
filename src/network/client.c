@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -9,112 +8,176 @@
 
 #include <netinet/in.h>
 
-#include <errno.h>
+#include "blackrock.h"      // only used for type defs
 
 #include "network/client.h"
-#include "network/requests.h"
 
-#include "utils/myUtils.h"
+#include "config.h"
+#include "utils/log.h"
 
-#define PORT    9001
+bool connected = false;     // connected to server?
 
-// FIXME:
-// #define SERVER_ADDRESS  "192.168.1.7
+#pragma PACKETS
 
-int clientSocket;
+#pragma endregion
 
-bool connectedToServer = false;
+#pragma CLIENT
 
-/*** CONNECTION ***/
+Client *newClient (Client *c) {
 
-// TODO: what else do we want to init later?
-int initClient (void) {
+    Client *new = (Client *) malloc (sizeof (Client));
 
-    // create client socket
-    int client = socket (AF_INET, SOCK_STREAM, 0);
+    if (c) {
+        new->useIpv6 = c->useIpv6;
+        new->protocol = c->protocol;
+        new->port = c->port;
+    }
 
-    return client;
+    return new;
 
 }
 
-int initConnection (void) {
+// loads the client values from the config file
+u8 getClientCfgValues (Client *client, ConfigEntity *cfgEntity) {
 
-    clientSocket = initClient ();
-    if (clientSocket < 0) {
-        fprintf (stderr, "Error creating client socket!\n");
-        close (clientSocket);
-        return 1;
+    char *ipv6 = getEntityValue (cfgEntity, "ipv6");
+    if (ipv6) {
+        client->useIpv6 = atoi (ipv6);
+        // if we have got an invalid value, the default is NOT to use ipv6
+        if (client->useIpv6 != 0 || client->useIpv6 != 1) client->useIpv6 = 0;
+    }
+    // if we do not have a value, use the default
+    else client->useIpv6 = 0;
+
+    #ifdef CLIENT_DEBUG
+    logMsg (stdout, DEBUG_MSG, CLIENT, createString ("Use IPv6: %i", client->useIpv6));
+    #endif
+
+    char *tcp = getEntityValue (cfgEntity, "tcp");
+    if (tcp) {
+        u8 usetcp = atoi (tcp);
+        if (usetcp < 0 || usetcp > 1) {
+            logMsg (stdout, WARNING, CLIENT, "Unknown protocol. Using default: tcp protocol");
+            usetcp = 1;
+        }
+
+        if (usetcp) client->protocol = IPPROTO_TCP;
+        else client->protocol = IPPROTO_UDP;
+
+    }
+    // set to default (tcp) if we don't found a value
+    else {
+        logMsg (stdout, WARNING, CLIENT, "No protocol found. Using default: tcp protocol");
+        client->protocol = DEFAULT_PROTOCOL;
     }
 
-    struct sockaddr_in serverAddress;
+    char *port = getEntityValue (cfgEntity, "port");
+    if (port) {
+        client->port = atoi (port);
+        // check that we have a valid range, if not, set to default port
+        if (client->port <= 0 || client->port >= MAX_PORT_NUM) {
+            logMsg (stdout, WARNING, CLIENT, 
+                createString ("Invalid port number. Setting port to default value: %i", DEFAULT_PORT));
+            client->port = DEFAULT_PORT;
+        }
 
-    memset (&serverAddress, 0, sizeof (struct sockaddr_in));
-
-    serverAddress.sin_family = AF_INET;
-    // FIXME:
-    // inet_pton(AF_INET, SERVER_ADDRESS, &(remote_addr.sin_addr));
-    serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons (PORT);
-
-    // try to connect to the server
-    // FIXME: add the ability to try multiple times
-
-    if (connect (clientSocket, (struct sockaddr *) &serverAddress, sizeof (struct sockaddr)) < 0) {
-        fprintf (stderr, "%s\n", strerror (errno));
-        fprintf (stderr, "Error connecting to server!\n");
-        close (clientSocket);
-        return 1;
+        #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, CLIENT, createString ("Listening on port: %i", client->port));
+        #endif
     }
+    // set to default port
+    else {
+        logMsg (stdout, WARNING, CLIENT, 
+            createString ("No port found. Setting port to default value: %i", DEFAULT_PORT));
+        client->port = DEFAULT_PORT;
+    } 
 
-    // we expect a welcome message from the server
-    char serverResponse [256];
-    recv (clientSocket, &serverResponse, sizeof (serverResponse), 0);
-
-    // handle the server response
-    printf ("\n\nThe server sent the data:\n\n%s\n\n", serverResponse);
-
-    connectedToServer = true;
-
-    // connection is successfull
     return 0;
 
 }
 
-// TODO: wrap things up and disconnect from the server
-int closeConnection (void) {
+// inits a client structure with the specified values
+u8 client_init (Client *client, Config *cfg) {
 
-    close (clientSocket);
-
-    connectedToServer = false;
-
-    return 0;
-
-}
-
-/*** REQUESTS ***/
-
-int makeRequest (RequestType type) {
-
-    int retval;
-    char *request = createString ("%i", type);
-
-    switch (type) {
-        case 1: 
-            retval = recieveFile (request);
-            if (retval == 0) fprintf (stdout, "Got the file!\n");
-            else fprintf (stderr, "Error recieving file!\n");
-            break;
-        case 2: 
-            // FIXME: post global db file
-            break;
-        case 3: break;
-        default: fprintf (stderr, "Invalid request!\n"); break;
+    if (!client) {
+        logMsg (stderr, ERROR, CLIENT, "Can't init a NULL client!");
+        return 1;
     }
 
-    // do {
-        // FIXME:
-    // } while (request != 0);
+    #ifdef CLIENT_DEBUG
+    logMsg (stdout, DEBUG_MSG, CLIENT, "Initializing client...");
+    #endif
 
-    return retval;
+    if (cfg) {
+        ConfigEntity *cfgEntity = getEntityWithId (cfg, 1);
+        if (!cfgEntity) {
+            logMsg (stderr, ERROR, CLIENT, "Problems with client config!");
+            return 1;
+        }
+
+        #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, CLIENT, "Setting client values from config.");
+        #endif
+
+        if (!getClientCfgValues (client, cfgEntity))
+            logMsg (stdout, SUCCESS, CLIENT, "Done getting cfg client values.");
+    }
+    
+}
+
+// creates a new client
+Client *client_create (Client *client) {
+
+    // create a client with the requested parameters
+    if (client) {
+        Client *c = newClient (client);
+        if (!client_init (c, NULL)) {
+            logMsg (stdout, SUCCESS, CLIENT, "\nCreated a new client!\n");
+            return c;
+        }
+
+        else {
+            logMsg (stderr, ERROR, CLIENT, "Failed to init the client!");
+            free (c);
+            return NULL;
+        }
+    }
+
+    // create the client from the default config file
+    else {
+        Config *clientConfig = parseConfigFile ("./config/client.cfg");
+        if (!clientConfig) {
+            logMsg (stderr, ERROR, NO_TYPE, "Problems loading client config!");
+            return NULL;
+        }
+
+        else {
+            Client *c = newClient (NULL);
+            if (!client_init (client, clientConfig)) {
+                logMsg (stdout, SUCCESS, CLIENT, "\nCreated a new client!\n");
+                clearConfig (clientConfig);
+                return c;
+            }
+
+            else {
+                logMsg (stderr, ERROR, CLIENT, "Failed to init client!");
+                clearConfig (clientConfig);
+                free (c);
+                return NULL;
+            }
+        }
+    }
 
 }
+
+// connects a client to the specified server
+u8 client_connectToServer () {
+
+
+}
+
+u8 client_disconnectFromServer () {
+
+}
+
+#pragma endregion

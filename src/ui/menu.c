@@ -26,10 +26,7 @@ BitmapImage *bgImage = NULL;
 
 static void renderLaunch (Console *console) {
 
-    if (!bgImage) {
-        bgImage = loadImageFromFile (launchImg);
-        printf ("hola");
-    } 
+    if (!bgImage) bgImage = loadImageFromFile (launchImg);
 
     ui_drawImageAt (console, bgImage, 0, 0);
 
