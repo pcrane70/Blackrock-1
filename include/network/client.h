@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define MAXSLEEP                60        // used for connection with exponential backoff (secs)     
+
 #define MAX_PORT_NUM            65535
 
 #define DEFAULT_PROTOCOL                IPPROTO_TCP
@@ -11,19 +13,18 @@
 typedef struct Client {
 
     i32 clientSock;
-    struct sockaddr_storage address;
 
-    // details of our connection to the server
+    // details about our connection to the server
     u8 useIpv6;  
     u8 protocol;            // 12/10/2018 - we only support either tcp or udp
     u16 port; 
+
+    bool isConnected;       // connected to the server
 
     // FIXME: do we need to set to nonblocking?
     // bool blocking;          // 31/10/2018 - sokcet fd is blocking?
 
 } Client;
-
-extern bool connected;
 
 // FIXME:
 typedef enum RequestType {
@@ -33,15 +34,10 @@ typedef enum RequestType {
 
 } RequestType;
 
-extern int clientSocket;
 
-/*** CONNECTION **/
+extern Client *client_create (Client *);
 
-extern int initConnection (void);
-extern int closeConnection (void);
-
-/*** REQUESTS ***/
-
-extern int makeRequest (RequestType);
+extern u8 client_connectToServer (Client *);
+extern u8 client_disconnectFromServer (Client *);
 
 #endif

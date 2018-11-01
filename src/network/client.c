@@ -8,6 +8,8 @@
 
 #include <netinet/in.h>
 
+#include <errno.h>
+
 #include "blackrock.h"      // only used for type defs
 
 #include "network/client.h"
@@ -22,6 +24,9 @@ bool connected = false;     // connected to server?
 #pragma endregion
 
 #pragma CLIENT
+
+// TODO: 31/10/2018 -- we only handle the logic for a connection using tcp
+// we need to add the logic to be able to send packets via udp
 
 Client *newClient (Client *c) {
 
@@ -122,6 +127,44 @@ u8 client_init (Client *client, Config *cfg) {
         if (!getClientCfgValues (client, cfgEntity))
             logMsg (stdout, SUCCESS, CLIENT, "Done getting cfg client values.");
     }
+
+    // init the client socket
+    switch (client->protocol) {
+        case IPPROTO_TCP: 
+            client->clientSock = socket ((client->useIpv6 == 1 ? AF_INET6 : AF_INET), SOCK_STREAM, 0);
+            break;
+        case IPPROTO_UDP:
+            client->clientSock = socket ((client->useIpv6 == 1 ? AF_INET6 : AF_INET), SOCK_DGRAM, 0);
+            break;
+
+        default: logMsg (stderr, ERROR, CLIENT, "Unkonw protocol type!"); return 1;
+    }
+
+    if (client->clientSock < 0) {
+        logMsg (stderr, ERROR, CLIENT, "Failed to create client socket!");
+        return 1;
+    }
+
+    #ifdef CLIENT_DEBUG
+    logMsg (stdout, DEBUG_MSG, CLIENT, "Created client socket");
+    #endif
+
+    // FIXME: 31/10/2018 -- do we need to set the client socket to non blocking mode?
+    // set the socket to non blocking mode
+    /* if (!sock_setBlocking (server->serverSock, server->blocking)) {
+        logMsg (stderr, ERROR, SERVER, "Failed to set server socket to non blocking mode!");
+        // perror ("Error");
+        close (server->serverSock);
+        return 1;
+    }
+
+    else {
+        #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, SERVER, "Server socket set to non blocking mode.");
+        #endif
+    } */
+
+    return 0;   // at this point, the client is ready to connect to the server
     
 }
 
@@ -170,13 +213,107 @@ Client *client_create (Client *client) {
 
 }
 
-// connects a client to the specified server
-u8 client_connectToServer () {
+// TODO: does sleep also affects other processes?
+// try to connect a client to an address (server) with exponential backoff
+u8 connectRetry (Client *client, const struct sockaddr *address) {
 
+    i32 numsec;
+    for (numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
+        if (!connect (client->clientSock, address, sizeof (struct sockaddr))) 
+            return 0;   // the connection was successfull
+
+        if (numsec <= MAXSLEEP / 2) sleep (numsec);
+    }
+
+    return 1;   // failed to connect to server after MAXSLEEP secs
 
 }
 
-u8 client_disconnectFromServer () {
+// FIXME: get the correct ip of the server from the cfg file
+// 31/10/2018 -- we are using 127.0.0.1
+// connects a client to the specified server
+u8 client_connectToServer (Client *client) {
+
+    if (!client) {
+        logMsg (stderr, ERROR, CLIENT, "Can't connect a NULL client to the server!");
+        return 1;
+    }
+
+    if (client->isConnected) {
+        logMsg (stdout, WARNING, CLIENT, "The client is already connected to the server.");
+        return 1;
+    }
+
+    if (client->protocol != IPPROTO_TCP) {
+        logMsg (stderr, ERROR, CLIENT, "Can't connect client. Wrong protocol!");
+        return 1;
+    }
+
+    // set the address of the server 
+    struct sockaddr_storage server;
+    memset (&server, 0, sizeof (struct sockaddr_storage));
+    
+    if (client->useIpv6) {
+		struct sockaddr_in6 *addr = (struct sockaddr_in6 *) &server;
+		addr->sin6_family = AF_INET6;
+		addr->sin6_addr = in6addr_any;
+		addr->sin6_port = htons (client->port);
+	} 
+
+    else {
+		struct sockaddr_in *addr = (struct sockaddr_in *) &server;
+		addr->sin_family = AF_INET;
+		addr->sin_addr.s_addr = INADDR_ANY;
+		addr->sin_port = htons (client->port);
+	} 
+
+    // try to connect to the server with exponential backoff
+    if (!connectRetry (client, (const struct sockaddr *) &server)) {
+        logMsg (stdout, SUCCESS, CLIENT, "Connected to server!");
+
+        // we expect a welcome message from the server...
+        char serverResponse [256];
+        recv (client->clientSock, &serverResponse, sizeof (serverResponse), 0);
+        fprintf (stdout, "%s\n", serverResponse);
+
+        client->isConnected = true;
+
+        return 0;
+    }
+
+    else {
+        logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+        // TODO: does this works properly?
+        fprintf (stderr, "%s\n", strerror (errno));
+        return 1;
+    }
+
+}
+
+// FIXME: send a disconnect packet to the server
+u8 client_disconnectFromServer (Client *client) {
+
+    if (!client) {
+        logMsg (stderr, ERROR, CLIENT, "Can't disconnect a NULL client from the server!");
+        return 1;
+    }
+
+    if (!client->isConnected) {
+        logMsg (stdout, WARNING, CLIENT, "The client is not connedted to ther server.");
+        return 1;
+    }
+
+    if (!client->protocol != IPPROTO_TCP) {
+        logMsg (stderr, ERROR, CLIENT, "Can't disconnect client. Wrong protocol!");
+        return 1;
+    }
+
+    // TODO: send a packet to the server so that it knows we will disconnect
+
+    close (client->clientSock);
+    client->isConnected = false;
+
+    return 0;
 
 }
 
