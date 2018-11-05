@@ -383,22 +383,22 @@ typedef enum GameType {
 u8 client_authentication () {}
 
 // request to create a new multiplayer game
-u8 client_createLobby (Client *owner, GameType gametype) {
+u8 client_createLobby (Client *owner, GameType gameType) {
 
     if (!owner) {
         logMsg (stderr, ERROR, GAME, "A NULL client can't create a lobby!");
         return 1;
     }
 
-
+    
 
 }
 
 // request to join an on going game
-u8 client_joinLobby () {}
+u8 client_joinLobby (Client *owner, GameType gameType) {}
 
 // the owner of the lobby can request to init the game
-u8 client_startGame () {}
+u8 client_startGame (Client *owner) {}
 
 // request leaderboard data
 u8 client_getLeaderBoard () {}
