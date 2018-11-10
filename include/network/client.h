@@ -28,15 +28,6 @@ typedef struct Client {
 
 } Client;
 
-// FIXME:
-typedef enum RequestType {
-
-    REQ_GLOBAL_LB = 1,
-    POST_GLOBAL_LB = 2
-
-} RequestType;
-
-
 extern Client *client_create (Client *);
 
 extern u8 client_connectToServer (Client *);
@@ -45,6 +36,9 @@ extern u8 client_disconnectFromServer (Client *);
 #pragma endregion
 
 #pragma region PACKETS
+
+// These section needs to be identical as in the server so that we can handle
+// the correct requests
 
 typedef u32 ProtocolId;
 
@@ -55,22 +49,24 @@ typedef struct Version {
 	
 } Version;
 
+extern ProtocolId PROTOCOL_ID;
+extern Version PROTOCOL_VERSION;
+
+// 01/11/2018 -- this indicates what type of packet we are sending/recieving
 typedef enum PacketType {
 
     ERROR_PACKET = 1,
-    SERVER_TEARDOWN,
 	REQUEST,
     AUTHENTICATION,
-    CREATE_GAME,
-    LOBBY_CREATE,
-    LOBBY_UPDATE,
-    LOBBY_DESTROY,
-	GAME_UPDATE_TYPE,
-	PLAYER_INPUT_TYPE,
+    GAME_PACKET,
 
-    TEST_PACKET_TYPE = 100
+    SERVER_TEARDOWN,    // FIXME: create a better packet type for server functions
+
+    TEST_PACKET = 100,
+    DONT_CHECK_TYPE,
 
 } PacketType;
+
 
 typedef struct PacketHeader {
 
@@ -79,6 +75,51 @@ typedef struct PacketHeader {
 	PacketType packetType;
 
 } PacketHeader;
+
+// 01/11/2018 -- this indicates the data and more info about the packet type
+typedef enum RequestType {
+
+    REQ_GET_FILE = 1,
+    POST_SEND_FILE,
+    
+    REQ_AUTH_CLIENT,
+
+    LOBBY_CREATE,
+    LOBBY_JOIN,
+    LOBBY_LEAVE,
+    LOBBY_UPDATE,
+    LOBBY_DESTROY,
+
+    GAME_INPUT_UPDATE,
+    GAME_SEND_MSG,
+
+} RequestType;
+
+// here we can add things like file names or game types
+typedef struct RequestData {
+
+    RequestType type;
+
+} RequestData;
+
+// 23/10/2018 -- lests test how this goes...
+typedef enum ErrorType {
+
+    ERR_SERVER_ERROR = 0,   // internal server error, like no memory
+
+    ERR_CREATE_LOBBY = 1,
+    ERR_JOIN_LOBBY,
+
+    ERR_FAILED_AUTH,
+
+} ErrorType;
+
+typedef struct ErrorData {
+
+    ErrorType type;
+    char msg[256];
+
+} ErrorData;
 
 #pragma endregion
 

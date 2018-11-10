@@ -17,7 +17,9 @@
 #include "config.h"
 #include "utils/log.h"
 
-// this must be the same as in the server, if not, the packets will be ignored
+/*** VALUES ***/
+
+// these 2 are used to manage the packets
 ProtocolId PROTOCOL_ID = 0x4CA140FF; // randomly chosen
 Version PROTOCOL_VERSION = { 1, 1 };
 
@@ -51,14 +53,36 @@ void *generatePacket (PacketType packetType) {
 
 }
 
-// send a packet to the specified address
-void sendPacket (i32 sock, void *begin, size_t packetSize, struct sockaddr_storage address) {
+// TODO: 06/11/2018 -- test this!
+i8 udp_sendPacket (Client *client, const void *begin, size_t packetSize, 
+    const struct sockaddr_storage address) {
 
-    ssize_t sentBytes = sendto (sock, (const char *) begin, packetSize, 0,
-		       (struct sockaddr *) &address, sizeof (struct sockaddr_storage));
+    ssize_t sent;
+    const void *p = begin;
+    while (packetSize > 0) {
+        sent = sendto (client->clientSock, begin, packetSize, 0, 
+            (const struct sockaddr *) &address, sizeof (struct sockaddr_storage));
+        if (sent <= 0) return -1;
+        p += sent;
+        packetSize -= sent;
+    }
 
-	if (sentBytes < 0 || (unsigned) sentBytes != packetSize)
-        logMsg (stderr, ERROR, PACKET, "Failed to send packet!") ;
+    return 0;
+
+}
+
+i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flags) {
+
+    ssize_t sent;
+    const void *p = begin;
+    while (packetSize > 0) {
+        sent = send (socket_fd, p, packetSize, flags);
+        if (sent <= 0) return -1;
+        p += sent;
+        packetSize -= sent;
+    }
+
+    return 0;
 
 }
 
