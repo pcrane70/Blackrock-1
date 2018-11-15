@@ -1956,6 +1956,7 @@ DoubleList *getLocalLBData (void) {
 
 // FIXME:
 // FIXME: check the date of the file
+// FIXME: server connection
 DoubleList *getGlobalLBData (void) {
 
     DoubleList *globalData = NULL;
@@ -1973,7 +1974,7 @@ DoubleList *getGlobalLBData (void) {
     } 
 
     // we don't have a global lb file, so connect to the server
-    else {
+    /* else {
         if (!connectedToServer) {
             // if (initConnection ()) {
             //     fprintf (stderr, "Failed to retrieve global LB!\n");
@@ -1999,7 +2000,7 @@ DoubleList *getGlobalLBData (void) {
         } 
 
         closeConnection ();
-    }
+    } */
 
     return globalData;
 
@@ -2038,13 +2039,14 @@ Config *createNewLBCfg (DoubleList *lbData) {
 
 }
 
+// FIXME: server connection
 // TODO: maybe make an async call to the server to upload the file
 void updateLBFile (const char *filename, Config *cfg, bool globalLB) {   
 
     // write out the cfg file
     writeConfigFile (filename, cfg);
 
-    if (globalLB) {
+    /* if (globalLB) {
         if (!connectedToServer) {
             if (initConnection ()) {
                 fprintf (stderr, "Failed to retrieve global LB!\n");
@@ -2056,7 +2058,7 @@ void updateLBFile (const char *filename, Config *cfg, bool globalLB) {
         if (makeRequest (POST_GLOBAL_LB) != 0) fprintf (stderr, "Failed post request!\n");
 
         closeConnection ();
-    }
+    }*/
 
 }
 

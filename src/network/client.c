@@ -390,11 +390,11 @@ u8 client_disconnectFromServer (Client *client) {
 
 #pragma endregion
 
-/*** MULTIPLAYER ***/
+/*** REQUESTS ***/
 
-// Here goes all the multiplayer logic and requests we need
+// These are the requests that we send to the server and we expect a response 
 
-#pragma region MULTIPLAYER
+#pragma region REQUESTS
 
 // FIXME: Move this from here
 typedef enum GameType {

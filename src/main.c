@@ -73,7 +73,7 @@ void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **scree
     *window = SDL_CreateWindow ("Blackrock Dungeons",
          SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 
-    *renderer = SDL_CreateRenderer (*window, 0, SDL_RENDERER_SOFTWARE);
+    *renderer = SDL_CreateRenderer (*window, 0, SDL_RENDERER_SOFTWARE | SDL_RENDERER_ACCELERATED);
 
     SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
     SDL_RenderSetLogicalSize (*renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
