@@ -25,31 +25,29 @@ Version PROTOCOL_VERSION = { 1, 1 };
 
 #pragma region PACKETS
 
-void initPacketHeader (void *header, PacketType type) {
+void initPacketHeader (void *header, PacketType type, u32 packetSize) {
 
     PacketHeader h;
     h.protocolID = PROTOCOL_ID;
     h.protocolVersion = PROTOCOL_VERSION;
     h.packetType = type;
+    h.packetSize = packetSize;
 
     memcpy (header, &h, sizeof (PacketHeader));
 
 }
 
 // generates a generic packet with the specified packet type
-void *generatePacket (PacketType packetType) {
+void *generatePacket (PacketType packetType, size_t packetSize) {
 
-    size_t packetSize = sizeof (PacketHeader);
+    size_t packet_size;
+    if (packetSize > 0) packet_size = packetSize;
+    else packet_size = sizeof (PacketHeader);
 
-    void *packetBuffer = malloc (packetSize);
-    void *begin = packetBuffer;
-    char *end = begin; 
+    PacketHeader *header = (PacketHeader *) malloc (packet_size);
+    initPacketHeader (header, packetType, packet_size); 
 
-    PacketHeader *header = (PacketHeader *) end;
-    end += sizeof (PacketHeader);
-    initPacketHeader (header, packetType); 
-
-    return begin;
+    return header;
 
 }
 
@@ -396,16 +394,10 @@ u8 client_disconnectFromServer (Client *client) {
 
 #pragma region REQUESTS
 
-// FIXME: Move this from here
-typedef enum GameType {
-
-	ARCADE = 0,
-
-} GameType;
-
 // send a valid client authentication
 u8 client_authentication () {}
 
+// FIXME:
 // request to create a new multiplayer game
 u8 client_createLobby (Client *owner, GameType gameType) {
 
@@ -414,12 +406,48 @@ u8 client_createLobby (Client *owner, GameType gameType) {
         return 1;
     }
 
-    
+    // create the create lobby request
+    size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+    void *begin = generatePacket (GAME_PACKET, packetSize);
+    char *end = begin + sizeof (PacketHeader); 
+
+    RequestData *reqdata = (RequestData *) end;
+    reqdata->type = LOBBY_CREATE;
+
+    // send the request to the server
+    tcp_sendPacket (owner->clientSock, begin, packetSize, 0);
+
+    // FIXME: we need to wait for the respponse of the server
+
+    return 0;
 
 }
 
+// FIXME:
 // request to join an on going game
-u8 client_joinLobby (Client *owner, GameType gameType) {}
+u8 client_joinLobby (Client *owner, GameType gameType) {
+
+    if (!owner) {
+        logMsg (stderr, ERROR, GAME, "A NULL client can't join a lobby!");
+        return 1;
+    }
+
+    // create the join lobby request
+    size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+    void *begin = generatePacket (GAME_PACKET, packetSize);
+    char *end = begin + sizeof (PacketHeader); 
+
+    RequestData *reqdata = (RequestData *) end;
+    reqdata->type = LOBBY_JOIN;
+
+    // send the request to the server
+    tcp_sendPacket (owner->clientSock, begin, packetSize, 0);
+
+    // FIXME: we need to wait for the respponse of the server
+
+    return 0;
+
+}
 
 // the owner of the lobby can request to init the game
 u8 client_startGame (Client *owner) {}

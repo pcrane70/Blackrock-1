@@ -19,6 +19,7 @@
 #include "config.h"     // for getting the data
 
 #include "network/client.h"
+#include "utils/log.h"
 
 /*** WORLD STATE ***/
 
@@ -58,6 +59,10 @@ bool recalculateFov = false;
 extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 extern void die (char *);
+
+/*** INITIALIZATION **/
+
+#pragma region INIT GAME
 
 void *getGameData (void *data) {
 
@@ -158,7 +163,11 @@ void initWorld (void) {
     
 }
 
+#pragma endregion
+
 /*** Game Object Management **/
+
+#pragma region GAME OBJECTS
 
 // 11/08/2018 -- we assign a new id to each new GO
 u32 newId = 0;
@@ -432,6 +441,10 @@ void destroyGO (GameObject *go) {
 
 }
 
+#pragma endregion
+
+#pragma region CLEANUP
+
 void cleanUpGame (void) {
 
     // clean up the player
@@ -489,7 +502,11 @@ void cleanUpGame (void) {
 
 }
 
+#pragma endregion
+
 /*** MOVEMENT ***/
+
+#pragma region MOVEMENT
 
 bool isWall (u32 x, u32 y) { return (currentLevel->mapCells[x][y]); }
 
@@ -624,7 +641,7 @@ Position *getPos (i32 id) {
 
 void fight (Combat *att, Combat *def, bool isPlayer);
 
-void updateMovement () {
+void updateMovement (void) {
 
     for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
         Movement *mv = (Movement *) LIST_DATA (e);
@@ -735,7 +752,11 @@ void updateMovement () {
 
 }
 
+#pragma endregion
+
 /*** ENEMIES ***/
+
+#pragma region ENEMIES
 
 #include <sqlite3.h>
 
@@ -1123,7 +1144,11 @@ void cleanUpEnemies (void) {
 
 }
 
+#pragma endregion
+
 /*** LOOT - ITEMS ***/
+
+#pragma region LOOT
 
 // FIXME:
 DoubleList *generateLootItems (u32 *dropItems, u32 count) {
@@ -1347,7 +1372,11 @@ void destroyLoot (void) {
 
 }
 
+#pragma endregion
+
 /*** COMBAT ***/
+
+#pragma region COMBAT
 
 // FIXME: fix probability
 char *calculateDefense (Combat *def, bool isPlayer) {
@@ -1595,8 +1624,11 @@ void fight (Combat *att, Combat *def, bool isPlayer) {
 
 }
 
+#pragma endregion
 
 /*** LEVEL MANAGER ***/
+
+#pragma region LEVEL MANAGER
 
 void updateLeaderBoards (void);
 
@@ -1799,7 +1831,11 @@ void retry (void) {
 
 }
 
+#pragma endregion
+
 /*** SCORE ***/
+
+#pragma region SCORE
 
 LBEntry *playerLBEntry = NULL;
 
@@ -1859,7 +1895,57 @@ void showScore (void) {
 
 }
 
+#pragma endregion
+
+/*** MULTIPLAYER ***/
+
+// TODO: 17/11/2018 -- where do we want to put this?
+Client *playerClient = NULL;
+
+#pragma region MULTIPLAYER
+
+// FIXME: how do we get the game type?
+// called from the main menu to request a new game lobby
+void multiplayer_createLobby (void) {
+
+    if (!client_connectToServer (playerClient)) {
+        if (!client_createLobby (playerClient, ARCADE)) {
+            // TODO: move the player to the lobby screen
+            // TODO: where do we recieve the data of the game lobby?
+        }
+
+        // TODO: give feedback to the player
+        else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
+    }
+    
+    // TODO: give feedback to the player
+    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+
+}
+
+// FIXME: how do we get the game type?
+// called from the main menu to request to join a game lobby
+void multiplayer_joinLobby (void) {
+
+    if (!client_connectToServer (playerClient)) {
+        if (!client_joinLobby (playerClient, ARCADE)) {
+            // TODO: move the player to the lobby screen
+            // TODO: where do we recieve the data of the game lobby?
+        }
+    }
+
+    // TODO: give feedback to the player
+    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+
+}
+
+#pragma end region
+
 /*** LEADERBOARDS ***/
+
+// FIXME: 17/11/2018 -- we need to update our logic to better work with the server!!
+
+#pragma region LEADERBOARDS
 
 // this are from the makefile
 const char localLBFilePath[64] = "./data/localLB.cfg";
@@ -2106,3 +2192,5 @@ void cleanLeaderBoardData (void) {
     if (globalLBData) destroyLeaderBoard (globalLBData);
 
 }
+
+#pragma endregion

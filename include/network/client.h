@@ -33,6 +33,21 @@ extern Client *client_create (Client *);
 extern u8 client_connectToServer (Client *);
 extern u8 client_disconnectFromServer (Client *);
 
+// TODO: where do we want to put this requests?
+extern u8 client_createLobby (Client *owner, GameType gameType);
+extern u8 client_joinLobby (Client *owner, GameType gameType);
+
+#pragma endregion
+
+#pragma region GAME
+
+// this is the same as in cerver
+typedef enum GameType {
+
+	ARCADE = 0,
+
+} GameType;
+
 #pragma endregion
 
 #pragma region PACKETS
@@ -67,12 +82,12 @@ typedef enum PacketType {
 
 } PacketType;
 
-
 typedef struct PacketHeader {
 
 	ProtocolId protocolID;
 	Version protocolVersion;
 	PacketType packetType;
+    u32 packetSize;             // expected packet size
 
 } PacketHeader;
 
@@ -90,6 +105,8 @@ typedef enum RequestType {
     LOBBY_UPDATE,
     LOBBY_DESTROY,
 
+    GAME_INIT,      // prepares the game structures
+    GAME_START,     // strat running the game
     GAME_INPUT_UPDATE,
     GAME_SEND_MSG,
 

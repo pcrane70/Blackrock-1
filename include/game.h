@@ -224,6 +224,11 @@ typedef struct Score {
 
 extern void showScore (void);
 
+/*** MULTIPLAYER ***/
+
+extern void multiplayer_createLobby (void);
+extern void multiplayer_joinLobby (void);
+
 /*** LEADERBOARDS ***/
 
 typedef struct LBEntry {
