@@ -24,7 +24,60 @@
 ProtocolId PROTOCOL_ID = 0x4CA140FF; // randomly chosen
 Version PROTOCOL_VERSION = { 1, 1 };
 
+// FIXME: don't forget to delete this when we disconnect from the server!!
+Server *serverInfo = NULL;
+
 #pragma region PACKETS
+
+// check for packets with bad size, protocol, version, etc
+u8 checkPacket (size_t packetSize, char *packetData, PacketType expectedType) {
+
+    if (packetSize < sizeof (PacketHeader)) {
+        #ifdef CLIENT_DEBUG
+        logMsg (stderr, WARNING, PACKET, "Recieved a to small packet!");
+        #endif
+        return 1;
+    } 
+
+    PacketHeader *header = (PacketHeader *) packetData;
+
+    if (header->protocolID != PROTOCOL_ID) {
+        #ifdef CLIENT_DEBUG
+        logMsg (stdout, WARNING, PACKET, "Packet with unknown protocol ID.");
+        #endif
+        return 1;
+    }
+
+    Version version = header->protocolVersion;
+    if (version.major != PROTOCOL_VERSION.major) {
+        #ifdef CLIENT_DEBUG
+        logMsg (stdout, WARNING, PACKET, "Packet with incompatible version.");
+        #endif
+        return 1;
+    }
+
+    // compare the size we got from recv () against what is the expected packet size
+    // that the client created 
+    if (packetSize != header->packetSize) {
+        #ifdef CLIENT_DEBUG
+        logMsg (stdout, WARNING, PACKET, "Recv packet size doesn't match header size.");
+        #endif
+        return 1;
+    }
+
+    if (expectedType != DONT_CHECK_TYPE) {
+        // check if the packet is of the expected type
+        if (header->packetType != expectedType) {
+            #ifdef CLIENT_DEBUG
+            logMsg (stdout, WARNING, PACKET, "Packet doesn't match expected type.");
+            #endif
+            return 1;
+        }
+    }
+
+    return 0;   // packet is fine
+
+}
 
 void initPacketHeader (void *header, PacketType type, u32 packetSize) {
 
@@ -283,7 +336,6 @@ Client *client_create (Client *client) {
 
 }
 
-// TODO: does sleep also affects other processes?
 // try to connect a client to an address (server) with exponential backoff
 u8 connectRetry (Client *client, const struct sockaddr *address) {
 
@@ -299,14 +351,25 @@ u8 connectRetry (Client *client, const struct sockaddr *address) {
 
 }
 
+// FIXME: check for the correct values to make this a flexible framework!!
+// check to see if we are connecting to the right server
+u8 checkServerInfo (Server *server) {
+
+    if (server) {
+        if (!server->isRunning) return 1;
+        // if (server->type != GAME_SERVER)
+    }
+
+}
+
 // FIXME: get the correct ip of the server from the cfg file
 // 31/10/2018 -- we are using 127.0.0.1
 // connects a client to the specified server
 u8 client_connectToServer (Client *client) {
 
     if (!client) {
-        logMsg (stderr, ERROR, CLIENT, "Can't connect a NULL client to the server!");
-        return 1;
+        // init a new client
+        client = client_create (NULL);
     }
 
     if (client->isConnected) {
@@ -341,14 +404,39 @@ u8 client_connectToServer (Client *client) {
     if (!connectRetry (client, (const struct sockaddr *) &server)) {
         logMsg (stdout, SUCCESS, CLIENT, "Connected to server!");
 
-        // we expect a welcome message from the server...
-        char serverResponse [256];
-        recv (client->clientSock, &serverResponse, sizeof (serverResponse), 0);
-        fprintf (stdout, "%s\n", serverResponse);
+        // we expect a welcome message from the server -> a server info packet
+        char serverResponse[2048];
+        ssize_t rc = recv (client->clientSock, serverResponse, sizeof (serverResponse), 0);
+        if (rc > 0) {
+            // process packet
+            if (!checkPacket (rc, serverResponse, SERVER_PACKET)) {
+                Server *serverData = (Server *) (serverResponse + sizeof (PacketHeader));
 
-        client->isConnected = true;
+                // TODO: check server info to see if we are making a proper connection
+                if (serverData->authRequired) {
+                    // FIXME: we need to send the server the correct authentication info!!
+                }
 
-        return 0;
+                // make a copy of the server data
+                if (serverInfo) free (serverInfo);
+
+                serverInfo = (Server *) malloc (sizeof (Server));
+                serverInfo->authRequired = serverData->authRequired;
+                serverInfo->isRunning = serverData->isRunning;
+                serverInfo->port = serverData->port;
+                serverInfo->protocol = serverData->protocol;
+                serverInfo->type = serverData->type;
+                serverInfo->useIpv6 = serverData->useIpv6;
+
+                client->isConnected = true;
+                logMsg (stdout, SUCCESS, NO_TYPE, "Connected to server!");
+
+                return 0;   // success connecting to server
+            }
+
+            // TODO: what to do next? --> retry the connection?
+            else logMsg (stderr, ERROR, PACKET, "Got an invalid server info packet!");
+        }
     }
 
     else {
@@ -417,7 +505,7 @@ void *generateRequest (PacketType packetType, RequestType reqType) {
 // send a valid client authentication
 u8 client_authentication () {}
 
-// FIXME:
+// FIXME: don't forget to make the cient the owner
 // request to create a new multiplayer game
 u8 client_createLobby (Client *owner, GameType gameType) {
 
@@ -520,8 +608,31 @@ u8 client_destroyLobby (Client *client) {
 
 }
 
+// TODO: check that we are making valid requests to a game server
 // the owner of the lobby can request to init the game
-u8 client_startGame (Client *owner) {}
+u8 client_startGame (Client *owner) {
+
+    if (owner) {
+        if (owner->inLobby && owner->isOwner) {
+            // create & send a leave lobby req packet to the server
+            size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+            void *req = generateRequest (GAME_PACKET, GAME_INIT);
+
+            if (req) {
+                tcp_sendPacket (owner->clientSock, req, packetSize, 0);
+
+                // TODO: do we need to wait for a server response?
+
+                return 0;
+            } 
+
+            else logMsg (stderr, ERROR, PACKET, "Failed to generate destroy lobby request packet!");
+        }
+    }
+
+    return 1;
+
+}
 
 // request leaderboard data
 u8 client_getLeaderBoard () {}

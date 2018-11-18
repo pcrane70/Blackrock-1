@@ -21,6 +21,33 @@ typedef enum GameType {
 
 #pragma endregion
 
+#pragma region SERVER 
+
+typedef enum ServerType {
+
+    FILE_SERVER = 1,
+    WEB_SERVER, 
+    GAME_SERVER
+
+} ServerType;
+
+// this is the same as SSrver in the server
+// some useful info about the server
+typedef struct Server {
+
+    u8 useIpv6;  
+    u8 protocol;            // we only support either tcp or udp
+    u16 port; 
+
+    bool isRunning;         // the server is recieving and/or sending packets
+
+    ServerType type;
+    bool authRequired;      // authentication required by the server
+
+} Server;
+
+#pragma endregion
+
 #pragma region CLIENT
 
 typedef struct Client {
@@ -77,6 +104,7 @@ extern Version PROTOCOL_VERSION;
 // 01/11/2018 -- this indicates what type of packet we are sending/recieving
 typedef enum PacketType {
 
+    SERVER_PACKET = 0,
     ERROR_PACKET = 1,
 	REQUEST,
     AUTHENTICATION,
