@@ -3,6 +3,11 @@
 
 #include <stdbool.h>
 
+#include <poll.h>
+
+#define MAX_PORT_NUM            65535
+#define MAX_UDP_PACKET_SIZE     65515
+
 #define MAXSLEEP                60        // used for connection with exponential backoff (secs)     
 
 #define MAX_PORT_NUM            65535
@@ -61,15 +66,20 @@ typedef struct Client {
 
     bool isConnected;       // connected to the server
 
+    bool blocking;          // 31/10/2018 - sokcet fd is blocking?
+
+    // TODO: in a more complex application, maybe the client needs to open
+    // mutiple connections to the same server or to other clients
+    struct pollfd fds[2];      // 18/11/2018 - we only communicate with the server
+    u16 nfds;                  // n of active fds in the pollfd array
+    u32 pollTimeout;   
+
     // only used in a game server
     // TODO: get details from the server when connecting to it...
     // TODO: move this from here to a server structure
     bool isGameServer;      // is the client connected to a game server?
     bool inLobby;           // is the client inside a lobby?
     bool isOwner;           // is the client the owner of the lobby?
-
-    // FIXME: do we need to set to nonblocking?
-    // bool blocking;          // 31/10/2018 - sokcet fd is blocking?
 
 } Client;
 
@@ -88,6 +98,18 @@ extern u8 client_joinLobby (Client *owner, GameType gameType);
 
 // These section needs to be identical as in the server so that we can handle
 // the correct requests
+
+// 01/11/2018 - info from a recieved packet to be handle
+struct _PacketInfo {
+
+    Server *server;
+    Client *client;
+    char packetData[MAX_UDP_PACKET_SIZE];
+    size_t packetSize;
+
+};
+
+typedef struct _PacketInfo PacketInfo;
 
 typedef u32 ProtocolId;
 
@@ -133,6 +155,7 @@ typedef enum RequestType {
     POST_SEND_FILE,
     
     REQ_AUTH_CLIENT,
+    SUCCESS_AUTH,
 
     LOBBY_CREATE,
     LOBBY_JOIN,
