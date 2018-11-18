@@ -1899,6 +1899,8 @@ void showScore (void) {
 
 /*** MULTIPLAYER ***/
 
+// TODO: 17/11/2018 -- do we want to create a new thread for each request we make?
+
 // TODO: 17/11/2018 -- where do we want to put this?
 Client *playerClient = NULL;
 
