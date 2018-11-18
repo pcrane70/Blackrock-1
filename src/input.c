@@ -46,7 +46,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_p: createMainMenu (); break;
             case SDLK_m: if (activeMenuView != MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
             case SDLK_b: if (activeMenuView == MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
-            // case SDLK_c: if (activeMenuView == MULTI_MENU_VIEW) createGame (); break;
+            case SDLK_c: if (activeMenuView == MULTI_MENU_VIEW) printf ("\ncreate lobby\n"); break;
             // case SDLK_j: if (activeMenuView == MULTI_MENU_VIEW) joinGame (); break;
 
             // old events

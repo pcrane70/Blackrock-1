@@ -1,6 +1,8 @@
 #ifndef MYUTILS_H_
 #define MYUTILS_H_
 
+#include <stdbool.h>
+
 extern int randomInt (int min, int max);
 
 extern int xtoi (char *hexString);

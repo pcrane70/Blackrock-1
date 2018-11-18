@@ -10,6 +10,17 @@
 #define DEFAULT_PROTOCOL                IPPROTO_TCP
 #define DEFAULT_PORT                    7001
 
+#pragma region GAME
+
+// this is the same as in cerver
+typedef enum GameType {
+
+	ARCADE = 0,
+
+} GameType;
+
+#pragma endregion
+
 #pragma region CLIENT
 
 typedef struct Client {
@@ -22,6 +33,13 @@ typedef struct Client {
     u16 port; 
 
     bool isConnected;       // connected to the server
+
+    // only used in a game server
+    // TODO: get details from the server when connecting to it...
+    // TODO: move this from here to a server structure
+    bool isGameServer;      // is the client connected to a game server?
+    bool inLobby;           // is the client inside a lobby?
+    bool isOwner;           // is the client the owner of the lobby?
 
     // FIXME: do we need to set to nonblocking?
     // bool blocking;          // 31/10/2018 - sokcet fd is blocking?
@@ -36,17 +54,6 @@ extern u8 client_disconnectFromServer (Client *);
 // TODO: where do we want to put this requests?
 extern u8 client_createLobby (Client *owner, GameType gameType);
 extern u8 client_joinLobby (Client *owner, GameType gameType);
-
-#pragma endregion
-
-#pragma region GAME
-
-// this is the same as in cerver
-typedef enum GameType {
-
-	ARCADE = 0,
-
-} GameType;
 
 #pragma endregion
 

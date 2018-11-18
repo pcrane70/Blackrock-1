@@ -16,6 +16,7 @@
 
 #include "config.h"
 #include "utils/log.h"
+#include "utils/myUtils.h"
 
 /*** VALUES ***/
 
@@ -359,7 +360,7 @@ u8 client_connectToServer (Client *client) {
 
 }
 
-// FIXME: send a disconnect packet to the server
+// disconnect from the server
 u8 client_disconnectFromServer (Client *client) {
 
     if (!client) {
@@ -377,7 +378,13 @@ u8 client_disconnectFromServer (Client *client) {
         return 1;
     }
 
-    // TODO: send a packet to the server so that it knows we will disconnect
+    // send a disconnect packet to the server
+    if (client->isGameServer) {
+        if (client->inLobby) {
+            u8 client_leaveLobby (Client *client);
+            client_leaveLobby (client);
+        }
+    }
 
     close (client->clientSock);
     client->isConnected = false;
@@ -394,6 +401,19 @@ u8 client_disconnectFromServer (Client *client) {
 
 #pragma region REQUESTS
 
+void *generateRequest (PacketType packetType, RequestType reqType) {
+
+    size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+    void *begin = generatePacket (packetType, packetSize);
+    char *end = begin + sizeof (PacketHeader); 
+
+    RequestData *reqdata = (RequestData *) end;
+    reqdata->type = reqType;
+
+    return begin;
+
+}
+
 // send a valid client authentication
 u8 client_authentication () {}
 
@@ -406,20 +426,23 @@ u8 client_createLobby (Client *owner, GameType gameType) {
         return 1;
     }
 
-    // create the create lobby request
-    size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
-    void *begin = generatePacket (GAME_PACKET, packetSize);
-    char *end = begin + sizeof (PacketHeader); 
+    if (owner) {
+        // create & send a join lobby req packet to the server
+        size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+        void *req = generateRequest (GAME_PACKET, LOBBY_CREATE);
 
-    RequestData *reqdata = (RequestData *) end;
-    reqdata->type = LOBBY_CREATE;
+        if (req) {
+            tcp_sendPacket (owner->clientSock, req, packetSize, 0);
 
-    // send the request to the server
-    tcp_sendPacket (owner->clientSock, begin, packetSize, 0);
+            // FIXME: we need to wait for the respponse of the server
 
-    // FIXME: we need to wait for the respponse of the server
+            return 0;
+        }
 
-    return 0;
+        else logMsg (stderr, ERROR, PACKET, "Failed to generate create lobby request packet!");
+    }
+
+    return 1;
 
 }
 
@@ -427,25 +450,73 @@ u8 client_createLobby (Client *owner, GameType gameType) {
 // request to join an on going game
 u8 client_joinLobby (Client *owner, GameType gameType) {
 
-    if (!owner) {
-        logMsg (stderr, ERROR, GAME, "A NULL client can't join a lobby!");
-        return 1;
+    if (owner) {
+        // create & send a join lobby req packet to the server
+        size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+        void *req = generateRequest (GAME_PACKET, LOBBY_JOIN);
+
+        if (req) {
+            
+            tcp_sendPacket (owner->clientSock, req, packetSize, 0);
+
+            // FIXME: we need to wait for the server response
+
+            return 0;
+        }
+
+        else logMsg (stderr, ERROR, PACKET, "Failed to generate join lobby request packet!");
     }
 
-    // create the join lobby request
-    size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
-    void *begin = generatePacket (GAME_PACKET, packetSize);
-    char *end = begin + sizeof (PacketHeader); 
+    return 1;
 
-    RequestData *reqdata = (RequestData *) end;
-    reqdata->type = LOBBY_JOIN;
+}
 
-    // send the request to the server
-    tcp_sendPacket (owner->clientSock, begin, packetSize, 0);
+// TODO: check that we are making valid requests to a game server
+// request the server to leave the lobby
+u8 client_leaveLobby (Client *client) {
 
-    // FIXME: we need to wait for the respponse of the server
+    if (client) {
+        if (client->inLobby) {
+            // create & send a leave lobby req packet to the server
+            size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+            void *req = generateRequest (GAME_PACKET, LOBBY_LEAVE);
 
-    return 0;
+            if (req) {
+                tcp_sendPacket (client->clientSock, req, packetSize, 0);
+                return 0;
+            } 
+
+            else logMsg (stderr, ERROR, PACKET, "Failed to generate leave lobby request packet!");
+        }
+    }
+
+    return 1;
+
+}
+
+// TODO: check that we are making valid requests to a game server
+// request to destroy the current lobby, only if the client is the owner
+u8 client_destroyLobby (Client *client) {
+
+    if (client) {
+        if (client->inLobby) {
+            // create & send a leave lobby req packet to the server
+            size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+            void *req = generateRequest (GAME_PACKET, LOBBY_DESTROY);
+
+            if (req) {
+                tcp_sendPacket (client->clientSock, req, packetSize, 0);
+
+                // TODO: do we need to wait for a server response?
+
+                return 0;
+            } 
+
+            else logMsg (stderr, ERROR, PACKET, "Failed to generate destroy lobby request packet!");
+        }
+    }
+
+    return 1;
 
 }
 
