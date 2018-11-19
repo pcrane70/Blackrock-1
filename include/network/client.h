@@ -6,6 +6,7 @@
 #include <poll.h>
 
 #include "utils/objectPool.h"
+#include "utils/thpool.h"
 
 #define MAX_PORT_NUM            65535
 #define MAX_UDP_PACKET_SIZE     65515
@@ -14,8 +15,13 @@
 
 #define MAX_PORT_NUM            65535
 
+#define DEFAULT_USE_IPV6                0
 #define DEFAULT_PROTOCOL                IPPROTO_TCP
 #define DEFAULT_PORT                    7001
+
+#define DEFAULT_POLL_TIMEOUT            180000      // 3 min in mili secs
+#define DEFAULT_PACKET_POOL_INIT        4
+#define DEFAULT_THPOOL_INIT             4
 
 #pragma region GAME
 
@@ -60,17 +66,15 @@ typedef struct Server {
 typedef struct Client {
 
     i32 clientSock;
-
-    // details about our connection to the server
     u8 useIpv6;  
     u8 protocol;            // 12/10/2018 - we only support either tcp or udp
     u16 port; 
 
-    bool isConnected;       // connected to the server
+    // FIXME: where do we want to store the server address?
+    // "192.168.1.100"
 
     bool blocking;          // 31/10/2018 - sokcet fd is blocking?
-
-    // FIXME: don't forget to init the poll structure and the packet pool!!
+    bool isConnected;       // connected to the server
 
     // TODO: in a more complex application, maybe the client needs to open
     // mutiple connections to the same server or to other clients
@@ -80,6 +84,9 @@ typedef struct Client {
 
     // TODO: 18/11/2018 - for now we will have this here...
     Pool *packetPool;           //  packet info pool
+
+    // 18/11/2018 -- we will have our own thpoll inside the clien
+    threadpool thpool;
 
     // only used in a game server
     // TODO: get details from the server when connecting to it...

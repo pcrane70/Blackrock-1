@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -28,8 +29,31 @@ Version PROTOCOL_VERSION = { 1, 1 };
 // FIXME: don't forget to delete this when we disconnect from the server!!
 Server *serverInfo = NULL;
 
+/*** NETWORKING ***/
+
+#pragma region NETWORKING 
+
+// enable/disable blocking on a socket
+// true on success, false if there was an eroror
+bool sock_setBlocking (int32_t fd, bool isBlocking) {
+
+    if (fd < 0) return false;
+
+    int flags = fcntl (fd, F_GETFL, 0);
+    if (flags == -1) return false;
+    // flags = isBlocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);   // original
+    flags = isBlocking ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
+    return (fcntl (fd, F_SETFL, flags) == 0) ? true : false;
+
+}
+
+#pragma endregion
+
+/*** PACKETS ***/
+
 #pragma region PACKETS
 
+// FIXME: packet pool
 // 18/11/2018 - we only handle a single connection with the server
 PacketInfo *newPacketInfo (Client *client, char *packetData, size_t packetSize) {
 
@@ -275,11 +299,9 @@ u8 client_poll (Client *client) {
         for (u8 i = 0; i < 2; i++) {
             if (client->fds[i].revents == 0) continue;
 
-            // FIXME: how to hanlde an unexpected result??
             if (client->fds[i].revents != POLLIN) {
-                // TODO: log more detailed info about the fd, or client, etc
-                // printf("  Error! revents = %d\n", fds[i].revents);
                 logMsg (stderr, ERROR, CLIENT, "Unexpected poll result!");
+                continue;  
             }
 
             // 18/11/2018 -- we only want to be connected to the server!
@@ -315,12 +337,8 @@ u8 client_poll (Client *client) {
                         break;
                     }
 
-                    // FIXME:!!!
-                    // 18/11/2018 - we only handle a single connection with the server
-                    // info = newPacketInfo (server, 
-                    //     getClientBySock (server->clients, server->fds[i].fd), packetBuffer, rc);
-
-                    // thpool_add_work (server->thpool, (void *) handlePacket, info);
+                    info = newPacketInfo (client, packetBuffer, rc);
+                    thpool_add_work (client->thpool, (void *) handlePacket, info);
                 } while (true);
             }
 
@@ -333,26 +351,38 @@ u8 client_poll (Client *client) {
 
 /*** CLIENT LOGIC ***/
 
-// TODO: maybe set the socket to nonblocking, because it might interfere with other game processes
-// TODO: but not all of our requests are async, when we want to create or join a game, 
-// we need to wait for the sever reponse
-
-#pragma region CLIENT
-
 // TODO: 31/10/2018 -- we only handle the logic for a connection using tcp
 // we need to add the logic to be able to send packets via udp
 
+#pragma region CLIENT
+
 Client *newClient (Client *c) {
 
-    Client *new = (Client *) malloc (sizeof (Client));
+    Client *newClient = (Client *) malloc (sizeof (Client));
 
+    // create a client with the requested parameters
     if (c) {
-        new->useIpv6 = c->useIpv6;
-        new->protocol = c->protocol;
-        new->port = c->port;
+        newClient->useIpv6 = c->useIpv6;
+        newClient->protocol = c->protocol;
+        newClient->port = c->port;
     }
 
-    return new;
+    // set the values to default
+    else {
+        newClient->useIpv6 = DEFAULT_USE_IPV6;
+        newClient->protocol = DEFAULT_PROTOCOL;
+        newClient->port = DEFAULT_PORT;
+    }
+
+    // set default values
+    newClient->isConnected = false;
+    newClient->blocking = true;
+
+    newClient->isGameServer = false;
+    newClient->inLobby = false;
+    newClient->isOwner = false;
+
+    return newClient;
 
 }
 
@@ -415,6 +445,33 @@ u8 getClientCfgValues (Client *client, ConfigEntity *cfgEntity) {
 
 }
 
+// init client data structues inside client such as pool and poll
+void initClientData (Client *client) {
+
+    if (client) {
+        // init the poll strcuture and add the client socket as the first one
+        memset (client->fds, 0, sizeof (client->fds));
+        client->fds[0].fd = client->clientSock;
+        client->fds[0].events = POLLIN;
+        client->nfds = 1;
+
+        // TODO: maybe load this form the config file as in the server    
+        client->pollTimeout = DEFAULT_POLL_TIMEOUT;
+
+        // init the client's packet info pool with some memebers in it
+        client->packetPool = pool_init (destroyPacketInfo);
+        if (client->packetPool) {
+            for (int i = 0; i < DEFAULT_PACKET_POOL_INIT; i++)
+                pool_push (client->packetPool, malloc (sizeof (PacketInfo)));
+        }
+        
+        else logMsg (stderr, ERROR, CLIENT, "Failed to init client's packet info pool!");
+
+        client->thpool = thpool_init (DEFAULT_THPOOL_INIT);
+    }
+
+}
+
 // inits a client structure with the specified values
 u8 client_init (Client *client, Config *cfg) {
 
@@ -424,7 +481,7 @@ u8 client_init (Client *client, Config *cfg) {
     }
 
     #ifdef CLIENT_DEBUG
-    logMsg (stdout, DEBUG_MSG, CLIENT, "Initializing client...");
+        logMsg (stdout, DEBUG_MSG, CLIENT, "Initializing client...");
     #endif
 
     if (cfg) {
@@ -435,7 +492,7 @@ u8 client_init (Client *client, Config *cfg) {
         }
 
         #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, CLIENT, "Setting client values from config.");
+            logMsg (stdout, DEBUG_MSG, CLIENT, "Setting client values from config.");
         #endif
 
         if (!getClientCfgValues (client, cfgEntity))
@@ -460,23 +517,25 @@ u8 client_init (Client *client, Config *cfg) {
     }
 
     #ifdef CLIENT_DEBUG
-    logMsg (stdout, DEBUG_MSG, CLIENT, "Created client socket");
+        logMsg (stdout, DEBUG_MSG, CLIENT, "Created client socket");
     #endif
 
-    // FIXME: 31/10/2018 -- do we need to set the client socket to non blocking mode?
     // set the socket to non blocking mode
-    /* if (!sock_setBlocking (server->serverSock, server->blocking)) {
-        logMsg (stderr, ERROR, SERVER, "Failed to set server socket to non blocking mode!");
+    if (!sock_setBlocking (client->clientSock, client->blocking)) {
+        logMsg (stderr, ERROR, CLIENT, "Failed to set client socket to non blocking mode!");
         // perror ("Error");
-        close (server->serverSock);
+        close (client->clientSock);
         return 1;
     }
 
+    // TODO: how to check that the socket is actually non blocking?
+
     else {
+        client->blocking = false;
         #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, SERVER, "Server socket set to non blocking mode.");
+        logMsg (stdout, DEBUG_MSG, SERVER, "Client socket set to non blocking mode.");
         #endif
-    } */
+    }
 
     return 0;   // at this point, the client is ready to connect to the server
     
@@ -489,6 +548,7 @@ Client *client_create (Client *client) {
     if (client) {
         Client *c = newClient (client);
         if (!client_init (c, NULL)) {
+            initClientData (c);
             logMsg (stdout, SUCCESS, CLIENT, "\nCreated a new client!\n");
             return c;
         }
@@ -496,21 +556,19 @@ Client *client_create (Client *client) {
         else {
             logMsg (stderr, ERROR, CLIENT, "Failed to init the client!");
             free (c);
-            return NULL;
         }
     }
 
     // create the client from the default config file
     else {
         Config *clientConfig = parseConfigFile ("./config/client.cfg");
-        if (!clientConfig) {
+        if (!clientConfig) 
             logMsg (stderr, ERROR, NO_TYPE, "Problems loading client config!");
-            return NULL;
-        }
 
         else {
             Client *c = newClient (NULL);
-            if (!client_init (client, clientConfig)) {
+            if (!client_init (c, clientConfig)) {
+                initClientData (c);
                 logMsg (stdout, SUCCESS, CLIENT, "\nCreated a new client!\n");
                 clearConfig (clientConfig);
                 return c;
@@ -520,10 +578,11 @@ Client *client_create (Client *client) {
                 logMsg (stderr, ERROR, CLIENT, "Failed to init client!");
                 clearConfig (clientConfig);
                 free (c);
-                return NULL;
             }
         }
     }
+
+    return NULL;
 
 }
 
@@ -553,15 +612,12 @@ u8 checkServerInfo (Server *server) {
 
 }
 
-// FIXME: get the correct ip of the server from the cfg file
-// 31/10/2018 -- we are using 127.0.0.1
-// connects a client to the specified server
+// FIXME: we need to start the client before we can call this!! for the poll structure
+// connects the client to the specified server
 u8 client_connectToServer (Client *client) {
 
-    if (!client) {
-        // init a new client
-        client = client_create (NULL);
-    }
+    // init a new client
+    if (!client) client = client_create (NULL);
 
     if (client->isConnected) {
         logMsg (stdout, WARNING, CLIENT, "The client is already connected to the server.");
@@ -580,14 +636,14 @@ u8 client_connectToServer (Client *client) {
     if (client->useIpv6) {
 		struct sockaddr_in6 *addr = (struct sockaddr_in6 *) &server;
 		addr->sin6_family = AF_INET6;
-		addr->sin6_addr = in6addr_any;
+		addr->sin6_addr = in6addr_any;      // FIXME:
 		addr->sin6_port = htons (client->port);
 	} 
 
     else {
 		struct sockaddr_in *addr = (struct sockaddr_in *) &server;
 		addr->sin_family = AF_INET;
-		addr->sin_addr.s_addr = INADDR_ANY;
+		addr->sin_addr.s_addr = inet_addr ();
 		addr->sin_port = htons (client->port);
 	} 
 
@@ -684,11 +740,10 @@ u8 client_disconnectFromServer (Client *client) {
 
 #pragma endregion
 
+// TODO: need to refactor this code!
 /*** REQUESTS ***/
 
 // These are the requests that we send to the server and we expect a response 
-
-#pragma region REQUESTS
 
 void *generateRequest (PacketType packetType, RequestType reqType) {
 
@@ -703,12 +758,31 @@ void *generateRequest (PacketType packetType, RequestType reqType) {
 
 }
 
+// TODO: 
 // send a valid client authentication
 u8 client_authentication () {}
 
+/*** FILE SERVER ***/
+
+#pragma region FILE SERVER
+
+// TODO:
+// request a file from the server
+u8 client_file_get () {}
+
+// TODO:
+// send a file to the server
+u8 client_file_send () {}
+
+#pragma endregion
+
+/*** GAME SERVER ***/
+
+#pragma region GAME SERVER
+
 // FIXME: don't forget to make the cient the owner
 // request to create a new multiplayer game
-u8 client_createLobby (Client *owner, GameType gameType) {
+u8 client_game_createLobby (Client *owner, GameType gameType) {
 
     if (!owner) {
         logMsg (stderr, ERROR, GAME, "A NULL client can't create a lobby!");
@@ -737,7 +811,7 @@ u8 client_createLobby (Client *owner, GameType gameType) {
 
 // FIXME:
 // request to join an on going game
-u8 client_joinLobby (Client *owner, GameType gameType) {
+u8 client_game_joinLobby (Client *owner, GameType gameType) {
 
     if (owner) {
         // create & send a join lobby req packet to the server
@@ -762,7 +836,7 @@ u8 client_joinLobby (Client *owner, GameType gameType) {
 
 // TODO: check that we are making valid requests to a game server
 // request the server to leave the lobby
-u8 client_leaveLobby (Client *client) {
+u8 client_game_leaveLobby (Client *client) {
 
     if (client) {
         if (client->inLobby) {
@@ -785,7 +859,7 @@ u8 client_leaveLobby (Client *client) {
 
 // TODO: check that we are making valid requests to a game server
 // request to destroy the current lobby, only if the client is the owner
-u8 client_destroyLobby (Client *client) {
+u8 client_game_destroyLobby (Client *client) {
 
     if (client) {
         if (client->inLobby) {
@@ -811,7 +885,7 @@ u8 client_destroyLobby (Client *client) {
 
 // TODO: check that we are making valid requests to a game server
 // the owner of the lobby can request to init the game
-u8 client_startGame (Client *owner) {
+u8 client_game_startGame (Client *owner) {
 
     if (owner) {
         if (owner->inLobby && owner->isOwner) {
@@ -834,11 +908,5 @@ u8 client_startGame (Client *owner) {
     return 1;
 
 }
-
-// request leaderboard data
-u8 client_getLeaderBoard () {}
-
-// request to send new leaderboard data
-u8 client_sendLeaderBoard () {}
 
 #pragma endregion
