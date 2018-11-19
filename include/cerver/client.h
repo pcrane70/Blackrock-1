@@ -8,6 +8,15 @@
 #include "utils/objectPool.h"
 #include "utils/thpool.h"
 
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int8_t i8;
+typedef int32_t i32;
+typedef int64_t i64;
+
 #define MAX_PORT_NUM            65535
 #define MAX_UDP_PACKET_SIZE     65515
 
@@ -44,13 +53,15 @@ typedef enum ServerType {
 
 } ServerType;
 
-// this is the same as SSrver in the server
-// some useful info about the server
+// some useful info about the server we are connectiing to
 typedef struct Server {
 
     u8 useIpv6;  
     u8 protocol;            // we only support either tcp or udp
     u16 port; 
+
+    char *ip;
+    struct sockaddr_storage address;
 
     bool isRunning;         // the server is recieving and/or sending packets
 
@@ -63,15 +74,20 @@ typedef struct Server {
 
 #pragma region CLIENT
 
+// TODO: if a client can only connect to one address at a time, we need to support 
+// multiple clients so that we can have multiple connections at the same time
+// add the clients in the poll structure...
 typedef struct Client {
+
+    // TODO: add the hability to connect to other clients directly
+    // 18/11/2018 -- a client can only connect to one address a time right?
+    // if so, we are only handling a connection with one server
+    Server connectionServer;
 
     i32 clientSock;
     u8 useIpv6;  
     u8 protocol;            // 12/10/2018 - we only support either tcp or udp
     u16 port; 
-
-    // FIXME: where do we want to store the server address?
-    // "192.168.1.100"
 
     bool blocking;          // 31/10/2018 - sokcet fd is blocking?
     bool running;           // the client is ready to listen & send
@@ -100,12 +116,8 @@ typedef struct Client {
 
 extern Client *client_create (Client *);
 
-extern u8 client_connectToServer (Client *);
+extern u8 client_connectToServer (Client *client, char *serverIp);
 extern u8 client_disconnectFromServer (Client *);
-
-// TODO: where do we want to put this requests?
-extern u8 client_createLobby (Client *owner, GameType gameType);
-extern u8 client_joinLobby (Client *owner, GameType gameType);
 
 #pragma endregion
 
@@ -119,7 +131,10 @@ struct _PacketInfo {
 
     // Server *server;
     Client *client;
-    char packetData[MAX_UDP_PACKET_SIZE];
+
+    // we need this to be dynamic to avoid any memory leak 
+    // when we resuse it with the pool
+    char *packetData;
     size_t packetSize;
 
 };
@@ -210,6 +225,50 @@ typedef struct ErrorData {
     char msg[256];
 
 } ErrorData;
+
+#pragma endregion
+
+/*** SERIALIZATION ***/
+
+// cerver framework serialized data
+#pragma region SERIALIZATION
+
+// 17/11/2018 - send useful server info to the client trying to connect
+typedef struct SServer {
+
+    u8 useIpv6;  
+    u8 protocol;            // we only support either tcp or udp
+    u16 port; 
+
+    bool isRunning;         // the server is recieving and/or sending packets
+
+    ServerType type;
+    bool authRequired;      // authentication required by the server
+
+} SServer;
+
+// TODO:
+typedef struct SLobby {
+
+    // struct _GameSettings settings;      // 24/10/2018 -- we dont have any ptr in this struct
+    bool inGame;
+
+    // FIXME: how do we want to send this info?
+    // Player owner;               // how do we want to send which is the owner
+    // Vector players;             // ecah client also needs to keep track of other players in the lobby
+
+} SLobby;
+
+// TODO: we need to create a more complex seralized data
+// keep in mind that the admin can set a reference to the data and function
+// that can handle specific serealization
+// 03/11/2018 -> default auth data to use by default auth function
+typedef struct DefAuthData {
+
+    u32 code;
+
+} DefAuthData;
+
 
 #pragma endregion
 

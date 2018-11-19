@@ -3,17 +3,16 @@
 #include <string.h>
 
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <errno.h>
 
-#include "blackrock.h"      // only used for type defs
-
-#include "network/client.h"
+#include "cerver/client.h"
 
 #include "utils/objectPool.h"
 #include "utils/config.h"
@@ -53,34 +52,44 @@ bool sock_setBlocking (int32_t fd, bool isBlocking) {
 
 #pragma region PACKETS
 
-// FIXME: packet pool
-// 18/11/2018 - we only handle a single connection with the server
 PacketInfo *newPacketInfo (Client *client, char *packetData, size_t packetSize) {
 
-    PacketInfo *new = NULL;
+    PacketInfo *p = NULL;
 
-    /* if (client->packetPool) {
+    if (client->packetPool) {
         if (POOL_SIZE (client->packetPool) > 0) {
-            new = pool_pop (client->packetPool);
-            if (!new) new = (PacketInfo *) malloc (sizeof (PacketInfo));
+            p = pool_pop (client->packetPool);
+            if (!p) p = (PacketInfo *) malloc (sizeof (PacketInfo));
+            else if (p->packetData) free (p->packetData);
         }
     }
 
-    else new = (PacketInfo *) malloc (sizeof (PacketInfo));
+    else p = (PacketInfo *) malloc (sizeof (PacketInfo));
 
-    new->server = server;
-    new->client = client;
-    new->packetSize = packetSize;
+    if (p) {
+        // p->server = server;
+        p->client = client;
+        p->packetSize = packetSize;
 
-    // copy the contents from the entry buffer to the packet info
-    strcpy (new->packetData, packetData); */
+        // copy the contents from the entry buffer to the packet info
+        p->packetData = (char *) calloc (strlen (packetData) + 1, sizeof (char));
+        if (p->packetData) strcpy (p->packetData, packetData);
+    }
 
-    return new;
+    return p;
 
 }
 
-// FIXME: used to destroy remaining packet info in the pools
-void destroyPacketInfo (void *data) {}
+// used to destroy remaining packet info in the pools
+void destroyPacketInfo (void *data) {
+
+    if (data) {
+        PacketInfo *packet = (PacketInfo *) data;
+        packet->client = NULL;
+        if (packet->packetData) free (packet->packetData);
+    }
+
+}
 
 // check for packets with bad size, protocol, version, etc
 u8 checkPacket (size_t packetSize, char *packetData, PacketType expectedType) {
@@ -432,28 +441,30 @@ Client *newClient (Client *c) {
 
     Client *newClient = (Client *) malloc (sizeof (Client));
 
-    // create a client with the requested parameters
-    if (c) {
-        newClient->useIpv6 = c->useIpv6;
-        newClient->protocol = c->protocol;
-        newClient->port = c->port;
+    if (newClient) {
+        // create a client with the requested parameters
+        if (c) {
+            newClient->useIpv6 = c->useIpv6;
+            newClient->protocol = c->protocol;
+            newClient->port = c->port;
+        }
+
+        // set the values to default
+        else {
+            newClient->useIpv6 = DEFAULT_USE_IPV6;
+            newClient->protocol = DEFAULT_PROTOCOL;
+            newClient->port = DEFAULT_PORT;
+        }
+
+        // set default values
+        newClient->isConnected = false;
+        newClient->blocking = true;
+        newClient->running = false;
+
+        newClient->isGameServer = false;
+        newClient->inLobby = false;
+        newClient->isOwner = false;
     }
-
-    // set the values to default
-    else {
-        newClient->useIpv6 = DEFAULT_USE_IPV6;
-        newClient->protocol = DEFAULT_PROTOCOL;
-        newClient->port = DEFAULT_PORT;
-    }
-
-    // set default values
-    newClient->isConnected = false;
-    newClient->blocking = true;
-    newClient->running = false;
-
-    newClient->isGameServer = false;
-    newClient->inLobby = false;
-    newClient->isOwner = false;
 
     return newClient;
 
@@ -708,11 +719,13 @@ u8 client_check (Client *client) {
 }
 
 // try to connect a client to an address (server) with exponential backoff
-u8 connectRetry (Client *client, const struct sockaddr *address) {
+u8 connectRetry (Client *client) {
 
     i32 numsec;
     for (numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
-        if (!connect (client->clientSock, address, sizeof (struct sockaddr))) 
+        if (!connect (client->clientSock, 
+            (const struct sockaddr *) &client->connectionServer.address, 
+            sizeof (struct sockaddr))) 
             return 0;   // the connection was successfull
 
         if (numsec <= MAXSLEEP / 2) sleep (numsec);
@@ -722,33 +735,47 @@ u8 connectRetry (Client *client, const struct sockaddr *address) {
 
 }
 
-// FIXME: server ip addresses
+// TODO: add support for ipv6 connections
 // connects the client to the specified server
-u8 client_connectToServer (Client *client) {
+u8 client_connectToServer (Client *client, char *serverIp) {
 
     if (!client_check (client)) {
-        // set the address of the server 
-        struct sockaddr_storage server;
-        memset (&server, 0, sizeof (struct sockaddr_storage));
+        if (!serverIp) {
+            // check if we have the server ip already setup in the client
+            if (!client->connectionServer.ip) {
+                logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
+                return 1;
+            }
+        }
 
-        // FIXME: ipv6 ip address
+        // copy the new ip to the client server data
+        else {
+            if (client->connectionServer.ip) free (client->connectionServer.ip);
+            client->connectionServer.ip = (char *) calloc (strlen (serverIp), sizeof (char));
+            strcpy (client->connectionServer.ip, serverIp);
+        }
+
+        // set the address of the server 
+        memset (&client->connectionServer.address, 0, sizeof (struct sockaddr_storage));
+
         if (client->useIpv6) {
-            struct sockaddr_in6 *addr = (struct sockaddr_in6 *) &server;
+            struct sockaddr_in6 *addr = 
+                (struct sockaddr_in6 *) &client->connectionServer.address;
             addr->sin6_family = AF_INET6;
-            addr->sin6_addr = in6addr_any;      
+            // addr->sin6_addr = inet;      
             addr->sin6_port = htons (client->port);
         } 
 
-        // FIXME: get the ip address of the server!
         else {
-            struct sockaddr_in *addr = (struct sockaddr_in *) &server;
+            struct sockaddr_in *addr = 
+                (struct sockaddr_in *) &client->connectionServer.address;
             addr->sin_family = AF_INET;
-            addr->sin_addr.s_addr = inet_addr ();
+            addr->sin_addr.s_addr = inet_addr (client->connectionServer.ip);
             addr->sin_port = htons (client->port);
         } 
 
         // try to connect to the server with exponential backoff
-        if (!connectRetry (client, (const struct sockaddr *) &server)) {
+        if (!connectRetry (client)) {
             // add the new connection socket to the poll structure
             client->fds[client->nfds].fd = client->clientSock;
             client->fds[client->nfds].events = POLLIN;
@@ -762,7 +789,6 @@ u8 client_connectToServer (Client *client) {
 
         // TODO: does this works properly?
         else fprintf (stderr, "%s\n", strerror (errno));
-
     }
 
     logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
