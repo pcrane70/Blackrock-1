@@ -5,6 +5,9 @@
 
 #include <poll.h>
 
+// FIXME: fix this path in the cerver framwork
+#include "objectPool.h"
+
 #define MAX_PORT_NUM            65535
 #define MAX_UDP_PACKET_SIZE     65515
 
@@ -68,11 +71,16 @@ typedef struct Client {
 
     bool blocking;          // 31/10/2018 - sokcet fd is blocking?
 
+    // FIXME: don't forget to init the poll structure and the packet pool!!
+
     // TODO: in a more complex application, maybe the client needs to open
     // mutiple connections to the same server or to other clients
     struct pollfd fds[2];      // 18/11/2018 - we only communicate with the server
     u16 nfds;                  // n of active fds in the pollfd array
     u32 pollTimeout;   
+
+    // TODO: 18/11/2018 - for now we will have this here...
+    Pool *packetPool;           //  packet info pool
 
     // only used in a game server
     // TODO: get details from the server when connecting to it...
@@ -102,7 +110,7 @@ extern u8 client_joinLobby (Client *owner, GameType gameType);
 // 01/11/2018 - info from a recieved packet to be handle
 struct _PacketInfo {
 
-    Server *server;
+    // Server *server;
     Client *client;
     char packetData[MAX_UDP_PACKET_SIZE];
     size_t packetSize;

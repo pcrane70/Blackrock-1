@@ -14,6 +14,7 @@
 
 #include "network/client.h"
 
+#include "objectPool.h"
 #include "config.h"
 #include "utils/log.h"
 #include "utils/myUtils.h"
@@ -28,6 +29,34 @@ Version PROTOCOL_VERSION = { 1, 1 };
 Server *serverInfo = NULL;
 
 #pragma region PACKETS
+
+// 18/11/2018 - we only handle a single connection with the server
+PacketInfo *newPacketInfo (Client *client, char *packetData, size_t packetSize) {
+
+    PacketInfo *new = NULL;
+
+    /* if (client->packetPool) {
+        if (POOL_SIZE (client->packetPool) > 0) {
+            new = pool_pop (client->packetPool);
+            if (!new) new = (PacketInfo *) malloc (sizeof (PacketInfo));
+        }
+    }
+
+    else new = (PacketInfo *) malloc (sizeof (PacketInfo));
+
+    new->server = server;
+    new->client = client;
+    new->packetSize = packetSize;
+
+    // copy the contents from the entry buffer to the packet info
+    strcpy (new->packetData, packetData); */
+
+    return new;
+
+}
+
+// FIXME: used to destroy remaining packet info in the pools
+void destroyPacketInfo (void *data) {}
 
 // check for packets with bad size, protocol, version, etc
 u8 checkPacket (size_t packetSize, char *packetData, PacketType expectedType) {
@@ -135,6 +164,167 @@ i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flag
     }
 
     return 0;
+
+}
+
+#pragma endregion
+
+/*** CONNECTION HANDLER ***/
+
+#pragma region CONNECTION HANDLER
+
+// 01/11/2018 -- called with the th pool to handle a new packet
+void handlePacket (void *data) {
+
+    if (!data) {
+        #ifdef CLIENT_DEBUG
+            logMsg (stdout, WARNING, PACKET, "Can't handle NULL packet data.");
+        #endif
+        return;
+    }
+
+    PacketInfo *packet = (PacketInfo *) data;
+
+    if (!checkPacket (packet->packetSize, packet->packetData, DONT_CHECK_TYPE))  {
+        PacketHeader *header = (PacketHeader *) packet->packetData;
+
+        switch (header->packetType) {
+            // handles an error from the server
+            case ERROR_PACKET: break;
+
+            // handles authentication packets
+            case AUTHENTICATION: break;
+
+            // handles a request made from the server
+            case REQUEST: break;
+
+            // handle a game packet sent from the server
+            case GAME_PACKET: break;
+
+            case TEST_PACKET: 
+                #ifdef CLIENT_DEBUG
+                    logMsg (stdout, TEST, NO_TYPE, "Got a successful test packet!"); 
+                #endif
+                // pool_push (packet->server->packetPool, packet);
+                break;
+
+            default: 
+                #ifdef CLIENT_DEBUG
+                    logMsg (stderr, WARNING, PACKET, "Got a packet of incompatible type.");
+                #endif 
+                // pool_push (packet->server->packetPool, packet);
+                break;
+        }
+    }
+
+}
+
+// FIXME: packets and thpool
+// TODO: maybe later we can use this to connect to other clients directly?
+// 18/11/2018 - adding support for async request and responses using a similar logic
+// as in the server. We only support poll to be used when connected to the server.
+u8 client_poll (Client *client) {
+
+    if (!client) {
+        logMsg (stderr, ERROR, SERVER, "Can't poll on a NULL client!");
+        return 1;
+    }
+
+    // TODO: do we also want to connect to other clients?
+    // i32 serverSocket;   
+	// struct sockaddr_storage serverAddress;
+	// memset (&serverAddress, 0, sizeof (struct sockaddr_storage));
+    // socklen_t sockLen = sizeof (struct sockaddr_storage);
+
+    ssize_t rc;                                   // retval from recv -> size of buffer
+    char packetBuffer[MAX_UDP_PACKET_SIZE];       // buffer for data recieved from fd
+    PacketInfo *info = NULL;
+
+    int poll_retval;    // ret val from poll function
+    int currfds;        // copy of n active server poll fds
+
+    int newfd;          // fd of new connection
+
+    #ifdef CLIENT_DEBUG
+        logMsg (stdout, SUCCESS, CLIENT, "Client has started!");
+        logMsg (stdout, DEBUG_MSG, CLIENT, "Waiting for connections...");
+    #endif
+
+    // 18/11/2018 - we only want to communicate with the server
+    while (client->isConnected) {
+        poll_retval = poll (client->fds, client->nfds, client->pollTimeout);
+
+        // poll failed
+        if (poll_retval < 0) {
+            logMsg (stderr, ERROR, CLIENT, "Poll failed!");
+            perror ("Error");
+            client->isConnected;
+            break;
+        }
+
+        // if poll has timed out, just continue to the next loop... 
+        if (poll_retval == 0) {
+            #ifdef DEBUG
+                logMsg (stdout, DEBUG_MSG, CLIENT, "Poll timeout.");
+            #endif
+            continue;
+        }
+
+        // one or more fd(s) are readable, need to determine which ones they are
+        // currfds = server->nfds;
+        for (u8 i = 0; i < 2; i++) {
+            if (client->fds[i].revents == 0) continue;
+
+            // FIXME: how to hanlde an unexpected result??
+            if (client->fds[i].revents != POLLIN) {
+                // TODO: log more detailed info about the fd, or client, etc
+                // printf("  Error! revents = %d\n", fds[i].revents);
+                logMsg (stderr, ERROR, CLIENT, "Unexpected poll result!");
+            }
+
+            // 18/11/2018 -- we only want to be connected to the server!
+            // listening fd is readable (client socket)
+            if (client->fds[i].fd == client->clientSock) {
+                #ifdef CLIENT_DEBUG
+                    logMsg (stdout, WARNING, CLIETN, "Some tried to connect to this client.");
+                #endif
+            }
+
+            // not the clitn socket, so the server fd must be readable
+            else {
+                // recive all incoming data from this socket
+                // TODO: 03/11/2018 - add support for multiple reads to the socket
+                // what happens if my buffer isn't enough, for example a larger file?
+                do {
+                    rc = recv (client->fds[i].fd, packetBuffer, sizeof (packetBuffer), 0);
+                    
+                    // recv error - no more data to read
+                    if (rc < 0) {
+                        if (errno != EWOULDBLOCK) {
+                            logMsg (stderr, ERROR, CLIENT, "Recv failed!");
+                            perror ("Error:");
+                        }
+
+                        break;  // there is no more data to handle
+                    }
+
+                    if (rc == 0) {
+                        // man recv -> steam socket perfomed an orderly shutdown
+                        // but in dgram it might mean something?
+                        // 03/11/2018 -- we just ignore the packet or whatever
+                        break;
+                    }
+
+                    // 18/11/2018 - we only handle a single connection with the server
+                    info = newPacketInfo (server, 
+                        getClientBySock (server->clients, server->fds[i].fd), packetBuffer, rc);
+
+                    // thpool_add_work (server->thpool, (void *) handlePacket, info);
+                } while (true);
+            }
+
+        }
+    }
 
 }
 
@@ -336,115 +526,6 @@ Client *client_create (Client *client) {
 
 }
 
-// TODO: maybe later we can use this to connect to other clients directly?
-// 18/11/2018 - adding support for async request and responses using a similar logic
-// as in the server. We only support poll to be used when connected to the server.
-u8 client_poll (Client *client) {
-
-    if (!client) {
-        logMsg (stderr, ERROR, SERVER, "Can't poll on a NULL client!");
-        return 1;
-    }
-
-    // TODO: do we also want to connect to other clients?
-    // i32 serverSocket;   
-	// struct sockaddr_storage serverAddress;
-	// memset (&serverAddress, 0, sizeof (struct sockaddr_storage));
-    // socklen_t sockLen = sizeof (struct sockaddr_storage);
-
-    ssize_t rc;                                   // retval from recv -> size of buffer
-    char packetBuffer[MAX_UDP_PACKET_SIZE];       // buffer for data recieved from fd
-    PacketInfo *info = NULL;
-
-    int poll_retval;    // ret val from poll function
-    int currfds;        // copy of n active server poll fds
-
-    int newfd;          // fd of new connection
-
-    #ifdef CLIENT_DEBUG
-        logMsg (stdout, SUCCESS, CLIENT, "Client has started!");
-        logMsg (stdout, DEBUG_MSG, CLIENT, "Waiting for connections...");
-    #endif
-
-    // 18/11/2018 - we only want to communicate with the server
-    while (client->isConnected) {
-        poll_retval = poll (client->fds, client->nfds, client->pollTimeout);
-
-        // poll failed
-        if (poll_retval < 0) {
-            logMsg (stderr, ERROR, CLIENT, "Poll failed!");
-            perror ("Error");
-            client->isConnected;
-            break;
-        }
-
-        // if poll has timed out, just continue to the next loop... 
-        if (poll_retval == 0) {
-            #ifdef DEBUG
-                logMsg (stdout, DEBUG_MSG, CLIENT, "Poll timeout.");
-            #endif
-            continue;
-        }
-
-        // one or more fd(s) are readable, need to determine which ones they are
-        // currfds = server->nfds;
-        for (u8 i = 0; i < 2; i++) {
-            if (client->fds[i].revents == 0) continue;
-
-            // FIXME: how to hanlde an unexpected result??
-            if (client->fds[i].revents != POLLIN) {
-                // TODO: log more detailed info about the fd, or client, etc
-                // printf("  Error! revents = %d\n", fds[i].revents);
-                logMsg (stderr, ERROR, CLIENT, "Unexpected poll result!");
-            }
-
-            // 18/11/2018 -- we only want to be connected to the server!
-            // listening fd is readable (client socket)
-            if (client->fds[i].fd == client->clientSock) {
-                #ifdef CLIENT_DEBUG
-                    logMsg (stdout, WARNING, CLIETN, "Some tried to connect to this client.");
-                #endif
-            }
-
-            // not the clitn socket, so the server fd must be readable
-            else {
-                // recive all incoming data from this socket
-                // TODO: 03/11/2018 - add support for multiple reads to the socket
-                // what happens if my buffer isn't enough, for example a larger file?
-                do {
-                    rc = recv (client->fds[i].fd, packetBuffer, sizeof (packetBuffer), 0);
-                    
-                    // recv error - no more data to read
-                    if (rc < 0) {
-                        if (errno != EWOULDBLOCK) {
-                            logMsg (stderr, ERROR, CLIENT, "Recv failed!");
-                            perror ("Error:");
-                        }
-
-                        break;  // there is no more data to handle
-                    }
-
-                    if (rc == 0) {
-                        // man recv -> steam socket perfomed an orderly shutdown
-                        // but in dgram it might mean something?
-                        // 03/11/2018 -- we just ignore the packet or whatever
-                        break;
-                    }
-
-                    // FIXME:
-                    // info = newPacketInfo (server, 
-                    //     getClientBySock (server->clients, server->fds[i].fd), packetBuffer, rc);
-
-                    // thpool_add_work (server->thpool, (void *) handlePacket, info);
-                } while (true);
-            }
-
-        }
-    }
-
-}
-
-
 // try to connect a client to an address (server) with exponential backoff
 u8 connectRetry (Client *client, const struct sockaddr *address) {
 
@@ -512,6 +593,12 @@ u8 client_connectToServer (Client *client) {
     // try to connect to the server with exponential backoff
     if (!connectRetry (client, (const struct sockaddr *) &server)) {
         logMsg (stdout, SUCCESS, CLIENT, "Connected to server!");
+
+        // TODO: 18/11/2018 -- considreing the new poll structure
+        // we need to have our poll values initialized
+        // we need to take into account the poll structure and make async reqs
+        // and handle the packets as in the server with a switch
+        // we need to start the client poll
 
         // FIXME: 18/11/2018 -- 17:34 -- we need to take into account the client poll
 
