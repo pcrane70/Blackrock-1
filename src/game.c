@@ -9,14 +9,14 @@
 #include "item.h"
 #include "map.h"
 
-#include "objectPool.h"
+#include "utils/objectPool.h"
 
 #include "utils/myUtils.h"
 #include "utils/dlist.h"
 
 #include "ui/gameUI.h"  // for the message log
 
-#include "config.h"     // for getting the data
+#include "utils/config.h"     // for getting the data
 
 #include "network/client.h"
 #include "utils/log.h"
@@ -100,14 +100,15 @@ void initGame (void) {
     combat = dlist_init (free);
     loot = dlist_init (free);
 
+    // FIXME: pass the correct destroy function!!!
     // init our pools
-    goPool = initPool ();
-    posPool = initPool ();
-    graphicsPool = initPool ();
-    physPool = initPool ();
-    movePool = initPool ();
-    combatPool = initPool ();
-    lootPool = initPool ();
+    goPool = pool_init (free);
+    posPool = pool_init (free);
+    graphicsPool = pool_init (free);
+    physPool = pool_init (free);
+    movePool = pool_init (free);
+    combatPool = pool_init (free);
+    lootPool = pool_init (free);
 
     // init the message log
     messageLog = dlist_init (free);
@@ -178,7 +179,7 @@ GameObject *createGO (void) {
 
     // first check if there is an available one in the pool
     if (POOL_SIZE (goPool) > 0) {
-        go = (GameObject *) pop (goPool);
+        go = (GameObject *) pool_pop (goPool);
         if (go == NULL) go = (GameObject *) malloc (sizeof (GameObject));
     } 
     else go = (GameObject *) malloc (sizeof (GameObject));
@@ -204,7 +205,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Position *newPos = NULL;
 
-            if ((POOL_SIZE (posPool) > 0)) newPos = (Position *) pop (posPool);
+            if ((POOL_SIZE (posPool) > 0)) newPos = (Position *) pool_pop (posPool);
             else newPos = (Position *) malloc (sizeof (Position));
 
             Position *posData = (Position *) data;
@@ -221,7 +222,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Graphics *newGraphics = NULL;
 
-            if ((POOL_SIZE (graphicsPool) > 0)) newGraphics = (Graphics *) pop (graphicsPool);
+            if ((POOL_SIZE (graphicsPool) > 0)) newGraphics = (Graphics *) pool_pop (graphicsPool);
             else newGraphics = (Graphics *) malloc (sizeof (Graphics));
 
             Graphics *graphicsData = (Graphics *) data;
@@ -240,7 +241,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Physics *newPhys = NULL;
 
-            if ((POOL_SIZE (physPool) > 0)) newPhys = (Physics *) pop (physPool);
+            if ((POOL_SIZE (physPool) > 0)) newPhys = (Physics *) pool_pop (physPool);
             else newPhys = (Physics *) malloc (sizeof (Physics));
 
             Physics *physData = (Physics *) data;
@@ -256,7 +257,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Movement *newMove = NULL;
 
-            if ((POOL_SIZE (movePool) > 0)) newMove = (Movement *) pop (movePool);
+            if ((POOL_SIZE (movePool) > 0)) newMove = (Movement *) pool_pop (movePool);
             else newMove = (Movement *) malloc (sizeof (Movement));
 
             Movement *movData = (Movement *) data;
@@ -275,7 +276,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
 
             Combat *newCombat = NULL;
 
-            if ((POOL_SIZE (combatPool) > 0)) newCombat = (Combat *) pop (combatPool);
+            if ((POOL_SIZE (combatPool) > 0)) newCombat = (Combat *) pool_pop (combatPool);
             else newCombat = (Combat *) malloc (sizeof (Combat));
 
             Combat *combatData = (Combat *) data;
@@ -300,7 +301,7 @@ void addComponent (GameObject *go, GameComponent type, void *data) {
             if (getComponent (go, type) != NULL) return;
             Loot *newLoot = NULL;
 
-            if (POOL_SIZE (lootPool) > 0) newLoot = (Loot *) pop (lootPool);
+            if (POOL_SIZE (lootPool) > 0) newLoot = (Loot *) pool_pop (lootPool);
             else newLoot = (Loot *) malloc (sizeof (Loot));
 
             Loot *lootData = (Loot *) data;
@@ -331,7 +332,7 @@ void removeComponent (GameObject *go, GameComponent type) {
             ListElement *e = dlist_get_ListElement (positions, posComp);
             void *posData = NULL;
             if (e != NULL) posData = dlist_remove_element (positions, e);
-            push (posPool, posData);
+            pool_push (posPool, posData);
             go->components[type] = NULL;
         } break;
         case GRAPHICS: {
@@ -340,7 +341,7 @@ void removeComponent (GameObject *go, GameComponent type) {
             ListElement *e = dlist_get_ListElement (graphics, graComp);
             void *graData = NULL;
             if (e != NULL) graData = dlist_remove_element (graphics, e);
-            push (graphicsPool, graData);
+            pool_push (graphicsPool, graData);
             go->components[type] = NULL;
         } break;
         case PHYSICS: {
@@ -349,7 +350,7 @@ void removeComponent (GameObject *go, GameComponent type) {
             ListElement *e = dlist_get_ListElement (physics, physComp);
             void *physData = NULL;
             if (e != NULL) physData = dlist_remove_element (physics, e);
-            push (physPool, physData);
+            pool_push (physPool, physData);
             go->components[type] = NULL;
         } break;
         case MOVEMENT: {
@@ -358,7 +359,7 @@ void removeComponent (GameObject *go, GameComponent type) {
             ListElement *e = dlist_get_ListElement (movement, moveComp);
             void *moveData = NULL;
             if (e != NULL) moveData = dlist_remove_element (movement, e);
-            push (movePool, moveData);
+            pool_push (movePool, moveData);
             go->components[type] = NULL;
         } break;
         case COMBAT: {
@@ -367,7 +368,7 @@ void removeComponent (GameObject *go, GameComponent type) {
             ListElement *e = dlist_get_ListElement (combat, combatComp);
             void *combatData = NULL;
             if (e != NULL) combatData = dlist_remove_element (combat, e);
-            push (combatPool, combatData);
+            pool_push (combatPool, combatData);
             go->components[type] = NULL;
         } break;
         case LOOT: {
@@ -376,7 +377,7 @@ void removeComponent (GameObject *go, GameComponent type) {
             ListElement *e = dlist_get_ListElement (loot, lootComp);
             void *lootData = NULL;
             if (e != NULL) lootData = dlist_remove_element (loot, e);
-            push (lootPool, lootData);
+            pool_push (lootPool, lootData);
             go->components[type] = NULL;
         } break;
         case EVENT: {
@@ -436,7 +437,7 @@ void destroyGO (GameObject *go) {
     ListElement *e = dlist_get_ListElement (gameObjects, go);
     if (e != NULL) {
         void *data = dlist_remove_element (gameObjects, e);
-        if (data != NULL) push (goPool, data);
+        if (data != NULL) pool_push (goPool, data);
     }
 
 }
@@ -467,12 +468,12 @@ void cleanUpGame (void) {
     fprintf (stdout, "Done cleanning up loot.\n");
     
     // cleanup the pools
-    clearPool (goPool);
-    clearPool (posPool);
-    clearPool (graphicsPool);
-    clearPool (physPool);
-    clearPool (movePool);
-    clearPool (combatPool);
+    pool_clear (goPool);
+    pool_clear (posPool);
+    pool_clear (graphicsPool);
+    pool_clear (physPool);
+    pool_clear (movePool);
+    pool_clear (combatPool);
 
     fprintf (stdout, "Done cleaning up pools.\n");
 
@@ -1366,8 +1367,7 @@ void destroyLoot (void) {
                 }
             } 
         }
-        clearPool (lootPool);
-
+        pool_clear (lootPool);
     }
 
 }

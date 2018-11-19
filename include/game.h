@@ -6,7 +6,7 @@
 #include "map.h"    // for Point
 
 #include "utils/dlist.h"
-#include "objectPool.h"
+#include "utils/objectPool.h"
 
 #define COMP_COUNT      7
 

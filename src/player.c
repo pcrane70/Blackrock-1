@@ -4,7 +4,7 @@
 #include "player.h"
 #include "item.h"
 
-#include "config.h"
+#include "utils/config.h"
 
 #include "utils/myUtils.h"
 

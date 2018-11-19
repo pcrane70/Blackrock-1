@@ -14,8 +14,8 @@
 
 #include "network/client.h"
 
-#include "objectPool.h"
-#include "config.h"
+#include "utils/objectPool.h"
+#include "utils/config.h"
 #include "utils/log.h"
 #include "utils/myUtils.h"
 
@@ -315,9 +315,10 @@ u8 client_poll (Client *client) {
                         break;
                     }
 
+                    // FIXME:!!!
                     // 18/11/2018 - we only handle a single connection with the server
-                    info = newPacketInfo (server, 
-                        getClientBySock (server->clients, server->fds[i].fd), packetBuffer, rc);
+                    // info = newPacketInfo (server, 
+                    //     getClientBySock (server->clients, server->fds[i].fd), packetBuffer, rc);
 
                     // thpool_add_work (server->thpool, (void *) handlePacket, info);
                 } while (true);

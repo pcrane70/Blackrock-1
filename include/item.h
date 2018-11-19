@@ -2,7 +2,7 @@
 #define ITEM_H
 
 #include "utils/dlist.h"
-#include "objectPool.h"
+#include "utils/objectPool.h"
 
 /*** ITEM RARITY ***/
 

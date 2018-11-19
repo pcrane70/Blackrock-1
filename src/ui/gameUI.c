@@ -15,7 +15,7 @@
 #include "input.h"
 
 #include "utils/dlist.h"       // for messages
-#include "objectPool.h"
+#include "utils/objectPool.h"
 
 #include "utils/myUtils.h"
 
@@ -257,7 +257,7 @@ LootRect *createLootRect (u8 y, Item *i) {
     LootRect *new = NULL;
 
     if (POOL_SIZE (lootRectsPool) > 0) {
-        new = (LootRect *) pop (lootRectsPool);
+        new = (LootRect *) pool_pop (lootRectsPool);
         if (new == NULL) {
             new = (LootRect *) malloc (sizeof (LootRect));
             new->bgRect = (UIRect *) malloc (sizeof (UIRect));
@@ -314,7 +314,7 @@ void destroyLootRects (void) {
             }
         }
 
-        clearPool (lootRectsPool);
+        pool_clear (lootRectsPool);
     } 
 
 }
@@ -339,7 +339,7 @@ void updateLootUI (u8 yIdx) {
     if (activeLootRects != NULL && (LIST_SIZE (activeLootRects) > 0)) {
         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
             if (count == yIdx) {
-                push (lootRectsPool, dlist_remove_element (activeLootRects, e));
+                pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
                 break;
             }
 
@@ -391,7 +391,7 @@ void hideLoot (void) {
     // deactivate the loot rects and send them to the pool
     if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
-            push (lootRectsPool, dlist_remove_element (activeLootRects, e));
+            pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
 
         dlist_reset (activeLootRects);
     }
@@ -1637,9 +1637,9 @@ UIScreen *gameScene (void) {
     inventoryRects = initInventoryRects ();
     characterRects = initCharacterRects ();
 
-    // FIXME:
+    // FIXME: pass the correct destroy function
     activeLootRects = dlist_init (free);
-    lootRectsPool = initPool ();
+    lootRectsPool = pool_init (free);
 
     activeView = mapView;
 

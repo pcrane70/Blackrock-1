@@ -1,6 +1,8 @@
 #ifndef POOL_H
 #define POOL_H
 
+#include <stdint.h>
+
 typedef struct PoolMember {
 
     void *data;
@@ -11,9 +13,9 @@ typedef struct PoolMember {
 // The pool is just a custom stack implementation
 typedef struct Pool {
 
-    unsigned int size;
-
+    uint32_t size;
     PoolMember *top;
+    void (*destroy)(void *data);
 
 } Pool;
 
@@ -25,9 +27,9 @@ typedef struct Pool {
 #define POOL_DATA(member) ((member)->data)
 
 
-extern Pool *initPool (void);
-extern void push (Pool *, void *data);
-extern void *pop (Pool *);
-extern void clearPool (Pool *);
+extern Pool *pool_init (void (*destroy)(void *data));
+extern void pool_push (Pool *, void *data);
+extern void *pool_pop (Pool *);
+extern void pool_clear (Pool *);
 
 #endif

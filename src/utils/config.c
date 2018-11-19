@@ -6,7 +6,7 @@
 
 #include "utils/dlist.h"
 
-#include "config.h"
+#include "utils/config.h"
 
 
 /*** PARSE THE FILE ***/

@@ -7,7 +7,7 @@
 #include "player.h"
 
 #include "utils/dlist.h"
-#include "objectPool.h"
+#include "utils/objectPool.h"
 
 #include "ui/gameUI.h" // for strings
 
@@ -31,7 +31,8 @@ extern void die (char *);
 void initItems (void) {
 
     items = dlist_init (free);
-    itemsPool = initPool ();
+    // FIXME: pass the correct destroy function
+    itemsPool = pool_init (free);
 
     // connect to the items db
     if (sqlite3_open (itemsDbPath, &itemsDb) != SQLITE_OK) {
@@ -55,7 +56,7 @@ Item *newItem (void) {
 
     // check if there is a an available one in the items pool
     // if (POOL_SIZE (itemsPool) > 0) {
-    //     i = (Item *) pop (itemsPool);
+    //     i = (Item *) pool_pop (itemsPool);
     //     if (i == NULL) i = (Item *) malloc (sizeof (Item));
     // } 
     // else i = (Item *) malloc (sizeof (Item));
@@ -87,7 +88,7 @@ void addGameComponent (Item *item, GameComponent type, void *data) {
             if (getGameComponent (item, type) != NULL) return;
             Position *newPos = NULL;
             if (POOL_SIZE (posPool) > 0) {
-                newPos = (Position *) pop (posPool);
+                newPos = (Position *) pool_pop (posPool);
                 if (newPos == NULL) newPos = (Position *) malloc (sizeof (Position));
             }
             else newPos = (Position *) malloc (sizeof (Position));
@@ -105,7 +106,7 @@ void addGameComponent (Item *item, GameComponent type, void *data) {
             if (getGameComponent (item, type) != NULL) return;
             Graphics *newGraphics = NULL;
             if (POOL_SIZE (graphicsPool) > 0) {
-                newGraphics = (Graphics *) pop (graphicsPool);
+                newGraphics = (Graphics *) pool_pop (graphicsPool);
                 if (newGraphics == NULL) newGraphics = (Graphics *) malloc (sizeof (Graphics));
             }
             else newGraphics = (Graphics *) malloc (sizeof (Graphics));
@@ -172,7 +173,7 @@ void removeGameComponent (Item *item, GameComponent type) {
             Position *posComp = (Position *) getGameComponent (item, type);
             if (posComp != NULL) {
                 ListElement *e = dlist_get_ListElement (positions, posComp);
-                if (e != NULL) push (posPool, dlist_remove_element (positions, e));
+                if (e != NULL) pool_push (posPool, dlist_remove_element (positions, e));
                 item->components[type] = NULL;
             }
         } break;
@@ -180,7 +181,7 @@ void removeGameComponent (Item *item, GameComponent type) {
             Graphics *graComp = (Graphics *) getGameComponent (item, type);
             if (graComp != NULL) {
                 ListElement *e = dlist_get_ListElement (graphics, graComp);
-                if (e != NULL) push (graphicsPool, dlist_remove_element (graphics, e));
+                if (e != NULL) pool_push (graphicsPool, dlist_remove_element (graphics, e));
                 item->components[type] = NULL;
             }
         } break;
@@ -220,7 +221,7 @@ Item *destroyItem (Item *item) {
         for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
         for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
 
-        push (itemsPool, item);
+        pool_push (itemsPool, item);
     }
 
     return NULL;
