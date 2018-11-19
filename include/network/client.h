@@ -74,6 +74,7 @@ typedef struct Client {
     // "192.168.1.100"
 
     bool blocking;          // 31/10/2018 - sokcet fd is blocking?
+    bool running;           // the client is ready to listen & send
     bool isConnected;       // connected to the server
 
     // TODO: in a more complex application, maybe the client needs to open

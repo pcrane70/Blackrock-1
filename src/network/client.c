@@ -213,6 +213,9 @@ void handlePacket (void *data) {
         PacketHeader *header = (PacketHeader *) packet->packetData;
 
         switch (header->packetType) {
+            // handles a packet with server info
+            case SERVER_PACKET: handle_serverInfo (packet); break;
+
             // handles an error from the server
             case ERROR_PACKET: break;
 
@@ -243,16 +246,23 @@ void handlePacket (void *data) {
 
 }
 
-// FIXME: packets and thpool
+// TODO: 18/11/2018 -- 22:17 -- maybe we can't have the same logic as in the server,
+// because the client socket is the one that connect to the server!!!
+// so we might need the poll structure to be one levele above and each time have a new connection, 
+// we need to create a new client structure!!!
+// but for now i think we can handle one connection just for testing...
+
 // TODO: maybe later we can use this to connect to other clients directly?
 // 18/11/2018 - adding support for async request and responses using a similar logic
 // as in the server. We only support poll to be used when connected to the server.
-u8 client_poll (Client *client) {
+u8 client_poll (void *data) {
 
-    if (!client) {
+    if (!data) {
         logMsg (stderr, ERROR, SERVER, "Can't poll on a NULL client!");
         return 1;
     }
+
+    Client *client = (Client *) data;
 
     // TODO: do we also want to connect to other clients?
     // i32 serverSocket;   
@@ -347,6 +357,68 @@ u8 client_poll (Client *client) {
 
 }
 
+/*** SERVER ***/
+
+#pragma region SERVER
+
+// FIXME: check for the correct values to make this a flexible framework!!
+// check to see if we are connecting to the right server
+u8 checkServerInfo (Server *server) {
+
+    if (server) {
+        if (!server->isRunning) return 1;
+        // if (server->type != GAME_SERVER)
+    }
+
+}
+
+// TODO: we need to have a server structure that has the expected parameters of the server
+// that we want to connect to...
+// FIXME: 
+void handle_serverInfo (PacketInfo *packet) {
+
+    // FIXME: 18/11/2018 -- 17:34 -- we need to take into account the client poll
+
+        // we expect a welcome message from the server -> a server info packet
+        /* char serverResponse[2048];
+        ssize_t rc = recv (client->clientSock, serverResponse, sizeof (serverResponse), 0);
+        if (rc > 0) {
+            // process packet
+            if (!checkPacket (rc, serverResponse, SERVER_PACKET)) {
+                Server *serverData = (Server *) (serverResponse + sizeof (PacketHeader));
+
+                // TODO: check server info to see if we are making a proper connection
+                if (serverData->authRequired) {
+                    // FIXME: we need to send the server the correct authentication info!!
+
+                    // we expect a response from the server
+                }
+
+                // make a copy of the server data
+                if (serverInfo) free (serverInfo);
+
+                serverInfo = (Server *) malloc (sizeof (Server));
+                serverInfo->authRequired = serverData->authRequired;
+                serverInfo->isRunning = serverData->isRunning;
+                serverInfo->port = serverData->port;
+                serverInfo->protocol = serverData->protocol;
+                serverInfo->type = serverData->type;
+                serverInfo->useIpv6 = serverData->useIpv6;
+
+                client->isConnected = true;
+                logMsg (stdout, SUCCESS, NO_TYPE, "Connected to server!");
+
+                return 0;   // success connecting to server
+            }
+
+            // TODO: what to do next? --> retry the connection?
+            else logMsg (stderr, ERROR, PACKET, "Got an invalid server info packet!");
+        } */
+
+}
+
+#pragma endregion
+
 #pragma endregion
 
 /*** CLIENT LOGIC ***/
@@ -377,6 +449,7 @@ Client *newClient (Client *c) {
     // set default values
     newClient->isConnected = false;
     newClient->blocking = true;
+    newClient->running = false;
 
     newClient->isGameServer = false;
     newClient->inLobby = false;
@@ -451,9 +524,7 @@ void initClientData (Client *client) {
     if (client) {
         // init the poll strcuture and add the client socket as the first one
         memset (client->fds, 0, sizeof (client->fds));
-        client->fds[0].fd = client->clientSock;
-        client->fds[0].events = POLLIN;
-        client->nfds = 1;
+        client->nfds = 0;
 
         // TODO: maybe load this form the config file as in the server    
         client->pollTimeout = DEFAULT_POLL_TIMEOUT;
@@ -541,6 +612,29 @@ u8 client_init (Client *client, Config *cfg) {
     
 }
 
+// prepare the client to listen and send info
+u8 client_start (Client *client) {
+
+    if (!client->running) {
+        // start the client poll in its own thread so that we can recieve packets
+        if (client->thpool) thpool_add_work (client->thpool, (void *) client_poll, client);
+        else {
+            logMsg (stderr, ERROR, CLIENT, "Client doesn't have a referebce to a thpool!");
+            return 1;
+        }
+
+        client->running = true;
+        
+        return 0;
+    }
+
+    else {
+        logMsg (stderr, ERROR, CLIENT, "Can't start the client. It is already running!");
+        return 1;
+    }
+
+}
+
 // creates a new client
 Client *client_create (Client *client) {
 
@@ -586,6 +680,33 @@ Client *client_create (Client *client) {
 
 }
 
+// check that the client has the correct values
+u8 client_check (Client *client) {
+
+    if (!client) {
+        logMsg (stderr, ERROR, CLIENT, "A NULL client can't connect to a server!");
+        return 1;
+    }
+
+    if (!client->running) {
+        logMsg (stderr, ERROR, CLIENT, "Need to start client first!");
+        return 1;
+    }
+
+    if (client->isConnected) {
+        logMsg (stdout, WARNING, CLIENT, "The client is already connected to the server.");
+        return 1;
+    }
+
+    if (client->protocol != IPPROTO_TCP) {
+        logMsg (stderr, ERROR, CLIENT, "Can't connect client. Wrong protocol!");
+        return 1;
+    }
+
+    return 0;
+
+}
+
 // try to connect a client to an address (server) with exponential backoff
 u8 connectRetry (Client *client, const struct sockaddr *address) {
 
@@ -601,140 +722,77 @@ u8 connectRetry (Client *client, const struct sockaddr *address) {
 
 }
 
-// FIXME: check for the correct values to make this a flexible framework!!
-// check to see if we are connecting to the right server
-u8 checkServerInfo (Server *server) {
-
-    if (server) {
-        if (!server->isRunning) return 1;
-        // if (server->type != GAME_SERVER)
-    }
-
-}
-
-// FIXME: we need to start the client before we can call this!! for the poll structure
+// FIXME: server ip addresses
 // connects the client to the specified server
 u8 client_connectToServer (Client *client) {
 
-    // init a new client
-    if (!client) client = client_create (NULL);
+    if (!client_check (client)) {
+        // set the address of the server 
+        struct sockaddr_storage server;
+        memset (&server, 0, sizeof (struct sockaddr_storage));
 
-    if (client->isConnected) {
-        logMsg (stdout, WARNING, CLIENT, "The client is already connected to the server.");
-        return 1;
-    }
+        // FIXME: ipv6 ip address
+        if (client->useIpv6) {
+            struct sockaddr_in6 *addr = (struct sockaddr_in6 *) &server;
+            addr->sin6_family = AF_INET6;
+            addr->sin6_addr = in6addr_any;      
+            addr->sin6_port = htons (client->port);
+        } 
 
-    if (client->protocol != IPPROTO_TCP) {
-        logMsg (stderr, ERROR, CLIENT, "Can't connect client. Wrong protocol!");
-        return 1;
-    }
+        // FIXME: get the ip address of the server!
+        else {
+            struct sockaddr_in *addr = (struct sockaddr_in *) &server;
+            addr->sin_family = AF_INET;
+            addr->sin_addr.s_addr = inet_addr ();
+            addr->sin_port = htons (client->port);
+        } 
 
-    // set the address of the server 
-    struct sockaddr_storage server;
-    memset (&server, 0, sizeof (struct sockaddr_storage));
-    
-    if (client->useIpv6) {
-		struct sockaddr_in6 *addr = (struct sockaddr_in6 *) &server;
-		addr->sin6_family = AF_INET6;
-		addr->sin6_addr = in6addr_any;      // FIXME:
-		addr->sin6_port = htons (client->port);
-	} 
+        // try to connect to the server with exponential backoff
+        if (!connectRetry (client, (const struct sockaddr *) &server)) {
+            // add the new connection socket to the poll structure
+            client->fds[client->nfds].fd = client->clientSock;
+            client->fds[client->nfds].events = POLLIN;
+            client->nfds++;
 
-    else {
-		struct sockaddr_in *addr = (struct sockaddr_in *) &server;
-		addr->sin_family = AF_INET;
-		addr->sin_addr.s_addr = inet_addr ();
-		addr->sin_port = htons (client->port);
-	} 
+            client->isConnected = true;
+            logMsg (stdout, SUCCESS, CLIENT, "Connected to server!");
 
-    // try to connect to the server with exponential backoff
-    if (!connectRetry (client, (const struct sockaddr *) &server)) {
-        logMsg (stdout, SUCCESS, CLIENT, "Connected to server!");
+            return 0;   // connected to the server
+        }
 
-        // TODO: 18/11/2018 -- considreing the new poll structure
-        // we need to have our poll values initialized
-        // we need to take into account the poll structure and make async reqs
-        // and handle the packets as in the server with a switch
-        // we need to start the client poll
-
-        // FIXME: 18/11/2018 -- 17:34 -- we need to take into account the client poll
-
-        // we expect a welcome message from the server -> a server info packet
-        /* char serverResponse[2048];
-        ssize_t rc = recv (client->clientSock, serverResponse, sizeof (serverResponse), 0);
-        if (rc > 0) {
-            // process packet
-            if (!checkPacket (rc, serverResponse, SERVER_PACKET)) {
-                Server *serverData = (Server *) (serverResponse + sizeof (PacketHeader));
-
-                // TODO: check server info to see if we are making a proper connection
-                if (serverData->authRequired) {
-                    // FIXME: we need to send the server the correct authentication info!!
-
-                    // we expect a response from the server
-                }
-
-                // make a copy of the server data
-                if (serverInfo) free (serverInfo);
-
-                serverInfo = (Server *) malloc (sizeof (Server));
-                serverInfo->authRequired = serverData->authRequired;
-                serverInfo->isRunning = serverData->isRunning;
-                serverInfo->port = serverData->port;
-                serverInfo->protocol = serverData->protocol;
-                serverInfo->type = serverData->type;
-                serverInfo->useIpv6 = serverData->useIpv6;
-
-                client->isConnected = true;
-                logMsg (stdout, SUCCESS, NO_TYPE, "Connected to server!");
-
-                return 0;   // success connecting to server
-            }
-
-            // TODO: what to do next? --> retry the connection?
-            else logMsg (stderr, ERROR, PACKET, "Got an invalid server info packet!");
-        } */
-    }
-
-    else {
-        logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
         // TODO: does this works properly?
-        fprintf (stderr, "%s\n", strerror (errno));
-        return 1;
+        else fprintf (stderr, "%s\n", strerror (errno));
+
     }
+
+    logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    return 1;
 
 }
 
 // disconnect from the server
 u8 client_disconnectFromServer (Client *client) {
 
-    if (!client) {
-        logMsg (stderr, ERROR, CLIENT, "Can't disconnect a NULL client from the server!");
-        return 1;
-    }
-
-    if (!client->isConnected) {
-        logMsg (stdout, WARNING, CLIENT, "The client is not connedted to ther server.");
-        return 1;
-    }
-
-    if (!client->protocol != IPPROTO_TCP) {
-        logMsg (stderr, ERROR, CLIENT, "Can't disconnect client. Wrong protocol!");
-        return 1;
-    }
-
-    // send a disconnect packet to the server
-    if (client->isGameServer) {
-        if (client->inLobby) {
-            u8 client_leaveLobby (Client *client);
-            client_leaveLobby (client);
+    if (!client_check (client)) {
+        // send a disconnect packet to the server
+        if (client->isGameServer) {
+            if (client->inLobby) {
+                u8 client_leaveLobby (Client *client);
+                client_leaveLobby (client);
+            }
         }
+
+        close (client->clientSock);
+        client->isConnected = false;
+
+        logMsg (stdout, SUCCESS, CLIENT, "Client disconnected from server!");
+
+        return 0;
     }
 
-    close (client->clientSock);
-    client->isConnected = false;
+    logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
 
-    return 0;
+    return 1;
 
 }
 
