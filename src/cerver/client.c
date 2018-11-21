@@ -206,6 +206,8 @@ i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flag
 
 #pragma region CONNECTION HANDLER
 
+void handle_serverInfo (PacketInfo *packet);
+
 // 01/11/2018 -- called with the th pool to handle a new packet
 void handlePacket (void *data) {
 
@@ -722,14 +724,14 @@ u8 client_check (Client *client) {
 u8 connectRetry (Client *client) {
 
     i32 numsec;
-    for (numsec = 1; numsec <= MAXSLEEP; numsec <<= 1) {
+    for (numsec = 2; numsec <= MAXSLEEP; numsec <<= 1) {
         if (!connect (client->clientSock, 
             (const struct sockaddr *) &client->connectionServer.address, 
             sizeof (struct sockaddr))) 
             return 0;   // the connection was successfull
 
         if (numsec <= MAXSLEEP / 2) sleep (numsec);
-    }
+    } 
 
     return 1;   // failed to connect to server after MAXSLEEP secs
 
@@ -803,8 +805,8 @@ u8 client_disconnectFromServer (Client *client) {
         // send a disconnect packet to the server
         if (client->isGameServer) {
             if (client->inLobby) {
-                u8 client_leaveLobby (Client *client);
-                client_leaveLobby (client);
+                u8 client_game_leaveLobby (Client *client);
+                client_game_leaveLobby (client);
             }
         }
 

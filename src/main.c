@@ -86,6 +86,9 @@ void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **scree
 
 /*** MAIN THREAD ***/
 
+// FIXME: 21/11/2018 - 5:07 - this is only for testing!!
+#include "cerver/client.h"
+
 int main (void) {
 
     srand ((unsigned) time (NULL));
@@ -107,6 +110,10 @@ int main (void) {
     setActiveScene (menuScene ());
 
     pthread_t gameThread;
+
+    Client *testClient = client_create (NULL);
+    client_start (testClient);
+    client_connectToServer (testClient, "192.168.100.10");
 
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;

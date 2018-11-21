@@ -18,7 +18,7 @@
 
 #include "utils/config.h"     // for getting the data
 
-#include "network/client.h"
+#include "cerver/client.h"
 #include "utils/log.h"
 
 /*** WORLD STATE ***/
@@ -1910,7 +1910,7 @@ Client *playerClient = NULL;
 // called from the main menu to request a new game lobby
 void multiplayer_createLobby (void) {
 
-    if (!client_connectToServer (playerClient)) {
+    /* if (!client_connectToServer (playerClient)) {
         if (!client_createLobby (playerClient, ARCADE)) {
             // TODO: move the player to the lobby screen
             // TODO: where do we recieve the data of the game lobby?
@@ -1921,7 +1921,7 @@ void multiplayer_createLobby (void) {
     }
     
     // TODO: give feedback to the player
-    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!"); */
 
 }
 
@@ -1929,7 +1929,7 @@ void multiplayer_createLobby (void) {
 // called from the main menu to request to join a game lobby
 void multiplayer_joinLobby (void) {
 
-    if (!client_connectToServer (playerClient)) {
+    /* if (!client_connectToServer (playerClient)) {
         if (!client_joinLobby (playerClient, ARCADE)) {
             // TODO: move the player to the lobby screen
             // TODO: where do we recieve the data of the game lobby?
@@ -1937,7 +1937,7 @@ void multiplayer_joinLobby (void) {
     }
 
     // TODO: give feedback to the player
-    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!"); */
 
 }
 

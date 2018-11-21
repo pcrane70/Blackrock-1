@@ -3,6 +3,12 @@
 
 #include <stdbool.h>
 
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
+
 #include <poll.h>
 
 #include "utils/objectPool.h"
@@ -115,6 +121,7 @@ typedef struct Client {
 } Client;
 
 extern Client *client_create (Client *);
+extern u8 client_start (Client *client);
 
 extern u8 client_connectToServer (Client *client, char *serverIp);
 extern u8 client_disconnectFromServer (Client *);
