@@ -122,6 +122,7 @@ typedef struct Client {
 
 extern Client *client_create (Client *);
 extern u8 client_start (Client *client);
+extern u8 client_teardown (Client *client);
 
 extern u8 client_connectToServer (Client *client, char *serverIp);
 extern u8 client_disconnectFromServer (Client *);
@@ -169,8 +170,6 @@ typedef enum PacketType {
     AUTHENTICATION,
     GAME_PACKET,
 
-    SERVER_TEARDOWN,    // FIXME: create a better packet type for server functions
-
     TEST_PACKET = 100,
     DONT_CHECK_TYPE,
 
@@ -188,7 +187,10 @@ typedef struct PacketHeader {
 // 01/11/2018 -- this indicates the data and more info about the packet type
 typedef enum RequestType {
 
-    REQ_GET_FILE = 1,
+    SERVER_INFO,
+    SERVER_TEARDOWN,
+
+    REQ_GET_FILE,
     POST_SEND_FILE,
     
     REQ_AUTH_CLIENT,
@@ -234,6 +236,8 @@ typedef struct ErrorData {
 } ErrorData;
 
 #pragma endregion
+
+extern u8 client_makeTestRequest (Client *client);
 
 /*** SERIALIZATION ***/
 

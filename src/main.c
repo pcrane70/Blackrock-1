@@ -113,7 +113,8 @@ int main (void) {
 
     Client *testClient = client_create (NULL);
     client_start (testClient);
-    client_connectToServer (testClient, "192.168.100.10");
+    client_connectToServer (testClient, "127.0.0.1");
+    // client_makeTestRequest (testClient);
 
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
@@ -146,6 +147,9 @@ int main (void) {
         if (sleepTime > 0) SDL_Delay (sleepTime);
 
     }
+
+    client_disconnectFromServer (testClient);
+    client_teardown (testClient);
 
     cleanUp (window, renderer);
 

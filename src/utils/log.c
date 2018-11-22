@@ -23,7 +23,7 @@ char *getMsgType (LogMsgType type) {
         case GAME: strcpy (temp, "[GAME]"); break;
 
         case SERVER: strcpy (temp, "[SERVER]"); break;
-        case CLIENT: strcpy (temp, "[SERVER]"); break;
+        case CLIENT: strcpy (temp, "[CLIENT]"); break;
 
         default: break;
     }

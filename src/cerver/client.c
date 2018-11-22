@@ -141,15 +141,20 @@ u8 checkPacket (size_t packetSize, char *packetData, PacketType expectedType) {
 
 }
 
-void initPacketHeader (void *header, PacketType type, u32 packetSize) {
+void initPacketHeader (PacketHeader *header, PacketType type, u32 packetSize) {
 
-    PacketHeader h;
+    header->protocolID = PROTOCOL_ID;
+    header->protocolVersion = PROTOCOL_VERSION;
+    header->packetType = type;
+    header->packetSize = packetSize;
+
+    /* PacketHeader h;
     h.protocolID = PROTOCOL_ID;
     h.protocolVersion = PROTOCOL_VERSION;
     h.packetType = type;
-    h.packetSize = packetSize;
+    h.packetSize = (u32) packetSize;
 
-    memcpy (header, &h, sizeof (PacketHeader));
+    memcpy (header, &h, sizeof (PacketHeader)); */
 
 }
 
@@ -161,7 +166,7 @@ void *generatePacket (PacketType packetType, size_t packetSize) {
     else packet_size = sizeof (PacketHeader);
 
     PacketHeader *header = (PacketHeader *) malloc (packet_size);
-    initPacketHeader (header, packetType, packet_size); 
+    initPacketHeader (header, packetType, (u32) packet_size); 
 
     return header;
 
@@ -196,6 +201,10 @@ i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flag
         packetSize -= sent;
     }
 
+    printf ("\nPacket size sent: %i", sent);
+    PacketHeader *header = (PacketHeader *) begin;
+    printf ("\nPacket type: %i\n", header->packetType);
+
     return 0;
 
 }
@@ -206,9 +215,9 @@ i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flag
 
 #pragma region CONNECTION HANDLER
 
-void handle_serverInfo (PacketInfo *packet);
+void handle_serverPacket (PacketInfo *packet);
 
-// 01/11/2018 -- called with the th pool to handle a new packet
+// called with the th pool to handle a new packet
 void handlePacket (void *data) {
 
     if (!data) {
@@ -225,7 +234,7 @@ void handlePacket (void *data) {
 
         switch (header->packetType) {
             // handles a packet with server info
-            case SERVER_PACKET: handle_serverInfo (packet); break;
+            case SERVER_PACKET: handle_serverPacket (packet); break;
 
             // handles an error from the server
             case ERROR_PACKET: break;
@@ -243,17 +252,53 @@ void handlePacket (void *data) {
                 #ifdef CLIENT_DEBUG
                     logMsg (stdout, TEST, NO_TYPE, "Got a successful test packet!"); 
                 #endif
-                // pool_push (packet->server->packetPool, packet);
                 break;
 
             default: 
                 #ifdef CLIENT_DEBUG
                     logMsg (stderr, WARNING, PACKET, "Got a packet of incompatible type.");
                 #endif 
-                // pool_push (packet->server->packetPool, packet);
                 break;
         }
     }
+
+    // no matter the case, we always send the packet info to the client pool here!
+    pool_push (packet->client->packetPool, packet);
+
+}
+
+// recive all incoming data from this socket
+// what happens if my buffer isn't enough, for example a larger file?
+// TODO: 03/11/2018 - add support for multiple reads to the socket
+void client_recieve (Client *client, i32 fd) {
+
+    ssize_t rc;
+    char packetBuffer[MAX_UDP_PACKET_SIZE];
+    PacketInfo *info = NULL;
+
+    do {
+        rc = recv (fd, packetBuffer, sizeof (packetBuffer), 0);
+        
+        // recv error - no more data to read
+        if (rc < 0) {
+            if (errno != EWOULDBLOCK) {
+                logMsg (stderr, ERROR, CLIENT, "Recv failed!");
+                perror ("Error:");
+            }
+
+            break;  // there is no more data to handle
+        }
+
+        if (rc == 0) {
+            // man recv -> steam socket perfomed an orderly shutdown
+            // but in dgram it might mean something?
+            // 03/11/2018 -- we just ignore the packet or whatever
+            break;
+        }
+
+        info = newPacketInfo (client, packetBuffer, rc);
+        thpool_add_work (client->thpool, (void *) handlePacket, info);
+    } while (true);
 
 }
 
@@ -281,10 +326,6 @@ u8 client_poll (void *data) {
 	// memset (&serverAddress, 0, sizeof (struct sockaddr_storage));
     // socklen_t sockLen = sizeof (struct sockaddr_storage);
 
-    ssize_t rc;                                   // retval from recv -> size of buffer
-    char packetBuffer[MAX_UDP_PACKET_SIZE];       // buffer for data recieved from fd
-    PacketInfo *info = NULL;
-
     int poll_retval;    // ret val from poll function
     int currfds;        // copy of n active server poll fds
 
@@ -297,7 +338,7 @@ u8 client_poll (void *data) {
 
     // 18/11/2018 - we only want to communicate with the server
     while (client->isConnected) {
-        poll_retval = poll (client->fds, client->nfds, client->pollTimeout);
+        poll_retval = poll (client->fds, 2, client->pollTimeout);
 
         // poll failed
         if (poll_retval < 0) {
@@ -327,42 +368,16 @@ u8 client_poll (void *data) {
 
             // 18/11/2018 -- we only want to be connected to the server!
             // listening fd is readable (client socket)
-            if (client->fds[i].fd == client->clientSock) {
+            /* if (client->fds[i].fd == client->clientSock) {
                 #ifdef CLIENT_DEBUG
-                    logMsg (stdout, WARNING, CLIETN, "Some tried to connect to this client.");
+                    logMsg (stdout, WARNING, CLIENT, "Some tried to connect to this client.");
                 #endif
             }
 
-            // not the clitn socket, so the server fd must be readable
-            else {
-                // recive all incoming data from this socket
-                // TODO: 03/11/2018 - add support for multiple reads to the socket
-                // what happens if my buffer isn't enough, for example a larger file?
-                do {
-                    rc = recv (client->fds[i].fd, packetBuffer, sizeof (packetBuffer), 0);
-                    
-                    // recv error - no more data to read
-                    if (rc < 0) {
-                        if (errno != EWOULDBLOCK) {
-                            logMsg (stderr, ERROR, CLIENT, "Recv failed!");
-                            perror ("Error:");
-                        }
+            // someone sent us data
+            else client_recieve (client, client->fds[i].fd); */
 
-                        break;  // there is no more data to handle
-                    }
-
-                    if (rc == 0) {
-                        // man recv -> steam socket perfomed an orderly shutdown
-                        // but in dgram it might mean something?
-                        // 03/11/2018 -- we just ignore the packet or whatever
-                        break;
-                    }
-
-                    info = newPacketInfo (client, packetBuffer, rc);
-                    thpool_add_work (client->thpool, (void *) handlePacket, info);
-                } while (true);
-            }
-
+            client_recieve (client, client->fds[i].fd);
         }
     }
 
@@ -379,6 +394,17 @@ u8 checkServerInfo (Server *server) {
     if (server) {
         if (!server->isRunning) return 1;
         // if (server->type != GAME_SERVER)
+    }
+
+}
+
+void handle_serverPacket (PacketInfo *packet) {
+
+    RequestData *reqdata = (RequestData *) packet->packetData + sizeof (PacketHeader);
+    switch (reqdata->type) {
+        case SERVER_INFO: logMsg (stdout, SUCCESS, SERVER, "Recieved a server info packet!"); break;
+        case SERVER_TEARDOWN: break;
+        default: break;
     }
 
 }
@@ -621,6 +647,11 @@ u8 client_init (Client *client, Config *cfg) {
         #endif
     }
 
+    // FIXME:
+    client->fds[0].fd = client->clientSock;
+    client->fds[0].events = POLLIN;
+    client->nfds++; 
+
     return 0;   // at this point, the client is ready to connect to the server
     
 }
@@ -656,7 +687,7 @@ Client *client_create (Client *client) {
         Client *c = newClient (client);
         if (!client_init (c, NULL)) {
             initClientData (c);
-            logMsg (stdout, SUCCESS, CLIENT, "\nCreated a new client!\n");
+            logMsg (stdout, SUCCESS, CLIENT, "Created a new client!");
             return c;
         }
 
@@ -676,7 +707,7 @@ Client *client_create (Client *client) {
             Client *c = newClient (NULL);
             if (!client_init (c, clientConfig)) {
                 initClientData (c);
-                logMsg (stdout, SUCCESS, CLIENT, "\nCreated a new client!\n");
+                logMsg (stdout, SUCCESS, CLIENT, "Created a new client!");
                 clearConfig (clientConfig);
                 return c;
             }
@@ -703,11 +734,6 @@ u8 client_check (Client *client) {
 
     if (!client->running) {
         logMsg (stderr, ERROR, CLIENT, "Need to start client first!");
-        return 1;
-    }
-
-    if (client->isConnected) {
-        logMsg (stdout, WARNING, CLIENT, "The client is already connected to the server.");
         return 1;
     }
 
@@ -741,7 +767,7 @@ u8 connectRetry (Client *client) {
 // connects the client to the specified server
 u8 client_connectToServer (Client *client, char *serverIp) {
 
-    if (!client_check (client)) {
+    if (!client_check (client) && !client->isConnected) {
         if (!serverIp) {
             // check if we have the server ip already setup in the client
             if (!client->connectionServer.ip) {
@@ -779,11 +805,13 @@ u8 client_connectToServer (Client *client, char *serverIp) {
         // try to connect to the server with exponential backoff
         if (!connectRetry (client)) {
             // add the new connection socket to the poll structure
-            client->fds[client->nfds].fd = client->clientSock;
+            /* client->fds[client->nfds].fd = client->clientSock;
             client->fds[client->nfds].events = POLLIN;
-            client->nfds++;
+            client->nfds++; */
 
             client->isConnected = true;
+            u8 client_makeTestRequest (Client *);
+            client_makeTestRequest (client);
             logMsg (stdout, SUCCESS, CLIENT, "Connected to server!");
 
             return 0;   // connected to the server
@@ -801,7 +829,7 @@ u8 client_connectToServer (Client *client, char *serverIp) {
 // disconnect from the server
 u8 client_disconnectFromServer (Client *client) {
 
-    if (!client_check (client)) {
+    if (!client_check (client) && client->isConnected) {
         // send a disconnect packet to the server
         if (client->isGameServer) {
             if (client->inLobby) {
@@ -819,6 +847,25 @@ u8 client_disconnectFromServer (Client *client) {
     }
 
     logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
+
+    return 1;
+
+}
+
+// stop any on going process and destroy
+u8 client_teardown (Client *client) {
+
+    if (client) {
+        if (client->isConnected) 
+            client_disconnectFromServer (client);
+
+        client->running = false;
+
+        // TODO: better destroy the client's threadpool
+        free (client->thpool);
+
+        return 0;
+    }
 
     return 1;
 
@@ -847,6 +894,21 @@ void *generateRequest (PacketType packetType, RequestType reqType) {
 // TODO: 
 // send a valid client authentication
 u8 client_authentication () {}
+
+u8 client_makeTestRequest (Client *client) {
+
+    if (client && client->isConnected) {
+        size_t packetSize = sizeof (PacketHeader);
+        void *req = generatePacket (TEST_PACKET, packetSize);
+        if (req) {
+            printf ("\nExpected packet size: %i\n", ((PacketHeader *) req)->packetSize);
+            if (tcp_sendPacket (client->clientSock, req, packetSize, 0) < 0)
+                logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
+            free (req);
+        }
+    }
+
+}
 
 /*** FILE SERVER ***/
 
