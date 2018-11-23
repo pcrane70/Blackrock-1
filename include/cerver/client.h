@@ -80,8 +80,6 @@ typedef struct Server {
 
 #pragma region CLIENT
 
-#include <pthread.h>
-
 // TODO: if a client can only connect to one address at a time, we need to support 
 // multiple clients so that we can have multiple connections at the same time
 // add the clients in the poll structure...
@@ -90,7 +88,7 @@ typedef struct Client {
     // TODO: add the hability to connect to other clients directly
     // 18/11/2018 -- a client can only connect to one address a time right?
     // if so, we are only handling a connection with one server
-    Server connectionServer;
+    Server *connectionServer;
 
     i32 clientSock;
     u8 useIpv6;  
@@ -112,14 +110,13 @@ typedef struct Client {
 
     // 18/11/2018 -- we will have our own thpoll inside the clien
     threadpool thpool;
-    pthread_t pollThread;
 
     // only used in a game server
     // TODO: get details from the server when connecting to it...
     // TODO: move this from here to a server structure
-    bool isGameServer;      // is the client connected to a game server?
     bool inLobby;           // is the client inside a lobby?
     bool isOwner;           // is the client the owner of the lobby?
+
 
 } Client;
 

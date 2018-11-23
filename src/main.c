@@ -112,9 +112,9 @@ int main (void) {
     pthread_t gameThread;
 
     Client *testClient = client_create (NULL);
-    // client_start (testClient);
+    client_start (testClient);
     client_connectToServer (testClient, "127.0.0.1");
-    // client_makeTestRequest (testClient);
+    client_makeTestRequest (testClient);
 
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
@@ -149,7 +149,7 @@ int main (void) {
     }
 
     client_disconnectFromServer (testClient);
-    client_teardown (testClient);
+    // client_teardown (testClient);
 
     cleanUp (window, renderer);
     printf ("\nhola\n");
