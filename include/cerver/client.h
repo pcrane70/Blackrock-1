@@ -124,7 +124,7 @@ extern Client *client_create (Client *);
 extern u8 client_start (Client *client);
 extern u8 client_teardown (Client *client);
 
-extern u8 client_connectToServer (Client *client, char *serverIp);
+extern u8 client_connectToServer (Client *client, char *serverIp, ServerType expectedType);
 extern u8 client_disconnectFromServer (Client *);
 
 #pragma endregion
@@ -252,9 +252,7 @@ typedef struct SServer {
 
     u8 useIpv6;  
     u8 protocol;            // we only support either tcp or udp
-    u16 port; 
-
-    bool isRunning;         // the server is recieving and/or sending packets
+    u16 port;
 
     ServerType type;
     bool authRequired;      // authentication required by the server

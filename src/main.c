@@ -113,7 +113,12 @@ int main (void) {
 
     Client *testClient = client_create (NULL);
     client_start (testClient);
-    client_connectToServer (testClient, "127.0.0.1");
+    
+    // TODO: create a connect to address function to just connect the specified address
+
+    // this is only to connect for cerver types servers
+    client_connectToServer (testClient, "127.0.0.1", GAME_SERVER);
+
     client_makeTestRequest (testClient);
 
     while (running) {

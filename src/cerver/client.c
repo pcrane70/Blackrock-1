@@ -106,8 +106,6 @@ void destroyPacketInfo (void *data) {
 // check for packets with bad size, protocol, version, etc
 u8 checkPacket (size_t packetSize, char *packetData, PacketType expectedType) {
 
-    printf ("checkPacket ()\n");
-
     if (packetSize < sizeof (PacketHeader)) {
         #ifdef CLIENT_DEBUG
         logMsg (stderr, WARNING, PACKET, "Recieved a to small packet!");
@@ -396,47 +394,59 @@ u8 client_poll (void *data) {
 
 #pragma region SERVER
 
-// FIXME: check for the correct values to make this a flexible framework!!
-// check to see if we are connecting to the right server
-u8 checkServerInfo (Server *server) {
-
-    if (server) {
-        if (!server->isRunning) return 1;
-        // if (server->type != GAME_SERVER)
-    }
-
-}
-
-/* u8 useIpv6;  
-u8 protocol;            // we only support either tcp or udp
-u16 port; 
-
-bool isRunning;         // the server is recieving and/or sending packets
-
-ServerType type;
-bool authRequired;      // authentication required by the server */
-
-
 // FIXME: handle all the values!!
 // TODO: this can have a lot of potential!!
 // compare the info the server sent us with the one we expected 
 // and ajust our connection values if necessary
-void server_handleServerInfo (Server *curr_info, SServer *recv_info) {
+void server_checkServerInfo (Server *curr_info, SServer *recv_info) {
 
     if (curr_info && recv_info) {
-        curr_info->type = recv_info->type;
-        #ifdef CLIENT_DEBUG
-        switch (curr_info->type) {
-            case GAME_SERVER: logMsg (stdout, DEBUG_MSG, SERVER, "Connected to a game server."); break;
-            default: 
+        // FIXME: how to handle a change in port from both sides?
+        // for example what if its a load balancer that sends us a diffrente port to connect?
+        // u16 port; 
+
+        // FIXME: handle that we have the correct protocol for making requests
+        // u8 protocol;
+
+        if (curr_info->type != recv_info->type) {
             logMsg (stdout, WARNING, SERVER, 
                 createString ("Connected to a server of an unknown type: %i.", recv_info->type)); 
-            break;
+            // TODO: disconnect from the server
         }
-        #endif
+
+        else {
+            #ifdef CLIENT_DEBUG
+            switch (curr_info->type) {
+                case GAME_SERVER: 
+                    logMsg (stdout, DEBUG_MSG, SERVER, "Connected to a game server.");
+                    break;
+                default: 
+                    logMsg (stdout, WARNING, SERVER, 
+                        createString ("Connected to a server of an unknown type: %i.", 
+                        recv_info->type)); 
+                    break;
+            }
+            #endif
+        }
+
+        // FIXME: manage authentication
+        curr_info->authRequired = recv_info->authRequired;
+        if (curr_info->authRequired) {
+            #ifdef CLIENT_DEBUG
+                logMsg (stdout, DEBUG_MSG, SERVER, "Server requires authentication...");
+            #endif
+        }
+
+        else {
+            #ifdef CLIENT_DEBUG
+                logMsg (stdout, DEBUG_MSG, SERVER, "Server does NOT require authentication.");
+            #endif
+        }
     }
 
 }
+
+u8 client_disconnectFromServer (Client *client);
 
 void server_handlePacket (PacketInfo *packet) {
 
@@ -448,58 +458,17 @@ void server_handlePacket (PacketInfo *packet) {
             #endif
             SServer *serverInfo = 
                 (SServer *) (packet->packetData + sizeof (PacketHeader) + sizeof (RequestData));
-            server_handleServerInfo (packet->client->connectionServer, serverInfo);
+            server_checkServerInfo (packet->client->connectionServer, serverInfo);
         } break;
         
-        // FIXME: disconnect from the server
-        case SERVER_TEARDOWN: logMsg (stdout, WARNING, SERVER, "--> Server teardown!! <--"); break;
+        case SERVER_TEARDOWN: 
+            logMsg (stdout, WARNING, SERVER, "--> Server teardown!! <--"); 
+            if (!client_disconnectFromServer (packet->client))  
+                logMsg (stdout, SUCCESS, CLIENT, "Disconnected client from server!");
+            else logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
+            break;
         default: break;
     }
-
-}
-
-// TODO: we need to have a server structure that has the expected parameters of the server
-// that we want to connect to...
-// FIXME: 
-void handle_serverInfo (PacketInfo *packet) {
-
-    // FIXME: 18/11/2018 -- 17:34 -- we need to take into account the client poll
-
-        // we expect a welcome message from the server -> a server info packet
-        /* char serverResponse[2048];
-        ssize_t rc = recv (client->clientSock, serverResponse, sizeof (serverResponse), 0);
-        if (rc > 0) {
-            // process packet
-            if (!checkPacket (rc, serverResponse, SERVER_PACKET)) {
-                Server *serverData = (Server *) (serverResponse + sizeof (PacketHeader));
-
-                // TODO: check server info to see if we are making a proper connection
-                if (serverData->authRequired) {
-                    // FIXME: we need to send the server the correct authentication info!!
-
-                    // we expect a response from the server
-                }
-
-                // make a copy of the server data
-                if (serverInfo) free (serverInfo);
-
-                serverInfo = (Server *) malloc (sizeof (Server));
-                serverInfo->authRequired = serverData->authRequired;
-                serverInfo->isRunning = serverData->isRunning;
-                serverInfo->port = serverData->port;
-                serverInfo->protocol = serverData->protocol;
-                serverInfo->type = serverData->type;
-                serverInfo->useIpv6 = serverData->useIpv6;
-
-                client->isConnected = true;
-                logMsg (stdout, SUCCESS, NO_TYPE, "Connected to server!");
-
-                return 0;   // success connecting to server
-            }
-
-            // TODO: what to do next? --> retry the connection?
-            else logMsg (stderr, ERROR, PACKET, "Got an invalid server info packet!");
-        } */
 
 }
 
@@ -808,11 +777,13 @@ u8 connectRetry (Client *client, const struct sockaddr_storage address) {
 
 // FIXME: add support for multiple connections to multiple servers at the same time
 // TODO: add support for ipv6 connections
-// connects the client to the specified server
-u8 client_connectToServer (Client *client, char *serverIp) {
+// connects the client to a cerver type server
+u8 client_connectToServer (Client *client, char *serverIp, ServerType expectedType) {
 
     if (!client_check (client) && !client->isConnected) {
         Server *server = (Server *) malloc (sizeof (Server));
+        server->type = expectedType;
+        server->port = client->port;
 
         if (!serverIp) {
             logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
