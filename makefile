@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -I $(IDIR) `sdl2-config --cflags --libs` -lm -l sqlite3 -l pthread -D CLIENT_DEBUG
+CFLAGS = -I $(IDIR) `sdl2-config --cflags --libs` -lm -l sqlite3 -l pthread -D BLACK_DEBUG -D CLIENT_DEBUG
 
 IDIR = ./include/
 SRCDIR = ./src/

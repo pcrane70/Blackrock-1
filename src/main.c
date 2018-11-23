@@ -154,7 +154,7 @@ int main (void) {
     }
 
     client_disconnectFromServer (testClient);
-    // client_teardown (testClient);
+    client_teardown (testClient);
 
     cleanUp (window, renderer);
     printf ("\nhola\n");

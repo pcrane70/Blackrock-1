@@ -224,11 +224,6 @@ typedef struct Score {
 
 extern void showScore (void);
 
-/*** MULTIPLAYER ***/
-
-extern void multiplayer_createLobby (void);
-extern void multiplayer_joinLobby (void);
-
 /*** LEADERBOARDS ***/
 
 typedef struct LBEntry {
@@ -250,8 +245,18 @@ extern DoubleList *globalLBData;
 extern DoubleList *getLocalLBData (void);
 extern DoubleList *getGlobalLBData (void);
 
-// Cleanning Up!
-extern void cleanUpGame (void);
+/*** MULTIPLAYER ***/
 
+#pragma region MULTIPLAYER
+
+extern void multiplayer_createLobby (void);
+extern void multiplayer_joinLobby (void);
+extern void multiplayer_leaveLobby (void);
+
+#pragma endregion
+
+/*** CLEANING UP ***/
+
+extern void cleanUpGame (void);
 
 #endif

@@ -217,6 +217,27 @@ i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flag
 
 }
 
+// 23/11/2018 -- sends a packet to the server
+i8 client_sendPacket (Client *client, const void *packet, size_t packetSize) {
+
+    i8 retval = -1;
+
+    if (client) {
+        switch (client->protocol) {
+            case IPPROTO_TCP:
+                retval = tcp_sendPacket (client->clientSock, packet, packetSize, 0); break;
+            case IPPROTO_UDP: 
+                retval = udp_sendPacket (client, packet, packetSize, 
+                    client->connectionServer->address); 
+                break;
+            default: break;
+        }
+    }
+
+    return retval;
+
+}
+
 #pragma endregion
 
 /*** CONNECTION HANDLER ***/
@@ -898,7 +919,7 @@ u8 client_teardown (Client *client) {
         //         logMsg (stdout, SUCCESS, CLIENT, "Client thpool got destroyed!");
         //     #endif
         // }  
-        free (client->thpool);
+        // free (client->thpool);
 
         // if (client->packetPool) pool_clear (client->packetPool); 
 
@@ -955,11 +976,23 @@ u8 client_makeTestRequest (Client *client) {
 
 // TODO:
 // request a file from the server
-u8 client_file_get () {}
+i8 client_file_get (Client *client, char *filename) {
+
+    if (client_check (client) && filename) {
+
+    }
+
+}
 
 // TODO:
 // send a file to the server
-u8 client_file_send () {}
+i8 client_file_send (Client *client, char *filename) {
+
+    if (client_check (client) && filename) {
+        
+    }
+
+}
 
 #pragma endregion
 
@@ -967,134 +1000,104 @@ u8 client_file_send () {}
 
 #pragma region GAME SERVER
 
-// FIXME: don't forget to make the cient the owner
 // request to create a new multiplayer game
-u8 client_game_createLobby (Client *owner, GameType gameType) {
+i8 client_game_createLobby (Client *owner, GameType gameType) {
 
-    if (!owner) {
-        logMsg (stderr, ERROR, GAME, "A NULL client can't create a lobby!");
-        return 1;
-    }
-
-    if (owner) {
+    if (client_check (owner) && owner->isConnected) {
         // create & send a join lobby req packet to the server
         size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
         void *req = generateRequest (GAME_PACKET, LOBBY_CREATE);
 
         if (req) {
-            tcp_sendPacket (owner->clientSock, req, packetSize, 0);
-
-            // FIXME: we need to wait for the respponse of the server
-
-            return 0;
+            i8 retval = client_sendPacket (owner, req, packetSize);
+            free (req);
+            return retval;
         }
-
-        else logMsg (stderr, ERROR, PACKET, "Failed to generate create lobby request packet!");
     }
 
-    return 1;
+    return -1;
 
 }
 
-// FIXME:
 // request to join an on going game
-u8 client_game_joinLobby (Client *owner, GameType gameType) {
+i8 client_game_joinLobby (Client *client, GameType gameType) {
 
-    if (owner) {
+    if (client_check (client) && client->isConnected) {
         // create & send a join lobby req packet to the server
         size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
         void *req = generateRequest (GAME_PACKET, LOBBY_JOIN);
 
         if (req) {
-            
-            tcp_sendPacket (owner->clientSock, req, packetSize, 0);
-
-            // FIXME: we need to wait for the server response
-
+            i8 retval = client_sendPacket (client, req, packetSize);
             free (req);
-
-            return 0;
+            return retval;
         }
-
-        else logMsg (stderr, ERROR, PACKET, "Failed to generate join lobby request packet!");
     }
 
-    return 1;
+    return -1;
 
 }
 
-// TODO: check that we are making valid requests to a game server
 // request the server to leave the lobby
-u8 client_game_leaveLobby (Client *client) {
+i8 client_game_leaveLobby (Client *client) {
 
-    if (client) {
+    if (client_check (client) && client->isConnected) {
         if (client->inLobby) {
             // create & send a leave lobby req packet to the server
             size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
             void *req = generateRequest (GAME_PACKET, LOBBY_LEAVE);
 
             if (req) {
-                tcp_sendPacket (client->clientSock, req, packetSize, 0);
-                return 0;
-            } 
-
-            else logMsg (stderr, ERROR, PACKET, "Failed to generate leave lobby request packet!");
+                i8 retval = client_sendPacket (client, req, packetSize);
+                free (req);
+                return retval;
+            }
         }
     }
 
-    return 1;
+    return -1;
 
 }
 
-// TODO: check that we are making valid requests to a game server
 // request to destroy the current lobby, only if the client is the owner
-u8 client_game_destroyLobby (Client *client) {
+i8 client_game_destroyLobby (Client *client) {
 
-    if (client) {
+    if (client_check (client) && client->isConnected) {
         if (client->inLobby) {
             // create & send a leave lobby req packet to the server
             size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
             void *req = generateRequest (GAME_PACKET, LOBBY_DESTROY);
 
             if (req) {
-                tcp_sendPacket (client->clientSock, req, packetSize, 0);
-
-                // TODO: do we need to wait for a server response?
-
-                return 0;
-            } 
-
-            else logMsg (stderr, ERROR, PACKET, "Failed to generate destroy lobby request packet!");
+                i8 retval = client_sendPacket (client, req, packetSize);
+                free (req);
+                return retval;
+            }
         }
     }
 
-    return 1;
+    return -1;
 
 }
 
-// TODO: check that we are making valid requests to a game server
 // the owner of the lobby can request to init the game
-u8 client_game_startGame (Client *owner) {
+i8 client_game_startGame (Client *client) {
 
-    if (owner) {
-        if (owner->inLobby && owner->isOwner) {
+    if (client_check (client) && client->isConnected) {
+        if (client->inLobby) {
             // create & send a leave lobby req packet to the server
             size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
             void *req = generateRequest (GAME_PACKET, GAME_INIT);
 
             if (req) {
-                tcp_sendPacket (owner->clientSock, req, packetSize, 0);
-
-                // TODO: do we need to wait for a server response?
-
-                return 0;
-            } 
-
-            else logMsg (stderr, ERROR, PACKET, "Failed to generate destroy lobby request packet!");
+                i8 retval = client_sendPacket (client, req, packetSize);
+                free (req);
+                return retval;
+            }
         }
     }
 
-    return 1;
+    return -1;
 
 }
 

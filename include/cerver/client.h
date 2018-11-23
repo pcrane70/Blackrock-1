@@ -240,7 +240,19 @@ typedef struct ErrorData {
 
 #pragma endregion
 
+/*** REQUESTS ***/
+
 extern u8 client_makeTestRequest (Client *client);
+
+extern i8 client_file_get (Client *client, char *filename);
+extern i8 client_file_send (Client *client, char *filename);
+
+extern i8 client_game_createLobby (Client *owner, GameType gameType);
+extern i8 client_game_joinLobby (Client *client, GameType gameType);
+extern i8 client_game_leaveLobby (Client *client);
+extern i8 client_game_destroyLobby (Client *client);
+
+extern i8 client_game_startGame (Client *client);
 
 /*** SERIALIZATION ***/
 
@@ -259,18 +271,6 @@ typedef struct SServer {
 
 } SServer;
 
-// TODO:
-typedef struct SLobby {
-
-    // struct _GameSettings settings;      // 24/10/2018 -- we dont have any ptr in this struct
-    bool inGame;
-
-    // FIXME: how do we want to send this info?
-    // Player owner;               // how do we want to send which is the owner
-    // Vector players;             // ecah client also needs to keep track of other players in the lobby
-
-} SLobby;
-
 // TODO: we need to create a more complex seralized data
 // keep in mind that the admin can set a reference to the data and function
 // that can handle specific serealization
@@ -281,6 +281,32 @@ typedef struct DefAuthData {
 
 } DefAuthData;
 
+typedef struct GameSettings {
+
+	GameType gameType;
+
+	u8 playerTimeout; 	// in seconds.
+	u8 fps;
+
+	u8 minPlayers;
+	u8 maxPlayers;
+
+	// duration?
+
+} GameSettings;
+
+// FIXME: players and a reference to the owner
+// info that we need to send to the client about the lobby he is in
+typedef struct SLobby {
+
+    GameSettings settings;
+    bool inGame;
+
+    // FIXME: how do we want to send this info?
+    // Player owner;               // how do we want to send which is the owner
+    // Vector players;             // ecah client also needs to keep track of other players in the lobby
+
+} SLobby;
 
 #pragma endregion
 

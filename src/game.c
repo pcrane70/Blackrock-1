@@ -1906,38 +1906,66 @@ Client *playerClient = NULL;
 
 #pragma region MULTIPLAYER
 
+// TODO: 23/11/2018 -- 3:10
+// make a client_make_request to create a new thread and wait for a server response
+// and return the data
+// and create a client_make_request_async to just send a request packet and 
+// the client poll handles the packet
+
 // FIXME: how do we get the game type?
 // called from the main menu to request a new game lobby
 void multiplayer_createLobby (void) {
 
-    /* if (!client_connectToServer (playerClient)) {
-        if (!client_createLobby (playerClient, ARCADE)) {
+    // TODO: do we want to be able to perform a connection here?
+    if (!playerClient->isConnected) {
+        #ifdef BLACK_DEBUG
+            logMsg (stdout, DEBUG_MSG, GAME, "Requesting a new lobby...");
+        #endif
+
+        if (client_game_createLobby (playerClient, ARCADE) >= 0) {
+            // we made the request to the server
             // TODO: move the player to the lobby screen
-            // TODO: where do we recieve the data of the game lobby?
         }
 
         // TODO: give feedback to the player
         else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
     }
-    
+
     // TODO: give feedback to the player
-    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!"); */
+    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
 
 }
 
+// TODO: do we need to pass some paramaters for game searching?
+//  i guess no because the server al ready knows all of our info!
 // FIXME: how do we get the game type?
 // called from the main menu to request to join a game lobby
 void multiplayer_joinLobby (void) {
 
-    /* if (!client_connectToServer (playerClient)) {
-        if (!client_joinLobby (playerClient, ARCADE)) {
+    // TODO: do we want to be able to perform a connection here?
+    if (!playerClient->isConnected) {
+        #ifdef BLACK_DEBUG
+            logMsg (stdout, DEBUG_MSG, GAME, "Requesting to join a lobby...");
+        #endif
+
+        if (client_game_joinLobby (playerClient, ARCADE) >= 0) {
+            // we made the request to the server
             // TODO: move the player to the lobby screen
-            // TODO: where do we recieve the data of the game lobby?
         }
+
+        // TODO: give feedback to the player
+        else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
     }
 
     // TODO: give feedback to the player
-    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!"); */
+    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+
+}
+
+// TODO:
+void multiplayer_leaveLobby (void) {
+
+    // TODO: check connection, check that we are on a game and handle logic
 
 }
 
