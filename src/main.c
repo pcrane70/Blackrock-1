@@ -112,7 +112,7 @@ int main (void) {
     pthread_t gameThread;
 
     Client *testClient = client_create (NULL);
-    client_start (testClient);
+    // client_start (testClient);
     client_connectToServer (testClient, "127.0.0.1");
     // client_makeTestRequest (testClient);
 
@@ -152,6 +152,7 @@ int main (void) {
     client_teardown (testClient);
 
     cleanUp (window, renderer);
+    printf ("\nhola\n");
 
     return 0;
 

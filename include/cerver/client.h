@@ -80,6 +80,8 @@ typedef struct Server {
 
 #pragma region CLIENT
 
+#include <pthread.h>
+
 // TODO: if a client can only connect to one address at a time, we need to support 
 // multiple clients so that we can have multiple connections at the same time
 // add the clients in the poll structure...
@@ -110,6 +112,7 @@ typedef struct Client {
 
     // 18/11/2018 -- we will have our own thpoll inside the clien
     threadpool thpool;
+    pthread_t pollThread;
 
     // only used in a game server
     // TODO: get details from the server when connecting to it...
@@ -165,7 +168,8 @@ extern Version PROTOCOL_VERSION;
 typedef enum PacketType {
 
     SERVER_PACKET = 0,
-    ERROR_PACKET = 1,
+    CLIENT_PACKET,
+    ERROR_PACKET,
 	REQUEST,
     AUTHENTICATION,
     GAME_PACKET,
@@ -189,6 +193,8 @@ typedef enum RequestType {
 
     SERVER_INFO,
     SERVER_TEARDOWN,
+
+    CLIENT_DISCONNET,
 
     REQ_GET_FILE,
     POST_SEND_FILE,
