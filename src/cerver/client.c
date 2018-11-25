@@ -79,13 +79,17 @@ PacketInfo *newPacketInfo (Client *client, char *packetData, size_t packetSize) 
     if (p) {
         p->client = client;
         p->packetSize = packetSize;
-        p->packetData = NULL;
+        p->packetData = packetData;
+
+        char *end = p->packetData; 
+        PacketHeader *header = (PacketHeader *) end;
+        printf ("handlePacket () - packet size: %i\n", header->packetSize);
         
         // copy the contents from the entry buffer to the packet info
-        if (!p->packetData)
+        /* if (!p->packetData)
             p->packetData = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
 
-        memcpy (p->packetData, packetData, MAX_UDP_PACKET_SIZE);
+        memcpy (p->packetData, packetData, MAX_UDP_PACKET_SIZE); */
     }
 
     return p;
@@ -137,7 +141,7 @@ u8 checkPacket (size_t packetSize, char *packetData, PacketType expectedType) {
         logMsg (stdout, WARNING, PACKET, "Recv packet size doesn't match header size.");
         #endif
         return 1;
-    }
+    } 
 
     if (expectedType != DONT_CHECK_TYPE) {
         // check if the packet is of the expected type
@@ -289,6 +293,50 @@ void handlePacket (void *data) {
 
 }
 
+// split the entry buffer in packets of the correct size
+void handlePacketBuffer (Client *client, char *buffer, size_t total_size) {
+
+    if (buffer && (total_size > 0)) {
+        u32 buffer_idx = 0;
+        char *end = buffer;
+
+        PacketHeader *header = NULL;
+        u32 packet_size;
+        char *packet_data = NULL;
+
+        PacketInfo *info = NULL;
+
+        while (buffer_idx < total_size) {
+            header = (PacketHeader *) end;
+
+            // check the packet size
+            packet_size = header->packetSize;
+            if (packet_size > 0) {
+                RequestData *reqdata = (RequestData *) (header + sizeof (PacketHeader));
+                // printf ("handlePacketBuffer () - pack request type: %i\n", reqdata->type);
+                // printf ("handlePacketBuffer () - pack header size: %i\n", packet_size);
+
+                // copy the content of the packet from the buffer
+                packet_data = (char *) calloc (packet_size, sizeof (char));
+                for (u32 i = 0; i < packet_size; i++, buffer_idx++) 
+                    packet_data[i] = buffer[buffer_idx];
+
+                info = newPacketInfo (client, packet_data, packet_size);
+                thpool_add_work (client->thpool, (void *) handlePacket, info);
+
+                end += packet_size;
+            }
+
+            else break;
+        }
+
+        #ifdef CLIENT_DEBUG
+            logMsg (stdout, DEBUG_MSG, PACKET, "Done splitting recv buffer!");
+        #endif
+    }
+
+}
+
 // recive all incoming data from this socket
 // what happens if my buffer isn't enough, for example a larger file?
 // TODO: 03/11/2018 - add support for multiple reads to the socket
@@ -296,31 +344,43 @@ void client_recieve (Client *client, i32 fd) {
 
     ssize_t rc;
     char packetBuffer[MAX_UDP_PACKET_SIZE];
-    PacketInfo *info = NULL;
+    memset (packetBuffer, 0, MAX_UDP_PACKET_SIZE);
 
     do {
         rc = recv (fd, packetBuffer, sizeof (packetBuffer), 0);
         
-        // TODO: just close the connection
-        // recv error - no more data to read
         if (rc < 0) {
-            if (errno != EWOULDBLOCK) {
-                logMsg (stderr, ERROR, CLIENT, "Recv failed!");
-                perror ("Error:");
+            if (errno != EWOULDBLOCK) {     // no more data to read 
+                // logMsg (stderr, ERROR, CLIENT, "Recv failed!");
+                // perror ("Error:");
+                logMsg (stdout, DEBUG_MSG, CLIENT, 
+                    "Ending server connection - client_recieve () - rc < 0");
+                client_disconnectFromServer (client);
             }
 
-            break;  // there is no more data to handle
+            break;
         }
 
         if (rc == 0) {
             // man recv -> steam socket perfomed an orderly shutdown
             // but in dgram it might mean something?
-            // 03/11/2018 -- we just ignore the packet or whatever
+            logMsg (stdout, DEBUG_MSG, CLIENT, 
+                    "Ending server connection - client_recieve () - rc == 0");
+            client_disconnectFromServer (client);
             break;
         }
 
-        info = newPacketInfo (client, packetBuffer, rc);
-        thpool_add_work (client->thpool, (void *) handlePacket, info);
+        /* #ifdef CLIENT_DEBUG
+            logMsg (stdout, DEBUG_MSG, CLIENT, 
+                createString ("recv () - buffer size: %li", rc));
+        #endif */
+
+        char *buffer_data = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
+        if (buffer_data) {
+            memcpy (buffer_data, packetBuffer, rc);
+            handlePacketBuffer (client, packetBuffer, rc);
+        }
+        
     } while (true);
 
 }
@@ -349,6 +409,8 @@ u8 client_poll (void *data) {
 	// struct sockaddr_storage serverAddress;
 	// memset (&serverAddress, 0, sizeof (struct sockaddr_storage));
     // socklen_t sockLen = sizeof (struct sockaddr_storage);
+
+    // char packetBuffer[MAX_UDP_PACKET_SIZE];
 
     int poll_retval;    // ret val from poll function
     int newfd;          // fd of new connection
@@ -471,7 +533,9 @@ u8 client_disconnectFromServer (Client *client);
 
 void server_handlePacket (PacketInfo *packet) {
 
-    RequestData *reqdata = (RequestData *) packet->packetData + sizeof (PacketHeader);
+    char *end = packet->packetData;  
+    RequestData *reqdata = (RequestData *) (packet->packetData + sizeof (PacketHeader));
+
     switch (reqdata->type) {
         case SERVER_INFO: {
             #ifdef CLIENT_DEBUG
@@ -488,7 +552,7 @@ void server_handlePacket (PacketInfo *packet) {
                 logMsg (stdout, SUCCESS, CLIENT, "Disconnected client from server!");
             else logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
             break;
-        default: break;
+        default: logMsg (stderr, WARNING, PACKET, "Unknown server type packet."); break;
     }
 
 }
@@ -866,7 +930,7 @@ u8 client_disconnectFromServer (Client *client) {
     if (!client_check (client) && client->isConnected) {
         if (client->connectionServer->type == GAME_SERVER) {
             if (client->inLobby) {
-                u8 client_game_leaveLobby (Client *client);
+                i8 client_game_leaveLobby (Client *client);
                 client_game_leaveLobby (client);
             }
         }
@@ -964,6 +1028,11 @@ u8 client_makeTestRequest (Client *client) {
         if (req) {
             if (tcp_sendPacket (client->clientSock, req, packetSize, 0) < 0)
                 logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
+            else {
+                #ifdef CLIENT_DEBUG
+                    logMsg (stdout, TEST, PACKET, "Sent test packet to server.");
+                #endif
+            }
             free (req);
         }
     }
