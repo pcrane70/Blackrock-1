@@ -133,12 +133,12 @@ typedef struct Entity {
 
 /*** EVENTS ***/
 
-typedef void (*EventDoubleListener)(void *);
+typedef void (*EventListener)(void *);
 
 typedef struct Event {
 
     u32 objectId;
-    EventDoubleListener callback;
+    EventListener callback;
 
 } Event;
 

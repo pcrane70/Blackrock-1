@@ -866,7 +866,7 @@ u8 client_disconnectFromServer (Client *client) {
     if (!client_check (client) && client->isConnected) {
         if (client->connectionServer->type == GAME_SERVER) {
             if (client->inLobby) {
-                u8 client_game_leaveLobby (Client *client);
+                i8 client_game_leaveLobby (Client *client);
                 client_game_leaveLobby (client);
             }
         }

@@ -89,6 +89,8 @@ void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **scree
 // FIXME: 21/11/2018 - 5:07 - this is only for testing!!
 #include "cerver/client.h"
 
+Client *testClient = NULL;
+
 int main (void) {
 
     srand ((unsigned) time (NULL));
@@ -111,7 +113,7 @@ int main (void) {
 
     pthread_t gameThread;
 
-    Client *testClient = client_create (NULL);
+    testClient = client_create (NULL);
     client_start (testClient);
     
     // TODO: create a connect to address function to just connect the specified address
