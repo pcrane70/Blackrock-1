@@ -302,7 +302,7 @@ void toggleEquipWeapon (void *);
 void toggleEquipArmour (void *);
 
 // FIXME:
-/* EventListener getItemCallback (u8 cb) {
+EventListener getItemCallback (u8 cb) {
 
     EventListener callback = NULL;
 
@@ -316,7 +316,7 @@ void toggleEquipArmour (void *);
 
     return callback;
 
-} */
+}
 
 // 29/08/2018 -- 23:34 -- new way of creating an item using sqlite db
 // 05/09/2018 -- 11:04 -- creating items with a more complex db
@@ -351,7 +351,7 @@ Item *createItem (int itemId) {
     item->quantity = (u8) sqlite3_column_int (res, ITEM_QUANTITY_COL);
 
     // FIXME: 
-    // item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
+    item->callback = getItemCallback ((u8) sqlite3_column_int (res, ITEM_CALLBACK_COL));
 
     // graphics
     if (addGraphicsToItem (itemId, item, name) != 0) {

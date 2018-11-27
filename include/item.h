@@ -51,7 +51,7 @@ typedef struct Item {
     u8 quantity;    
     u32 value[3];   // gold, silver, copper
     double probability;
-    // EventListener callback;      // FIXME:
+    EventListener callback;      // FIXME:
     void *components[GAME_OBJECT_COMPS];  
     void *itemComps[ITEM_COMPS];
 

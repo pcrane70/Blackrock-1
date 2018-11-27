@@ -21,7 +21,7 @@ extern bool wasInGame;
 // TODO: do we want this here?
 void startGame (void) {
 
-    /* cleanUpMenuScene ();
+    // cleanUpMenuScene ();
     activeScene = NULL;
 
     initGame ();
@@ -29,13 +29,17 @@ void startGame (void) {
     setActiveScene (gameScene ());
 
     inGame = true;
-    wasInGame = true;  */
+    wasInGame = true; 
 
 }
 
 #pragma region MAIN MENU 
 
 #include "ui/menu.h"
+
+// FIXME: this is just for testing
+#include "cerver/client.h"
+extern Client *testClient;
 
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
@@ -49,6 +53,10 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
             case SDLK_c: if (activeMenuView == MULTI_MENU_VIEW) multiplayer_createLobby (); break;
             case SDLK_j: if (activeMenuView == MULTI_MENU_VIEW) multiplayer_joinLobby (); break;
+
+            case SDLK_s: startGame (); break;
+
+            case SDLK_t: client_makeTestRequest (testClient);
 
             // old events
             // FIXME: case SDLK_s: if (characterMenu != NULL) startGame (); break;
@@ -176,7 +184,7 @@ void triggerEvent (void) {
     if (activeView == inventoryView) {
         Item *item = getInvSelectedItem ();
         if (item) {
-            // if (item->callback != NULL) item->callback (item);
+            if (item->callback != NULL) item->callback (item);
 
         } 
     } 
@@ -184,7 +192,7 @@ void triggerEvent (void) {
     else if (activeView == characterView) {
         Item *item = getCharSelectedItem ();
         if (item) {
-            // if (item->callback != NULL) item->callback (item);
+            if (item->callback != NULL) item->callback (item);
         }
     }
 
