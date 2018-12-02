@@ -1,37 +1,73 @@
-src = 	$(wildcard src/*.c) \
-		$(wildcard src/ui/*.c) \
-		$(wildcard src/cerver/*.c) \
-		$(wildcard src/utils/*.c)
+TARGET      := blackrock
 
-objs = $(src:.c=.o)
-
-IDIR = ./include/
-
-CC = gcc
-CFLAGS = -I $(IDIR) $(SDL2) $(MATH) $(SQLITE) $(PTHREAD) $(BLACK_DEBUG) $(DEFINES)
+# blackrock specific
 
 SDL2 = `sdl2-config --cflags --libs`
 MATH = -lm 
-SQLITE = -l sqlite3 
-PTHREAD = -l pthread 
+PTHREAD := -l pthread
+SQLITE3 := -l sqlite3
 
-# for debugging...
-DEBUG = -g
+DEFINES = $(BLACK_DEBUG) $(CLIENT_DEBUG)
 
 # additional blackrock info
 BLACK_DEBUG = -D BLACK_DEBUG
 
 # print additional client information
-DEFINES = -D CLIENT_DEBUG
+CLIENT_DEBUG = -D CLIENT_DEBUG
 
-OUTPUT = -o ./bin/blackrock
+CC          := gcc
 
-all: blackrock #run #clean
+SRCDIR      := src
+INCDIR      := include
+BUILDDIR    := objs
+TARGETDIR   := bin
+SRCEXT      := c
+DEPEXT      := d
+OBJEXT      := o
 
-blackrock: $(objs)
-	$(CC) $^ $(CFLAGS) $(OUTPUT)
-run:
-	./bin/blackrock
+CFLAGS      := -g $(DEFINES) $(RUN_MAKE)
+LIB         :=  $(PTHREAD) $(SQLITE3) $(SDL2) $(MATH)
+INC         := -I$(INCDIR) -I/usr/local/include
+INCDEP      := -I$(INCDIR)
 
+SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
+
+all: directories $(TARGET)
+
+run: 
+	./$(TARGETDIR)/$(TARGET)
+
+remake: cleaner all
+
+directories:
+	@mkdir -p $(TARGETDIR)
+	@mkdir -p $(BUILDDIR)
+
+# clean only Objecst
 clean:
-	rm ./bin/blackrock    
+	@$(RM) -rf $(BUILDDIR)
+
+# full Clean, Objects and Binaries
+cleaner: clean
+	@$(RM) -rf $(TARGETDIR)
+
+# pull in dependency info for *existing* .o files
+-include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT))
+
+# link
+$(TARGET): $(OBJECTS)
+	$(CC) $^ $(LIB) -o $(TARGETDIR)/$(TARGET)
+
+# compile
+$(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INC) -c -o $@ $<
+	@$(CC) $(CFLAGS) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
+	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
+	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
+	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
+	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
+
+# non-file Targets
+.PHONY: all remake clean cleaner resources
