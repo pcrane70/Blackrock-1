@@ -12,12 +12,12 @@
 
 #include <errno.h>
 
-#include "client.h"
+#include "cerver/client.h"
 
-#include "objectPool.h"
-#include "config.h"
-#include "log.h"
-#include "myUtils.h"
+#include "utils/objectPool.h"
+#include "utils/config.h"
+#include "utils/log.h"
+#include "utils/myUtils.h"
 
 /*** VALUES ***/
 
@@ -624,14 +624,14 @@ u8 getClientCfgValues (Client *client, ConfigEntity *cfgEntity) {
     char *ipv6 = getEntityValue (cfgEntity, "ipv6");
     if (ipv6) {
         client->useIpv6 = atoi (ipv6);
-        // if we have got an invalid value, the default is NOT to use ipv6
-        if (client->useIpv6 != 0 || client->useIpv6 != 1) client->useIpv6 = 0;
+        if (client->useIpv6 != 0 || client->useIpv6 != 1) client->useIpv6 = DEFAULT_USE_IPV6;
+        free (ipv6);
     }
-    // if we do not have a value, use the default
-    else client->useIpv6 = 0;
+    else client->useIpv6 = DEFAULT_USE_IPV6;
 
     #ifdef CLIENT_DEBUG
-    logMsg (stdout, DEBUG_MSG, CLIENT, createString ("Use IPv6: %i", client->useIpv6));
+    logMsg (stdout, DEBUG_MSG, CLIENT, client->useIpv6 == 1 ? 
+        "Use IPv6: yes." : "Use IPv6: no.");
     #endif
 
     char *tcp = getEntityValue (cfgEntity, "tcp");
@@ -645,6 +645,7 @@ u8 getClientCfgValues (Client *client, ConfigEntity *cfgEntity) {
         if (usetcp) client->protocol = IPPROTO_TCP;
         else client->protocol = IPPROTO_UDP;
 
+        free (tcp);
     }
     // set to default (tcp) if we don't found a value
     else {
@@ -665,6 +666,8 @@ u8 getClientCfgValues (Client *client, ConfigEntity *cfgEntity) {
         #ifdef CLIENT_DEBUG
         logMsg (stdout, DEBUG_MSG, CLIENT, createString ("Listening on port: %i", client->port));
         #endif
+
+        free (port);
     }
     // set to default port
     else {
@@ -792,7 +795,7 @@ u8 client_start (Client *client) {
 
 }
 
-// creates a new client
+// cerver client constructor
 Client *client_create (Client *client) {
 
     // create a client with the requested parameters
@@ -875,6 +878,8 @@ u8 connectRetry (Client *client, const struct sockaddr_storage address) {
     return 1;   // failed to connect to server after MAXSLEEP secs
 
 }
+
+// FIXME: create a connect to address function to just connect the specified address
 
 // FIXME: add support for multiple connections to multiple servers at the same time
 // TODO: add support for ipv6 connections

@@ -37,9 +37,8 @@ void startGame (void) {
 
 #include "ui/menu.h"
 
-// FIXME: this is just for testing
 #include "cerver/client.h"
-extern Client *testClient;
+extern Client *player_client;
 
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
@@ -56,7 +55,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
             case SDLK_s: startGame (); break;
 
-            case SDLK_t: client_makeTestRequest (testClient);
+            case SDLK_t: client_makeTestRequest (player_client); break;
 
             // old events
             // FIXME: case SDLK_s: if (characterMenu != NULL) startGame (); break;

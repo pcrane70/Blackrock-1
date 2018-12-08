@@ -23,6 +23,38 @@ void die (char *error) {
 
 };
 
+/*** MULTIPLAYER ***/
+
+#include "cerver/client.h"
+
+Client *player_client = NULL;
+
+u8 start_multiplayer (void) {
+
+    player_client = client_create (NULL);
+
+    if (player_client) {
+        // client_start (player_client);
+
+        client_connectToServer (player_client, "127.0.0.1", GAME_SERVER);
+
+        #ifdef CLIENT_DEBUG
+            client_makeTestRequest (player_client);
+        #endif
+
+        return 0;
+    }
+
+    return 1;
+
+}
+
+u8 stop_multiplayer (void) {
+
+    client_disconnectFromServer (player_client);
+    client_teardown (player_client);
+
+}
 
 /*** SCREEN ***/
 
@@ -44,7 +76,6 @@ void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene)
     SDL_RenderPresent (renderer);
 
 }
-
 
 /*** CLEAN UP ***/
 
@@ -83,13 +114,7 @@ void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **scree
 
 }
 
-
 /*** MAIN THREAD ***/
-
-// FIXME: 21/11/2018 - 5:07 - this is only for testing!!
-#include "cerver/client.h"
-
-Client *testClient = NULL;
 
 int main (void) {
 
@@ -113,15 +138,9 @@ int main (void) {
 
     pthread_t gameThread;
 
-    testClient = client_create (NULL);
-    client_start (testClient);
-    
-    // TODO: create a connect to address function to just connect the specified address
-
-    // this is only to connect for cerver types servers
-    client_connectToServer (testClient, "127.0.0.1", GAME_SERVER);
-
-    client_makeTestRequest (testClient);
+    #ifdef BLACK_MULTIPLAYER 
+        start_multiplayer ();
+    #endif
 
     while (running) {
         timePerFrame = 1000 / FPS_LIMIT;
@@ -138,16 +157,16 @@ int main (void) {
             screenForInput->handleEvent (screenForInput, event);
         }
 
-        if (inGame) {
+        if (inGame) 
             if (pthread_create (&gameThread, NULL, updateGame, NULL) != THREAD_OK)
                 fprintf (stderr, "Error creating game thread!\n");
-        } 
 
         // render the correct screen
         renderScreen (renderer, screen, activeScene);
 
         if (inGame)
-            if (pthread_join (gameThread, NULL) != THREAD_OK) fprintf (stderr, "Error joinning game thread!\n");
+            if (pthread_join (gameThread, NULL) != THREAD_OK) 
+                fprintf (stderr, "Error joinning game thread!\n");
 
         // Limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
@@ -155,11 +174,11 @@ int main (void) {
 
     }
 
-    client_disconnectFromServer (testClient);
-    client_teardown (testClient);
+    #ifdef BLACK_MULTIPLAYER
+        stop_multiplayer ();
+    #endif
 
     cleanUp (window, renderer);
-    printf ("\nhola\n");
 
     return 0;
 

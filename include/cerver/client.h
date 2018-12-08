@@ -11,8 +11,8 @@
 
 #include <poll.h>
 
-#include "objectPool.h"
-#include "thpool.h"
+#include "utils/objectPool.h"
+#include "utils/thpool.h"
 
 typedef uint8_t u8;
 typedef uint16_t u16;
