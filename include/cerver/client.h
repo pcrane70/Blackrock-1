@@ -11,8 +11,8 @@
 
 #include <poll.h>
 
-#include "utils/objectPool.h"
-#include "utils/thpool.h"
+#include "objectPool.h"
+#include "thpool.h"
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -37,6 +37,8 @@ typedef int64_t i64;
 #define DEFAULT_POLL_TIMEOUT            180000      // 3 min in mili secs
 #define DEFAULT_PACKET_POOL_INIT        4
 #define DEFAULT_THPOOL_INIT             4
+
+#define DEFAULT_AUTH_CODE               0x4CA140FF
 
 #pragma region GAME
 
@@ -197,6 +199,7 @@ typedef enum RequestType {
     POST_SEND_FILE,
     
     REQ_AUTH_CLIENT,
+    CLIENT_AUTH_DATA,
     SUCCESS_AUTH,
 
     LOBBY_CREATE,
@@ -307,6 +310,19 @@ typedef struct SLobby {
     // Vector players;             // ecah client also needs to keep track of other players in the lobby
 
 } SLobby;
+
+#pragma endregion
+
+#pragma region TESTING
+
+// 02/11/2018 -- session token
+typedef struct Token {
+
+    char token[128];
+
+} Token;
+
+extern void client_sendAuthPacket (Client *client);
 
 #pragma endregion
 

@@ -12,12 +12,12 @@
 
 #include <errno.h>
 
-#include "cerver/client.h"
+#include "client.h"
 
-#include "utils/objectPool.h"
-#include "utils/config.h"
-#include "utils/log.h"
-#include "utils/myUtils.h"
+#include "objectPool.h"
+#include "config.h"
+#include "log.h"
+#include "myUtils.h"
 
 /*** VALUES ***/
 
@@ -83,7 +83,7 @@ PacketInfo *newPacketInfo (Client *client, char *packetData, size_t packetSize) 
 
         char *end = p->packetData; 
         PacketHeader *header = (PacketHeader *) end;
-        printf ("handlePacket () - packet size: %i\n", header->packetSize);
+        //printf ("handlePacket () - packet size: %i\n", header->packetSize);
         
         // copy the contents from the entry buffer to the packet info
         /* if (!p->packetData)
@@ -206,7 +206,7 @@ i8 udp_sendPacket (Client *client, const void *begin, size_t packetSize,
 
 }
 
-i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flags) {
+i8 tcp_sendPacket (i32 socket_fd, void *begin, size_t packetSize, int flags) {
 
     ssize_t sent;
     const void *p = begin;
@@ -217,12 +217,15 @@ i8 tcp_sendPacket (i32 socket_fd, const void *begin, size_t packetSize, int flag
         packetSize -= sent;
     }
 
+    char *end = begin;
+    DefAuthData *authdata = (DefAuthData *) (end + sizeof (PacketHeader) + sizeof (RequestType));
+
     return 0;
 
 }
 
 // 23/11/2018 -- sends a packet to the server
-i8 client_sendPacket (Client *client, const void *packet, size_t packetSize) {
+i8 client_sendPacket (Client *client, void *packet, size_t packetSize) {
 
     i8 retval = -1;
 
@@ -266,8 +269,25 @@ void handlePacket (void *data) {
                 // handles an error from the server
                 case ERROR_PACKET: break;
 
+                
                 // handles authentication packets
-                case AUTHENTICATION: break;
+                case AUTHENTICATION: {
+                    char *end = packet->packetData;
+                    RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
+
+                    switch (reqdata->type) {
+                        case CLIENT_AUTH_DATA: {
+                            // TODO: add a check for server info -> sessions
+
+                            Token *tokenData = (Token *) (end += sizeof (RequestData));
+                            printf ("Token recieved from server: %s\n", tokenData->token);
+                           
+                        } break;
+                        default: break;
+                    }
+                    break;
+                }
+                    
 
                 // handles a request made from the server
                 case REQUEST: break;
@@ -312,10 +332,6 @@ void handlePacketBuffer (Client *client, char *buffer, size_t total_size) {
             // check the packet size
             packet_size = header->packetSize;
             if (packet_size > 0) {
-                RequestData *reqdata = (RequestData *) (header + sizeof (PacketHeader));
-                // printf ("handlePacketBuffer () - pack request type: %i\n", reqdata->type);
-                // printf ("handlePacketBuffer () - pack header size: %i\n", packet_size);
-
                 // copy the content of the packet from the buffer
                 packet_data = (char *) calloc (packet_size, sizeof (char));
                 for (u32 i = 0; i < packet_size; i++, buffer_idx++) 
@@ -346,7 +362,7 @@ void client_recieve (Client *client, i32 fd) {
     char packetBuffer[MAX_UDP_PACKET_SIZE];
     memset (packetBuffer, 0, MAX_UDP_PACKET_SIZE);
 
-    do {
+    // do {
         rc = recv (fd, packetBuffer, sizeof (packetBuffer), 0);
         
         if (rc < 0) {
@@ -358,7 +374,7 @@ void client_recieve (Client *client, i32 fd) {
                 client_disconnectFromServer (client);
             }
 
-            break;
+            // /break;
         }
 
         if (rc == 0) {
@@ -367,7 +383,7 @@ void client_recieve (Client *client, i32 fd) {
             logMsg (stdout, DEBUG_MSG, CLIENT, 
                     "Ending server connection - client_recieve () - rc == 0");
             client_disconnectFromServer (client);
-            break;
+            // break;
         }
 
         /* #ifdef CLIENT_DEBUG
@@ -381,7 +397,7 @@ void client_recieve (Client *client, i32 fd) {
             handlePacketBuffer (client, packetBuffer, rc);
         }
         
-    } while (true);
+    // } while (true);
 
 }
 
@@ -1167,6 +1183,39 @@ i8 client_game_startGame (Client *client) {
     }
 
     return -1;
+
+}
+
+#pragma endregion
+
+#pragma region TESTING 
+
+void client_sendAuthPacket (Client *client) {
+
+    if (client && client->isConnected) {
+        size_t packetSize = sizeof (PacketHeader) + 
+            sizeof (RequestData) + sizeof (DefAuthData);
+        void *req = generatePacket (AUTHENTICATION, packetSize);
+        if (req) {
+            char *end = req;
+            RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
+            reqdata->type = CLIENT_AUTH_DATA;
+
+            DefAuthData *authData = (DefAuthData *) (end + sizeof (RequestData));
+            
+            authData->code = DEFAULT_AUTH_CODE;
+
+            if (tcp_sendPacket (client->clientSock, req, packetSize, 0) < 0)
+                logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
+            else {
+                #ifdef CLIENT_DEBUG
+                    logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
+                #endif
+            }
+
+            free (req);
+        }
+    }
 
 }
 
