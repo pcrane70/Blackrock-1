@@ -31,11 +31,9 @@ Client *player_client = NULL;
 
 u8 start_multiplayer (void) {
 
-    player_client = client_create (NULL);
+    player_client = client_create ();
 
     if (player_client) {
-        // client_start (player_client);
-
         client_connectToServer (player_client, "127.0.0.1", GAME_SERVER);
 
         #ifdef CLIENT_DEBUG
@@ -116,6 +114,7 @@ void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **scree
 
 /*** MAIN THREAD ***/
 
+// FIXME: create more efficient threads
 int main (void) {
 
     srand ((unsigned) time (NULL));

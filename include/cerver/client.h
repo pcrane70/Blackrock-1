@@ -34,8 +34,10 @@ typedef int64_t i64;
 #define DEFAULT_PROTOCOL                IPPROTO_TCP
 #define DEFAULT_PORT                    7001
 
+#define DEFAULT_MAX_CONNECTIONS         10
 #define DEFAULT_POLL_TIMEOUT            180000      // 3 min in mili secs
 #define DEFAULT_PACKET_POOL_INIT        4
+
 #define DEFAULT_THPOOL_INIT             4
 
 #define DEFAULT_AUTH_CODE               0x4CA140FF
@@ -82,36 +84,39 @@ typedef struct Server {
 
 #pragma region CLIENT
 
-// TODO: if a client can only connect to one address at a time, we need to support 
-// multiple clients so that we can have multiple connections at the same time
-// add the clients in the poll structure...
+typedef struct Connection {
+
+    i32 sock_fd;
+    u8 useIpv6;  
+    u8 protocol;
+    u16 port; 
+
+    bool blocking;          // sokcet fd is blocking?
+    bool isConnected;       // is the socket connected?
+
+} Connection;
+
 typedef struct Client {
+
+    Connection **active_connections;
+    u8 n_active_connections;
+
+    bool running;           // client poll is running
+
+    struct pollfd fds[DEFAULT_MAX_CONNECTIONS];
+    u16 nfds;                  // n of active fds in the pollfd array
+    u32 pollTimeout;   
+
+    threadpool thpool;
+
+    Pool *packetPool;           //  packet info pool
+
+    // FIXME: fix below logic!!!
 
     // TODO: add the hability to connect to other clients directly
     // 18/11/2018 -- a client can only connect to one address a time right?
     // if so, we are only handling a connection with one server
     Server *connectionServer;
-
-    i32 clientSock;
-    u8 useIpv6;  
-    u8 protocol;            // 12/10/2018 - we only support either tcp or udp
-    u16 port; 
-
-    bool blocking;          // 31/10/2018 - sokcet fd is blocking?
-    bool running;           // the client is ready to listen & send
-    bool isConnected;       // connected to the server
-
-    // TODO: in a more complex application, maybe the client needs to open
-    // mutiple connections to the same server or to other clients
-    struct pollfd fds[2];      // 18/11/2018 - we only communicate with the server
-    u16 nfds;                  // n of active fds in the pollfd array
-    u32 pollTimeout;   
-
-    // TODO: 18/11/2018 - for now we will have this here...
-    Pool *packetPool;           //  packet info pool
-
-    // 18/11/2018 -- we will have our own thpoll inside the clien
-    threadpool thpool;
 
     // only used in a game server
     // TODO: get details from the server when connecting to it...
@@ -122,11 +127,13 @@ typedef struct Client {
 
 } Client;
 
-extern Client *client_create (Client *);
-extern u8 client_start (Client *client);
+/*** PUBLIC CLIENT FUNCTIONS ***/
+
+extern Client *client_create (void);
 extern u8 client_teardown (Client *client);
 
-extern u8 client_connectToServer (Client *client, char *serverIp, ServerType expectedType);
+extern u8 client_connectToServer (Client *client, 
+    char *serverIp, u16 port, ServerType expectedType);
 extern u8 client_disconnectFromServer (Client *);
 
 #pragma endregion
@@ -163,7 +170,7 @@ typedef struct Version {
 extern ProtocolId PROTOCOL_ID;
 extern Version PROTOCOL_VERSION;
 
-// 01/11/2018 -- this indicates what type of packet we are sending/recieving
+// these indicate what type of packet we are sending/recieving
 typedef enum PacketType {
 
     SERVER_PACKET = 0,
@@ -187,7 +194,7 @@ typedef struct PacketHeader {
 
 } PacketHeader;
 
-// 01/11/2018 -- this indicates the data and more info about the packet type
+// these indicate the data and more info about the packet type
 typedef enum RequestType {
 
     SERVER_INFO = 0,
@@ -243,7 +250,7 @@ typedef struct ErrorData {
 
 #pragma endregion
 
-/*** REQUESTS ***/
+/*** PUBLIC REQUESTS FUNCTIONS ***/
 
 extern u8 client_makeTestRequest (Client *client);
 

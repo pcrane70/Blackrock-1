@@ -386,11 +386,6 @@ void client_recieve (Client *client, i32 fd) {
             // break;
         }
 
-        /* #ifdef CLIENT_DEBUG
-            logMsg (stdout, DEBUG_MSG, CLIENT, 
-                createString ("recv () - buffer size: %li", rc));
-        #endif */
-
         char *buffer_data = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
         if (buffer_data) {
             memcpy (buffer_data, packetBuffer, rc);
@@ -411,6 +406,8 @@ void client_recieve (Client *client, i32 fd) {
 // TODO: maybe later we can use this to connect to other clients directly?
 // 18/11/2018 - adding support for async request and responses using a similar logic
 // as in the server. We only support poll to be used when connected to the server.
+
+// FIXME: move this from here!!
 u8 client_poll (void *data) {
 
     if (!data) {
@@ -575,6 +572,97 @@ void server_handlePacket (PacketInfo *packet) {
 
 #pragma endregion
 
+#pragma region CONNECTION
+
+// inits a client structure with the specified values
+u8 connection_init (Connection *connection, u16 port) {
+
+    #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, CLIENT, "Initializing connection values...");
+    #endif
+
+    connection->useIpv6 = DEFAULT_USE_IPV6;
+    #ifdef CLIENT_DEBUG
+    logMsg (stdout, DEBUG_MSG, CLIENT, connection->useIpv6 == 1 ? 
+        "Use IPv6: yes." : "Use IPv6: no.");
+    #endif
+
+    connection->protocol = DEFAULT_PROTOCOL;
+    #ifdef CLIENT_DEBUG
+    logMsg (stdout, DEBUG_MSG, CLIENT, connection->protocol == IPPROTO_TCP ? 
+        "Using TCP protocol." : "Using UDP protocol.");
+    #endif
+        
+    if (port <= 0 || port >= MAX_PORT_NUM) {
+        logMsg (stdout, WARNING, CLIENT, 
+            createString ("Invalid port number. Setting port to default value: %i", DEFAULT_PORT));
+        connection->port = DEFAULT_PORT;
+    }
+
+    else connection->port = port;
+
+    #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, CLIENT,
+            createString ("Using port: %i.", connection->port));
+    #endif
+
+    // init the new connection socket
+    switch (connection->protocol) {
+        case IPPROTO_TCP: 
+            connection->sock_fd = socket ((connection->useIpv6 == 1 ? AF_INET6 : AF_INET), SOCK_STREAM, 0);
+            break;
+        case IPPROTO_UDP:
+            connection->sock_fd = socket ((connection->useIpv6 == 1 ? AF_INET6 : AF_INET), SOCK_DGRAM, 0);
+            break;
+
+        default: logMsg (stderr, ERROR, CLIENT, "Unkonw protocol type!"); return 1;
+    }
+
+    if (connection->sock_fd < 0) {
+        logMsg (stderr, ERROR, CLIENT, "Failed to create client socket!");
+        return 1;
+    }
+
+    #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, CLIENT, "Created new connection socket!");
+    #endif
+
+    // set the socket to non blocking mode
+    if (!sock_setBlocking (connection->sock_fd, connection->blocking)) {
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to set connection socket to non blocking mode!");
+        close (connection->sock_fd);
+        return 1;
+    }
+
+    else {
+        connection->blocking = false;
+        #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, NO_TYPE, "Connection socket set to non blocking mode.");
+        #endif
+    }
+
+    return 0;
+    
+}
+
+Connection *client_connection_new (u16 port) {
+
+    Connection *connection = (Connection *) malloc (sizeof (Connection));
+
+    if (connection) {
+        if (!connection_init (connection, port)) {
+            // init default values
+            connection->blocking = true;
+            connection->isConnected = false;
+
+            return connection;
+        }
+    }
+
+    return NULL;
+
+}
+
 #pragma endregion
 
 /*** CLIENT LOGIC ***/
@@ -586,30 +674,25 @@ void server_handlePacket (PacketInfo *packet) {
 
 #pragma region CLIENT
 
-Client *newClient (Client *c) {
+// cerver client constructor
+Client *newClient (void) {
 
     Client *newClient = (Client *) malloc (sizeof (Client));
 
     if (newClient) {
-        // create a client with the requested parameters
-        if (c) {
-            newClient->useIpv6 = c->useIpv6;
-            newClient->protocol = c->protocol;
-            newClient->port = c->port;
+        newClient->active_connections = 
+            (Connection **) calloc (DEFAULT_MAX_CONNECTIONS, sizeof (Connection *));
+        if (!newClient->active_connections) {
+            logMsg (stderr, ERROR, CLIENT, "Failed to allocate client's active_connections!");
+            return NULL;
         }
 
-        // set the values to default
-        else {
-            newClient->useIpv6 = DEFAULT_USE_IPV6;
-            newClient->protocol = DEFAULT_PROTOCOL;
-            newClient->port = DEFAULT_PORT;
-        }
+        newClient->n_active_connections = 0;
 
         // set default values
-        newClient->isConnected = false;
-        newClient->blocking = true;
         newClient->running = false;
 
+        // FIXME:
         newClient->inLobby = false;
         newClient->isOwner = false;
     }
@@ -618,79 +701,18 @@ Client *newClient (Client *c) {
 
 }
 
-// loads the client values from the config file
-u8 getClientCfgValues (Client *client, ConfigEntity *cfgEntity) {
+// public function to create a new client
+Client *client_create (void) {
 
-    char *ipv6 = getEntityValue (cfgEntity, "ipv6");
-    if (ipv6) {
-        client->useIpv6 = atoi (ipv6);
-        if (client->useIpv6 != 0 || client->useIpv6 != 1) client->useIpv6 = DEFAULT_USE_IPV6;
-        free (ipv6);
-    }
-    else client->useIpv6 = DEFAULT_USE_IPV6;
-
-    #ifdef CLIENT_DEBUG
-    logMsg (stdout, DEBUG_MSG, CLIENT, client->useIpv6 == 1 ? 
-        "Use IPv6: yes." : "Use IPv6: no.");
-    #endif
-
-    char *tcp = getEntityValue (cfgEntity, "tcp");
-    if (tcp) {
-        u8 usetcp = atoi (tcp);
-        if (usetcp < 0 || usetcp > 1) {
-            logMsg (stdout, WARNING, CLIENT, "Unknown protocol. Using default: tcp protocol");
-            usetcp = 1;
-        }
-
-        if (usetcp) client->protocol = IPPROTO_TCP;
-        else client->protocol = IPPROTO_UDP;
-
-        free (tcp);
-    }
-    // set to default (tcp) if we don't found a value
-    else {
-        logMsg (stdout, WARNING, CLIENT, "No protocol found. Using default: tcp protocol");
-        client->protocol = DEFAULT_PROTOCOL;
-    }
-
-    char *port = getEntityValue (cfgEntity, "port");
-    if (port) {
-        client->port = atoi (port);
-        // check that we have a valid range, if not, set to default port
-        if (client->port <= 0 || client->port >= MAX_PORT_NUM) {
-            logMsg (stdout, WARNING, CLIENT, 
-                createString ("Invalid port number. Setting port to default value: %i", DEFAULT_PORT));
-            client->port = DEFAULT_PORT;
-        }
-
-        #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, CLIENT, createString ("Listening on port: %i", client->port));
-        #endif
-
-        free (port);
-    }
-    // set to default port
-    else {
-        logMsg (stdout, WARNING, CLIENT, 
-            createString ("No port found. Setting port to default value: %i", DEFAULT_PORT));
-        client->port = DEFAULT_PORT;
-    } 
-
-    return 0;
-
-}
-
-// init client data structues inside client such as pool and poll
-void initClientData (Client *client) {
+    Client *client = newClient ();
 
     if (client) {
-        // init the poll strcuture and add the client socket as the first one
+        // init the client's poll strcuture
         memset (client->fds, 0, sizeof (client->fds));
-        
+        for (u8 i = 0; i < DEFAULT_MAX_CONNECTIONS; i++)    
+            client->fds[i].fd = -1;
+
         client->nfds = 0;
-        client->fds[0].fd = client->clientSock;
-        client->fds[0].events = POLLIN;
-        client->nfds++; 
 
         // init the client's packet info pool with some memebers in it
         client->packetPool = pool_init (destroyPacketInfo);
@@ -698,152 +720,39 @@ void initClientData (Client *client) {
             for (int i = 0; i < DEFAULT_PACKET_POOL_INIT; i++)
                 pool_push (client->packetPool, malloc (sizeof (PacketInfo)));
         
-        else logMsg (stderr, ERROR, CLIENT, "Failed to init client's packet info pool!");
-
-        client->thpool = thpool_init (DEFAULT_THPOOL_INIT);
-    }
-
-}
-
-// inits a client structure with the specified values
-u8 client_init (Client *client, Config *cfg) {
-
-    if (!client) {
-        logMsg (stderr, ERROR, CLIENT, "Can't init a NULL client!");
-        return 1;
-    }
-
-    #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, CLIENT, "Initializing client...");
-    #endif
-
-    if (cfg) {
-        ConfigEntity *cfgEntity = getEntityWithId (cfg, 1);
-        if (!cfgEntity) {
-            logMsg (stderr, ERROR, CLIENT, "Problems with client config!");
-            return 1;
-        }
-
-        #ifdef CLIENT_DEBUG
-            logMsg (stdout, DEBUG_MSG, CLIENT, "Setting client values from config...");
-        #endif
-
-        if (!getClientCfgValues (client, cfgEntity))
-            logMsg (stdout, SUCCESS, CLIENT, "Done getting cfg client values.");
-    }
-
-    // init the client socket
-    switch (client->protocol) {
-        case IPPROTO_TCP: 
-            client->clientSock = socket ((client->useIpv6 == 1 ? AF_INET6 : AF_INET), SOCK_STREAM, 0);
-            break;
-        case IPPROTO_UDP:
-            client->clientSock = socket ((client->useIpv6 == 1 ? AF_INET6 : AF_INET), SOCK_DGRAM, 0);
-            break;
-
-        default: logMsg (stderr, ERROR, CLIENT, "Unkonw protocol type!"); return 1;
-    }
-
-    if (client->clientSock < 0) {
-        logMsg (stderr, ERROR, CLIENT, "Failed to create client socket!");
-        return 1;
-    }
-
-    #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, CLIENT, "Created client socket");
-    #endif
-
-    // set the socket to non blocking mode
-    if (!sock_setBlocking (client->clientSock, client->blocking)) {
-        logMsg (stderr, ERROR, CLIENT, "Failed to set client socket to non blocking mode!");
-        close (client->clientSock);
-        return 1;
-    }
-
-    else {
-        client->blocking = false;
-        #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, CLIENT, "Client socket set to non blocking mode.");
-        #endif
-    }
-
-    client->pollTimeout = DEFAULT_POLL_TIMEOUT;
-
-    return 0;
-    
-}
-
-// TODO: how can we handle multiple connections?
-// prepare the client to listen and send info
-u8 client_start (Client *client) {
-
-    if (!client->running) {
-        client->running = true;
-
-        // start the client poll in its own thread so that we can recieve packets
-        /* if (client->thpool) {
-            thpool_add_work (client->thpool, (void *) client_poll, client);
-            return 0;
+        else {
+            #ifdef CLIENT_DEBUG
+            logMsg (stderr, ERROR, CLIENT, "Failed to init client's packet info pool!");
+            #endif
+            free (client);
+            return NULL;
         } 
 
-        else logMsg (stderr, ERROR, CLIENT, "Client doesn't have a reference to a thpool!"); */
-    }
-
-    else logMsg (stderr, ERROR, CLIENT, "Can't start the client. It is already running!");
-
-    return 1;
-
-}
-
-// cerver client constructor
-Client *client_create (Client *client) {
-
-    // create a client with the requested parameters
-    if (client) {
-        Client *c = newClient (client);
-        if (!client_init (c, NULL)) {
-            initClientData (c);
-            logMsg (stdout, SUCCESS, CLIENT, "Created a new client!");
-            return c;
+        client->thpool = thpool_init (DEFAULT_THPOOL_INIT);
+        if (!client->thpool) {
+            #ifdef CLIENT_DEBUG
+            logMsg (stderr, ERROR, CLIENT, "Failed to init client thpool!");
+            #endif
+            pool_clear (client->packetPool);
+            free (client);
+            return NULL;
         }
 
-        else {
-            logMsg (stderr, ERROR, CLIENT, "Failed to init the client!");
-            free (c);
-        }
+        logMsg (stdout, SUCCESS, CLIENT, "Created a new client!");
+        return client;
     }
 
-    // create the client from the default config file
-    else {
-        Config *clientConfig = parseConfigFile ("./config/client.cfg");
-        if (!clientConfig) 
-            logMsg (stderr, ERROR, NO_TYPE, "Problems loading client config!");
-
-        else {
-            Client *c = newClient (NULL);
-            if (!client_init (c, clientConfig)) {
-                initClientData (c);
-                logMsg (stdout, SUCCESS, CLIENT, "Created a new client!");
-                clearConfig (clientConfig);
-                return c;
-            }
-
-            else {
-                logMsg (stderr, ERROR, CLIENT, "Failed to init client!");
-                clearConfig (clientConfig);
-                free (c);
-            }
-        }
-    }
+    logMsg (stderr, ERROR, CLIENT, "Failed to create a new client!");
 
     return NULL;
 
 }
 
+// FIXME:
 // check that the client has the correct values
 u8 client_check (Client *client) {
 
-    if (!client) {
+    /* if (!client) {
         logMsg (stderr, ERROR, CLIENT, "A NULL client can't connect to a server!");
         return 1;
     }
@@ -856,47 +765,65 @@ u8 client_check (Client *client) {
     if (client->protocol != IPPROTO_TCP) {
         logMsg (stderr, ERROR, CLIENT, "Can't connect client. Wrong protocol!");
         return 1;
-    }
-
+    } */
+ 
     return 0;
 
 }
 
 // try to connect a client to an address (server) with exponential backoff
-u8 connectRetry (Client *client, const struct sockaddr_storage address) {
+u8 connectRetry (Connection *connection, const struct sockaddr_storage address) {
 
     i32 numsec;
     for (numsec = 2; numsec <= MAXSLEEP; numsec <<= 1) {
-        if (!connect (client->clientSock, 
+        if (!connect (connection->sock_fd, 
             (const struct sockaddr *) &address, 
             sizeof (struct sockaddr))) 
-            return 0;   // the connection was successfull
+            return 0;
 
         if (numsec <= MAXSLEEP / 2) sleep (numsec);
     } 
 
-    return 1;   // failed to connect to server after MAXSLEEP secs
+    return 1;
 
 }
 
-// FIXME: create a connect to address function to just connect the specified address
+// TODO: connects a client to the specified ip address, it does not have to be a cerver type server
+u8 client_connectToAddress (Client *client, char *ip_address) {
+
+    if (!client_check (client) && ip_address) {
+
+    }
+
+}
+
+// FIXME: move this from here!
+u8 client_get_free_poll_idx (Client *client) {
+
+    for (u8 i = 0; i < DEFAULT_MAX_CONNECTIONS; i++)
+        if (client->fds[i].fd == -1)
+            return i;
+
+    return -1;
+
+}
 
 // FIXME: add support for multiple connections to multiple servers at the same time
-// TODO: add support for ipv6 connections
 // connects the client to a cerver type server
-u8 client_connectToServer (Client *client, char *serverIp, ServerType expectedType) {
+u8 client_connectToServer (Client *client, char *serverIp, u16 port, ServerType expectedType) {
 
-    if (!client_check (client) && !client->isConnected) {
+    Connection *new_con = client_connection_new (port);
+
+    if (new_con) {
+        // FIXME: do we still need this?
         Server *server = (Server *) malloc (sizeof (Server));
         server->type = expectedType;
-        server->port = client->port;
 
         if (!serverIp) {
             logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
             return 1;
         }
 
-        // copy the new ip to the client server data
         else {
             server->ip = (char *) calloc (strlen (serverIp) + 1, sizeof (char));
             strcpy (server->ip, serverIp);
@@ -905,12 +832,12 @@ u8 client_connectToServer (Client *client, char *serverIp, ServerType expectedTy
         // set the address of the server 
         memset (&server->address, 0, sizeof (struct sockaddr_storage));
 
-        if (client->useIpv6) {
+        if (new_con->useIpv6) {
             struct sockaddr_in6 *addr = 
                 (struct sockaddr_in6 *) &server->address;
             addr->sin6_family = AF_INET6;
-            // addr->sin6_addr = inet;      
-            addr->sin6_port = htons (client->port);
+            // FIXME: addr->sin6_addr = inet;         
+            addr->sin6_port = htons (new_con->port);
         } 
 
         else {
@@ -918,23 +845,33 @@ u8 client_connectToServer (Client *client, char *serverIp, ServerType expectedTy
                 (struct sockaddr_in *) &server->address;
             addr->sin_family = AF_INET;
             addr->sin_addr.s_addr = inet_addr (server->ip);
-            addr->sin_port = htons (client->port);
+            addr->sin_port = htons (new_con->port);
         } 
 
         // try to connect to the server with exponential backoff
-        if (!connectRetry (client, server->address)) {
-            // start the client poll in its own thread so that we can recieve packets
-            if (client->thpool)
+        if (!connectRetry (new_con, server->address)) {
+            client->active_connections[client->n_active_connections] = new_con;
+            client->n_active_connections++;
+
+            // add the new socket to the poll structure
+            u8 idx = client_get_free_poll_idx (client);
+            if (idx >= 0)
+                client->fds[idx].fd = new_con->sock_fd;
+
+            // check if we walready have the client poll running
+            if (client->running == false) {
                 thpool_add_work (client->thpool, (void *) client_poll, client);
+                client->running = true;
+            }
 
-            else logMsg (stderr, ERROR, CLIENT, "Client doesn't have a reference to a thpool!");
-
+            // FIXME: how do we want to manage servers?
             client->connectionServer = server;
-            client->isConnected = true;
+
             logMsg (stdout, SUCCESS, CLIENT, "Connected to server!"); 
 
             return 0;
         } 
+
     }
 
     logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
