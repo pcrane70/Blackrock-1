@@ -35,7 +35,7 @@ typedef int64_t i64;
 #define DEFAULT_PORT                    7001
 
 #define DEFAULT_MAX_CONNECTIONS         10
-#define DEFAULT_POLL_TIMEOUT            180000      // 3 min in mili secs
+#define DEFAULT_POLL_TIMEOUT            2000
 #define DEFAULT_PACKET_POOL_INIT        4
 
 #define DEFAULT_THPOOL_INIT             4
@@ -63,17 +63,15 @@ typedef enum ServerType {
 
 } ServerType;
 
-// some useful info about the server we are connectiing to
+// some useful info about the server we are connecting to
 typedef struct Server {
 
     u8 useIpv6;  
-    u8 protocol;            // we only support either tcp or udp
+    u8 protocol;
     u16 port; 
 
     char *ip;
     struct sockaddr_storage address;
-
-    bool isRunning;         // the server is recieving and/or sending packets
 
     ServerType type;
     bool authRequired;      // authentication required by the server
@@ -84,6 +82,8 @@ typedef struct Server {
 
 #pragma region CLIENT
 
+// FIXME: where do we want to store the session token??
+
 typedef struct Connection {
 
     i32 sock_fd;
@@ -93,6 +93,8 @@ typedef struct Connection {
 
     bool blocking;          // sokcet fd is blocking?
     bool isConnected;       // is the socket connected?
+
+    Server *server;
 
 } Connection;
 
@@ -111,13 +113,6 @@ typedef struct Client {
 
     Pool *packetPool;           //  packet info pool
 
-    // FIXME: fix below logic!!!
-
-    // TODO: add the hability to connect to other clients directly
-    // 18/11/2018 -- a client can only connect to one address a time right?
-    // if so, we are only handling a connection with one server
-    Server *connectionServer;
-
     // only used in a game server
     // TODO: get details from the server when connecting to it...
     // TODO: move this from here to a server structure
@@ -132,8 +127,11 @@ typedef struct Client {
 extern Client *client_create (void);
 extern u8 client_teardown (Client *client);
 
-extern u8 client_connectToServer (Client *client, 
-    char *serverIp, u16 port, ServerType expectedType);
+extern Connection *client_make_new_connection (Client *client, char *ip_address, u16 port);
+extern u8 client_close_connection (Client *client, Connection *connection);
+
+extern Connection *client_connectToServer (Client *client, char *serverIp, u16 port, 
+    ServerType expectedType);
 extern u8 client_disconnectFromServer (Client *);
 
 #pragma endregion
@@ -252,17 +250,19 @@ typedef struct ErrorData {
 
 /*** PUBLIC REQUESTS FUNCTIONS ***/
 
-extern u8 client_makeTestRequest (Client *client);
+extern u8 client_makeTestRequest (Client *client, Connection *connection);
 
-extern i8 client_file_get (Client *client, char *filename);
-extern i8 client_file_send (Client *client, char *filename);
+extern u8 client_sendAuthPacket (Client *client, Connection *connection);
 
-extern i8 client_game_createLobby (Client *owner, GameType gameType);
-extern i8 client_game_joinLobby (Client *client, GameType gameType);
-extern i8 client_game_leaveLobby (Client *client);
-extern i8 client_game_destroyLobby (Client *client);
+extern i8 client_file_get (Client *client, Connection *connection, char *filename);
+extern i8 client_file_send (Client *client, Connection *connection, char *filename);
 
-extern i8 client_game_startGame (Client *client);
+extern i8 client_game_createLobby (Client *owner, Connection *connection, GameType gameType);
+extern i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameType);
+extern i8 client_game_leaveLobby (Client *client, Connection *connection);
+extern i8 client_game_destroyLobby (Client *client, Connection *connection);
+
+extern i8 client_game_startGame (Client *client, Connection *connection);
 
 /*** SERIALIZATION ***/
 
@@ -291,6 +291,13 @@ typedef struct DefAuthData {
 
 } DefAuthData;
 
+// session id - token
+typedef struct Token {
+
+    char token[65];
+
+} Token;
+
 typedef struct GameSettings {
 
 	GameType gameType;
@@ -317,19 +324,6 @@ typedef struct SLobby {
     // Vector players;             // ecah client also needs to keep track of other players in the lobby
 
 } SLobby;
-
-#pragma endregion
-
-#pragma region TESTING
-
-// 02/11/2018 -- session token
-typedef struct Token {
-
-    char token[128];
-
-} Token;
-
-extern void client_sendAuthPacket (Client *client);
 
 #pragma endregion
 

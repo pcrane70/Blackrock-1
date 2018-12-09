@@ -52,6 +52,7 @@ bool sock_setBlocking (int32_t fd, bool isBlocking) {
 
 #pragma region PACKETS
 
+// FIXME:
 PacketInfo *newPacketInfo (Client *client, char *packetData, size_t packetSize) {
 
     PacketInfo *p = NULL;
@@ -164,14 +165,6 @@ void initPacketHeader (PacketHeader *header, PacketType type, u32 packetSize) {
     header->packetType = type;
     header->packetSize = packetSize;
 
-    /* PacketHeader h;
-    h.protocolID = PROTOCOL_ID;
-    h.protocolVersion = PROTOCOL_VERSION;
-    h.packetType = type;
-    h.packetSize = (u32) packetSize;
-
-    memcpy (header, &h, sizeof (PacketHeader)); */
-
 }
 
 // generates a generic packet with the specified packet type
@@ -188,6 +181,7 @@ void *generatePacket (PacketType packetType, size_t packetSize) {
 
 }
 
+// FIXME:
 // TODO: 06/11/2018 -- test this!
 i8 udp_sendPacket (Client *client, const void *begin, size_t packetSize, 
     const struct sockaddr_storage address) {
@@ -314,7 +308,7 @@ void handlePacket (void *data) {
 }
 
 // split the entry buffer in packets of the correct size
-void handlePacketBuffer (Client *client, char *buffer, size_t total_size) {
+void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total_size) {
 
     if (buffer && (total_size > 0)) {
         u32 buffer_idx = 0;
@@ -353,138 +347,53 @@ void handlePacketBuffer (Client *client, char *buffer, size_t total_size) {
 
 }
 
+// FIXME: correctly end the connections
+// TODO: add support for handling large files transmissions
 // recive all incoming data from this socket
-// what happens if my buffer isn't enough, for example a larger file?
-// TODO: 03/11/2018 - add support for multiple reads to the socket
-void client_recieve (Client *client, i32 fd) {
+void client_recieve (Client *client, i32 socket_fd) {
 
     ssize_t rc;
     char packetBuffer[MAX_UDP_PACKET_SIZE];
     memset (packetBuffer, 0, MAX_UDP_PACKET_SIZE);
 
     // do {
-        rc = recv (fd, packetBuffer, sizeof (packetBuffer), 0);
+        rc = recv (socket_fd, packetBuffer, sizeof (packetBuffer), 0);
         
         if (rc < 0) {
             if (errno != EWOULDBLOCK) {     // no more data to read 
                 // logMsg (stderr, ERROR, CLIENT, "Recv failed!");
                 // perror ("Error:");
-                logMsg (stdout, DEBUG_MSG, CLIENT, 
-                    "Ending server connection - client_recieve () - rc < 0");
-                client_disconnectFromServer (client);
+                logMsg (stdout, DEBUG_MSG, CLIENT, "client_recieve () - rc < 0");
+                close (socket_fd);  // just close the socket
             }
-
             // /break;
         }
 
-        if (rc == 0) {
+        else if (rc == 0) {
             // man recv -> steam socket perfomed an orderly shutdown
             // but in dgram it might mean something?
             logMsg (stdout, DEBUG_MSG, CLIENT, 
-                    "Ending server connection - client_recieve () - rc == 0");
-            client_disconnectFromServer (client);
+                    "Ending connection - client_recieve () - rc == 0");
+
+            close (socket_fd);  // close the socket
+
+            // FIXME: close the connection
+            // client_disconnectFromServer (client);
             // break;
         }
 
-        char *buffer_data = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
-        if (buffer_data) {
-            memcpy (buffer_data, packetBuffer, rc);
-            handlePacketBuffer (client, packetBuffer, rc);
+        else {
+            char *buffer_data = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
+            if (buffer_data) {
+                memcpy (buffer_data, packetBuffer, rc);
+                handleRecvBuffer (client, socket_fd, packetBuffer, rc);
+            }
         }
-        
     // } while (true);
 
 }
 
-// TODO: 18/11/2018 -- 22:17 -- maybe we can't have the same logic as in the server,
-// because the client socket is the one that connect to the server!!!
-// so we might need the poll structure to be one levele above and each time have a new connection, 
-// we need to create a new client structure!!!
-// but for now i think we can handle one connection just for testing...
-
-// FIXME: add support for multiple connections to multiple servers at the same time
-// TODO: maybe later we can use this to connect to other clients directly?
-// 18/11/2018 - adding support for async request and responses using a similar logic
-// as in the server. We only support poll to be used when connected to the server.
-
-// FIXME: move this from here!!
-u8 client_poll (void *data) {
-
-    if (!data) {
-        logMsg (stderr, ERROR, SERVER, "Can't poll on a NULL client!");
-        return 1;
-    }
-
-    Client *client = (Client *) data;
-
-    // TODO: do we also want to connect to other clients?
-    // i32 serverSocket;   
-	// struct sockaddr_storage serverAddress;
-	// memset (&serverAddress, 0, sizeof (struct sockaddr_storage));
-    // socklen_t sockLen = sizeof (struct sockaddr_storage);
-
-    // char packetBuffer[MAX_UDP_PACKET_SIZE];
-
-    int poll_retval;    // ret val from poll function
-    int newfd;          // fd of new connection
-
-    #ifdef CLIENT_DEBUG
-        logMsg (stdout, SUCCESS, CLIENT, "Client has started!");
-        logMsg (stdout, DEBUG_MSG, CLIENT, "Waiting for connections...");
-    #endif
-
-    // 18/11/2018 - we only want to communicate with the server
-    while (client->running) {
-        poll_retval = poll (client->fds, 2, client->pollTimeout);
-
-        // poll failed
-        // FIXME: disconnect the client from the server
-        if (poll_retval < 0) {
-            logMsg (stderr, ERROR, CLIENT, "Poll failed!");
-            perror ("Error");
-            client->isConnected;
-            break;
-        }
-
-        // if poll has timed out, just continue to the next loop... 
-        if (poll_retval == 0) {
-            #ifdef DEBUG
-                logMsg (stdout, DEBUG_MSG, CLIENT, "Poll timeout.");
-            #endif
-            continue;
-        }
-
-        // one or more fd(s) are readable, need to determine which ones they are
-        // currfds = server->nfds;
-        for (u8 i = 0; i < 2; i++) {
-            if (client->fds[i].revents == 0) continue;
-
-            // FIXME: close the connection
-            if (client->fds[i].revents != POLLIN) {
-                logMsg (stderr, ERROR, CLIENT, "Unexpected poll result!");
-                continue;  
-            }
-
-            // 18/11/2018 -- we only want to be connected to the server!
-            // listening fd is readable (client socket)
-            /* if (client->fds[i].fd == client->clientSock) {
-                #ifdef CLIENT_DEBUG
-                    logMsg (stdout, WARNING, CLIENT, "Some tried to connect to this client.");
-                #endif
-            }
-
-            // someone sent us data
-            else client_recieve (client, client->fds[i].fd); */
-
-            client_recieve (client, client->fds[i].fd);
-        }
-    }
-
-    #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, CLIENT, "Poll end!");
-    #endif
-
-}
+#pragma endregion
 
 /*** SERVER ***/
 
@@ -674,6 +583,7 @@ Connection *client_connection_new (u16 port) {
 
 #pragma region CLIENT
 
+// FIXME:
 // cerver client constructor
 Client *newClient (void) {
 
@@ -748,26 +658,62 @@ Client *client_create (void) {
 
 }
 
-// FIXME:
-// check that the client has the correct values
-u8 client_check (Client *client) {
+u8 client_get_free_poll_idx (Client *client) {
 
-    /* if (!client) {
-        logMsg (stderr, ERROR, CLIENT, "A NULL client can't connect to a server!");
+    for (u8 i = 0; i < DEFAULT_MAX_CONNECTIONS; i++)
+        if (client->fds[i].fd == -1)
+            return i;
+
+    return -1;
+
+}
+
+u8 client_poll (void *data) {
+
+    if (!data) {
+        logMsg (stderr, ERROR, SERVER, "Can't poll on a NULL client!");
         return 1;
     }
 
-    if (!client->running) {
-        logMsg (stderr, ERROR, CLIENT, "Need to start client first!");
-        return 1;
+    Client *client = (Client *) data;
+
+    int poll_retval;    
+
+    #ifdef CLIENT_DEBUG
+        logMsg (stdout, SUCCESS, CLIENT, "Client poll has started!");
+    #endif
+
+    while (client->running) {
+        poll_retval = poll (client->fds, DEFAULT_MAX_CONNECTIONS, client->pollTimeout);
+
+        // poll failed
+        if (poll_retval < 0) {
+            logMsg (stderr, ERROR, NO_TYPE, "Client poll failed!");
+            perror ("Error");
+            // FIXME: close all of our active connections...
+            break;
+        }
+
+        // if poll has timed out, just continue to the next loop... 
+        if (poll_retval == 0) {
+            #ifdef DEBUG
+                logMsg (stdout, DEBUG_MSG, NO_TYPE, "Poll timeout.");
+            #endif
+            continue;
+        }
+
+        // one or more fd(s) are readable, need to determine which ones they are
+        for (u8 i = 0; i < DEFAULT_MAX_CONNECTIONS; i++) {
+            if (client->fds[i].revents == 0) continue;
+            if (client->fds[i].revents != POLLIN) continue;
+
+            client_recieve (client, client->fds[i].fd);
+        }
     }
 
-    if (client->protocol != IPPROTO_TCP) {
-        logMsg (stderr, ERROR, CLIENT, "Can't connect client. Wrong protocol!");
-        return 1;
-    } */
- 
-    return 0;
+    #ifdef CLIENT_DEBUG
+        logMsg (stdout, DEBUG_MSG, CLIENT, "Client poll has ended,");
+    #endif
 
 }
 
@@ -788,53 +734,59 @@ u8 connectRetry (Connection *connection, const struct sockaddr_storage address) 
 
 }
 
-// TODO: connects a client to the specified ip address, it does not have to be a cerver type server
-u8 client_connectToAddress (Client *client, char *ip_address) {
+// FIXME:
+// connects a client to the specified ip address, it does not have to be a cerver type server
+Connection *client_make_new_connection (Client *client, char *ip_address, u16 port) {
 
-    if (!client_check (client) && ip_address) {
+    if (!ip_address) {
+        logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
+        return NULL;
+    }
+
+    Connection *new_con = client_connection_new (port);
+
+    if (new_con) {
+
+    }
+
+    logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    return NULL;
+
+}
+
+// FIXME:
+u8 client_close_connection (Client *client, Connection *connection) {
+
+    if (client && connection) {
 
     }
 
 }
 
-// FIXME: move this from here!
-u8 client_get_free_poll_idx (Client *client) {
-
-    for (u8 i = 0; i < DEFAULT_MAX_CONNECTIONS; i++)
-        if (client->fds[i].fd == -1)
-            return i;
-
-    return -1;
-
-}
-
-// FIXME: add support for multiple connections to multiple servers at the same time
 // connects the client to a cerver type server
-u8 client_connectToServer (Client *client, char *serverIp, u16 port, ServerType expectedType) {
+Connection *client_connectToServer (Client *client, char *serverIp, u16 port, 
+    ServerType expectedType) {
+
+    if (!serverIp) {
+        logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
+        return NULL;
+    }
 
     Connection *new_con = client_connection_new (port);
 
     if (new_con) {
-        // FIXME: do we still need this?
-        Server *server = (Server *) malloc (sizeof (Server));
-        server->type = expectedType;
+        new_con->server = (Server *) malloc (sizeof (Server));
+        new_con->server->type = expectedType;
 
-        if (!serverIp) {
-            logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
-            return 1;
-        }
-
-        else {
-            server->ip = (char *) calloc (strlen (serverIp) + 1, sizeof (char));
-            strcpy (server->ip, serverIp);
-        } 
+        new_con->server->ip = (char *) calloc (strlen (serverIp) + 1, sizeof (char));
+        strcpy (new_con->server->ip, serverIp);
 
         // set the address of the server 
-        memset (&server->address, 0, sizeof (struct sockaddr_storage));
+        memset (&new_con->server->address, 0, sizeof (struct sockaddr_storage));
 
         if (new_con->useIpv6) {
             struct sockaddr_in6 *addr = 
-                (struct sockaddr_in6 *) &server->address;
+                (struct sockaddr_in6 *) &new_con->server->address;
             addr->sin6_family = AF_INET6;
             // FIXME: addr->sin6_addr = inet;         
             addr->sin6_port = htons (new_con->port);
@@ -842,14 +794,14 @@ u8 client_connectToServer (Client *client, char *serverIp, u16 port, ServerType 
 
         else {
             struct sockaddr_in *addr = 
-                (struct sockaddr_in *) &server->address;
+                (struct sockaddr_in *) &new_con->server->address;
             addr->sin_family = AF_INET;
-            addr->sin_addr.s_addr = inet_addr (server->ip);
+            addr->sin_addr.s_addr = inet_addr (new_con->server->ip);
             addr->sin_port = htons (new_con->port);
         } 
 
         // try to connect to the server with exponential backoff
-        if (!connectRetry (new_con, server->address)) {
+        if (!connectRetry (new_con, new_con->server->address)) {
             client->active_connections[client->n_active_connections] = new_con;
             client->n_active_connections++;
 
@@ -864,18 +816,14 @@ u8 client_connectToServer (Client *client, char *serverIp, u16 port, ServerType 
                 client->running = true;
             }
 
-            // FIXME: how do we want to manage servers?
-            client->connectionServer = server;
-
             logMsg (stdout, SUCCESS, CLIENT, "Connected to server!"); 
 
-            return 0;
+            return new_con;
         } 
-
     }
 
     logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
-    return 1;
+    return NULL;
 
 }
 
@@ -923,29 +871,32 @@ u8 client_disconnectFromServer (Client *client) {
 
 }
 
+// FIXME: end all of our active connections
 // stop any on going process and destroy
 u8 client_teardown (Client *client) {
 
     if (client) {
-        if (client->isConnected) client_disconnectFromServer (client);
+        
+        // if (client->isConnected) client_disconnectFromServer (client);
 
         client->running = false;
-        #ifdef CLIENT_DEBUG
-            logMsg (stdout, DEBUG_MSG, CLIENT,
-                createString ("Active threads in thpool: %i", 
-                thpool_num_threads_working (client->thpool)));
-        #endif
-        // if (client->thpool) {
-        //     thpool_destroy (client->thpool);
-        //     #ifdef CLIENT_DEBUG
-        //         logMsg (stdout, SUCCESS, CLIENT, "Client thpool got destroyed!");
-        //     #endif
-        // }  
-        // free (client->thpool);
+        
+        if (client->thpool) {
+            #ifdef CLIENT_DEBUG
+                logMsg (stdout, DEBUG_MSG, CLIENT,
+                    createString ("Active threads in thpool: %i", 
+                    thpool_num_threads_working (client->thpool)));
+            #endif
 
-        // if (client->packetPool) pool_clear (client->packetPool); 
+            thpool_destroy (client->thpool);
+            #ifdef CLIENT_DEBUG
+                logMsg (stdout, SUCCESS, CLIENT, "Client thpool got destroyed!");
+            #endif
+        } 
 
-        // free (client);
+        if (client->packetPool) pool_clear (client->packetPool); 
+
+        free (client);
 
         return 0;
     }
@@ -956,16 +907,17 @@ u8 client_teardown (Client *client) {
 
 #pragma endregion
 
-// TODO: need to refactor this code!
 /*** REQUESTS ***/
 
 // These are the requests that we send to the server and we expect a response 
+
+#pragma region REQUESTS
 
 void *generateRequest (PacketType packetType, RequestType reqType) {
 
     size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
     void *begin = generatePacket (packetType, packetSize);
-    char *end = begin + sizeof (PacketHeader); 
+    char *end = begin += sizeof (PacketHeader); 
 
     RequestData *reqdata = (RequestData *) end;
     reqdata->type = reqType;
@@ -974,17 +926,48 @@ void *generateRequest (PacketType packetType, RequestType reqType) {
 
 }
 
-// TODO: 
-// send a valid client authentication
-u8 client_authentication () {}
+// FIXME: how do we want to send our blackrock credentials?
+u8 client_sendAuthPacket (Client *client, Connection *connection) {
 
-u8 client_makeTestRequest (Client *client) {
+    if (client && connection) {
+        size_t packetSize = sizeof (PacketHeader) + 
+            sizeof (RequestData) + sizeof (DefAuthData);
+        void *req = generatePacket (AUTHENTICATION, packetSize);
 
-    if (client && client->isConnected) {
+        if (req) {
+            char *end = req;
+            RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
+            reqdata->type = CLIENT_AUTH_DATA;
+
+            DefAuthData *authData = (DefAuthData *) (end += sizeof (RequestData));
+            authData->code = DEFAULT_AUTH_CODE;
+
+            if (tcp_sendPacket (connection->sock_fd, req, packetSize, 0) < 0)
+                logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
+            else {
+                #ifdef CLIENT_DEBUG
+                    logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
+                #endif
+            }
+
+            free (req);
+
+            return 0;
+        }
+    }
+
+    return 1;
+
+}
+
+// FIXME: change the send packet
+u8 client_makeTestRequest (Client *client, Connection *connection) {
+
+    if (client && connection) {
         size_t packetSize = sizeof (PacketHeader);
         void *req = generatePacket (TEST_PACKET, packetSize);
         if (req) {
-            if (tcp_sendPacket (client->clientSock, req, packetSize, 0) < 0)
+            if (tcp_sendPacket (connection->sock_fd, req, packetSize, 0) < 0)
                 logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
             else {
                 #ifdef CLIENT_DEBUG
@@ -997,13 +980,15 @@ u8 client_makeTestRequest (Client *client) {
 
 }
 
+#pragma endregion
+
 /*** FILE SERVER ***/
 
 #pragma region FILE SERVER
 
 // TODO:
 // request a file from the server
-i8 client_file_get (Client *client, char *filename) {
+i8 client_file_get (Client *client, Connection *connection, char *filename) {
 
     if (client_check (client) && filename) {
 
@@ -1013,7 +998,7 @@ i8 client_file_get (Client *client, char *filename) {
 
 // TODO:
 // send a file to the server
-i8 client_file_send (Client *client, char *filename) {
+i8 client_file_send (Client *client, Connection *connection, char *filename) {
 
     if (client_check (client) && filename) {
         
@@ -1027,10 +1012,12 @@ i8 client_file_send (Client *client, char *filename) {
 
 #pragma region GAME SERVER
 
+// TODO: how do we check if we are the owner of the lobby?
+// FIXME: send game type to server
 // request to create a new multiplayer game
-i8 client_game_createLobby (Client *owner, GameType gameType) {
+i8 client_game_createLobby (Client *owner, Connection *connection, GameType gameType) {
 
-    if (client_check (owner) && owner->isConnected) {
+    if (owner && connection) {
         // create & send a join lobby req packet to the server
         size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
         void *req = generateRequest (GAME_PACKET, LOBBY_CREATE);
@@ -1046,10 +1033,11 @@ i8 client_game_createLobby (Client *owner, GameType gameType) {
 
 }
 
+// FIXME: send game type to server
 // request to join an on going game
-i8 client_game_joinLobby (Client *client, GameType gameType) {
+i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameType) {
 
-    if (client_check (client) && client->isConnected) {
+    if (client && connection) {
         // create & send a join lobby req packet to the server
         size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
         void *req = generateRequest (GAME_PACKET, LOBBY_JOIN);
@@ -1066,9 +1054,9 @@ i8 client_game_joinLobby (Client *client, GameType gameType) {
 }
 
 // request the server to leave the lobby
-i8 client_game_leaveLobby (Client *client) {
+i8 client_game_leaveLobby (Client *client, Connection *connection) {
 
-    if (client_check (client) && client->isConnected) {
+    if (client && connection) {
         if (client->inLobby) {
             // create & send a leave lobby req packet to the server
             size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
@@ -1087,9 +1075,9 @@ i8 client_game_leaveLobby (Client *client) {
 }
 
 // request to destroy the current lobby, only if the client is the owner
-i8 client_game_destroyLobby (Client *client) {
+i8 client_game_destroyLobby (Client *client, Connection *connection) {
 
-    if (client_check (client) && client->isConnected) {
+    if (client && connection) {
         if (client->inLobby) {
             // create & send a leave lobby req packet to the server
             size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
@@ -1108,9 +1096,9 @@ i8 client_game_destroyLobby (Client *client) {
 }
 
 // the owner of the lobby can request to init the game
-i8 client_game_startGame (Client *client) {
+i8 client_game_startGame (Client *client, Connection *connection) {
 
-    if (client_check (client) && client->isConnected) {
+    if (client && connection) {
         if (client->inLobby) {
             // create & send a leave lobby req packet to the server
             size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
@@ -1125,39 +1113,6 @@ i8 client_game_startGame (Client *client) {
     }
 
     return -1;
-
-}
-
-#pragma endregion
-
-#pragma region TESTING 
-
-void client_sendAuthPacket (Client *client) {
-
-    if (client && client->isConnected) {
-        size_t packetSize = sizeof (PacketHeader) + 
-            sizeof (RequestData) + sizeof (DefAuthData);
-        void *req = generatePacket (AUTHENTICATION, packetSize);
-        if (req) {
-            char *end = req;
-            RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
-            reqdata->type = CLIENT_AUTH_DATA;
-
-            DefAuthData *authData = (DefAuthData *) (end + sizeof (RequestData));
-            
-            authData->code = DEFAULT_AUTH_CODE;
-
-            if (tcp_sendPacket (client->clientSock, req, packetSize, 0) < 0)
-                logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
-            else {
-                #ifdef CLIENT_DEBUG
-                    logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
-                #endif
-            }
-
-            free (req);
-        }
-    }
 
 }
 
