@@ -32,4 +32,15 @@ typedef unsigned char asciiChar;
 
 #define THREAD_OK   0
 
+/*** MULTIPLAYER ***/
+
+#include "cerver/client.h"
+
+extern char *black_server_ip;
+extern u16 black_port;
+
+extern Client *player_client;
+
+extern Connection *main_connection;
+
 #endif

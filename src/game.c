@@ -1917,22 +1917,22 @@ Client *playerClient = NULL;
 void multiplayer_createLobby (void) {
 
     // TODO: do we want to be able to perform a connection here?
-    if (!playerClient->isConnected) {
-        #ifdef BLACK_DEBUG
-            logMsg (stdout, DEBUG_MSG, GAME, "Requesting a new lobby...");
-        #endif
+    // if (!playerClient->isConnected) {
+    //     #ifdef BLACK_DEBUG
+    //         logMsg (stdout, DEBUG_MSG, GAME, "Requesting a new lobby...");
+    //     #endif
 
-        if (client_game_createLobby (playerClient, ARCADE) >= 0) {
-            // we made the request to the server
-            // TODO: move the player to the lobby screen
-        }
+    //     if (client_game_createLobby (playerClient, ARCADE) >= 0) {
+    //         // we made the request to the server
+    //         // TODO: move the player to the lobby screen
+    //     }
 
-        // TODO: give feedback to the player
-        else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
-    }
+    //     // TODO: give feedback to the player
+    //     else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
+    // }
 
-    // TODO: give feedback to the player
-    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    // // TODO: give feedback to the player
+    // else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
 
 }
 
@@ -1943,22 +1943,22 @@ void multiplayer_createLobby (void) {
 void multiplayer_joinLobby (void) {
 
     // TODO: do we want to be able to perform a connection here?
-    if (!playerClient->isConnected) {
-        #ifdef BLACK_DEBUG
-            logMsg (stdout, DEBUG_MSG, GAME, "Requesting to join a lobby...");
-        #endif
+    // if (!playerClient->isConnected) {
+    //     #ifdef BLACK_DEBUG
+    //         logMsg (stdout, DEBUG_MSG, GAME, "Requesting to join a lobby...");
+    //     #endif
 
-        if (client_game_joinLobby (playerClient, ARCADE) >= 0) {
-            // we made the request to the server
-            // TODO: move the player to the lobby screen
-        }
+    //     // if (client_game_joinLobby (playerClient, ARCADE) >= 0) {
+    //     //     // we made the request to the server
+    //     //     // TODO: move the player to the lobby screen
+    //     // }
 
-        // TODO: give feedback to the player
-        else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
-    }
+    //     // TODO: give feedback to the player
+    //     else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
+    // }
 
-    // TODO: give feedback to the player
-    else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    // // TODO: give feedback to the player
+    // else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
 
 }
 

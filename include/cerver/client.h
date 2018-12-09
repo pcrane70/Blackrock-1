@@ -94,6 +94,9 @@ typedef struct Connection {
     bool blocking;          // sokcet fd is blocking?
     bool isConnected;       // is the socket connected?
 
+    char *ip;
+    struct sockaddr_storage address;
+
     Server *server;
 
 } Connection;
@@ -127,12 +130,12 @@ typedef struct Client {
 extern Client *client_create (void);
 extern u8 client_teardown (Client *client);
 
-extern Connection *client_make_new_connection (Client *client, char *ip_address, u16 port);
-extern u8 client_close_connection (Client *client, Connection *connection);
+extern Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port);
+extern u8 client_end_connection (Client *client, Connection *connection);
 
-extern Connection *client_connectToServer (Client *client, char *serverIp, u16 port, 
+extern Connection *client_connectToServer (Client *client, const char *serverIp, u16 port, 
     ServerType expectedType);
-extern u8 client_disconnectFromServer (Client *);
+extern u8 client_disconnectFromServer (Client *client, Connection *connection);
 
 #pragma endregion
 
@@ -254,8 +257,8 @@ extern u8 client_makeTestRequest (Client *client, Connection *connection);
 
 extern u8 client_sendAuthPacket (Client *client, Connection *connection);
 
-extern i8 client_file_get (Client *client, Connection *connection, char *filename);
-extern i8 client_file_send (Client *client, Connection *connection, char *filename);
+extern i8 client_file_get (Client *client, Connection *connection, const char *filename);
+extern i8 client_file_send (Client *client, Connection *connection, const char *filename);
 
 extern i8 client_game_createLobby (Client *owner, Connection *connection, GameType gameType);
 extern i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameType);

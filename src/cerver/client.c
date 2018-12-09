@@ -181,15 +181,13 @@ void *generatePacket (PacketType packetType, size_t packetSize) {
 
 }
 
-// FIXME:
-// TODO: 06/11/2018 -- test this!
-i8 udp_sendPacket (Client *client, const void *begin, size_t packetSize, 
+i8 udp_sendPacket (Connection *connection, const void *begin, size_t packetSize, 
     const struct sockaddr_storage address) {
 
     ssize_t sent;
     const void *p = begin;
     while (packetSize > 0) {
-        sent = sendto (client->clientSock, begin, packetSize, 0, 
+        sent = sendto (connection->sock_fd, begin, packetSize, 0, 
             (const struct sockaddr *) &address, sizeof (struct sockaddr_storage));
         if (sent <= 0) return -1;
         p += sent;
@@ -218,18 +216,17 @@ i8 tcp_sendPacket (i32 socket_fd, void *begin, size_t packetSize, int flags) {
 
 }
 
-// 23/11/2018 -- sends a packet to the server
-i8 client_sendPacket (Client *client, void *packet, size_t packetSize) {
+i8 client_sendPacket (Connection *connection, void *packet, size_t packetSize) {
 
     i8 retval = -1;
 
-    if (client) {
-        switch (client->protocol) {
+    if (connection) {
+        switch (connection->protocol) {
             case IPPROTO_TCP:
-                retval = tcp_sendPacket (client->clientSock, packet, packetSize, 0); break;
+                retval = tcp_sendPacket (connection->sock_fd, packet, packetSize, 0); break;
             case IPPROTO_UDP: 
-                retval = udp_sendPacket (client, packet, packetSize, 
-                    client->connectionServer->address); 
+                retval = udp_sendPacket (connection, packet, packetSize, 
+                    connection->address); 
                 break;
             default: break;
         }
@@ -451,8 +448,9 @@ void server_checkServerInfo (Server *curr_info, SServer *recv_info) {
 
 }
 
-u8 client_disconnectFromServer (Client *client);
+u8 client_disconnectFromServer (Client *client, Connection *connection);
 
+// FIXME:
 void server_handlePacket (PacketInfo *packet) {
 
     char *end = packet->packetData;  
@@ -463,16 +461,17 @@ void server_handlePacket (PacketInfo *packet) {
             #ifdef CLIENT_DEBUG
                 logMsg (stdout, DEBUG_MSG, SERVER, "Recieved a server info packet.");
             #endif
-            SServer *serverInfo = 
-                (SServer *) (packet->packetData + sizeof (PacketHeader) + sizeof (RequestData));
-            server_checkServerInfo (packet->client->connectionServer, serverInfo);
+            // SServer *serverInfo = 
+            //     (SServer *) (packet->packetData + sizeof (PacketHeader) + sizeof (RequestData));
+            // server_checkServerInfo (packet->client->connectionServer, serverInfo);
         } break;
         
+        // FIXME:
         case SERVER_TEARDOWN: 
-            logMsg (stdout, WARNING, SERVER, "--> Server teardown!! <--"); 
-            if (!client_disconnectFromServer (packet->client))  
-                logMsg (stdout, SUCCESS, CLIENT, "Disconnected client from server!");
-            else logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
+            // logMsg (stdout, WARNING, SERVER, "--> Server teardown!! <--"); 
+            // if (!client_disconnectFromServer (packet->client))  
+            //     logMsg (stdout, SUCCESS, CLIENT, "Disconnected client from server!");
+            // else logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
             break;
         default: logMsg (stderr, WARNING, PACKET, "Unknown server type packet."); break;
     }
@@ -577,9 +576,6 @@ Connection *client_connection_new (u16 port) {
 /*** CLIENT LOGIC ***/
 
 // TODO: 22/11/2018 - we can add a restart client function similar to restart server
-
-// TODO: 31/10/2018 -- we only handle the logic for a connection using tcp
-// we need to add the logic to be able to send packets via udp
 
 #pragma region CLIENT
 
@@ -736,7 +732,7 @@ u8 connectRetry (Connection *connection, const struct sockaddr_storage address) 
 
 // FIXME:
 // connects a client to the specified ip address, it does not have to be a cerver type server
-Connection *client_make_new_connection (Client *client, char *ip_address, u16 port) {
+Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port) {
 
     if (!ip_address) {
         logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
@@ -754,17 +750,41 @@ Connection *client_make_new_connection (Client *client, char *ip_address, u16 po
 
 }
 
-// FIXME:
-u8 client_close_connection (Client *client, Connection *connection) {
+u8 client_end_connection (Client *client, Connection *connection) {
 
     if (client && connection) {
+        close (connection->sock_fd);
 
+        if (connection->server) {
+            if (connection->server->ip) free (connection->server->ip);
+            free (connection->server);
+        }
+
+        if (connection->ip) free (connection->ip);
+
+        u8 idx = -1;
+        for (u8 i = 0; i < client->n_active_connections; i++)
+            if (connection->sock_fd == client->active_connections[i]->sock_fd)
+                break;
+
+        if (idx >= 0) {
+            for (u8 i = idx; i < client->n_active_connections - 1; i++) 
+                client->active_connections[i] = client->active_connections[i + 1];
+            
+            client->n_active_connections--;
+        }
+
+        free (connection);
+        
+        return 0;
     }
+
+    return 1;
 
 }
 
 // connects the client to a cerver type server
-Connection *client_connectToServer (Client *client, char *serverIp, u16 port, 
+Connection *client_connectToServer (Client *client, const char *serverIp, u16 port, 
     ServerType expectedType) {
 
     if (!serverIp) {
@@ -829,40 +849,39 @@ Connection *client_connectToServer (Client *client, char *serverIp, u16 port,
 
 void *generateRequest (PacketType packetType, RequestType reqType);
 
-// FIXME: add support for multiple connections to multiple servers at the same time
 // disconnect from the server
-u8 client_disconnectFromServer (Client *client) {
+u8 client_disconnectFromServer (Client *client, Connection *connection) {
 
-    if (!client_check (client) && client->isConnected) {
-        if (client->connectionServer->type == GAME_SERVER) {
-            if (client->inLobby) {
-                i8 client_game_leaveLobby (Client *client);
-                client_game_leaveLobby (client);
+    if (client && connection) {
+        if (connection->server) {
+            if (connection->server->type == GAME_SERVER) {
+                i8 client_game_leaveLobby (Client *client, Connection *connection);
+                client_game_leaveLobby (client, connection);
             }
+
+            // send a disconnect packet to the server
+            size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
+            void *pack = generateRequest (CLIENT_PACKET, CLIENT_DISCONNET);
+            if (pack) {
+                if (tcp_sendPacket (connection->sock_fd, pack, packetSize, 0) >= 0)
+                    logMsg (stdout, DEBUG_MSG, PACKET, "Sent client disconnect packet.");
+
+                else logMsg (stderr, ERROR, PACKET, "Failed to send client disconnect packet.");
+
+                free (pack);
+            }
+
+            client_end_connection (client, connection);
+
+            if (client->n_active_connections <= 0) 
+                client->running = false;
+
+            #ifdef CLIENT_DEBUG
+                logMsg (stdout, SUCCESS, CLIENT, "Client disconnected from server!");
+            #endif
+
+            return 0;
         }
-
-        // send a disconnect packet to the server
-        size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
-        void *pack = generateRequest (CLIENT_PACKET, CLIENT_DISCONNET);
-        if (pack) {
-            if (tcp_sendPacket (client->clientSock, pack, packetSize, 0) >= 0)
-                logMsg (stdout, DEBUG_MSG, PACKET, "Sent client disconnect packet.");
-
-            else logMsg (stderr, ERROR, PACKET, "Failed to send client disconnect packet.");
-
-            free (pack);
-        }
-
-        client->running = false;
-
-        if (!close (client->clientSock))
-            logMsg (stdout, SUCCESS, CLIENT, "Client socket has been closed!");
-
-        client->isConnected = false;
-
-        logMsg (stdout, SUCCESS, CLIENT, "Client disconnected from server!");
-
-        return 0;
     }
 
     logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
@@ -871,15 +890,18 @@ u8 client_disconnectFromServer (Client *client) {
 
 }
 
-// FIXME: end all of our active connections
 // stop any on going process and destroy
 u8 client_teardown (Client *client) {
 
     if (client) {
-        
-        // if (client->isConnected) client_disconnectFromServer (client);
-
-        client->running = false;
+        if (client->running) {
+            while (client->n_active_connections > 0) 
+                client_end_connection (client, 
+                    client->active_connections[client->n_active_connections - 1]);
+            
+            free (client->active_connections);
+            client->running = false;
+        }
         
         if (client->thpool) {
             #ifdef CLIENT_DEBUG
@@ -960,23 +982,24 @@ u8 client_sendAuthPacket (Client *client, Connection *connection) {
 
 }
 
-// FIXME: change the send packet
 u8 client_makeTestRequest (Client *client, Connection *connection) {
 
     if (client && connection) {
         size_t packetSize = sizeof (PacketHeader);
         void *req = generatePacket (TEST_PACKET, packetSize);
         if (req) {
-            if (tcp_sendPacket (connection->sock_fd, req, packetSize, 0) < 0)
+            if (client_sendPacket (connection, req, packetSize) < 0) 
                 logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
-            else {
-                #ifdef CLIENT_DEBUG
-                    logMsg (stdout, TEST, PACKET, "Sent test packet to server.");
-                #endif
-            }
+
+            else logMsg (stdout, TEST, PACKET, "Sent test packet to server.");
+
             free (req);
+
+            return 0;
         }
     }
+
+    return 1;
 
 }
 
@@ -988,21 +1011,17 @@ u8 client_makeTestRequest (Client *client, Connection *connection) {
 
 // TODO:
 // request a file from the server
-i8 client_file_get (Client *client, Connection *connection, char *filename) {
+i8 client_file_get (Client *client, Connection *connection, const char *filename) {
 
-    if (client_check (client) && filename) {
-
-    }
+    if (client && connection) {}
 
 }
 
 // TODO:
 // send a file to the server
-i8 client_file_send (Client *client, Connection *connection, char *filename) {
+i8 client_file_send (Client *client, Connection *connection, const char *filename) {
 
-    if (client_check (client) && filename) {
-        
-    }
+    if (client && connection) {}
 
 }
 
@@ -1023,7 +1042,7 @@ i8 client_game_createLobby (Client *owner, Connection *connection, GameType game
         void *req = generateRequest (GAME_PACKET, LOBBY_CREATE);
 
         if (req) {
-            i8 retval = client_sendPacket (owner, req, packetSize);
+            i8 retval = client_sendPacket (connection, req, packetSize);
             free (req);
             return retval;
         }
@@ -1043,7 +1062,7 @@ i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameT
         void *req = generateRequest (GAME_PACKET, LOBBY_JOIN);
 
         if (req) {
-            i8 retval = client_sendPacket (client, req, packetSize);
+            i8 retval = client_sendPacket (connection, req, packetSize);
             free (req);
             return retval;
         }
@@ -1063,7 +1082,7 @@ i8 client_game_leaveLobby (Client *client, Connection *connection) {
             void *req = generateRequest (GAME_PACKET, LOBBY_LEAVE);
 
             if (req) {
-                i8 retval = client_sendPacket (client, req, packetSize);
+                i8 retval = client_sendPacket (connection, req, packetSize);
                 free (req);
                 return retval;
             }
@@ -1084,7 +1103,7 @@ i8 client_game_destroyLobby (Client *client, Connection *connection) {
             void *req = generateRequest (GAME_PACKET, LOBBY_DESTROY);
 
             if (req) {
-                i8 retval = client_sendPacket (client, req, packetSize);
+                i8 retval = client_sendPacket (connection, req, packetSize);
                 free (req);
                 return retval;
             }
@@ -1105,7 +1124,7 @@ i8 client_game_startGame (Client *client, Connection *connection) {
             void *req = generateRequest (GAME_PACKET, GAME_INIT);
 
             if (req) {
-                i8 retval = client_sendPacket (client, req, packetSize);
+                i8 retval = client_sendPacket (connection, req, packetSize);
                 free (req);
                 return retval;
             }

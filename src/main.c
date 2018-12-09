@@ -27,17 +27,23 @@ void die (char *error) {
 
 #include "cerver/client.h"
 
+char *black_server_ip = "127.0.0.1";
+u16 black_port = 9001;
+
 Client *player_client = NULL;
+
+Connection *main_connection = NULL;
 
 u8 start_multiplayer (void) {
 
     player_client = client_create ();
 
     if (player_client) {
-        client_connectToServer (player_client, "127.0.0.1", GAME_SERVER);
+        main_connection = client_connectToServer (player_client, 
+            black_server_ip, black_port, GAME_SERVER); 
 
         #ifdef CLIENT_DEBUG
-            client_makeTestRequest (player_client);
+            client_makeTestRequest (player_client, main_connection);
         #endif
 
         return 0;
@@ -49,7 +55,7 @@ u8 start_multiplayer (void) {
 
 u8 stop_multiplayer (void) {
 
-    client_disconnectFromServer (player_client);
+    client_disconnectFromServer (player_client, main_connection);
     client_teardown (player_client);
 
 }

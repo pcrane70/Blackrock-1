@@ -37,9 +37,6 @@ void startGame (void) {
 
 #include "ui/menu.h"
 
-#include "cerver/client.h"
-extern Client *player_client;
-
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
     if (event.type == SDL_KEYDOWN) {
@@ -55,8 +52,10 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
             case SDLK_s: startGame (); break;
 
-            case SDLK_t: client_makeTestRequest (player_client); break;
-
+            #ifdef CLIENT_DEBUG 
+                case SDLK_t: client_makeTestRequest (player_client, main_connection); break;
+            #endif
+            
             // old events
             // FIXME: case SDLK_s: if (characterMenu != NULL) startGame (); break;
             // case SDLK_c: break;     // TODO: toggle credits window
