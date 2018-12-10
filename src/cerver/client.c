@@ -235,38 +235,38 @@ void server_handlePacket (PacketInfo *packet);
 void handlePacket (void *data) {
 
     if (data) {
-        PacketInfo *packet = (PacketInfo *) data;
+        PacketInfo *pack_info = (PacketInfo *) data;
 
-        if (!checkPacket (packet->packetSize, packet->packetData, DONT_CHECK_TYPE))  {
-            PacketHeader *header = (PacketHeader *) packet->packetData;
+        if (!checkPacket (pack_info->packetSize, pack_info->packetData, DONT_CHECK_TYPE))  {
+            PacketHeader *header = (PacketHeader *) pack_info->packetData;
 
             switch (header->packetType) {
                 // handles a packet with server info
-                case SERVER_PACKET: server_handlePacket (packet); break;
+                case SERVER_PACKET: server_handlePacket (pack_info); break;
 
                 // handles an error from the server
                 case ERROR_PACKET: break;
                 
                 // handles authentication packets
                 case AUTHENTICATION: {
-                    char *end = packet->packetData;
+                    char *end = pack_info->packetData;
                     RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
 
                     switch (reqdata->type) {
                         case CLIENT_AUTH_DATA: {
-                            // TODO: add a check for server info -> sessions
-                            // FIXME: where do we want to stor ethis info?
                             Token *tokenData = (Token *) (end += sizeof (RequestData));
                             #ifdef CLIENT_DEBUG 
                             logMsg (stdout, DEBUG_MSG, CLIENT,
-                                createString ("Token recieved from server: %s\n", tokenData->token));
+                                createString ("Token recieved from server: %s", tokenData->token));
                             #endif  
+                            Token *token_data = (Token *) malloc (sizeof (Token));
+                            memcpy (token_data->token, tokenData->token, sizeof (token_data->token));
+                            pack_info->connection->server->token_data = token_data;
                         } break;
                         default: break;
                     }
                     break;
                 }
-                    
 
                 // handles a request made from the server
                 case REQUEST: break;
@@ -287,7 +287,7 @@ void handlePacket (void *data) {
         }
 
         // no matter the case, we always send the packet info to the client pool here!
-        pool_push (packet->client->packetPool, packet);
+        pool_push (pack_info->client->packetPool, pack_info);
     }
 
 }
@@ -382,6 +382,7 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
 
 } */
 
+// FIXME:
 void client_recieve (Client *client, i32 fd) {
 
     ssize_t rc;
@@ -563,7 +564,7 @@ void client_set_send_auth_data (Client *client, Connection *connection,
 #pragma region CONNECTION
 
 // inits a client structure with the specified values
-u8 connection_init (Connection *connection, u16 port) {
+u8 connection_init (Connection *connection, u16 port, bool async) {
 
     #ifdef CLIENT_DEBUG
         logMsg (stdout, DEBUG_MSG, CLIENT, "Initializing connection values...");
@@ -615,32 +616,33 @@ u8 connection_init (Connection *connection, u16 port) {
         logMsg (stdout, DEBUG_MSG, CLIENT, "Created new connection socket!");
     #endif
 
-    // set the socket to non blocking mode
-    if (!sock_setBlocking (connection->sock_fd, connection->blocking)) {
-        logMsg (stderr, ERROR, NO_TYPE, "Failed to set connection socket to non blocking mode!");
-        close (connection->sock_fd);
-        return 1;
-    }
+    if (async) {
+        // set the socket to non blocking mode
+        if (!sock_setBlocking (connection->sock_fd, connection->blocking)) {
+            logMsg (stderr, ERROR, NO_TYPE, "Failed to set connection socket to non blocking mode!");
+            close (connection->sock_fd);
+            return 1;
+        }
 
-    else {
-        connection->blocking = false;
-        #ifdef CLIENT_DEBUG
-        logMsg (stdout, DEBUG_MSG, NO_TYPE, "Connection socket set to non blocking mode.");
-        #endif
+        else {
+            connection->blocking = false;
+            #ifdef CLIENT_DEBUG
+            logMsg (stdout, DEBUG_MSG, NO_TYPE, "Connection socket set to non blocking mode.");
+            #endif
+        }
     }
 
     return 0;
     
 }
 
-Connection *client_connection_new (u16 port) {
+Connection *client_connection_new (u16 port, bool async) {
 
     Connection *connection = (Connection *) malloc (sizeof (Connection));
 
     if (connection) {
-        if (!connection_init (connection, port)) {
-            // init default values
-            connection->blocking = true;
+        if (!connection_init (connection, port, async)) {
+            connection->async = async;
             connection->isConnected = false;
 
             return connection;
@@ -824,22 +826,71 @@ u8 connectRetry (Connection *connection, const struct sockaddr_storage address) 
 
 }
 
-// FIXME:
 // connects a client to the specified ip address, it does not have to be a cerver type server
-Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port) {
+Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port, 
+    bool async) {
 
     if (!ip_address) {
-        logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to make new connection, no ip provided.");
         return NULL;
     }
 
-    Connection *new_con = client_connection_new (port);
+    Connection *new_con = client_connection_new (port, async);
 
     if (new_con) {
+        new_con->ip = (char *) calloc (strlen (ip_address) + 1, sizeof (char));
+        strcpy (new_con->ip, ip_address);
 
+        memset (&new_con->address, 0, sizeof (struct sockaddr_storage));
+
+        if (new_con->useIpv6) {
+            struct sockaddr_in6 *addr = 
+                (struct sockaddr_in6 *) &new_con->address;
+            addr->sin6_family = AF_INET6;
+            // FIXME: addr->sin6_addr = inet;         
+            addr->sin6_port = htons (new_con->port);
+        } 
+
+        else {
+            struct sockaddr_in *addr = 
+                (struct sockaddr_in *) &new_con->address;
+            addr->sin_family = AF_INET;
+            addr->sin_addr.s_addr = inet_addr (new_con->ip);
+            addr->sin_port = htons (new_con->port);
+        } 
+
+        // try to connect to the server with exponential backoff
+        if (!connectRetry (new_con, new_con->address)) {
+            client->active_connections[client->n_active_connections] = new_con;
+            client->n_active_connections++;
+
+            if (new_con->async) {
+                // add the new socket to the poll structure
+                u8 idx = client_get_free_poll_idx (client);
+
+                if (idx >= 0) {
+                    client->fds[idx].fd = new_con->sock_fd;
+                    client->fds[idx].events = POLLIN;
+                    client->nfds++;
+
+                    // check if we walready have the client poll running
+                    if (client->running == false) {
+                        thpool_add_work (client->thpool, (void *) client_poll, client);
+                        client->running = true;
+                    }
+                }     
+
+                else logMsg (stderr, ERROR, CLIENT, 
+                    "Failed to get free poll idx. Is the client full?");
+            }
+
+            logMsg (stdout, SUCCESS, CLIENT, "Connected to address!"); 
+
+            return new_con;
+        } 
     }
 
-    logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    logMsg (stderr, ERROR, NO_TYPE, "Failed to make new connection!");
     return NULL;
 
 }
@@ -877,8 +928,9 @@ u8 client_end_connection (Client *client, Connection *connection) {
 
 }
 
+// by default the connection is async
 // connects the client to a cerver type server
-Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port, 
+Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port,
     ServerType expectedType, Action send_auth_data, void *auth_data) {
 
     if (!serverIp) {
@@ -886,7 +938,7 @@ Connection *client_connect_to_server (Client *client, const char *serverIp, u16 
         return NULL;
     }
 
-    Connection *new_con = client_connection_new (port);
+    Connection *new_con = client_connection_new (port, true);
 
     if (new_con) {
         new_con->server = (Server *) malloc (sizeof (Server));
@@ -895,7 +947,6 @@ Connection *client_connect_to_server (Client *client, const char *serverIp, u16 
         new_con->server->ip = (char *) calloc (strlen (serverIp) + 1, sizeof (char));
         strcpy (new_con->server->ip, serverIp);
 
-        // set the address of the server 
         memset (&new_con->server->address, 0, sizeof (struct sockaddr_storage));
 
         if (new_con->useIpv6) {
@@ -1109,23 +1160,55 @@ i8 client_file_send (Client *client, Connection *connection, const char *filenam
 #pragma region GAME SERVER
 
 // TODO: how do we check if we are the owner of the lobby?
-// FIXME: send game type to server
 // request to create a new multiplayer game
-i8 client_game_createLobby (Client *owner, Connection *connection, GameType gameType) {
+void *client_game_createLobby (Client *owner, Connection *connection, GameType gameType) {
 
-    if (owner && connection) {
-        // create & send a join lobby req packet to the server
-        size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
-        void *req = generateRequest (GAME_PACKET, LOBBY_CREATE);
+    // FIXME: we need to do this in a separate thread!
 
-        if (req) {
-            i8 retval = client_sendPacket (connection, req, packetSize);
-            free (req);
-            return retval;
+    // create a new connection
+    Connection *new_con = client_make_new_connection (owner, connection->server->ip, 
+        connection->server->port, false);
+
+    if (new_con) {
+        char buffer[1024];
+        int rc = read (new_con->sock_fd, buffer, 1024);
+
+        if (rc > 0) {
+            // authenticate using our server token
+            size_t token_packet_size = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (Token);
+            void *token_packet = generatePacket (AUTHENTICATION, token_packet_size);
+            if (token_packet) {
+                char *end = token_packet;
+                RequestData *req = (RequestData *) (end += sizeof (PacketHeader));
+                req->type = CLIENT_AUTH_DATA;
+
+                Token *tok = (Token *) (end += sizeof (Token));
+                memcpy (tok->token, connection->server->token_data->token, sizeof (tok->token));
+
+                client_sendPacket (new_con, token_packet, token_packet_size);
+                // free (token_packet);
+            }
         }
+
+        rc = read (new_con->sock_fd, buffer, 1024);
+
+        close (new_con->sock_fd);
+
+        // TODO: whait to see if we are authenticated
+
+        // make the create lobby request
+        // size_t create_packet_size = sizeof (PacketHeader) + sizeof (RequestData);
+        // void *lobby_req = generateRequest (GAME_PACKET, LOBBY_CREATE);
+        // if (lobby_req) {
+        //     client_sendPacket (connection, lobby_req, create_packet_size);
+        //     free (lobby_req);
+
+        //     // TODO: wait for a server response
+        //     // return the lobby data or error as feedback
+        // }
     }
 
-    return -1;
+    return NULL;
 
 }
 

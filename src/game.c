@@ -1,7 +1,6 @@
 /*** GAME MANAGER ***/
-
-#include <assert.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "blackrock.h"
 #include "game.h"
@@ -1899,11 +1898,6 @@ void showScore (void) {
 
 /*** MULTIPLAYER ***/
 
-// TODO: 17/11/2018 -- do we want to create a new thread for each request we make?
-
-// TODO: 17/11/2018 -- where do we want to put this?
-Client *playerClient = NULL;
-
 #pragma region MULTIPLAYER
 
 // TODO: 23/11/2018 -- 3:10
@@ -1915,6 +1909,14 @@ Client *playerClient = NULL;
 // FIXME: how do we get the game type?
 // called from the main menu to request a new game lobby
 void multiplayer_createLobby (void) {
+
+    GameReqData game_req_data = { .client = player_client, .connection = main_connection,
+        .game_type = ARCADE };
+
+    SLobby *lobby = client_game_createLobby (player_client, main_connection, ARCADE);
+    if (lobby) {
+        printf ("Got a new lobby from the server!\n");
+    }
 
     // TODO: do we want to be able to perform a connection here?
     // if (!playerClient->isConnected) {

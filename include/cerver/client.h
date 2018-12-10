@@ -49,17 +49,6 @@ typedef u8 (*delegate)(void *);
 
 #define DEFAULT_AUTH_CODE               0x4CA140FF
 
-#pragma region GAME
-
-// this is the same as in cerver
-typedef enum GameType {
-
-	ARCADE = 0,
-
-} GameType;
-
-#pragma endregion
-
 #pragma region SERVER 
 
 typedef enum ServerType {
@@ -69,6 +58,8 @@ typedef enum ServerType {
     GAME_SERVER
 
 } ServerType;
+
+struct _Token;
 
 // some useful info about the server we are connecting to
 typedef struct Server {
@@ -81,15 +72,15 @@ typedef struct Server {
     struct sockaddr_storage address;
 
     ServerType type;
-    bool authRequired;      // authentication required by the server
+    bool authRequired;
+
+    struct _Token *token_data;
 
 } Server;
 
 #pragma endregion
 
 #pragma region CLIENT
-
-// FIXME: where do we want to store the session token??
 
 typedef struct Connection {
 
@@ -98,6 +89,7 @@ typedef struct Connection {
     u8 protocol;
     u16 port; 
 
+    bool async;
     bool blocking;          // sokcet fd is blocking?
     bool isConnected;       // is the socket connected?
 
@@ -147,10 +139,11 @@ typedef struct ClientConnection {
 extern Client *client_create (void);
 extern u8 client_teardown (Client *client);
 
-extern Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port);
+extern Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port,
+    bool async);
 extern u8 client_end_connection (Client *client, Connection *connection);
 
-extern Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port, 
+extern Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port,
     ServerType expectedType, Action send_auth_data, void *auth_data);
 extern u8 client_disconnectFromServer (Client *client, Connection *connection);
 
@@ -278,34 +271,49 @@ extern u8 client_sendAuthPacket (Client *client, Connection *connection);
 extern i8 client_file_get (Client *client, Connection *connection, const char *filename);
 extern i8 client_file_send (Client *client, Connection *connection, const char *filename);
 
-extern i8 client_game_createLobby (Client *owner, Connection *connection, GameType gameType);
+#pragma region GAME
+
+// this is the same as in cerver
+typedef enum GameType {
+
+	ARCADE = 0,
+
+} GameType;
+
+typedef struct GameReqData {
+
+    Client *client;
+    Connection *connection;
+
+    GameType game_type;
+
+} GameReqData;
+
+extern void *client_game_createLobby (Client *owner, Connection *connection, GameType gameType);
 extern i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameType);
 extern i8 client_game_leaveLobby (Client *client, Connection *connection);
 extern i8 client_game_destroyLobby (Client *client, Connection *connection);
 
 extern i8 client_game_startGame (Client *client, Connection *connection);
 
+#pragma endregion
+
 /*** SERIALIZATION ***/
 
 // cerver framework serialized data
 #pragma region SERIALIZATION
 
-// 17/11/2018 - send useful server info to the client trying to connect
 typedef struct SServer {
 
     u8 useIpv6;  
-    u8 protocol;            // we only support either tcp or udp
+    u8 protocol;
     u16 port;
 
     ServerType type;
-    bool authRequired;      // authentication required by the server
+    bool authRequired;
 
 } SServer;
 
-// TODO: we need to create a more complex seralized data
-// keep in mind that the admin can set a reference to the data and function
-// that can handle specific serealization
-// 03/11/2018 -> default auth data to use by default auth function
 typedef struct DefAuthData {
 
     u32 code;
@@ -313,11 +321,13 @@ typedef struct DefAuthData {
 } DefAuthData;
 
 // session id - token
-typedef struct Token {
+struct _Token {
 
     char token[65];
 
-} Token;
+};
+
+typedef struct _Token Token;
 
 typedef struct GameSettings {
 
