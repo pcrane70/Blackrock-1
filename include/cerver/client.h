@@ -23,6 +23,13 @@ typedef int8_t i8;
 typedef int32_t i32;
 typedef int64_t i64;
 
+// takes no argument and returns a value (int)
+typedef u8 (*Func)(void);
+// takes an argument and does not return a value
+typedef void (*Action)(void *);
+// takes an argument and returns a value (int)
+typedef u8 (*delegate)(void *);
+
 #define MAX_PORT_NUM            65535
 #define MAX_UDP_PACKET_SIZE     65515
 
@@ -99,6 +106,9 @@ typedef struct Connection {
 
     Server *server;
 
+    Action authentication;
+    void *authData;
+
 } Connection;
 
 typedef struct Client {
@@ -125,6 +135,13 @@ typedef struct Client {
 
 } Client;
 
+typedef struct ClientConnection {
+
+    Client *client;
+    Connection *connection;
+
+} ClientConnection;
+
 /*** PUBLIC CLIENT FUNCTIONS ***/
 
 extern Client *client_create (void);
@@ -133,9 +150,12 @@ extern u8 client_teardown (Client *client);
 extern Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port);
 extern u8 client_end_connection (Client *client, Connection *connection);
 
-extern Connection *client_connectToServer (Client *client, const char *serverIp, u16 port, 
-    ServerType expectedType);
+extern Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port, 
+    ServerType expectedType, Action send_auth_data, void *auth_data);
 extern u8 client_disconnectFromServer (Client *client, Connection *connection);
+
+extern void client_set_send_auth_data (Client *client, Connection *connection,
+    Action send_auth_data, void *auth_data);
 
 #pragma endregion
 

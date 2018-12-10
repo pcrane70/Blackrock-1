@@ -58,7 +58,7 @@ PacketInfo *newPacketInfo (Client *client, Connection *connection,
         if (client->packetPool) {
             p = pool_pop (client->packetPool);
             if (!p) p = (PacketInfo *) malloc (sizeof (PacketInfo));
-            else if (p->packetData) free (p->packetData);
+            // else if (p->packetData) free (p->packetData);
         }
 
         else {
@@ -246,7 +246,6 @@ void handlePacket (void *data) {
 
                 // handles an error from the server
                 case ERROR_PACKET: break;
-
                 
                 // handles authentication packets
                 case AUTHENTICATION: {
@@ -256,10 +255,12 @@ void handlePacket (void *data) {
                     switch (reqdata->type) {
                         case CLIENT_AUTH_DATA: {
                             // TODO: add a check for server info -> sessions
-
+                            // FIXME: where do we want to stor ethis info?
                             Token *tokenData = (Token *) (end += sizeof (RequestData));
-                            printf ("Token recieved from server: %s\n", tokenData->token);
-                           
+                            #ifdef CLIENT_DEBUG 
+                            logMsg (stdout, DEBUG_MSG, CLIENT,
+                                createString ("Token recieved from server: %s\n", tokenData->token));
+                            #endif  
                         } break;
                         default: break;
                     }
@@ -329,11 +330,11 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
             else break;
         }
 
-        free (buffer);
+        // free (buffer);
 
-        // #ifdef CLIENT_DEBUG
-        //     logMsg (stdout, DEBUG_MSG, PACKET, "Done splitting recv buffer!");
-        // #endif
+        #ifdef CLIENT_DEBUG
+            logMsg (stdout, DEBUG_MSG, PACKET, "Done splitting recv buffer!");
+        #endif
     }
 
 }
@@ -341,7 +342,7 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
 // FIXME: correctly end the connections
 // TODO: add support for handling large files transmissions
 // recive all incoming data from this socket
-void client_recieve (Client *client, i32 socket_fd) {
+/* void client_recieve (Client *client, i32 socket_fd) {
 
     ssize_t rc;
     char *packet_buffer = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
@@ -379,6 +380,51 @@ void client_recieve (Client *client, i32 socket_fd) {
             handleRecvBuffer (client, socket_fd, packet_buffer, rc);
     // } while (true);
 
+} */
+
+void client_recieve (Client *client, i32 fd) {
+
+    ssize_t rc;
+    char packetBuffer[MAX_UDP_PACKET_SIZE];
+    memset (packetBuffer, 0, MAX_UDP_PACKET_SIZE);
+
+    // do {
+        rc = recv (fd, packetBuffer, sizeof (packetBuffer), 0);
+        
+        if (rc < 0) {
+            if (errno != EWOULDBLOCK) {     // no more data to read 
+                // logMsg (stderr, ERROR, CLIENT, "Recv failed!");
+                // perror ("Error:");
+                // logMsg (stdout, DEBUG_MSG, CLIENT, 
+                //     "Ending server connection - client_recieve () - rc < 0");
+                // client_disconnectFromServer (client);
+            }
+
+            // /break;
+        }
+
+        if (rc == 0) {
+            // man recv -> steam socket perfomed an orderly shutdown
+            // but in dgram it might mean something?
+            // logMsg (stdout, DEBUG_MSG, CLIENT, 
+            //         "Ending server connection - client_recieve () - rc == 0");
+            // client_disconnectFromServer (client);
+            // break;
+        }
+
+        /* #ifdef CLIENT_DEBUG
+            logMsg (stdout, DEBUG_MSG, CLIENT, 
+                createString ("recv () - buffer size: %li", rc));
+        #endif */
+
+        char *buffer_data = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
+        if (buffer_data) {
+            memcpy (buffer_data, packetBuffer, rc);
+            handleRecvBuffer (client, fd, packetBuffer, rc);
+        }
+        
+    // } while (true);
+
 }
 
 #pragma endregion
@@ -387,47 +433,40 @@ void client_recieve (Client *client, i32 socket_fd) {
 
 #pragma region SERVER
 
-// FIXME: handle all the values!!
-// TODO: this can have a lot of potential!!
 // compare the info the server sent us with the one we expected 
 // and ajust our connection values if necessary
-void server_checkServerInfo (Server *curr_info, SServer *recv_info) {
+void server_checkServerInfo (Client *client, Connection *connection, SServer *server_info) {
 
-    if (curr_info && recv_info) {
-        // FIXME: how to handle a change in port from both sides?
-        // for example what if its a load balancer that sends us a diffrente port to connect?
-        // u16 port; 
+    if (client && connect && server_info) {
+        // TODO: we need to update our connection based on these values
+        connection->server->port = server_info->port;
+        connection->server->protocol = server_info->protocol;
+        connection->server->useIpv6 = server_info->useIpv6;
 
-        // FIXME: handle that we have the correct protocol for making requests
-        // u8 protocol;
-
-        if (curr_info->type != recv_info->type) {
-            logMsg (stdout, WARNING, SERVER, 
-                createString ("Connected to a server of an unknown type: %i.", recv_info->type)); 
-            // TODO: disconnect from the server
+        connection->server->type = server_info->type;
+        switch (connection->server->type) {
+            case FILE_SERVER: 
+                logMsg (stdout, DEBUG_MSG, SERVER, "Connected to a file server.");
+                break;
+            case WEB_SERVER:
+                logMsg (stdout, DEBUG_MSG, SERVER, "Connected to a web server.");
+                break;
+            case GAME_SERVER: 
+                logMsg (stdout, DEBUG_MSG, SERVER, "Connected to a game server.");
+                break;
+            default: 
+                logMsg (stdout, WARNING, SERVER, 
+                    createString ("Connected to a server of an unknown type: %i.", 
+                    server_info->type)); 
+                break;
         }
 
-        else {
-            #ifdef CLIENT_DEBUG
-            switch (curr_info->type) {
-                case GAME_SERVER: 
-                    logMsg (stdout, DEBUG_MSG, SERVER, "Connected to a game server.");
-                    break;
-                default: 
-                    logMsg (stdout, WARNING, SERVER, 
-                        createString ("Connected to a server of an unknown type: %i.", 
-                        recv_info->type)); 
-                    break;
-            }
-            #endif
-        }
-
-        // FIXME: manage authentication
-        curr_info->authRequired = recv_info->authRequired;
-        if (curr_info->authRequired) {
+        connection->server->authRequired = server_info->authRequired;
+        if (connection->server->authRequired) {
             #ifdef CLIENT_DEBUG
                 logMsg (stdout, DEBUG_MSG, SERVER, "Server requires authentication...");
             #endif
+            connection->authentication (connection->authData);
         }
 
         else {
@@ -442,19 +481,18 @@ void server_checkServerInfo (Server *curr_info, SServer *recv_info) {
 u8 client_disconnectFromServer (Client *client, Connection *connection);
 
 // FIXME:
-void server_handlePacket (PacketInfo *packet) {
+void server_handlePacket (PacketInfo *pack_info) {
 
-    char *end = packet->packetData;  
-    RequestData *reqdata = (RequestData *) (packet->packetData + sizeof (PacketHeader));
+    char *end =pack_info->packetData;  
+    RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
 
     switch (reqdata->type) {
         case SERVER_INFO: {
             #ifdef CLIENT_DEBUG
                 logMsg (stdout, DEBUG_MSG, SERVER, "Recieved a server info packet.");
             #endif
-            // SServer *serverInfo = 
-            //     (SServer *) (packet->packetData + sizeof (PacketHeader) + sizeof (RequestData));
-            // server_checkServerInfo (packet->client->connectionServer, serverInfo);
+            SServer *serverInfo = (SServer *) (end += sizeof (RequestData));
+            server_checkServerInfo (pack_info->client, pack_info->connection, serverInfo);
         } break;
         
         // FIXME:
@@ -465,6 +503,57 @@ void server_handlePacket (PacketInfo *packet) {
             // else logMsg (stderr, ERROR, CLIENT, "Failed to disconnect client from server!");
             break;
         default: logMsg (stderr, WARNING, PACKET, "Unknown server type packet."); break;
+    }
+
+}
+
+#pragma endregion
+
+/*** AUTHENTICATION ***/
+
+#pragma region AUTHENTICATION
+
+void client_send_default_auth_data (void *data) {
+
+    if (data) {
+        ClientConnection *cc = (ClientConnection *) data;
+        Client *client = cc->client;
+        Connection *connection = cc->connection;
+
+        if (client && connection) {
+            size_t packetSize = sizeof (PacketHeader) + 
+                sizeof (RequestData) + sizeof (DefAuthData);
+            void *req = generatePacket (AUTHENTICATION, packetSize);
+
+            if (req) {
+                char *end = req;
+                RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
+                reqdata->type = CLIENT_AUTH_DATA;
+
+                DefAuthData *authData = (DefAuthData *) (end += sizeof (RequestData));
+                authData->code = DEFAULT_AUTH_CODE;
+
+                if (tcp_sendPacket (connection->sock_fd, req, packetSize, 0) < 0)
+                    logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
+                else {
+                    #ifdef CLIENT_DEBUG
+                        logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
+                    #endif
+                }
+
+                free (req);
+            }
+        }
+    }
+
+}
+
+void client_set_send_auth_data (Client *client, Connection *connection,
+    Action send_auth_data, void *auth_data) {
+
+    if (client && connection && send_auth_data) {
+        connection->authentication = send_auth_data;
+        connection->authData = auth_data;
     }
 
 }
@@ -578,7 +667,7 @@ Connection *connection_get_by_socket (Client *client, i32 sock_fd) {
 
 /*** CLIENT LOGIC ***/
 
-// TODO: 22/11/2018 - we can add a restart client function similar to restart server
+// TODO: we can add a restart client function similar to restart server
 
 #pragma region CLIENT
 
@@ -789,8 +878,8 @@ u8 client_end_connection (Client *client, Connection *connection) {
 }
 
 // connects the client to a cerver type server
-Connection *client_connectToServer (Client *client, const char *serverIp, u16 port, 
-    ServerType expectedType) {
+Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port, 
+    ServerType expectedType, Action send_auth_data, void *auth_data) {
 
     if (!serverIp) {
         logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
@@ -824,6 +913,17 @@ Connection *client_connectToServer (Client *client, const char *serverIp, u16 po
             addr->sin_addr.s_addr = inet_addr (new_con->server->ip);
             addr->sin_port = htons (new_con->port);
         } 
+
+        if (send_auth_data) 
+            client_set_send_auth_data (client, new_con, send_auth_data, auth_data);
+
+        else {
+            ClientConnection *cc = (ClientConnection *) malloc (sizeof (ClientConnection));
+            cc->client = client;
+            cc->connection = new_con;
+
+            client_set_send_auth_data (client, new_con, client_send_default_auth_data, cc);
+        }
 
         // try to connect to the server with exponential backoff
         if (!connectRetry (new_con, new_con->server->address)) {
@@ -956,40 +1056,6 @@ void *generateRequest (PacketType packetType, RequestType reqType) {
     reqdata->type = reqType;
 
     return begin;
-
-}
-
-// FIXME: how do we want to send our blackrock credentials?
-u8 client_sendAuthPacket (Client *client, Connection *connection) {
-
-    if (client && connection) {
-        size_t packetSize = sizeof (PacketHeader) + 
-            sizeof (RequestData) + sizeof (DefAuthData);
-        void *req = generatePacket (AUTHENTICATION, packetSize);
-
-        if (req) {
-            char *end = req;
-            RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
-            reqdata->type = CLIENT_AUTH_DATA;
-
-            DefAuthData *authData = (DefAuthData *) (end += sizeof (RequestData));
-            authData->code = DEFAULT_AUTH_CODE;
-
-            if (tcp_sendPacket (connection->sock_fd, req, packetSize, 0) < 0)
-                logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
-            else {
-                #ifdef CLIENT_DEBUG
-                    logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
-                #endif
-            }
-
-            free (req);
-
-            return 0;
-        }
-    }
-
-    return 1;
 
 }
 
