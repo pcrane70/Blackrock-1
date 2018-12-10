@@ -42,9 +42,9 @@ u8 start_multiplayer (void) {
         main_connection = client_connectToServer (player_client, 
             black_server_ip, black_port, GAME_SERVER); 
 
-        #ifdef CLIENT_DEBUG
-            client_makeTestRequest (player_client, main_connection);
-        #endif
+        // #ifdef CLIENT_DEBUG
+        //     client_makeTestRequest (player_client, main_connection);
+        // #endif
 
         return 0;
     }
@@ -55,7 +55,7 @@ u8 start_multiplayer (void) {
 
 u8 stop_multiplayer (void) {
 
-    client_disconnectFromServer (player_client, main_connection);
+    // client_disconnectFromServer (player_client, main_connection);
     client_teardown (player_client);
 
 }

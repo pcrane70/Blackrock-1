@@ -25,9 +25,6 @@
 ProtocolId PROTOCOL_ID = 0x4CA140FF; // randomly chosen
 Version PROTOCOL_VERSION = { 1, 1 };
 
-// FIXME: don't forget to delete this when we disconnect from the server!!
-Server *serverInfo = NULL;
-
 /*** NETWORKING ***/
 
 #pragma region NETWORKING 
@@ -52,48 +49,37 @@ bool sock_setBlocking (int32_t fd, bool isBlocking) {
 
 #pragma region PACKETS
 
-// FIXME:
-PacketInfo *newPacketInfo (Client *client, char *packetData, size_t packetSize) {
+PacketInfo *newPacketInfo (Client *client, Connection *connection,
+     char *packetData, size_t packetSize) {
 
-    PacketInfo *p = NULL;
+    if (client && connection) {
+        PacketInfo *p = NULL;
 
-    /* if (client->packetPool) {
-        if (POOL_SIZE (client->packetPool) > 0) {
+        if (client->packetPool) {
             p = pool_pop (client->packetPool);
             if (!p) p = (PacketInfo *) malloc (sizeof (PacketInfo));
-            else {
-                // printf ("\nGot a packet info from the pool!\n");
-
-                if (p->packetData) free (p->packetData);
-            }
-            // else if (p->packetData) free (p->packetData);
+            else if (p->packetData) free (p->packetData);
         }
-    }
 
-    else {
+        else {
+            p = (PacketInfo *) malloc (sizeof (PacketInfo));
+            p->packetData = NULL;
+        } 
+
         p = (PacketInfo *) malloc (sizeof (PacketInfo));
-        p->packetData = NULL;
-    } */
 
-    p = (PacketInfo *) malloc (sizeof (PacketInfo));
+        if (p) {
+            p->client = client;
+            p->connection = connection;
+            p->packetSize = packetSize;
 
-    if (p) {
-        p->client = client;
-        p->packetSize = packetSize;
-        p->packetData = packetData;
+            p->packetData = packetData;
+        }
 
-        char *end = p->packetData; 
-        PacketHeader *header = (PacketHeader *) end;
-        //printf ("handlePacket () - packet size: %i\n", header->packetSize);
-        
-        // copy the contents from the entry buffer to the packet info
-        /* if (!p->packetData)
-            p->packetData = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
-
-        memcpy (p->packetData, packetData, MAX_UDP_PACKET_SIZE); */
+        return p;
     }
 
-    return p;
+    return NULL;
 
 }
 
@@ -103,6 +89,7 @@ void destroyPacketInfo (void *data) {
     if (data) {
         PacketInfo *packet = (PacketInfo *) data;
         packet->client = NULL;
+        packet->connection = NULL;
         if (packet->packetData) free (packet->packetData);
     }
 
@@ -304,6 +291,8 @@ void handlePacket (void *data) {
 
 }
 
+Connection *connection_get_by_socket (Client *client, i32 sock_fd);
+
 // split the entry buffer in packets of the correct size
 void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total_size) {
 
@@ -328,8 +317,11 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
                 for (u32 i = 0; i < packet_size; i++, buffer_idx++) 
                     packet_data[i] = buffer[buffer_idx];
 
-                info = newPacketInfo (client, packet_data, packet_size);
-                thpool_add_work (client->thpool, (void *) handlePacket, info);
+                info = newPacketInfo (client, connection_get_by_socket (client, socket_fd),
+                     packet_data, packet_size);
+                
+                if (info) 
+                    thpool_add_work (client->thpool, (void *) handlePacket, info);
 
                 end += packet_size;
             }
@@ -337,9 +329,11 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
             else break;
         }
 
-        #ifdef CLIENT_DEBUG
-            logMsg (stdout, DEBUG_MSG, PACKET, "Done splitting recv buffer!");
-        #endif
+        free (buffer);
+
+        // #ifdef CLIENT_DEBUG
+        //     logMsg (stdout, DEBUG_MSG, PACKET, "Done splitting recv buffer!");
+        // #endif
     }
 
 }
@@ -350,11 +344,11 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
 void client_recieve (Client *client, i32 socket_fd) {
 
     ssize_t rc;
-    char packetBuffer[MAX_UDP_PACKET_SIZE];
-    memset (packetBuffer, 0, MAX_UDP_PACKET_SIZE);
+    char *packet_buffer = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
+    memset (packet_buffer, 0, MAX_UDP_PACKET_SIZE);
 
     // do {
-        rc = recv (socket_fd, packetBuffer, sizeof (packetBuffer), 0);
+        rc = recv (socket_fd, packet_buffer, MAX_UDP_PACKET_SIZE, 0);
         
         if (rc < 0) {
             if (errno != EWOULDBLOCK) {     // no more data to read 
@@ -362,6 +356,7 @@ void client_recieve (Client *client, i32 socket_fd) {
                 // perror ("Error:");
                 logMsg (stdout, DEBUG_MSG, CLIENT, "client_recieve () - rc < 0");
                 close (socket_fd);  // just close the socket
+                free (packet_buffer);
             }
             // /break;
         }
@@ -373,19 +368,15 @@ void client_recieve (Client *client, i32 socket_fd) {
                     "Ending connection - client_recieve () - rc == 0");
 
             close (socket_fd);  // close the socket
+            free (packet_buffer);
 
             // FIXME: close the connection
             // client_disconnectFromServer (client);
             // break;
         }
 
-        else {
-            char *buffer_data = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
-            if (buffer_data) {
-                memcpy (buffer_data, packetBuffer, rc);
-                handleRecvBuffer (client, socket_fd, packetBuffer, rc);
-            }
-        }
+        else 
+            handleRecvBuffer (client, socket_fd, packet_buffer, rc);
     // } while (true);
 
 }
@@ -571,6 +562,18 @@ Connection *client_connection_new (u16 port) {
 
 }
 
+Connection *connection_get_by_socket (Client *client, i32 sock_fd) {
+
+    if (client) {
+        for (u8 i = 0; i < client->n_active_connections; i++)
+            if (client->active_connections[i]->sock_fd == sock_fd)
+                return client->active_connections[i];
+    }
+
+    return NULL;
+
+}
+
 #pragma endregion
 
 /*** CLIENT LOGIC ***/
@@ -644,6 +647,8 @@ Client *client_create (void) {
             return NULL;
         }
 
+        client->pollTimeout = DEFAULT_POLL_TIMEOUT;
+
         logMsg (stdout, SUCCESS, CLIENT, "Created a new client!");
         return client;
     }
@@ -692,7 +697,7 @@ u8 client_poll (void *data) {
 
         // if poll has timed out, just continue to the next loop... 
         if (poll_retval == 0) {
-            #ifdef DEBUG
+            #ifdef CLIENT_DEBUG
                 logMsg (stdout, DEBUG_MSG, NO_TYPE, "Poll timeout.");
             #endif
             continue;
@@ -827,18 +832,24 @@ Connection *client_connectToServer (Client *client, const char *serverIp, u16 po
 
             // add the new socket to the poll structure
             u8 idx = client_get_free_poll_idx (client);
-            if (idx >= 0)
+            if (idx >= 0) {
                 client->fds[idx].fd = new_con->sock_fd;
+                client->fds[idx].events = POLLIN;
+                client->nfds++;
 
-            // check if we walready have the client poll running
-            if (client->running == false) {
-                thpool_add_work (client->thpool, (void *) client_poll, client);
-                client->running = true;
-            }
+                // check if we walready have the client poll running
+                if (client->running == false) {
+                    thpool_add_work (client->thpool, (void *) client_poll, client);
+                    client->running = true;
+                }
 
-            logMsg (stdout, SUCCESS, CLIENT, "Connected to server!"); 
+                logMsg (stdout, SUCCESS, CLIENT, "Connected to server!"); 
 
-            return new_con;
+                return new_con;
+            }              
+
+            else logMsg (stderr, ERROR, CLIENT, 
+                "Failed to get free poll idx. Is the client full?");
         } 
     }
 
@@ -916,7 +927,7 @@ u8 client_teardown (Client *client) {
             #endif
         } 
 
-        if (client->packetPool) pool_clear (client->packetPool); 
+        // if (client->packetPool) pool_clear (client->packetPool); 
 
         free (client);
 

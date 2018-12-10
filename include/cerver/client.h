@@ -144,14 +144,12 @@ extern u8 client_disconnectFromServer (Client *client, Connection *connection);
 // These section needs to be identical as in the server so that we can handle
 // the correct requests
 
-// 01/11/2018 - info from a recieved packet to be handle
+// info from a recieved packet to be handle
 struct _PacketInfo {
 
-    // Server *server;
     Client *client;
+    Connection *connection;
 
-    // we need this to be dynamic to avoid any memory leak 
-    // when we resuse it with the pool
     char *packetData;
     size_t packetSize;
 
