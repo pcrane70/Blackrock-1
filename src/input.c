@@ -11,27 +11,9 @@
 #include "ui/ui.h"
 #include "ui/gameUI.h"
 
-extern bool inGame;
-
 /*** MAIN MENU ***/
 
 extern bool running;
-extern bool wasInGame;
-
-// TODO: do we want this here?
-void startGame (void) {
-
-    // cleanUpMenuScene ();
-    activeScene = NULL;
-
-    initGame ();
-
-    setActiveScene (gameScene ());
-
-    inGame = true;
-    wasInGame = true; 
-
-}
 
 #pragma region MAIN MENU 
 
@@ -51,15 +33,13 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_j: if (activeMenuView == MULTI_MENU_VIEW) multiplayer_joinLobby (); break;
 
             case SDLK_s: startGame (); break;
+            // case SDLK_c: break;     // TODO: toggle credits window
+            case SDLK_e: running = false; break;
 
             #ifdef CLIENT_DEBUG 
                 case SDLK_t: client_makeTestRequest (player_client, main_connection); break;
             #endif
-            
-            // old events
-            // FIXME: case SDLK_s: if (characterMenu != NULL) startGame (); break;
-            // case SDLK_c: break;     // TODO: toggle credits window
-            // case SDLK_e: running = false; break;
+
             default: break;
         }
 

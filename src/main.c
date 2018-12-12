@@ -120,7 +120,8 @@ void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **scree
 
 /*** MAIN THREAD ***/
 
-// FIXME: create more efficient threads
+pthread_t gameThread;
+
 int main (void) {
 
     srand ((unsigned) time (NULL));
@@ -130,54 +131,46 @@ int main (void) {
     SDL_Texture *screen = NULL;
     setUpSDL (&window, &renderer, &screen);
 
-    running = true;
     SDL_Event event;
-    // TODO: display an fps counter if we give a debug option
-    u32 timePerFrame;
-    u32 frameStart;
-    i32 sleepTime;
     UIScreen *screenForInput;
 
     extern UIScreen *menuScene (void);
     setActiveScene (menuScene ());
 
-    pthread_t gameThread;
-
     #ifdef BLACK_MULTIPLAYER 
         start_multiplayer ();
     #endif
 
+    u32 timePerFrame = 1000 / FPS_LIMIT;
+    u32 frameStart;
+    i32 sleepTime;
+
+    running = true;
     while (running) {
-        timePerFrame = 1000 / FPS_LIMIT;
-        frameStart = 0;
+        frameStart = SDL_GetTicks ();
         
         while (SDL_PollEvent (&event) != 0) {
-
-            frameStart = SDL_GetTicks ();
-
-            if (event.type == SDL_QUIT) running = false;
+            if (event.type == SDL_QUIT) {
+                running = false;
+                inGame = false;
+            } 
 
             // handle the event in the correct screen
             screenForInput = activeScene;
             screenForInput->handleEvent (screenForInput, event);
         }
 
-        if (inGame) 
-            if (pthread_create (&gameThread, NULL, updateGame, NULL) != THREAD_OK)
-                fprintf (stderr, "Error creating game thread!\n");
-
         // render the correct screen
         renderScreen (renderer, screen, activeScene);
 
-        if (inGame)
-            if (pthread_join (gameThread, NULL) != THREAD_OK) 
-                fprintf (stderr, "Error joinning game thread!\n");
-
-        // Limit the FPS
+        // limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
         if (sleepTime > 0) SDL_Delay (sleepTime);
-
     }
+
+    if (wasInGame)
+        if (pthread_join (gameThread, NULL) != THREAD_OK)
+            fprintf (stderr, "Failed to join game thread!\n");
 
     #ifdef BLACK_MULTIPLAYER
         stop_multiplayer ();

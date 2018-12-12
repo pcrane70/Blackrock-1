@@ -1680,22 +1680,56 @@ void gameOver (void) {
 
 }
 
+extern bool inGame;
 
 // we will have the game update every time the player moves...
 void *updateGame (void *data) {
 
-    if (playerTookTurn) {
-        generateTargetMap (player->pos->x, player->pos->y);
-        updateMovement ();
+    u32 timePerFrame = 1000 / FPS_LIMIT;
+    u32 frameStart;
+    i32 sleepTime;
 
-        playerTookTurn = false;
+    while (inGame) {
+        frameStart = SDL_GetTicks ();
+
+        if (playerTookTurn) {
+            generateTargetMap (player->pos->x, player->pos->y);
+            updateMovement ();
+
+            playerTookTurn = false;
+        }
+
+        // recalculate the fov
+        if (recalculateFov) {
+            calculateFov (player->pos->x, player->pos->y, fovMap);
+            recalculateFov = false;
+        }
+
+        // limit the FPS
+        sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
+        if (sleepTime > 0) SDL_Delay (sleepTime);
     }
 
-    // recalculate the fov
-    if (recalculateFov) {
-        calculateFov (player->pos->x, player->pos->y, fovMap);
-        recalculateFov = false;
-    }
+}
+
+extern bool inGame;
+extern bool wasInGame;
+extern pthread_t gameThread;
+
+void startGame (void) {
+
+    // cleanUpMenuScene ();
+    activeScene = NULL;
+
+    initGame ();
+
+    setActiveScene (gameScene ());
+
+    inGame = true;
+    wasInGame = true; 
+
+    if (pthread_create (&gameThread, NULL, updateGame, NULL) != THREAD_OK)
+        fprintf (stderr, "Error creating game thread!\n");
 
 }
 

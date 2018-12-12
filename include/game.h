@@ -160,6 +160,7 @@ extern Pool *physPool;
 
 /*** GAME STATE ***/
 
+extern void startGame (void);
 extern void initGame (void);
 
 extern bool playerTookTurn;
