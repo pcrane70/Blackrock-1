@@ -1101,9 +1101,9 @@ void *generateRequest (PacketType packetType, RequestType reqType) {
 
     size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
     void *begin = generatePacket (packetType, packetSize);
-    char *end = begin += sizeof (PacketHeader); 
+    char *end = begin;
 
-    RequestData *reqdata = (RequestData *) end;
+    RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
     reqdata->type = reqType;
 
     return begin;
@@ -1159,11 +1159,8 @@ i8 client_file_send (Client *client, Connection *connection, const char *filenam
 
 #pragma region GAME SERVER
 
-// TODO: how do we check if we are the owner of the lobby?
 // request to create a new multiplayer game
 void *client_game_createLobby (Client *owner, Connection *connection, GameType gameType) {
-
-    // FIXME: we need to do this in a separate thread!
 
     // create a new connection
     Connection *new_con = client_make_new_connection (owner, connection->server->ip, 
@@ -1171,9 +1168,15 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
 
     if (new_con) {
         char buffer[1024];
+        memset (buffer, 0, 1024);
         int rc = read (new_con->sock_fd, buffer, 1024);
 
         if (rc > 0) {
+            char *end = buffer;
+            PacketHeader *header = (PacketHeader *) end;
+            if (header->packetType == SERVER_PACKET)
+                printf ("Got a server packet.\n");
+
             // authenticate using our server token
             size_t token_packet_size = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (Token);
             void *token_packet = generatePacket (AUTHENTICATION, token_packet_size);
@@ -1182,30 +1185,40 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
                 RequestData *req = (RequestData *) (end += sizeof (PacketHeader));
                 req->type = CLIENT_AUTH_DATA;
 
-                Token *tok = (Token *) (end += sizeof (Token));
+                Token *tok = (Token *) (end += sizeof (RequestData));
                 memcpy (tok->token, connection->server->token_data->token, sizeof (tok->token));
 
                 client_sendPacket (new_con, token_packet, token_packet_size);
-                // free (token_packet);
+                free (token_packet);
+            }
+
+            memset (buffer, 0, 1024);
+            rc = read (new_con->sock_fd, buffer, 1024);
+
+            if (rc > 0) {
+                end = buffer;
+                RequestData *reqdata = (RequestData *) (end + sizeof (PacketHeader));
+                if (reqdata->type == SUCCESS_AUTH) {
+                    logMsg (stdout, SUCCESS, NO_TYPE, "Authenticated to server - ready to make request...");
+                    sleep (3);
+
+                    // make the create lobby request
+                    size_t create_packet_size = sizeof (PacketHeader) + sizeof (RequestData);
+                    void *lobby_req = generateRequest (GAME_PACKET, LOBBY_CREATE);
+                    if (lobby_req) {
+                        client_sendPacket (connection, lobby_req, create_packet_size);
+                        // free (lobby_req);
+
+                        // TODO: wait for a server response
+                        // return the lobby data or error as feedback
+                    }
+                    sleep (10);
+                }
+                   
             }
         }
 
-        rc = read (new_con->sock_fd, buffer, 1024);
-
         close (new_con->sock_fd);
-
-        // TODO: whait to see if we are authenticated
-
-        // make the create lobby request
-        // size_t create_packet_size = sizeof (PacketHeader) + sizeof (RequestData);
-        // void *lobby_req = generateRequest (GAME_PACKET, LOBBY_CREATE);
-        // if (lobby_req) {
-        //     client_sendPacket (connection, lobby_req, create_packet_size);
-        //     free (lobby_req);
-
-        //     // TODO: wait for a server response
-        //     // return the lobby data or error as feedback
-        // }
     }
 
     return NULL;

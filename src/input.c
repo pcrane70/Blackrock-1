@@ -19,6 +19,16 @@ extern bool running;
 
 #include "ui/menu.h"
 
+#include <pthread.h>
+
+#include <stdio.h>
+#include "utils/log.h"
+
+pthread_attr_t attr;
+pthread_t request_Thread;
+
+int rc;
+
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
     if (event.type == SDL_KEYDOWN) {
@@ -29,7 +39,16 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_m: if (activeMenuView != MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
             case SDLK_b: if (activeMenuView == MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
 
-            case SDLK_c: if (activeMenuView == MULTI_MENU_VIEW) multiplayer_createLobby (); break;
+            case SDLK_c: 
+                rc = pthread_attr_init (&attr);
+                rc = pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
+
+                if (activeMenuView == MULTI_MENU_VIEW) {
+                    if (pthread_create (&request_Thread, &attr, (void *) multiplayer_createLobby, NULL)
+                        != THREAD_OK)
+                        logMsg (stderr, ERROR, NO_TYPE, "Failed o create request thread!");
+                }  
+                break;
             case SDLK_j: if (activeMenuView == MULTI_MENU_VIEW) multiplayer_joinLobby (); break;
 
             case SDLK_s: startGame (); break;

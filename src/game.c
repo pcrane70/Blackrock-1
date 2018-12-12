@@ -1934,43 +1934,63 @@ void showScore (void) {
 
 #pragma region MULTIPLAYER
 
+extern pthread_t requestThread;
+
+Lobby *current_lobby;
+
 // TODO: 23/11/2018 -- 3:10
 // make a client_make_request to create a new thread and wait for a server response
 // and return the data
 // and create a client_make_request_async to just send a request packet and 
 // the client poll handles the packet
 
-// FIXME: how do we get the game type?
-// called from the main menu to request a new game lobby
-void multiplayer_createLobby (void) {
+void multiplayer_createLobby (void *data) {
 
     GameReqData game_req_data = { .client = player_client, .connection = main_connection,
         .game_type = ARCADE };
 
-    SLobby *lobby = client_game_createLobby (player_client, main_connection, ARCADE);
-    if (lobby) {
-        printf ("Got a new lobby from the server!\n");
-    }
-
-    // TODO: do we want to be able to perform a connection here?
-    // if (!playerClient->isConnected) {
-    //     #ifdef BLACK_DEBUG
-    //         logMsg (stdout, DEBUG_MSG, GAME, "Requesting a new lobby...");
-    //     #endif
-
-    //     if (client_game_createLobby (playerClient, ARCADE) >= 0) {
-    //         // we made the request to the server
-    //         // TODO: move the player to the lobby screen
-    //     }
-
-    //     // TODO: give feedback to the player
-    //     else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
-    // }
-
-    // // TODO: give feedback to the player
-    // else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+    Lobby *new_lobby = client_game_createLobby (player_client, main_connection, ARCADE);
+    if (new_lobby != NULL) 
+        logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
+    else 
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
 
 }
+
+// FIXME: how do we get the game type?
+// called from the main menu to request a new game lobby
+// void multiplayer_createLobby (void) {
+
+//     // GameReqData game_req_data = { .client = player_client, .connection = main_connection,
+//     //     .game_type = ARCADE };
+
+//     // if (pthread_create (&requestThread, NULL, client_game_createLobby, &game_req_data) != THREAD_OK)
+//     //     logMsg (stderr, ERROR, NO_TYPE, "Failed to create request thread!");
+
+//     // client_game_createLobby (player_client, main_connection, ARCADE);
+//     // if (lobby) {
+//     //     printf ("Got a new lobby from the server!\n");
+//     // }
+
+//     // TODO: do we want to be able to perform a connection here?
+//     // if (!playerClient->isConnected) {
+//     //     #ifdef BLACK_DEBUG
+//     //         logMsg (stdout, DEBUG_MSG, GAME, "Requesting a new lobby...");
+//     //     #endif
+
+//     //     if (client_game_createLobby (playerClient, ARCADE) >= 0) {
+//     //         // we made the request to the server
+//     //         // TODO: move the player to the lobby screen
+//     //     }
+
+//     //     // TODO: give feedback to the player
+//     //     else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
+//     // }
+
+//     // // TODO: give feedback to the player
+//     // else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+
+// }
 
 // TODO: do we need to pass some paramaters for game searching?
 //  i guess no because the server al ready knows all of our info!

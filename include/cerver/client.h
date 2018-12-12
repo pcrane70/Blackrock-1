@@ -345,7 +345,7 @@ typedef struct GameSettings {
 
 // FIXME: players and a reference to the owner
 // info that we need to send to the client about the lobby he is in
-typedef struct SLobby {
+typedef struct sLobby {
 
     GameSettings settings;
     bool inGame;
@@ -355,6 +355,8 @@ typedef struct SLobby {
     // Vector players;             // ecah client also needs to keep track of other players in the lobby
 
 } SLobby;
+
+typedef struct SLobby Lobby;
 
 #pragma endregion
 
