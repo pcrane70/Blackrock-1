@@ -276,7 +276,7 @@ extern i8 client_file_send (Client *client, Connection *connection, const char *
 // this is the same as in cerver
 typedef enum GameType {
 
-	ARCADE = 0,
+	ARCADE = 1,
 
 } GameType;
 

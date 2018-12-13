@@ -1212,7 +1212,16 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
                         // TODO: wait for a server response
                         // return the lobby data or error as feedback
                     }
-                    sleep (10);
+                    
+                    memset (buffer, 0, 1024);
+                    rc = read (new_con->sock_fd, buffer, 1024);
+
+                    if (rc > 0) {
+                        end = buffer;
+                        RequestData *reqdata = (RequestData *) (end + sizeof (PacketHeader));
+                        if (reqdata->type == LOBBY_UPDATE) 
+                            logMsg (stdout, SUCCESS, NO_TYPE, "Got a fucking lobby packet!!");
+                    }
                 }
                    
             }
