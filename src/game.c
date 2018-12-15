@@ -57,8 +57,6 @@ u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 bool recalculateFov = false;
 extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
-extern void die (char *);
-
 /*** INITIALIZATION **/
 
 #pragma region INIT GAME
@@ -1934,87 +1932,64 @@ void showScore (void) {
 
 #pragma region MULTIPLAYER
 
-extern pthread_t requestThread;
+#include "ui/menu.h"
 
-Lobby *current_lobby;
+Lobby *current_lobby = NULL;
 
-// TODO: 23/11/2018 -- 3:10
-// make a client_make_request to create a new thread and wait for a server response
-// and return the data
-// and create a client_make_request_async to just send a request packet and 
-// the client poll handles the packet
-
+// TODO: we need to pass the game type
+// called from the main menu to request the server to create a new lobby
 void multiplayer_createLobby (void *data) {
 
-    GameReqData game_req_data = { .client = player_client, .connection = main_connection,
-        .game_type = ARCADE };
+    Lobby *new_lobby = (Lobby *) client_game_createLobby (player_client, main_connection, ARCADE);
+    if (new_lobby != NULL) {
+        #ifdef CLIENT_DEBUG   
+            logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
+        #endif
+        current_lobby = new_lobby;
 
-    Lobby *new_lobby = client_game_createLobby (player_client, main_connection, ARCADE);
-    if (new_lobby != NULL) 
-        logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
-    else 
-        logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
+        #ifdef CLIENT_DEBUG
+            logMsg (stdout, DEBUG_MSG, NO_TYPE, "New lobby values: ");
+            printf ("Game type: %i\n", new_lobby->settings.gameType);
+            printf ("Player timeout: %i\n", new_lobby->settings.playerTimeout);
+            printf ("FPS: %i\n", new_lobby->settings.fps);
+            printf ("Max players: %i\n", new_lobby->settings.maxPlayers);
+            printf ("Min players: %i\n", new_lobby->settings.minPlayers);
+        #endif
+
+        toggleLobbyMenu ();
+    }
+        
+    else {
+        #ifdef CLIENT_DEBUG
+            logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
+        #endif 
+        
+        // FIXME: give feedback to the player
+    }
 
 }
 
-// FIXME: how do we get the game type?
-// called from the main menu to request a new game lobby
-// void multiplayer_createLobby (void) {
+// TODO: we need to pass the game type
+// called from the main menu ro request the server to search a lobby for use
+void multiplayer_joinLobby (void *data) {
 
-//     // GameReqData game_req_data = { .client = player_client, .connection = main_connection,
-//     //     .game_type = ARCADE };
+    Lobby *new_lobby = (Lobby *) client_game_joinLobby (player_client, main_connection, ARCADE);
+    if (new_lobby != NULL) {
+        #ifdef CLIENT_DEBUG   
+            logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
+        #endif
+        current_lobby = new_lobby;
 
-//     // if (pthread_create (&requestThread, NULL, client_game_createLobby, &game_req_data) != THREAD_OK)
-//     //     logMsg (stderr, ERROR, NO_TYPE, "Failed to create request thread!");
-
-//     // client_game_createLobby (player_client, main_connection, ARCADE);
-//     // if (lobby) {
-//     //     printf ("Got a new lobby from the server!\n");
-//     // }
-
-//     // TODO: do we want to be able to perform a connection here?
-//     // if (!playerClient->isConnected) {
-//     //     #ifdef BLACK_DEBUG
-//     //         logMsg (stdout, DEBUG_MSG, GAME, "Requesting a new lobby...");
-//     //     #endif
-
-//     //     if (client_game_createLobby (playerClient, ARCADE) >= 0) {
-//     //         // we made the request to the server
-//     //         // TODO: move the player to the lobby screen
-//     //     }
-
-//     //     // TODO: give feedback to the player
-//     //     else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
-//     // }
-
-//     // // TODO: give feedback to the player
-//     // else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
-
-// }
-
-// TODO: do we need to pass some paramaters for game searching?
-//  i guess no because the server al ready knows all of our info!
-// FIXME: how do we get the game type?
-// called from the main menu to request to join a game lobby
-void multiplayer_joinLobby (void) {
-
-    // TODO: do we want to be able to perform a connection here?
-    // if (!playerClient->isConnected) {
-    //     #ifdef BLACK_DEBUG
-    //         logMsg (stdout, DEBUG_MSG, GAME, "Requesting to join a lobby...");
-    //     #endif
-
-    //     // if (client_game_joinLobby (playerClient, ARCADE) >= 0) {
-    //     //     // we made the request to the server
-    //     //     // TODO: move the player to the lobby screen
-    //     // }
-
-    //     // TODO: give feedback to the player
-    //     else logMsg (stderr, ERROR, CLIENT, "Failed to create a new game lobby!");
-    // }
-
-    // // TODO: give feedback to the player
-    // else logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
+        // FIXME: move to the lobby screen!
+    }
+        
+    else {
+        #ifdef CLIENT_DEBUG
+            logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
+        #endif 
+        
+        // FIXME: give feedback to the player
+    }
 
 }
 

@@ -250,8 +250,8 @@ extern DoubleList *getGlobalLBData (void);
 
 #pragma region MULTIPLAYER
 
-extern void multiplayer_createLobby (void*);
-extern void multiplayer_joinLobby (void);
+extern void multiplayer_createLobby (void *);
+extern void multiplayer_joinLobby (void *);
 extern void multiplayer_leaveLobby (void);
 
 #pragma endregion

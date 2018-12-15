@@ -290,7 +290,7 @@ typedef struct GameReqData {
 } GameReqData;
 
 extern void *client_game_createLobby (Client *owner, Connection *connection, GameType gameType);
-extern i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameType);
+extern void *client_game_joinLobby (Client *client, Connection *connection, GameType gameType);
 extern i8 client_game_leaveLobby (Client *client, Connection *connection);
 extern i8 client_game_destroyLobby (Client *client, Connection *connection);
 
@@ -345,7 +345,7 @@ typedef struct GameSettings {
 
 // FIXME: players and a reference to the owner
 // info that we need to send to the client about the lobby he is in
-typedef struct sLobby {
+typedef struct SLobby {
 
     GameSettings settings;
     bool inGame;
@@ -356,7 +356,7 @@ typedef struct sLobby {
 
 } SLobby;
 
-typedef struct SLobby Lobby;
+typedef SLobby Lobby;
 
 #pragma endregion
 

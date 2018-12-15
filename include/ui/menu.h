@@ -8,6 +8,7 @@ typedef enum MenuView {
     LAUNCH_VIEW = 0,
     MAIN_MENU_VIEW,
     MULTI_MENU_VIEW,
+    LOBBY_MENU_VIEW
 
 } MenuView;
 
@@ -23,5 +24,7 @@ extern void createMainMenu (void);
 /*** MULTIPLAYER ***/
 
 extern void toggleMultiplayerMenu (void);
+
+extern void toggleLobbyMenu (void);
 
 #endif

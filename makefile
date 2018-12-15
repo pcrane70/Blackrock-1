@@ -30,8 +30,8 @@ OBJEXT      := o
 
 CFLAGS      := -g $(DEFINES) $(RUN_MAKE)
 LIB         :=  $(PTHREAD) $(SQLITE3) $(SDL2) $(MATH)
-INC         := -I$(INCDIR) -I/usr/local/include
-INCDEP      := -I$(INCDIR)
+INC         := -I $(INCDIR) -I /usr/local/include
+INCDEP      := -I $(INCDIR)
 
 SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))

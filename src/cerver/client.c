@@ -1162,6 +1162,8 @@ i8 client_file_send (Client *client, Connection *connection, const char *filenam
 // request to create a new multiplayer game
 void *client_game_createLobby (Client *owner, Connection *connection, GameType gameType) {
 
+    Lobby *new_lobby = NULL;
+
     // create a new connection
     Connection *new_con = client_make_new_connection (owner, connection->server->ip, 
         connection->server->port, false);
@@ -1200,7 +1202,7 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
                 RequestData *reqdata = (RequestData *) (end + sizeof (PacketHeader));
                 if (reqdata->type == SUCCESS_AUTH) {
                     logMsg (stdout, SUCCESS, NO_TYPE, "Authenticated to server - ready to make request...");
-                    sleep (5);
+                    sleep (2);
 
                     // make the create lobby request
                     size_t create_packet_size = sizeof (PacketHeader) + sizeof (RequestData);
@@ -1218,9 +1220,13 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
 
                     if (rc > 0) {
                         end = buffer;
-                        RequestData *reqdata = (RequestData *) (end + sizeof (PacketHeader));
-                        if (reqdata->type == LOBBY_UPDATE) 
+                        RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
+                        if (reqdata->type == LOBBY_UPDATE) {
                             logMsg (stdout, SUCCESS, NO_TYPE, "Got a fucking lobby packet!!");
+                            new_lobby = (Lobby *) malloc (sizeof (SLobby));
+                            SLobby *got_lobby = (SLobby *) (end += sizeof (RequestData));
+                            memcpy (new_lobby, got_lobby, sizeof (SLobby));
+                        }
                     }
                 }
                    
@@ -1230,13 +1236,13 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
         close (new_con->sock_fd);
     }
 
-    return NULL;
+    return new_lobby;
 
 }
 
 // FIXME: send game type to server
 // request to join an on going game
-i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameType) {
+void *client_game_joinLobby (Client *client, Connection *connection, GameType gameType) {
 
     if (client && connection) {
         // create & send a join lobby req packet to the server
@@ -1246,11 +1252,11 @@ i8 client_game_joinLobby (Client *client, Connection *connection, GameType gameT
         if (req) {
             i8 retval = client_sendPacket (connection, req, packetSize);
             free (req);
-            return retval;
+            // return retval;
         }
     }
 
-    return -1;
+    return NULL;
 
 }
 

@@ -8,6 +8,7 @@
 #include "ui/console.h"
 
 #include "utils/dlist.h"
+#include "utils/myUtils.h"
 
 MenuView activeMenuView;
 UIScreen *menuScreen = NULL;
@@ -85,6 +86,8 @@ void createMainMenu (void) {
 
 /*** MULTIPLAYER ***/
 
+#pragma region MULTIPLAYER
+
 #define MULTI_MENU_COLOR        0x34495EFF
 #define MULTI_MENU_WIDTH        60
 #define MULTI_MENU_HEIGHT       35
@@ -92,6 +95,14 @@ void createMainMenu (void) {
 #define MULTI_MENU_LEFT         10
 
 UIView *multiMenu = NULL;
+
+#define LOBBY_MENU_COLOR        0x4B6584FF
+#define LOBBY_MENU_WIDTH        FULL_SCREEN_WIDTH
+#define LOBBY_MENU_HEIGHT       FULL_SCREEN_HEIGHT
+
+UIView *lobbyMenu = NULL;
+
+extern Lobby *current_lobby;
 
 static void renderMultiplayerMenu (Console *console) {
 
@@ -125,7 +136,35 @@ void toggleMultiplayerMenu (void) {
 
 }
 
+static void renderLobbyMenu (Console *console) {
+
+    putStringAtCenter (console, "Lobby Menu", 3, WHITE, NO_COLOR);
+
+    if (current_lobby) {
+        char *str = createString ("Max players: %i", current_lobby->settings.maxPlayers);
+        putStringAtCenter (console, str, 10, WHITE, NO_COLOR);
+    }
+
+}
+
+void toggleLobbyMenu (void) {
+
+    if (!lobbyMenu) {
+        UIRect lobby_menu = { 0, 0, (16 * LOBBY_MENU_WIDTH), (16 * LOBBY_MENU_HEIGHT) };
+        lobbyMenu = ui_newView (lobby_menu, LOBBY_MENU_WIDTH, LOBBY_MENU_HEIGHT, tileset, 0, LOBBY_MENU_COLOR, true, renderLobbyMenu);
+        dlist_insert_after (menuScreen->views, LIST_END (menuScreen->views), lobbyMenu);
+
+        // menuScreen->activeView = MULTI_MENU_VIEW;
+        activeMenuView = LOBBY_MENU_VIEW;
+    }
+
+}
+
+#pragma endregion
+
 /*** CHARACTER MENU ***/
+
+#pragma region CHARACTER
 
 #define CHAR_CREATION_LEFT		0
 #define CHAR_CREATION_TOP		0
@@ -177,10 +216,9 @@ void toggleCharacterMenu (void) {
 
 #pragma endregion
 
-
 /*** MENU SCENE ***/
 
-#pragma region MENU SCENE
+#pragma region MENU
 
 void destroyMenuScene (void) {
 

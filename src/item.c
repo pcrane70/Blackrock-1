@@ -13,7 +13,6 @@
 
 #include "utils/myUtils.h"
 
-
 // our items db
 const char *itemsDbPath = "./data/items.db";    // The path is form the makefile
 sqlite3 *itemsDb;
@@ -24,8 +23,6 @@ Pool *itemsPool = NULL;
 // static u32 itemsId = 0;
 
 extern unsigned int newId;
-
-extern void die (char *);
 
 // FIXME: problems with items pool
 void initItems (void) {

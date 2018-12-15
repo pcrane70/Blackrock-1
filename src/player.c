@@ -8,8 +8,6 @@
 
 #include "utils/myUtils.h"
 
-extern void die (char *);
-
 Player *player = NULL;
 Config *playerConfig = NULL;
 Config *classesConfig = NULL;

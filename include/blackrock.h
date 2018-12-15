@@ -45,4 +45,9 @@ extern Client *player_client;
 
 extern Connection *main_connection;
 
+/*** MISC ***/
+
+extern void pthread_create_detachable (void *(*work) (void *), void *args);
+extern void die (const char *error);
+
 #endif

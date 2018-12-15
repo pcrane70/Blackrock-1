@@ -10,18 +10,36 @@
 #include "ui/ui.h"
 #include "ui/gameUI.h"
 
+#include "utils/log.h"
+
 #define FPS_LIMIT   20
 
 bool running = false;
 bool inGame = false;
 bool wasInGame = false;
 
-void die (char *error) {
+/*** MISC ***/
+
+void die (const char *error) {
 
     perror (error);
     running = false;
 
 };
+
+void pthread_create_detachable (void *(*work) (void *), void *args) {
+
+    pthread_attr_t attr;
+    pthread_t request_Thread;
+
+    int rc = pthread_attr_init (&attr);
+    rc = pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
+
+   if (pthread_create (&request_Thread, &attr, work, args)
+        != THREAD_OK)
+        logMsg (stderr, ERROR, NO_TYPE, "Failed o create request thread!");
+
+}
 
 /*** MULTIPLAYER ***/
 
@@ -42,10 +60,6 @@ u8 start_multiplayer (void) {
         main_connection = client_connect_to_server (player_client, 
             black_server_ip, black_port, GAME_SERVER, NULL, NULL);
 
-        // #ifdef CLIENT_DEBUG
-        //     client_makeTestRequest (player_client, main_connection);
-        // #endif
-
         return 0;
     }
 
@@ -57,6 +71,8 @@ u8 stop_multiplayer (void) {
 
     // client_disconnectFromServer (player_client, main_connection);
     client_teardown (player_client);
+
+    return 0;
 
 }
 
