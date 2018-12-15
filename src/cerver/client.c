@@ -788,9 +788,9 @@ u8 client_poll (void *data) {
 
         // if poll has timed out, just continue to the next loop... 
         if (poll_retval == 0) {
-            #ifdef CLIENT_DEBUG
-                logMsg (stdout, DEBUG_MSG, NO_TYPE, "Poll timeout.");
-            #endif
+            // #ifdef CLIENT_DEBUG
+            //     logMsg (stdout, DEBUG_MSG, NO_TYPE, "Poll timeout.");
+            // #endif
             continue;
         }
 
@@ -1200,13 +1200,13 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
                 RequestData *reqdata = (RequestData *) (end + sizeof (PacketHeader));
                 if (reqdata->type == SUCCESS_AUTH) {
                     logMsg (stdout, SUCCESS, NO_TYPE, "Authenticated to server - ready to make request...");
-                    sleep (3);
+                    sleep (5);
 
                     // make the create lobby request
                     size_t create_packet_size = sizeof (PacketHeader) + sizeof (RequestData);
                     void *lobby_req = generateRequest (GAME_PACKET, LOBBY_CREATE);
                     if (lobby_req) {
-                        client_sendPacket (connection, lobby_req, create_packet_size);
+                        client_sendPacket (new_con, lobby_req, create_packet_size);
                         // free (lobby_req);
 
                         // TODO: wait for a server response
