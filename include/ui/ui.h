@@ -72,8 +72,22 @@ extern void ui_drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth,
 
 extern void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY);
 
+/*** UI ELEMENTS ***/
 
 extern char *tileset;
 
+// FIXME: add options for borders and text color!
+// FIXME: also add the option for a password input
+typedef struct TextBox {
+
+    UIRect *bgrect;
+    u32 bgcolor;
+    char *text;
+
+} TextBox;
+
+extern TextBox *ui_textBox_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor, const char *text);
+extern void ui_textBox_destroy (TextBox *textbox);
+extern void ui_textBox_draw (Console *console, TextBox *textbox);
 
 #endif

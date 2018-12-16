@@ -22,7 +22,8 @@ extern bool running;
 extern bool typing;
 extern char **typing_text;
 
-extern char *login_name;
+extern TextBox **loginTextBoxes;
+extern u8 login_textboxes_idx;
 
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
@@ -30,6 +31,27 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
+            case SDLK_BACKSPACE: {
+                if (typing) {
+                    u32 len = strlen (*typing_text);
+                    if (len > 0) {
+                        if (len == 1) {
+                            free (*typing_text);
+                            *typing_text = (char *) calloc (64, sizeof (char));
+                        }
+
+                        else {
+                            char *temp = (char *) calloc (64, sizeof (char));
+                            for (u8 i = 0; i < len - 1; i++)
+                                temp[i] = typing_text[0][i];
+
+                            free (*typing_text);
+                            *typing_text = createString ("%s", temp);
+                            free (temp);
+                        }
+                    }
+                }
+            } break;
             case SDLK_RETURN: 
             case SDLK_RETURN2:
                 if (typing) {
@@ -42,7 +64,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
             case SDLK_l: {
                 // toggle type in the login boxes
                 if (activeMenuView == LOGIN_VIEW) {
-                    typing_text = &login_name;
+                    // typing_text = &login_name;
 
                     SDL_StartTextInput ();
                     typing = true;
@@ -60,7 +82,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
             } break;
 
             case SDLK_p: if (activeMenuView == LAUNCH_VIEW) createMainMenu (); break;
-            case SDLK_m: if (activeMenuView != MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
+            case SDLK_m: if (activeMenuView == MAIN_MENU_VIEW) toggleMultiplayerMenu (); break;
             case SDLK_b: if (activeMenuView == MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
 
             case SDLK_j: 

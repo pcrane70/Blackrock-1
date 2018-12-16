@@ -8,11 +8,7 @@
 
 #include "ui/ui.h"
 
-// TODO: maybe in the future we acn add more graphics, but for now we are sticking with
-// only ascii chars
-// In linux we have to take the path from the makefile 
 char *tileset = "./resources/terminal-art.png";  
-
 
 /*** SCENE MANAGER ***/
 
@@ -136,4 +132,50 @@ void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY)
             &image->pixels[srcY * image->width], image->width * sizeof (u32));
     }
 
+}
+
+/*** UI ELEMENTS ***/
+
+TextBox *ui_textBox_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor, const char *text) {
+
+    TextBox *new_textBox = (TextBox *) malloc (sizeof (TextBox));
+    if (new_textBox) {
+        new_textBox->bgrect = (UIRect *) malloc (sizeof (UIRect));
+        new_textBox->bgrect->x = x;
+        new_textBox->bgrect->y = y;
+        new_textBox->bgrect->w = w;
+        new_textBox->bgrect->h = h;
+
+        new_textBox->bgcolor = bgcolor;
+
+        new_textBox->text = (char *) calloc (64, sizeof (char));
+        if (text)
+            strcpy (new_textBox->text, text);
+    }
+
+    return new_textBox;
+
+}
+
+void ui_textBox_destroy (TextBox *textbox) {
+
+    if (textbox) {
+        if (textbox->bgrect) free (textbox->bgrect);
+        if (textbox->text) free (textbox->text);
+
+        free (textbox);
+    }
+
+}
+
+void ui_textBox_draw (Console *console, TextBox *textbox) {
+
+    if (console && textbox) {
+        ui_drawRect (console, textbox->bgrect, textbox->bgcolor, 0, NO_COLOR);
+
+        if (textbox->text)
+            putStringAt (console, textbox->text, textbox->bgrect->x + 1, textbox->bgrect->y + 1, 
+                BLACK, NO_COLOR);
+    }
+        
 }

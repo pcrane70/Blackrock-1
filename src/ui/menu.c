@@ -60,11 +60,22 @@ void toggleLaunch (void) {
 
 UIView *loginView = NULL;
 
-char *login_name = NULL;
-char *login_password = NULL;
+TextBox **loginTextBoxes = NULL;
+u8 login_textboxes_idx = 0;
 
-char *new_account_name = NULL;
-char *new_account_password = NULL;
+TextBox **initLoginTextBoxes (void) {
+
+    loginTextBoxes = (TextBox **) calloc (4, sizeof (TextBox *));
+    if (loginTextBoxes) {
+        loginTextBoxes[0] = ui_textBox_create (22, 15, 20, 3, WHITE, "ermiry");
+        loginTextBoxes[1] = ui_textBox_create (22, 18, 20, 3, WHITE, "hola");
+        loginTextBoxes[2] = ui_textBox_create (22, 30, 20, 3, WHITE, NULL);
+        loginTextBoxes[3] = ui_textBox_create (22, 33, 20, 3, WHITE, NULL);
+    }
+
+    return loginTextBoxes;
+
+}
 
 void renderLogin (Console *console) {
 
@@ -72,15 +83,15 @@ void renderLogin (Console *console) {
 
     putStringAtCenter (console, "Login:", 10, WHITE, NO_COLOR);
     putStringAt (console, "Username:", 12, 15, WHITE, NO_COLOR);
-    putStringAt (console, login_name, 22, 15, WHITE, NO_COLOR);
+    ui_textBox_draw (console, loginTextBoxes[0]);
     putStringAt (console, "Password:", 12, 18, WHITE, NO_COLOR);
-    putStringAt (console, login_password, 22, 18, WHITE, NO_COLOR);
+    ui_textBox_draw (console, loginTextBoxes[1]);
 
     putStringAtCenter (console, "Create an account:", 25, WHITE, NO_COLOR);
     putStringAt (console, "Username:", 12, 30, WHITE, NO_COLOR);
-    putStringAt (console, new_account_name, 22, 30, WHITE, NO_COLOR);
+    ui_textBox_draw (console, loginTextBoxes[2]);
     putStringAt (console, "Password:", 12, 33, WHITE, NO_COLOR);
-    putStringAt (console, new_account_password, 22, 33, WHITE, NO_COLOR);
+    ui_textBox_draw (console, loginTextBoxes[3]);
 
     putStringAtCenter (console, "Submit!", 40, WHITE, NO_COLOR);
 
@@ -89,11 +100,7 @@ void renderLogin (Console *console) {
 void toggleLogin (void) {
 
     if (!loginView) {
-        login_name = (char *) calloc (64, sizeof (char));
-        login_password = (char *) calloc (64, sizeof (char));
-
-        new_account_name = (char *) calloc (64, sizeof (char));
-        new_account_password = (char *) calloc (64, sizeof (char));
+        loginTextBoxes = initLoginTextBoxes ();
 
         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
         loginView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, 0x4B6584FF, true, renderLogin);
@@ -415,11 +422,9 @@ void toggleCharacterMenu (void) {
 void destroyMenuScene (void) {
 
     if (menuScreen) {
-        if (login_name) free (login_name);
-        if (login_password) free (login_password);
-
-        if (new_account_name) free (new_account_name);
-        if (new_account_password) free (new_account_password);
+        if (loginTextBoxes) 
+            for (u8 i = 0; i < 4; i++)
+                ui_textBox_destroy (loginTextBoxes[i]);
 
         destroyImage (bgImage);
 
