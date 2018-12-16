@@ -25,7 +25,7 @@ char *launchImg = "./resources/blackrock-small.png";
 UIView *launchView = NULL;
 BitmapImage *bgImage = NULL;
 
-static void renderLaunch (Console *console) {
+void renderLaunch (Console *console) {
 
     if (!bgImage) bgImage = loadImageFromFile (launchImg);
 
@@ -50,6 +50,56 @@ void toggleLaunch (void) {
             ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, launch));
             launchView = NULL;
         }
+    }
+
+}
+
+#pragma endregion
+
+#pragma region LOGIN
+
+UIView *loginView = NULL;
+
+char *login_name = NULL;
+char *login_password = NULL;
+
+char *new_account_name = NULL;
+char *new_account_password = NULL;
+
+void renderLogin (Console *console) {
+
+    putStringAtCenter (console, "Welcome to Blackrock!", 3, WHITE, NO_COLOR);
+
+    putStringAtCenter (console, "Login:", 10, WHITE, NO_COLOR);
+    putStringAt (console, "Username:", 12, 15, WHITE, NO_COLOR);
+    putStringAt (console, login_name, 22, 15, WHITE, NO_COLOR);
+    putStringAt (console, "Password:", 12, 18, WHITE, NO_COLOR);
+    putStringAt (console, login_password, 22, 18, WHITE, NO_COLOR);
+
+    putStringAtCenter (console, "Create an account:", 25, WHITE, NO_COLOR);
+    putStringAt (console, "Username:", 12, 30, WHITE, NO_COLOR);
+    putStringAt (console, new_account_name, 22, 30, WHITE, NO_COLOR);
+    putStringAt (console, "Password:", 12, 33, WHITE, NO_COLOR);
+    putStringAt (console, new_account_password, 22, 33, WHITE, NO_COLOR);
+
+    putStringAtCenter (console, "Submit!", 40, WHITE, NO_COLOR);
+
+}
+
+void toggleLogin (void) {
+
+    if (!loginView) {
+        login_name = (char *) calloc (64, sizeof (char));
+        login_password = (char *) calloc (64, sizeof (char));
+
+        new_account_name = (char *) calloc (64, sizeof (char));
+        new_account_password = (char *) calloc (64, sizeof (char));
+
+        UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
+        loginView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, 0x4B6584FF, true, renderLogin);
+        dlist_insert_after (menuScreen->views, LIST_START (menuScreen->views), loginView);
+
+        activeMenuView = LOGIN_VIEW;
     }
 
 }
@@ -239,37 +289,37 @@ void renderPlayerRects (Console *console) {
 }
 
 // TODO: draw here the item image
-void renderInventoryItems (Console *console) {
+// void renderInventoryItems (Console *console) {
 
-             // draw highlighted rect
-            // if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
-            //     ui_drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
-            //     // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
-            //     if (invRect->item != NULL) {
-            //         // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
-            //         Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
-            //         if (g != NULL) 
-            //             putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), NO_COLOR);
+//              // draw highlighted rect
+//             // if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
+//             //     ui_drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
+//             //     // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
+//             //     if (invRect->item != NULL) {
+//             //         // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
+//             //         Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
+//             //         if (g != NULL) 
+//             //             putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), NO_COLOR);
 
-            //         u8 quantity = ZERO_ITEMS + invRect->item->quantity;
-            //         // putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
-            //         putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
-            //     }
-            // }
+//             //         u8 quantity = ZERO_ITEMS + invRect->item->quantity;
+//             //         // putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
+//             //         putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
+//             //     }
+//             // }
 
-            // // draw every other rect with an item on it
-            // else if (invRect->item != NULL) {
-            //     ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+//             // // draw every other rect with an item on it
+//             // else if (invRect->item != NULL) {
+//             //     ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
-            //     u8 quantity = ZERO_ITEMS + invRect->item->quantity;
-            //     putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
-            // }
+//             //     u8 quantity = ZERO_ITEMS + invRect->item->quantity;
+//             //     putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
+//             // }
 
-            // // draw the empty rects
-            // else ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+//             // // draw the empty rects
+//             // else ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
 
-} 
+// } 
 
 static void renderLobbyMenu (Console *console) {
 
@@ -365,6 +415,12 @@ void toggleCharacterMenu (void) {
 void destroyMenuScene (void) {
 
     if (menuScreen) {
+        if (login_name) free (login_name);
+        if (login_password) free (login_password);
+
+        if (new_account_name) free (new_account_name);
+        if (new_account_password) free (new_account_password);
+
         destroyImage (bgImage);
 
         destroyPlayerRects ();
@@ -383,7 +439,8 @@ UIScreen *menuScene (void) {
     menuScreen->views = dlist_init (ui_destroyView);
     menuScreen->handleEvent = hanldeMenuEvent;
 
-    toggleLaunch ();
+    // toggleLaunch ();
+    toggleLogin ();
 
     destroyCurrentScreen = destroyMenuScene;
 

@@ -14,6 +14,13 @@ typedef enum CharClass {
 
 } CharClass;
 
+typedef struct PlayerProfile {
+
+    char *name;
+    
+
+} PlayerProfile;
+
 typedef struct Player {
 
     char *name;

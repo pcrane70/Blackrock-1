@@ -18,6 +18,9 @@ bool running = false;
 bool inGame = false;
 bool wasInGame = false;
 
+bool typing = false;
+char **typing_text = NULL;
+
 /*** MISC ***/
 
 void die (const char *error) {
@@ -153,13 +156,15 @@ int main (void) {
     extern UIScreen *menuScene (void);
     setActiveScene (menuScene ());
 
-    #ifdef BLACK_MULTIPLAYER 
-        start_multiplayer ();
-    #endif
+    // #ifdef BLACK_MULTIPLAYER 
+    //     start_multiplayer ();
+    // #endif
 
     u32 timePerFrame = 1000 / FPS_LIMIT;
     u32 frameStart;
     i32 sleepTime;
+
+    char *text = (char *) calloc (20, sizeof (char));
 
     running = true;
     while (running) {
@@ -171,9 +176,14 @@ int main (void) {
                 inGame = false;
             } 
 
-            // handle the event in the correct screen
-            screenForInput = activeScene;
-            screenForInput->handleEvent (screenForInput, event);
+            else if (typing && event.type == SDL_TEXTINPUT) 
+                strcat (*typing_text, event.text.text);
+
+            else {
+                // handle the event in the correct screen
+                screenForInput = activeScene;
+                screenForInput->handleEvent (screenForInput, event);
+            }
         }
 
         // render the correct screen

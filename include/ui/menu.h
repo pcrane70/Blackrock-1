@@ -5,7 +5,8 @@
 
 typedef enum MenuView {
 
-    LAUNCH_VIEW = 0,
+    LOGIN_VIEW,
+    LAUNCH_VIEW,
     MAIN_MENU_VIEW,
     MULTI_MENU_VIEW,
     LOBBY_MENU_VIEW

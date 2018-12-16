@@ -19,29 +19,58 @@ extern bool running;
 
 #include "ui/menu.h"
 
+extern bool typing;
+extern char **typing_text;
+
+extern char *login_name;
+
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
     if (event.type == SDL_KEYDOWN) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
-            case SDLK_p: createMainMenu (); break;
+            case SDLK_RETURN: 
+            case SDLK_RETURN2:
+                if (typing) {
+                    SDL_StopTextInput ();
+                    typing = false;
+                    typing_text = NULL;
+                }
+            break;
+
+            case SDLK_l: {
+                // toggle type in the login boxes
+                if (activeMenuView == LOGIN_VIEW) {
+                    typing_text = &login_name;
+
+                    SDL_StartTextInput ();
+                    typing = true;
+                }
+            } break;
+
+            case SDLK_c: {
+                // toggle type in the create account boxes
+                if (activeMenuView == LOGIN_VIEW) {
+                    
+                }
+
+                else if (activeMenuView == MULTI_MENU_VIEW)
+                    pthread_create_detachable ((void *) multiplayer_createLobby, NULL); 
+            } break;
+
+            case SDLK_p: if (activeMenuView == LAUNCH_VIEW) createMainMenu (); break;
             case SDLK_m: if (activeMenuView != MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
             case SDLK_b: if (activeMenuView == MULTI_MENU_VIEW) toggleMultiplayerMenu (); break;
-
-            case SDLK_c: 
-                if (activeMenuView == MULTI_MENU_VIEW)
-                    pthread_create_detachable ((void *) multiplayer_createLobby, NULL); 
-            break;
 
             case SDLK_j: 
                 if (activeMenuView == MULTI_MENU_VIEW)
                     pthread_create_detachable ((void *) multiplayer_joinLobby, NULL); 
             break;
             
-            case SDLK_s: startGame (); break;
+            case SDLK_s: if (activeMenuView == MAIN_MENU_VIEW) startGame (); break;
             // case SDLK_c: break;     // TODO: toggle credits window
-            case SDLK_e: running = false; break;
+            case SDLK_e: if (activeMenuView == LAUNCH_VIEW) running = false; break;
 
             #ifdef CLIENT_DEBUG 
                 case SDLK_t: client_makeTestRequest (player_client, main_connection); break;
