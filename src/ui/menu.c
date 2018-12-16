@@ -56,8 +56,6 @@ void toggleLaunch (void) {
 
 #pragma endregion
 
-#pragma region MENUS
-
 /*** MAIN MENU ***/
 
 #define MAIN_MENU_COLOR         0x4B6584FF
@@ -83,6 +81,8 @@ void createMainMenu (void) {
     activeMenuView = MAIN_MENU_VIEW;
 
 }
+
+#pragma endregion
 
 /*** MULTIPLAYER ***/
 
@@ -136,6 +136,141 @@ void toggleMultiplayerMenu (void) {
 
 }
 
+#define PLAYER_RECT_WIDTH       20
+#define PLAYER_RECT_HEIGTH      20
+
+#define MAX_PLAYER_RECTS        4
+
+#define PLAYER_SELECTED_COLOR      0x847967FF
+
+typedef struct {
+
+    u8 xIdx, yIdx;
+    UIRect *bgRect;
+    UIRect *imgRect;
+    // FIXME: add player here!
+
+} PlayerRect;
+
+PlayerRect **player_rects = NULL;
+
+u8 playersXIdx = 0;
+
+// TODO: image rects
+PlayerRect *createPlayerRect (u8 x, u8 y) {
+
+    PlayerRect *new_rect = (PlayerRect *) malloc (sizeof (PlayerRect));
+
+    if (new_rect) {
+        new_rect->bgRect = (UIRect *) malloc (sizeof (UIRect));
+        new_rect->bgRect->w = PLAYER_RECT_WIDTH;
+        new_rect->bgRect->h = PLAYER_RECT_HEIGTH;
+
+        // new_rect->imgRect = (UIRect *) malloc (sizeof (UIRect));
+        // new_rect->imgRect->w = PLAYER_RECT_WIDTH;
+        // new_rect->imgRect->h = PLAYER_RECT_HEIGTH;
+        new_rect->imgRect = NULL;
+
+        // FIXME:
+        new_rect->xIdx = x;
+        new_rect->yIdx = y;
+        // new->bgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+        // new->bgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+        // new->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+        // new->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+    }
+
+    return new_rect;
+
+}
+
+PlayerRect **initPlayerRects (void) {
+
+    PlayerRect **playerRects = (PlayerRect **) calloc (MAX_PLAYER_RECTS, sizeof (PlayerRect *));
+
+    for (u8 i = 0; i < MAX_PLAYER_RECTS; i++) playerRects[i] = createPlayerRect (i, 0);
+
+    return playerRects;
+
+}
+
+// TODO:
+// update the lobby player rects based on the new lobby data
+void updatePlayerRects (void) {}
+
+void destroyPlayerRects (void) {
+
+    if (player_rects) {
+        for (u8 i = 0; i < MAX_PLAYER_RECTS; i++) {
+            if (player_rects[i]) {
+                if (player_rects[i]->bgRect) free (player_rects[i]->bgRect);
+                // if (player_rects[i]->imgRect) free (playerRects[i]->imgRect);
+                // TODO: player
+                free (player_rects[i]);
+            }
+        }
+
+        free (player_rects);
+    }
+
+}
+
+void renderPlayerRects (Console *console) {
+
+    PlayerRect *player_rect = NULL;
+
+    for (u8 i = 0; i < MAX_PLAYER_RECTS; i++) {
+        player_rect = player_rects[i];
+
+        // draw highlighted rect
+        if (playersXIdx == player_rect->xIdx) {
+            ui_drawRect (console, player_rect->bgRect, PLAYER_SELECTED_COLOR, 0, NO_COLOR);
+            // FIXME: player
+            // if () {
+
+            // }
+        }
+
+        // draw every other rect with a player in it
+
+        // draw empty rects
+    }
+
+}
+
+// TODO: draw here the item image
+void renderInventoryItems (Console *console) {
+
+             // draw highlighted rect
+            // if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
+            //     ui_drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
+            //     // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
+            //     if (invRect->item != NULL) {
+            //         // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
+            //         Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
+            //         if (g != NULL) 
+            //             putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), NO_COLOR);
+
+            //         u8 quantity = ZERO_ITEMS + invRect->item->quantity;
+            //         // putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
+            //         putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
+            //     }
+            // }
+
+            // // draw every other rect with an item on it
+            // else if (invRect->item != NULL) {
+            //     ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+
+            //     u8 quantity = ZERO_ITEMS + invRect->item->quantity;
+            //     putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
+            // }
+
+            // // draw the empty rects
+            // else ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+
+
+} 
+
 static void renderLobbyMenu (Console *console) {
 
     putStringAtCenter (console, "Lobby Menu", 3, WHITE, NO_COLOR);
@@ -156,6 +291,13 @@ void toggleLobbyMenu (void) {
 
         // menuScreen->activeView = MULTI_MENU_VIEW;
         activeMenuView = LOBBY_MENU_VIEW;
+
+        if (!player_rects) {
+            player_rects = initPlayerRects ();
+            updatePlayerRects ();
+        }
+
+        else updatePlayerRects ();
     }
 
 }
@@ -224,6 +366,8 @@ void destroyMenuScene (void) {
 
     if (menuScreen) {
         destroyImage (bgImage);
+
+        destroyPlayerRects ();
 
         dlist_destroy (menuScreen->views);
         free (menuScreen);

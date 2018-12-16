@@ -339,9 +339,21 @@ typedef struct GameSettings {
 	u8 minPlayers;
 	u8 maxPlayers;
 
-	// duration?
-
 } GameSettings;
+
+// info that we need to send to the client about the players
+typedef struct Splayer {
+
+	// TODO:
+	// char name[64];
+
+	// TODO: 
+	// we need a way to add info about the players info for specific game
+	// such as their race or level in blackrock
+
+	bool owner;
+
+} SPlayer;
 
 // FIXME: players and a reference to the owner
 // info that we need to send to the client about the lobby he is in

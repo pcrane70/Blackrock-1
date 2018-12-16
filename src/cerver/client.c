@@ -1176,8 +1176,10 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
         if (rc > 0) {
             char *end = buffer;
             PacketHeader *header = (PacketHeader *) end;
-            if (header->packetType == SERVER_PACKET)
-                printf ("Got a server packet.\n");
+            #ifdef CLIENT_DEBUG
+                if (header->packetType == SERVER_PACKET)
+                    logMsg (stdout, DEBUG_MSG, NO_TYPE, "New connection - got a server packet.");
+            #endif
 
             // authenticate using our server token
             size_t token_packet_size = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (Token);
@@ -1194,6 +1196,12 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
                 free (token_packet);
             }
 
+            else {
+                logMsg (stderr, ERROR, CLIENT, "New connection - failed to create auth packet!");
+                client_end_connection (owner, new_con);
+                return NULL;
+            }
+
             memset (buffer, 0, 1024);
             rc = read (new_con->sock_fd, buffer, 1024);
 
@@ -1201,18 +1209,26 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
                 end = buffer;
                 RequestData *reqdata = (RequestData *) (end + sizeof (PacketHeader));
                 if (reqdata->type == SUCCESS_AUTH) {
-                    logMsg (stdout, SUCCESS, NO_TYPE, "Authenticated to server - ready to make request...");
-                    sleep (2);
+                    #ifdef CLIENT_DEBUG
+                        logMsg (stdout, DEBUG_MSG, NO_TYPE, 
+                            "New connection - authenticated to server.");
+                    #endif
+
+                    sleep (1);
 
                     // make the create lobby request
                     size_t create_packet_size = sizeof (PacketHeader) + sizeof (RequestData);
                     void *lobby_req = generateRequest (GAME_PACKET, LOBBY_CREATE);
                     if (lobby_req) {
                         client_sendPacket (new_con, lobby_req, create_packet_size);
-                        // free (lobby_req);
+                        free (lobby_req);
+                    }
 
-                        // TODO: wait for a server response
-                        // return the lobby data or error as feedback
+                    else {
+                        logMsg (stderr, ERROR, CLIENT, 
+                            "New connection - failed to create lobby packet!");
+                        client_end_connection (owner, new_con);
+                        return NULL;
                     }
                     
                     memset (buffer, 0, 1024);
@@ -1222,9 +1238,8 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
                         end = buffer;
                         RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
                         if (reqdata->type == LOBBY_UPDATE) {
-                            logMsg (stdout, SUCCESS, NO_TYPE, "Got a fucking lobby packet!!");
-                            new_lobby = (Lobby *) malloc (sizeof (SLobby));
                             SLobby *got_lobby = (SLobby *) (end += sizeof (RequestData));
+                            new_lobby = (Lobby *) malloc (sizeof (SLobby));
                             memcpy (new_lobby, got_lobby, sizeof (SLobby));
                         }
                     }
@@ -1233,7 +1248,7 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
             }
         }
 
-        close (new_con->sock_fd);
+        client_end_connection (owner, new_con);
     }
 
     return new_lobby;

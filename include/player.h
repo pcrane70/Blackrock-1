@@ -14,7 +14,6 @@ typedef enum CharClass {
 
 } CharClass;
 
-// As of 18/08/2018 -- 23:00 -- we will treat this as an independent component, not as a list
 typedef struct Player {
 
     char *name;
