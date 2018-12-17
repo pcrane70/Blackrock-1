@@ -3,6 +3,8 @@
 #include "input.h"
 #include "resources.h"
 
+#include "game.h"   // for black credentials
+
 #include "ui/ui.h"
 #include "ui/menu.h"
 #include "ui/console.h"
@@ -68,6 +70,8 @@ u8 login_textboxes_idx = 0;
 
 Button *submitButton = NULL;
 
+// FIXME: add an option to play offline!!
+
 TextBox **initLoginTextBoxes (void) {
 
     loginTextBoxes = (TextBox **) calloc (4, sizeof (TextBox *));
@@ -108,7 +112,7 @@ void toggleLogin (void) {
 
     if (!loginView) {
         loginTextBoxes = initLoginTextBoxes ();
-        submitButton = ui_button_create (34, 40, 8, 3, WHITE, "Submit", BLACK, 
+        submitButton = ui_button_create (36, 40, 10, 3, WHITE, "Submit", BLACK, 
             multiplayer_submit_credentials);
 
         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
@@ -122,6 +126,43 @@ void toggleLogin (void) {
         selected_textBox = &loginTextBoxes[login_textboxes_idx];
         loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
     }
+
+}
+
+BlackCredentials *getBlackCredentials (void) {
+
+    BlackCredentials *black_credentials = (BlackCredentials *) malloc (sizeof (BlackCredentials));
+                        
+    if (black_credentials) {
+        // check if we have sign in credentials
+        u32 signin_user_len = strlen (loginTextBoxes[0]->text);
+        u32 signin_pswd_len = strlen (loginTextBoxes[1]->pswd);
+
+        if ((signin_user_len > 0) && (signin_pswd_len > 0)) {
+            // we have login credentials
+            strcpy (black_credentials->username, loginTextBoxes[0]->text);
+            strcpy (black_credentials->password, loginTextBoxes[1]->pswd);
+
+            black_credentials->login = true;
+        }
+
+        else {
+            // check for sign up credentials
+            u32 signup_user_len = strlen (loginTextBoxes[2]->text);
+            u32 signup_pswd_len = strlen (loginTextBoxes[3]->pswd);
+            if ((signup_user_len > 0) && (signup_pswd_len > 0)) {
+                // we have new credentials
+                strcpy (black_credentials->username, loginTextBoxes[2]->text);
+                strcpy (black_credentials->password, loginTextBoxes[3]->pswd);
+
+                black_credentials->login = false;
+            }
+
+            else return NULL;   // no credential provided
+        }
+    }
+
+    return black_credentials;
 
 }
 

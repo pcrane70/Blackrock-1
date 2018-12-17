@@ -250,6 +250,28 @@ extern DoubleList *getGlobalLBData (void);
 
 #pragma region MULTIPLAYER
 
+extern bool multiplayer;
+
+struct _BlackCredentials {
+
+    bool login;
+    char username[64];
+    char password[64];
+
+};
+
+typedef struct _BlackCredentials BlackCredentials;
+
+typedef struct BlackAuthData {
+
+    Connection *connection;
+    BlackCredentials *credentials;
+
+} BlackAuthData;
+
+extern u8 start_multiplayer (BlackCredentials *black_credentials);
+extern u8 stop_multiplayer (void);
+
 extern void multiplayer_createLobby (void *);
 extern void multiplayer_joinLobby (void *);
 extern void multiplayer_leaveLobby (void);

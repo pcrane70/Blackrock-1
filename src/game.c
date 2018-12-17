@@ -1932,9 +1932,116 @@ void showScore (void) {
 
 #pragma region MULTIPLAYER
 
+#include "cerver/client.h"
+
 #include "ui/menu.h"
 
+bool multiplayer = false;
+
+char *black_server_ip = "127.0.0.1";
+u16 black_port = 9001;
+
+Client *player_client = NULL;
+
+Connection *main_connection = NULL;
+
 Lobby *current_lobby = NULL;
+
+void multiplayer_send_black_credentials (void *);
+
+u8 start_multiplayer (BlackCredentials *black_credentials) {
+
+    player_client = client_create ();
+
+    if (player_client) {
+        main_connection = client_connection_new (black_port, true);
+        if (main_connection) {
+            BlackAuthData *authdata = (BlackAuthData *) malloc (sizeof (BlackAuthData));
+            authdata->connection = main_connection;
+            authdata->credentials = black_credentials;
+
+            client_connect_to_server (player_client, main_connection, 
+                black_server_ip, black_port, GAME_SERVER,
+                multiplayer_send_black_credentials, authdata);
+        }
+
+        return 0;
+    }
+
+    return 1;
+
+}
+
+u8 stop_multiplayer (void) {
+
+    // client_disconnectFromServer (player_client, main_connection);
+    client_teardown (player_client);
+
+    return 0;
+
+}
+
+extern void toggleLaunch (void);
+
+void multiplayer_send_black_credentials (void *data) {
+
+    Connection *connection = NULL;
+    BlackCredentials *credentials = NULL;
+
+    if (data) {
+        BlackAuthData *authdata = (BlackAuthData *) data;
+        connection = authdata->connection;
+        credentials = authdata->credentials;
+
+        if (connection && credentials) {
+            size_t packet_size = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (BlackCredentials);
+            void *req = client_generatePacket (AUTHENTICATION, packet_size);
+            if (req) {
+                char *end = req;
+                RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
+                reqdata->type = CLIENT_AUTH_DATA;
+
+                BlackCredentials *blackcr = (BlackCredentials *) (end += sizeof (RequestData));
+                memcpy (blackcr->username, credentials->username, 64);
+                memcpy (blackcr->password, credentials->password, 64);
+
+                if (client_sendPacket (connection, req, packet_size) < 0) 
+                    logMsg (stderr, ERROR, PACKET, "Failed to send black credentials packet!");
+
+                else {
+                    #ifdef BLACK_DEBUG
+                        logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
+                    #endif
+                }
+                free (req);
+            }
+        }
+    }
+
+}
+
+void multiplayer_submit_credentials (void *data) {
+
+    if (data) {
+        BlackCredentials *credentials = (BlackCredentials *) data;
+
+        // TODO: send the info to the server and wait for authentication
+        if (!start_multiplayer (credentials)) {
+            toggleLaunch ();
+        }
+
+        printf ("Username: %s\n", credentials->username);
+        printf ("Password: %s\n", credentials->password);
+
+        free (credentials);
+    }
+
+    else {
+        logMsg (stderr, ERROR, NO_TYPE, "No credentials provided!");
+        // TODO: display feedback to the player!!
+    }
+
+}
 
 // TODO: we need to pass the game type
 // called from the main menu to request the server to create a new lobby
@@ -1997,14 +2104,6 @@ void multiplayer_joinLobby (void *data) {
 void multiplayer_leaveLobby (void) {
 
     // TODO: check connection, check that we are on a game and handle logic
-
-}
-
-extern void toggleLaunch (void);
-
-void multiplayer_submit_credentials (void *data) {
-
-    toggleLaunch ();
 
 }
 

@@ -78,8 +78,8 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
                     if (login_textboxes_idx == 4) {
                         SDL_StopTextInput ();
                         typing = false;
-                        
-                        if (submitButton->event) submitButton->event (NULL);
+
+                        submitButton->event (getBlackCredentials ());
                     }
                 }
             break;

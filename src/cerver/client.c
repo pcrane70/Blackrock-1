@@ -155,7 +155,7 @@ void initPacketHeader (PacketHeader *header, PacketType type, u32 packetSize) {
 }
 
 // generates a generic packet with the specified packet type
-void *generatePacket (PacketType packetType, size_t packetSize) {
+void *client_generatePacket (PacketType packetType, size_t packetSize) {
 
     size_t packet_size;
     if (packetSize > 0) packet_size = packetSize;
@@ -524,7 +524,7 @@ void client_send_default_auth_data (void *data) {
         if (client && connection) {
             size_t packetSize = sizeof (PacketHeader) + 
                 sizeof (RequestData) + sizeof (DefAuthData);
-            void *req = generatePacket (AUTHENTICATION, packetSize);
+            void *req = client_generatePacket (AUTHENTICATION, packetSize);
 
             if (req) {
                 char *end = req;
@@ -930,61 +930,59 @@ u8 client_end_connection (Client *client, Connection *connection) {
 
 // by default the connection is async
 // connects the client to a cerver type server
-Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port,
+u8 client_connect_to_server (Client *client, Connection *con, const char *serverIp, u16 port,
     ServerType expectedType, Action send_auth_data, void *auth_data) {
 
     if (!serverIp) {
         logMsg (stderr, ERROR, SERVER, "Failed to connect to server, no ip provided.");
-        return NULL;
+        return 1;
     }
 
-    Connection *new_con = client_connection_new (port, true);
+    if (con) {
+        con->server = (Server *) malloc (sizeof (Server));
+        con->server->type = expectedType;
 
-    if (new_con) {
-        new_con->server = (Server *) malloc (sizeof (Server));
-        new_con->server->type = expectedType;
+        con->server->ip = (char *) calloc (strlen (serverIp) + 1, sizeof (char));
+        strcpy (con->server->ip, serverIp);
 
-        new_con->server->ip = (char *) calloc (strlen (serverIp) + 1, sizeof (char));
-        strcpy (new_con->server->ip, serverIp);
+        memset (&con->server->address, 0, sizeof (struct sockaddr_storage));
 
-        memset (&new_con->server->address, 0, sizeof (struct sockaddr_storage));
-
-        if (new_con->useIpv6) {
+        if (con->useIpv6) {
             struct sockaddr_in6 *addr = 
-                (struct sockaddr_in6 *) &new_con->server->address;
+                (struct sockaddr_in6 *) &con->server->address;
             addr->sin6_family = AF_INET6;
             // FIXME: addr->sin6_addr = inet;         
-            addr->sin6_port = htons (new_con->port);
+            addr->sin6_port = htons (con->port);
         } 
 
         else {
             struct sockaddr_in *addr = 
-                (struct sockaddr_in *) &new_con->server->address;
+                (struct sockaddr_in *) &con->server->address;
             addr->sin_family = AF_INET;
-            addr->sin_addr.s_addr = inet_addr (new_con->server->ip);
-            addr->sin_port = htons (new_con->port);
+            addr->sin_addr.s_addr = inet_addr (con->server->ip);
+            addr->sin_port = htons (con->port);
         } 
 
         if (send_auth_data) 
-            client_set_send_auth_data (client, new_con, send_auth_data, auth_data);
+            client_set_send_auth_data (client, con, send_auth_data, auth_data);
 
         else {
             ClientConnection *cc = (ClientConnection *) malloc (sizeof (ClientConnection));
             cc->client = client;
-            cc->connection = new_con;
+            cc->connection = con;
 
-            client_set_send_auth_data (client, new_con, client_send_default_auth_data, cc);
+            client_set_send_auth_data (client, con, client_send_default_auth_data, cc);
         }
 
         // try to connect to the server with exponential backoff
-        if (!connectRetry (new_con, new_con->server->address)) {
-            client->active_connections[client->n_active_connections] = new_con;
+        if (!connectRetry (con, con->server->address)) {
+            client->active_connections[client->n_active_connections] = con;
             client->n_active_connections++;
 
             // add the new socket to the poll structure
             u8 idx = client_get_free_poll_idx (client);
             if (idx >= 0) {
-                client->fds[idx].fd = new_con->sock_fd;
+                client->fds[idx].fd = con->sock_fd;
                 client->fds[idx].events = POLLIN;
                 client->nfds++;
 
@@ -996,7 +994,7 @@ Connection *client_connect_to_server (Client *client, const char *serverIp, u16 
 
                 logMsg (stdout, SUCCESS, CLIENT, "Connected to server!"); 
 
-                return new_con;
+                return 0;
             }              
 
             else logMsg (stderr, ERROR, CLIENT, 
@@ -1005,7 +1003,7 @@ Connection *client_connect_to_server (Client *client, const char *serverIp, u16 
     }
 
     logMsg (stderr, ERROR, CLIENT, "Failed to connect to server!");
-    return NULL;
+    return 1;
 
 }
 
@@ -1100,7 +1098,7 @@ u8 client_teardown (Client *client) {
 void *generateRequest (PacketType packetType, RequestType reqType) {
 
     size_t packetSize = sizeof (PacketHeader) + sizeof (RequestData);
-    void *begin = generatePacket (packetType, packetSize);
+    void *begin = client_generatePacket (packetType, packetSize);
     char *end = begin;
 
     RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
@@ -1114,7 +1112,7 @@ u8 client_makeTestRequest (Client *client, Connection *connection) {
 
     if (client && connection) {
         size_t packetSize = sizeof (PacketHeader);
-        void *req = generatePacket (TEST_PACKET, packetSize);
+        void *req = client_generatePacket (TEST_PACKET, packetSize);
         if (req) {
             if (client_sendPacket (connection, req, packetSize) < 0) 
                 logMsg (stderr, ERROR, PACKET, "Failed to send test packet!");
@@ -1183,7 +1181,7 @@ void *client_game_createLobby (Client *owner, Connection *connection, GameType g
 
             // authenticate using our server token
             size_t token_packet_size = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (Token);
-            void *token_packet = generatePacket (AUTHENTICATION, token_packet_size);
+            void *token_packet = client_generatePacket (AUTHENTICATION, token_packet_size);
             if (token_packet) {
                 char *end = token_packet;
                 RequestData *req = (RequestData *) (end += sizeof (PacketHeader));

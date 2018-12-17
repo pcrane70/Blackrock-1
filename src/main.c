@@ -44,41 +44,6 @@ void pthread_create_detachable (void *(*work) (void *), void *args) {
 
 }
 
-/*** MULTIPLAYER ***/
-
-#include "cerver/client.h"
-
-char *black_server_ip = "127.0.0.1";
-u16 black_port = 9001;
-
-Client *player_client = NULL;
-
-Connection *main_connection = NULL;
-
-u8 start_multiplayer (void) {
-
-    player_client = client_create ();
-
-    if (player_client) {
-        main_connection = client_connect_to_server (player_client, 
-            black_server_ip, black_port, GAME_SERVER, NULL, NULL);
-
-        return 0;
-    }
-
-    return 1;
-
-}
-
-u8 stop_multiplayer (void) {
-
-    // client_disconnectFromServer (player_client, main_connection);
-    client_teardown (player_client);
-
-    return 0;
-
-}
-
 /*** SCREEN ***/
 
 // TODO: are we cleanning up the console and the screen??
@@ -156,10 +121,6 @@ int main (void) {
     extern UIScreen *menuScene (void);
     setActiveScene (menuScene ());
 
-    // #ifdef BLACK_MULTIPLAYER 
-    //     start_multiplayer ();
-    // #endif
-
     u32 timePerFrame = 1000 / FPS_LIMIT;
     u32 frameStart;
     i32 sleepTime;
@@ -198,9 +159,7 @@ int main (void) {
         if (pthread_join (gameThread, NULL) != THREAD_OK)
             fprintf (stderr, "Failed to join game thread!\n");
 
-    #ifdef BLACK_MULTIPLAYER
-        stop_multiplayer ();
-    #endif
+    if (multiplayer) stop_multiplayer ();
 
     cleanUp (window, renderer);
 

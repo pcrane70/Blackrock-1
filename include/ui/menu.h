@@ -24,6 +24,8 @@ extern void createMainMenu (void);
 
 /*** MULTIPLAYER ***/
 
+extern BlackCredentials *getBlackCredentials (void);
+
 extern void toggleMultiplayerMenu (void);
 
 extern void toggleLobbyMenu (void);

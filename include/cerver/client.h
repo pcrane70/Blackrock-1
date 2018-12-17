@@ -139,11 +139,12 @@ typedef struct ClientConnection {
 extern Client *client_create (void);
 extern u8 client_teardown (Client *client);
 
+extern Connection *client_connection_new (u16 port, bool async);
 extern Connection *client_make_new_connection (Client *client, const char *ip_address, u16 port,
     bool async);
 extern u8 client_end_connection (Client *client, Connection *connection);
 
-extern Connection *client_connect_to_server (Client *client, const char *serverIp, u16 port,
+extern u8 client_connect_to_server (Client *client, Connection *con, const char *serverIp, u16 port,
     ServerType expectedType, Action send_auth_data, void *auth_data);
 extern u8 client_disconnectFromServer (Client *client, Connection *connection);
 
@@ -154,10 +155,6 @@ extern void client_set_send_auth_data (Client *client, Connection *connection,
 
 #pragma region PACKETS
 
-// These section needs to be identical as in the server so that we can handle
-// the correct requests
-
-// info from a recieved packet to be handle
 struct _PacketInfo {
 
     Client *client;
@@ -205,6 +202,9 @@ typedef struct PacketHeader {
     u32 packetSize;             // expected packet size
 
 } PacketHeader;
+
+extern void *client_generatePacket (PacketType packetType, size_t packetSize);
+extern i8 client_sendPacket (Connection *connection, void *packet, size_t packetSize);
 
 // these indicate the data and more info about the packet type
 typedef enum RequestType {
