@@ -19,7 +19,7 @@ bool inGame = false;
 bool wasInGame = false;
 
 bool typing = false;
-char **typing_text = NULL;
+TextBox **selected_textBox = NULL;
 
 /*** MISC ***/
 
@@ -177,7 +177,7 @@ int main (void) {
             } 
 
             else if (typing && event.type == SDL_TEXTINPUT) 
-                strcat (*typing_text, event.text.text);
+                ui_textBox_update_text (*selected_textBox, event.text.text);
 
             else {
                 // handle the event in the correct screen

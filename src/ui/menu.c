@@ -13,6 +13,9 @@
 MenuView activeMenuView;
 UIScreen *menuScreen = NULL;
 
+extern bool typing;
+extern TextBox **selected_textBox;
+
 /*** LAUNCH IMAGE ***/
 
 #pragma region LAUNCH IMAGE
@@ -67,10 +70,10 @@ TextBox **initLoginTextBoxes (void) {
 
     loginTextBoxes = (TextBox **) calloc (4, sizeof (TextBox *));
     if (loginTextBoxes) {
-        loginTextBoxes[0] = ui_textBox_create (22, 15, 20, 3, WHITE, "ermiry");
-        loginTextBoxes[1] = ui_textBox_create (22, 18, 20, 3, WHITE, "hola");
-        loginTextBoxes[2] = ui_textBox_create (22, 30, 20, 3, WHITE, NULL);
-        loginTextBoxes[3] = ui_textBox_create (22, 33, 20, 3, WHITE, NULL);
+        loginTextBoxes[0] = ui_textBox_create (22, 14, 36, 3, WHITE, NULL, false, BLACK);
+        loginTextBoxes[1] = ui_textBox_create (22, 18, 36, 3, WHITE, NULL, true, BLACK);
+        loginTextBoxes[2] = ui_textBox_create (22, 29, 36, 3, WHITE, NULL, false, BLACK);
+        loginTextBoxes[3] = ui_textBox_create (22, 33, 36, 3, WHITE, NULL, true, BLACK);
     }
 
     return loginTextBoxes;
@@ -84,13 +87,13 @@ void renderLogin (Console *console) {
     putStringAtCenter (console, "Login:", 10, WHITE, NO_COLOR);
     putStringAt (console, "Username:", 12, 15, WHITE, NO_COLOR);
     ui_textBox_draw (console, loginTextBoxes[0]);
-    putStringAt (console, "Password:", 12, 18, WHITE, NO_COLOR);
+    putStringAt (console, "Password:", 12, 19, WHITE, NO_COLOR);
     ui_textBox_draw (console, loginTextBoxes[1]);
 
     putStringAtCenter (console, "Create an account:", 25, WHITE, NO_COLOR);
     putStringAt (console, "Username:", 12, 30, WHITE, NO_COLOR);
     ui_textBox_draw (console, loginTextBoxes[2]);
-    putStringAt (console, "Password:", 12, 33, WHITE, NO_COLOR);
+    putStringAt (console, "Password:", 12, 34, WHITE, NO_COLOR);
     ui_textBox_draw (console, loginTextBoxes[3]);
 
     putStringAtCenter (console, "Submit!", 40, WHITE, NO_COLOR);
@@ -107,6 +110,11 @@ void toggleLogin (void) {
         dlist_insert_after (menuScreen->views, LIST_START (menuScreen->views), loginView);
 
         activeMenuView = LOGIN_VIEW;
+
+        SDL_StartTextInput ();
+        typing = true;
+        selected_textBox = &loginTextBoxes[login_textboxes_idx];
+        loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
     }
 
 }

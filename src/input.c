@@ -20,7 +20,7 @@ extern bool running;
 #include "ui/menu.h"
 
 extern bool typing;
-extern char **typing_text;
+extern TextBox **selected_textBox;
 
 extern TextBox **loginTextBoxes;
 extern u8 login_textboxes_idx;
@@ -31,55 +31,46 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
         SDL_Keycode key = event.key.keysym.sym;
 
         switch (key) {
-            case SDLK_BACKSPACE: {
-                if (typing) {
-                    u32 len = strlen (*typing_text);
-                    if (len > 0) {
-                        if (len == 1) {
-                            free (*typing_text);
-                            *typing_text = (char *) calloc (64, sizeof (char));
-                        }
-
-                        else {
-                            char *temp = (char *) calloc (64, sizeof (char));
-                            for (u8 i = 0; i < len - 1; i++)
-                                temp[i] = typing_text[0][i];
-
-                            free (*typing_text);
-                            *typing_text = createString ("%s", temp);
-                            free (temp);
-                        }
+            case SDLK_DOWN:
+                if (activeMenuView == LOGIN_VIEW) {
+                    if (login_textboxes_idx < 3) {
+                        loginTextBoxes[login_textboxes_idx]->bgcolor = WHITE;
+                        login_textboxes_idx++;
+                        loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
+                        selected_textBox = &loginTextBoxes[login_textboxes_idx];
                     }
+
+                    // else TODO:select the submit button
                 }
-            } break;
-            case SDLK_RETURN: 
-            case SDLK_RETURN2:
-                if (typing) {
-                    SDL_StopTextInput ();
-                    typing = false;
-                    typing_text = NULL;
+            break;
+            case SDLK_UP:
+                if (activeMenuView == LOGIN_VIEW) {
+                    if (login_textboxes_idx > 0) {
+                        loginTextBoxes[login_textboxes_idx]->bgcolor = WHITE;
+                        login_textboxes_idx--;
+                        loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
+                        selected_textBox = &loginTextBoxes[login_textboxes_idx];
+                    }
                 }
             break;
 
-            case SDLK_l: {
-                // toggle type in the login boxes
-                if (activeMenuView == LOGIN_VIEW) {
-                    // typing_text = &login_name;
+            case SDLK_BACKSPACE: 
+                if (typing) ui_textbox_delete_text (*selected_textBox);
+            break;
 
-                    SDL_StartTextInput ();
-                    typing = true;
-                }
-            } break;
+            case SDLK_RETURN: 
+            case SDLK_RETURN2:
+                // FIXME: where do we want to put this after login?
+                // if (typing) {
+                //     SDL_StopTextInput ();
+                //     typing = false;
+                // }
+            break;
 
-            case SDLK_c: {
-                // toggle type in the create account boxes
-                if (activeMenuView == LOGIN_VIEW) {
-                    
-                }
-
-                else if (activeMenuView == MULTI_MENU_VIEW)
+            case SDLK_c: 
+                if (activeMenuView == MULTI_MENU_VIEW)
                     pthread_create_detachable ((void *) multiplayer_createLobby, NULL); 
-            } break;
+            break;
 
             case SDLK_p: if (activeMenuView == LAUNCH_VIEW) createMainMenu (); break;
             case SDLK_m: if (activeMenuView == MAIN_MENU_VIEW) toggleMultiplayerMenu (); break;

@@ -8,6 +8,8 @@
 
 #include "ui/ui.h"
 
+#include "utils/myUtils.h"
+
 char *tileset = "./resources/terminal-art.png";  
 
 /*** SCENE MANAGER ***/
@@ -136,7 +138,8 @@ void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY)
 
 /*** UI ELEMENTS ***/
 
-TextBox *ui_textBox_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor, const char *text) {
+TextBox *ui_textBox_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor, 
+    const char *text, bool password, u32 textColor) {
 
     TextBox *new_textBox = (TextBox *) malloc (sizeof (TextBox));
     if (new_textBox) {
@@ -147,10 +150,28 @@ TextBox *ui_textBox_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor, const char *tex
         new_textBox->bgrect->h = h;
 
         new_textBox->bgcolor = bgcolor;
+        new_textBox->textColor = textColor;
 
         new_textBox->text = (char *) calloc (64, sizeof (char));
-        if (text)
-            strcpy (new_textBox->text, text);
+
+        new_textBox->ispassword = password;
+        if (password) {
+            new_textBox->pswd = (char *) calloc (64, sizeof (char));
+
+            if (text) {
+                strcpy (new_textBox->pswd, text);
+                u32 len = strlen (text);
+                for (u8 i = 0; i < len; i++) new_textBox->text[i] = '*';
+            }
+        }
+
+        else {
+            if (text) strcpy (new_textBox->text, text);
+            new_textBox->pswd = NULL;
+        } 
+
+        new_textBox->borderWidth = 0;
+        new_textBox->borderColor = NO_COLOR;
     }
 
     return new_textBox;
@@ -162,8 +183,75 @@ void ui_textBox_destroy (TextBox *textbox) {
     if (textbox) {
         if (textbox->bgrect) free (textbox->bgrect);
         if (textbox->text) free (textbox->text);
+        if (textbox->pswd) free (textbox->pswd);
 
         free (textbox);
+    }
+
+}
+
+void ui_textBox_setBorders (TextBox *textbox, u8 borderWidth, u32 borderColor) {
+
+    if (textbox) {
+        textbox->borderWidth = borderWidth;
+        textbox->borderColor = borderColor;
+    }
+
+}
+
+void ui_textBox_update_text (TextBox *textbox, const char *text) {
+
+    if (textbox) {
+        if (textbox->ispassword) {
+            if (textbox->pswd) strcat (textbox->pswd, text);
+            if (textbox->text) {
+                u32 len = strlen (textbox->pswd);
+                for (u8 i = 0; i < len; i++) textbox->text[i] = '*';
+            }
+        }
+        
+        else if (textbox->text) strcat (textbox->text, text);
+    }
+
+}
+
+void ui_textbox_delete_text (TextBox *textbox) {
+
+    if (textbox) {
+        u32 len = strlen (textbox->text);
+        if (len > 0) {
+            if (len == 1) {
+                free (textbox->text);
+                textbox->text = (char *) calloc (64, sizeof (char));
+
+                if (textbox->ispassword) {
+                    free (textbox->pswd);
+                    textbox->pswd = (char *) calloc (64, sizeof (char));
+                }
+            }
+
+            else {
+                char *temp = (char *) calloc (64, sizeof (char));
+
+                if (textbox->ispassword) {
+                    for (u8 i = 0; i < len - 1; i++) temp[i] = textbox->pswd[i];
+                    free (textbox->text);
+                    free (textbox->pswd);
+                    textbox->pswd = createString ("%s", temp);
+                    u32 newlen = strlen (textbox->pswd);
+                    textbox->text = (char *) calloc (64, sizeof (char));
+                    for (u8 i = 0; i < newlen; i++) textbox->text[i] = '*';
+                }
+
+                else {
+                    for (u8 i = 0; i < len - 1; i++) temp[i] = textbox->text[i];
+                    free (textbox->text);
+                    textbox->text = createString ("%s", temp);
+                }
+
+                free (temp);
+            }
+        }
     }
 
 }
@@ -171,11 +259,12 @@ void ui_textBox_destroy (TextBox *textbox) {
 void ui_textBox_draw (Console *console, TextBox *textbox) {
 
     if (console && textbox) {
-        ui_drawRect (console, textbox->bgrect, textbox->bgcolor, 0, NO_COLOR);
+        ui_drawRect (console, textbox->bgrect, textbox->bgcolor,
+            textbox->borderWidth, textbox->borderColor);
 
         if (textbox->text)
             putStringAt (console, textbox->text, textbox->bgrect->x + 1, textbox->bgrect->y + 1, 
-                BLACK, NO_COLOR);
+                textbox->textColor, NO_COLOR);
     }
         
 }
