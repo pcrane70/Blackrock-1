@@ -25,6 +25,8 @@ extern TextBox **selected_textBox;
 extern TextBox **loginTextBoxes;
 extern u8 login_textboxes_idx;
 
+extern Button *submitButton;
+
 void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
     if (event.type == SDL_KEYDOWN) {
@@ -40,16 +42,28 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
                         selected_textBox = &loginTextBoxes[login_textboxes_idx];
                     }
 
-                    // else TODO:select the submit button
+                    else {
+                        submitButton->bgcolor = SILVER;
+                        loginTextBoxes[login_textboxes_idx]->bgcolor = WHITE;
+                        login_textboxes_idx++;
+                    }
                 }
             break;
             case SDLK_UP:
                 if (activeMenuView == LOGIN_VIEW) {
                     if (login_textboxes_idx > 0) {
-                        loginTextBoxes[login_textboxes_idx]->bgcolor = WHITE;
-                        login_textboxes_idx--;
-                        loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
-                        selected_textBox = &loginTextBoxes[login_textboxes_idx];
+                        if (login_textboxes_idx == 4) {
+                            login_textboxes_idx--;
+                            loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
+                            submitButton->bgcolor = WHITE;
+                        }
+
+                        else {
+                            loginTextBoxes[login_textboxes_idx]->bgcolor = WHITE;
+                            login_textboxes_idx--;
+                            loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
+                            selected_textBox = &loginTextBoxes[login_textboxes_idx];
+                        }
                     }
                 }
             break;
@@ -60,11 +74,14 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
             case SDLK_RETURN: 
             case SDLK_RETURN2:
-                // FIXME: where do we want to put this after login?
-                // if (typing) {
-                //     SDL_StopTextInput ();
-                //     typing = false;
-                // }
+                if (activeMenuView == LOGIN_VIEW) {
+                    if (login_textboxes_idx == 4) {
+                        SDL_StopTextInput ();
+                        typing = false;
+                        
+                        if (submitButton->event) submitButton->event (NULL);
+                    }
+                }
             break;
 
             case SDLK_c: 

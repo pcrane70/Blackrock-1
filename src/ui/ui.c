@@ -268,3 +268,70 @@ void ui_textBox_draw (Console *console, TextBox *textbox) {
     }
         
 }
+
+Button *ui_button_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor,
+    const char *text, u32 textColor, EventListener event) {
+
+    Button *new_button = (Button *) malloc (sizeof (Button));
+    if (new_button) {
+        new_button->bgrect = (UIRect *) malloc (sizeof (UIRect));
+        new_button->bgrect->x = x;
+        new_button->bgrect->y = y;
+        new_button->bgrect->w = w;
+        new_button->bgrect->h = h;
+
+        new_button->bgcolor = bgcolor;
+        new_button->textColor = textColor;
+
+        new_button->text = (char *) calloc (64, sizeof (char));
+        if (text) strcpy (new_button->text, text);
+
+        new_button->borderWidth = 0;
+        new_button->borderColor = NO_COLOR;
+
+        new_button->event = event;
+    }
+
+    return new_button;
+
+}
+
+void ui_button_destroy (Button *button) {
+
+    if (button) {
+        if (button->bgrect) free (button->bgrect);
+        if (button->text) free (button->text);
+
+        free (button);
+    }
+
+}
+
+void ui_button_setBorders (Button *button, u8 borderWidth, u32 borderColor) {
+
+    if (button) {
+        button->borderWidth = borderWidth;
+        button->borderColor = borderColor;
+    }
+
+}
+
+// TODO: center the text at y pos
+void ui_button_draw (Console *console, Button *button) {
+
+    if (console && button) {
+        ui_drawRect (console, button->bgrect, button->bgcolor,
+            button->borderWidth, button->borderColor);
+
+        if (button->text) {
+            u32 stringlen = strlen (button->text);
+            u32 x = (button->bgrect->w / 2) - (stringlen / 2);
+            x += button->bgrect->x;
+
+            for (u8 i = 0; i < stringlen; i++)
+                putCharAt (console, (asciiChar) button->text[i], x + i, button->bgrect->y + 1, 
+                    button->textColor, NO_COLOR);
+        }
+    }
+
+}

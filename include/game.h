@@ -254,6 +254,8 @@ extern void multiplayer_createLobby (void *);
 extern void multiplayer_joinLobby (void *);
 extern void multiplayer_leaveLobby (void);
 
+extern void multiplayer_submit_credentials (void *);
+
 #pragma endregion
 
 /*** CLEANING UP ***/

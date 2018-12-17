@@ -101,4 +101,27 @@ extern void ui_textBox_update_text (TextBox *textbox, const char *text);
 extern void ui_textbox_delete_text (TextBox *textbox);
 extern void ui_textBox_draw (Console *console, TextBox *textbox);
 
+typedef void (*EventListener)(void *);
+
+typedef struct Button {
+
+    UIRect *bgrect;
+    u32 bgcolor;
+
+    char *text;
+    u32 textColor;
+
+    u8 borderWidth;
+    u32 borderColor;
+
+    EventListener event;
+
+} Button;
+
+extern Button *ui_button_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor,
+    const char *text, u32 textColor, EventListener event);
+extern void ui_button_destroy (Button *button);
+extern void ui_button_setBorders (Button *button, u8 borderWidth, u32 borderColor);
+extern void ui_button_draw (Console *console, Button *button);
+
 #endif

@@ -66,6 +66,8 @@ UIView *loginView = NULL;
 TextBox **loginTextBoxes = NULL;
 u8 login_textboxes_idx = 0;
 
+Button *submitButton = NULL;
+
 TextBox **initLoginTextBoxes (void) {
 
     loginTextBoxes = (TextBox **) calloc (4, sizeof (TextBox *));
@@ -96,14 +98,18 @@ void renderLogin (Console *console) {
     putStringAt (console, "Password:", 12, 34, WHITE, NO_COLOR);
     ui_textBox_draw (console, loginTextBoxes[3]);
 
-    putStringAtCenter (console, "Submit!", 40, WHITE, NO_COLOR);
+    ui_button_draw (console, submitButton);
 
 }
+
+void multiplayer_submit_credentials (void *data);
 
 void toggleLogin (void) {
 
     if (!loginView) {
         loginTextBoxes = initLoginTextBoxes ();
+        submitButton = ui_button_create (34, 40, 8, 3, WHITE, "Submit", BLACK, 
+            multiplayer_submit_credentials);
 
         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
         loginView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, 0x4B6584FF, true, renderLogin);
@@ -433,6 +439,8 @@ void destroyMenuScene (void) {
         if (loginTextBoxes) 
             for (u8 i = 0; i < 4; i++)
                 ui_textBox_destroy (loginTextBoxes[i]);
+
+        ui_button_destroy (submitButton);
 
         destroyImage (bgImage);
 

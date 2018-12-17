@@ -2000,6 +2000,14 @@ void multiplayer_leaveLobby (void) {
 
 }
 
+extern void toggleLaunch (void);
+
+void multiplayer_submit_credentials (void *data) {
+
+    toggleLaunch ();
+
+}
+
 #pragma end region
 
 /*** LEADERBOARDS ***/
