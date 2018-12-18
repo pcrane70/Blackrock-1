@@ -225,6 +225,34 @@ i8 client_sendPacket (Connection *connection, void *packet, size_t packetSize) {
 
 #pragma endregion
 
+/*** ERRORS ***/
+
+#pragma region ERRORS
+
+void handleErrorPacket (PacketInfo *pack_info) {
+
+    if (pack_info) {
+        char *end = pack_info->packetData;
+        ErrorData *error = (ErrorData *) (end += sizeof (PacketHeader));
+        switch (error->type) {
+            case ERR_SERVER_ERROR: break;
+            case ERR_CREATE_LOBBY: break;
+            case ERR_JOIN_LOBBY: break;
+            case ERR_LEAVE_LOBBY: break;
+            case ERR_FIND_LOBBY: break;
+            case ERR_GAME_INIT: break;
+            case ERR_FAILED_AUTH: 
+                logMsg (stderr, ERROR, NO_TYPE, 
+                    createString ("Failed to authenticate - %s", error->msg)); 
+            break;
+            default: logMsg (stdout, WARNING, NO_TYPE, "Unknow error recieved from server!"); break;
+        }
+    }
+
+}
+
+#pragma endregion
+
 /*** CONNECTION HANDLER ***/
 
 #pragma region CONNECTION HANDLER
@@ -245,7 +273,7 @@ void handlePacket (void *data) {
                 case SERVER_PACKET: server_handlePacket (pack_info); break;
 
                 // handles an error from the server
-                case ERROR_PACKET: break;
+                case ERROR_PACKET: handleErrorPacket (pack_info); break;
                 
                 // handles authentication packets
                 case AUTHENTICATION: {

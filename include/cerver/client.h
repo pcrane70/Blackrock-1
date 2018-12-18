@@ -241,13 +241,16 @@ typedef struct RequestData {
 
 } RequestData;
 
-// 23/10/2018 -- lests test how this goes...
 typedef enum ErrorType {
 
     ERR_SERVER_ERROR = 0,   // internal server error, like no memory
 
     ERR_CREATE_LOBBY = 1,
     ERR_JOIN_LOBBY,
+    ERR_LEAVE_LOBBY,
+    ERR_FIND_LOBBY,
+
+    ERR_GAME_INIT,
 
     ERR_FAILED_AUTH,
 

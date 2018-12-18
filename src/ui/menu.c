@@ -70,6 +70,8 @@ u8 login_textboxes_idx = 0;
 
 Button *submitButton = NULL;
 
+char *login_error_text = NULL;
+
 // FIXME: add an option to play offline!!
 
 TextBox **initLoginTextBoxes (void) {
@@ -89,6 +91,9 @@ TextBox **initLoginTextBoxes (void) {
 void renderLogin (Console *console) {
 
     putStringAtCenter (console, "Welcome to Blackrock!", 3, WHITE, NO_COLOR);
+
+    if (login_error_text) 
+        putStringAtCenter (console, login_error_text, 6, FULL_RED, NO_COLOR);
 
     putStringAtCenter (console, "Login:", 10, WHITE, NO_COLOR);
     putStringAt (console, "Username:", 12, 15, WHITE, NO_COLOR);
@@ -477,6 +482,8 @@ void toggleCharacterMenu (void) {
 void destroyMenuScene (void) {
 
     if (menuScreen) {
+        if (login_error_text) free (login_error_text);
+
         if (loginTextBoxes) 
             for (u8 i = 0; i < 4; i++)
                 ui_textBox_destroy (loginTextBoxes[i]);

@@ -1947,6 +1947,8 @@ Connection *main_connection = NULL;
 
 Lobby *current_lobby = NULL;
 
+extern char *login_error_text;
+
 void multiplayer_send_black_credentials (void *);
 
 u8 start_multiplayer (BlackCredentials *black_credentials) {
@@ -2002,6 +2004,7 @@ void multiplayer_send_black_credentials (void *data) {
                 reqdata->type = CLIENT_AUTH_DATA;
 
                 BlackCredentials *blackcr = (BlackCredentials *) (end += sizeof (RequestData));
+                blackcr->login = credentials->login;
                 memcpy (blackcr->username, credentials->username, 64);
                 memcpy (blackcr->password, credentials->password, 64);
 
@@ -2025,20 +2028,25 @@ void multiplayer_submit_credentials (void *data) {
     if (data) {
         BlackCredentials *credentials = (BlackCredentials *) data;
 
-        // TODO: send the info to the server and wait for authentication
-        if (!start_multiplayer (credentials)) {
-            toggleLaunch ();
+        if (!player_client && !main_connection) {
+            #ifdef BLACK_DEBUG
+                logMsg (stdout, DEBUG_MSG, NO_TYPE, "Starting multiplayer...");
+            #endif
+            if (start_multiplayer (credentials)) 
+                logMsg (stderr, ERROR, CLIENT, "Failed to start multiplayer!");
         }
 
-        printf ("Username: %s\n", credentials->username);
-        printf ("Password: %s\n", credentials->password);
+        // just send the new credentials to the server
+        else multiplayer_send_black_credentials (credentials);
 
         free (credentials);
     }
 
     else {
         logMsg (stderr, ERROR, NO_TYPE, "No credentials provided!");
-        // TODO: display feedback to the player!!
+        if (login_error_text) free (login_error_text);
+        login_error_text = (char *) calloc (64, sizeof (char));
+        strcpy (login_error_text, "Error - No credentials provided!");
     }
 
 }
