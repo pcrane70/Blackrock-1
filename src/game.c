@@ -1949,6 +1949,7 @@ Lobby *current_lobby = NULL;
 
 extern char *login_error_text;
 
+void multiplayer_handle_failed_auth (void *);
 void multiplayer_send_black_credentials (void *);
 
 u8 start_multiplayer (BlackCredentials *black_credentials) {
@@ -1956,6 +1957,9 @@ u8 start_multiplayer (BlackCredentials *black_credentials) {
     player_client = client_create ();
 
     if (player_client) {
+        client_register_to_error_type (player_client, multiplayer_handle_failed_auth, NULL,
+            ERR_FAILED_AUTH);
+
         main_connection = client_connection_new (black_port, true);
         if (main_connection) {
             BlackAuthData *authdata = (BlackAuthData *) malloc (sizeof (BlackAuthData));
@@ -1983,6 +1987,15 @@ u8 stop_multiplayer (void) {
 
 }
 
+void multiplayer_handle_failed_auth (void *data) {
+
+    logMsg (stderr, ERROR, NO_TYPE, "Wrong credentials!");
+    if (login_error_text) free (login_error_text);
+    login_error_text = (char *) calloc (64, sizeof (char));
+    strcpy (login_error_text, "Error - Wrong credentials!");    
+
+}
+
 extern void toggleLaunch (void);
 
 void multiplayer_send_black_credentials (void *data) {
@@ -2004,9 +2017,9 @@ void multiplayer_send_black_credentials (void *data) {
                 reqdata->type = CLIENT_AUTH_DATA;
 
                 BlackCredentials *blackcr = (BlackCredentials *) (end += sizeof (RequestData));
+                strcpy (blackcr->password, credentials->password);
+                strcpy (blackcr->username, credentials->username);
                 blackcr->login = credentials->login;
-                memcpy (blackcr->username, credentials->username, 64);
-                memcpy (blackcr->password, credentials->password, 64);
 
                 if (client_sendPacket (connection, req, packet_size) < 0) 
                     logMsg (stderr, ERROR, PACKET, "Failed to send black credentials packet!");
@@ -2016,7 +2029,7 @@ void multiplayer_send_black_credentials (void *data) {
                         logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
                     #endif
                 }
-                free (req);
+                // free (req);
             }
         }
     }
@@ -2038,8 +2051,6 @@ void multiplayer_submit_credentials (void *data) {
 
         // just send the new credentials to the server
         else multiplayer_send_black_credentials (credentials);
-
-        free (credentials);
     }
 
     else {

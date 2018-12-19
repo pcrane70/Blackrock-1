@@ -162,7 +162,7 @@ void *client_generatePacket (PacketType packetType, size_t packetSize) {
     else packet_size = sizeof (PacketHeader);
 
     PacketHeader *header = (PacketHeader *) malloc (packet_size);
-    initPacketHeader (header, packetType, (u32) packet_size); 
+    initPacketHeader (header, packetType, packet_size); 
 
     return header;
 
@@ -229,6 +229,28 @@ i8 client_sendPacket (Connection *connection, void *packet, size_t packetSize) {
 
 #pragma region ERRORS
 
+ErrorData last_error;
+
+void client_register_to_next_error (Client *client, Action action, void *args) {
+
+    if (client) {
+        client->errorAction = action;
+        client->errorArgs = args;
+    } 
+
+}
+
+void client_register_to_error_type (Client *client, Action action, void *args,
+    ErrorType errorType) {
+
+    if (client) {
+        client->errorType = errorType;
+        client->errorAction = action;
+        client->errorArgs = args;
+    }
+
+}
+
 void handleErrorPacket (PacketInfo *pack_info) {
 
     if (pack_info) {
@@ -242,10 +264,17 @@ void handleErrorPacket (PacketInfo *pack_info) {
             case ERR_FIND_LOBBY: break;
             case ERR_GAME_INIT: break;
             case ERR_FAILED_AUTH: 
+                #ifdef CLIENT_DEBUG
                 logMsg (stderr, ERROR, NO_TYPE, 
                     createString ("Failed to authenticate - %s", error->msg)); 
+                #endif
+                last_error.type = ERR_FAILED_AUTH;
+                memset (last_error.msg, 0, sizeof (last_error.msg));
+                strcpy (last_error.msg, error->msg);
+                if (pack_info->client->errorType == ERR_FAILED_AUTH)
+                    pack_info->client->errorAction (pack_info->client->errorArgs);
             break;
-            default: logMsg (stdout, WARNING, NO_TYPE, "Unknow error recieved from server!"); break;
+            default: logMsg (stdout, WARNING, NO_TYPE, "Unknown error recieved from server!"); break;
         }
     }
 
@@ -359,10 +388,6 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
         }
 
         // free (buffer);
-
-        #ifdef CLIENT_DEBUG
-            logMsg (stdout, DEBUG_MSG, PACKET, "Done splitting recv buffer!");
-        #endif
     }
 
 }
@@ -723,6 +748,10 @@ Client *newClient (void) {
         // FIXME:
         newClient->inLobby = false;
         newClient->isOwner = false;
+
+        newClient->errorType = -1;
+        newClient->errorAction = NULL;
+        newClient->errorArgs = NULL;
     }
 
     return newClient;
@@ -991,9 +1020,8 @@ u8 client_connect_to_server (Client *client, Connection *con, const char *server
             addr->sin_port = htons (con->port);
         } 
 
-        if (send_auth_data) 
-            client_set_send_auth_data (client, con, send_auth_data, auth_data);
-
+        if (send_auth_data) client_set_send_auth_data (client, con, send_auth_data, auth_data);
+            
         else {
             ClientConnection *cc = (ClientConnection *) malloc (sizeof (ClientConnection));
             cc->client = client;

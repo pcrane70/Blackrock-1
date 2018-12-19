@@ -49,6 +49,40 @@ typedef u8 (*delegate)(void *);
 
 #define DEFAULT_AUTH_CODE               0x4CA140FF
 
+#pragma region ERRORS
+
+struct _Client;
+
+typedef enum ErrorType {
+
+    ERR_SERVER_ERROR = 0,   // internal server error, like no memory
+
+    ERR_CREATE_LOBBY = 1,
+    ERR_JOIN_LOBBY,
+    ERR_LEAVE_LOBBY,
+    ERR_FIND_LOBBY,
+
+    ERR_GAME_INIT,
+
+    ERR_FAILED_AUTH,
+
+ } ErrorType;
+
+typedef struct ErrorData {
+
+    ErrorType type;
+    char msg[256];
+
+} ErrorData;
+
+extern ErrorData last_error;
+
+extern void client_register_to_next_error (struct _Client *client, Action action, void *args); 
+extern void client_register_to_error_type (struct _Client *client, Action action, void *args,
+    ErrorType errorType);
+
+#pragma endregion
+
 #pragma region SERVER 
 
 typedef enum ServerType {
@@ -103,7 +137,7 @@ typedef struct Connection {
 
 } Connection;
 
-typedef struct Client {
+struct _Client {
 
     Connection **active_connections;
     u8 n_active_connections;
@@ -124,8 +158,13 @@ typedef struct Client {
     bool inLobby;           // is the client inside a lobby?
     bool isOwner;           // is the client the owner of the lobby?
 
+    ErrorType errorType;
+    Action errorAction;
+    void *errorArgs;
 
-} Client;
+};
+
+typedef struct _Client Client;
 
 typedef struct ClientConnection {
 
@@ -199,7 +238,7 @@ typedef struct PacketHeader {
 	ProtocolId protocolID;
 	Version protocolVersion;
 	PacketType packetType;
-    u32 packetSize;             // expected packet size
+    size_t packetSize;             // expected packet size
 
 } PacketHeader;
 
@@ -240,28 +279,6 @@ typedef struct RequestData {
     RequestType type;
 
 } RequestData;
-
-typedef enum ErrorType {
-
-    ERR_SERVER_ERROR = 0,   // internal server error, like no memory
-
-    ERR_CREATE_LOBBY = 1,
-    ERR_JOIN_LOBBY,
-    ERR_LEAVE_LOBBY,
-    ERR_FIND_LOBBY,
-
-    ERR_GAME_INIT,
-
-    ERR_FAILED_AUTH,
-
-} ErrorType;
-
-typedef struct ErrorData {
-
-    ErrorType type;
-    char msg[256];
-
-} ErrorData;
 
 #pragma endregion
 
