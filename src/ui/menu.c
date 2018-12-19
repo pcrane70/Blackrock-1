@@ -38,9 +38,11 @@ void renderLaunch (Console *console) {
 
 }
 
-void toggleLaunch (void) {
+void toggleLaunch (void *args) {
 
     if (!launchView) {
+        if (typing) input_stop_typing ();
+
         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
         launchView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, BLACK, true, renderLaunch);
         dlist_insert_after (menuScreen->views, LIST_START (menuScreen->views), launchView);
@@ -126,8 +128,7 @@ void toggleLogin (void) {
 
         activeMenuView = LOGIN_VIEW;
 
-        SDL_StartTextInput ();
-        typing = true;
+        input_start_typing ();
         selected_textBox = &loginTextBoxes[login_textboxes_idx];
         loginTextBoxes[login_textboxes_idx]->bgcolor = SILVER;
     }
@@ -452,7 +453,7 @@ static void renderCharacterMenu (Console *console) {
 void toggleCharacterMenu (void) {
 
     if (characterMenu == NULL) {
-        toggleLaunch ();
+        toggleLaunch (NULL);
 
         UIRect charMenu = { (16 * CHAR_CREATION_LEFT), (16 * CHAR_CREATION_TOP), (16 * CHAR_CREATION_WIDTH), (16 * CHAR_CREATION_HEIGHT) };
         characterMenu = ui_newView (charMenu, CHAR_CREATION_WIDTH, CHAR_CREATION_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacterMenu);
@@ -463,7 +464,7 @@ void toggleCharacterMenu (void) {
 
     else {
         if (characterMenu != NULL) {
-            toggleLaunch ();
+            toggleLaunch (NULL);
 
             ListElement *charMenu = dlist_get_ListElement (activeScene->views, characterMenu);
             ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, charMenu));

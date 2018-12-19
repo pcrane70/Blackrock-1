@@ -11,6 +11,24 @@
 #include "ui/ui.h"
 #include "ui/gameUI.h"
 
+/*** MISC ***/
+
+bool typing = false;
+
+void input_start_typing (void) {
+
+    SDL_StartTextInput ();
+    typing = true;
+
+}
+
+void input_stop_typing (void) {
+
+    SDL_StopTextInput ();
+    typing = false;
+
+}
+
 /*** MAIN MENU ***/
 
 extern bool running;
@@ -19,7 +37,6 @@ extern bool running;
 
 #include "ui/menu.h"
 
-extern bool typing;
 extern TextBox **selected_textBox;
 
 extern TextBox **loginTextBoxes;
@@ -74,14 +91,10 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
 
             case SDLK_RETURN: 
             case SDLK_RETURN2:
-                if (activeMenuView == LOGIN_VIEW) {
-                    if (login_textboxes_idx == 4) {
-                        SDL_StopTextInput ();
-                        typing = false;
-
+                if (activeMenuView == LOGIN_VIEW) 
+                    if (login_textboxes_idx == 4) 
                         submitButton->event (getBlackCredentials ());
-                    }
-                }
+            
             break;
 
             case SDLK_c: 

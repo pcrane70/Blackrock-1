@@ -134,6 +134,8 @@ typedef struct Connection {
 
     Action authentication;
     void *authData;
+    Action successAuthAction;
+    void *successAuthArgs;
 
 } Connection;
 
@@ -187,8 +189,12 @@ extern u8 client_connect_to_server (Client *client, Connection *con, const char 
     ServerType expectedType, Action send_auth_data, void *auth_data);
 extern u8 client_disconnectFromServer (Client *client, Connection *connection);
 
-extern void client_set_send_auth_data (Client *client, Connection *connection,
+extern void connection_set_send_auth_data (Connection *connection,
     Action send_auth_data, void *auth_data);
+extern void connection_set_auth_data (Connection *connection, void *auth_data);
+extern void connection_remove_auth_data (Connection *connection);
+extern void connection_register_to_success_auth (Connection *connection, 
+    Action succes_action, void *args);
 
 #pragma endregion
 

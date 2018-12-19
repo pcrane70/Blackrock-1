@@ -251,6 +251,7 @@ void client_register_to_error_type (Client *client, Action action, void *args,
 
 }
 
+// FIXME: better error handling
 void handleErrorPacket (PacketInfo *pack_info) {
 
     if (pack_info) {
@@ -319,6 +320,11 @@ void handlePacket (void *data) {
                             Token *token_data = (Token *) malloc (sizeof (Token));
                             memcpy (token_data->token, tokenData->token, sizeof (token_data->token));
                             pack_info->connection->server->token_data = token_data;
+                        } break;
+                        case SUCCESS_AUTH: {
+                            logMsg (stdout, SUCCESS, CLIENT, "Client authenticated successfully to server!");
+                            if (pack_info->connection->successAuthAction)
+                                pack_info->connection->successAuthAction (pack_info->connection->successAuthArgs);  
                         } break;
                         default: break;
                     }
@@ -392,50 +398,8 @@ void handleRecvBuffer (Client *client, i32 socket_fd, char *buffer, size_t total
 
 }
 
-// FIXME: correctly end the connections
+// FIXME: correctly end server connection
 // TODO: add support for handling large files transmissions
-// recive all incoming data from this socket
-/* void client_recieve (Client *client, i32 socket_fd) {
-
-    ssize_t rc;
-    char *packet_buffer = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
-    memset (packet_buffer, 0, MAX_UDP_PACKET_SIZE);
-
-    // do {
-        rc = recv (socket_fd, packet_buffer, MAX_UDP_PACKET_SIZE, 0);
-        
-        if (rc < 0) {
-            if (errno != EWOULDBLOCK) {     // no more data to read 
-                // logMsg (stderr, ERROR, CLIENT, "Recv failed!");
-                // perror ("Error:");
-                logMsg (stdout, DEBUG_MSG, CLIENT, "client_recieve () - rc < 0");
-                close (socket_fd);  // just close the socket
-                free (packet_buffer);
-            }
-            // /break;
-        }
-
-        else if (rc == 0) {
-            // man recv -> steam socket perfomed an orderly shutdown
-            // but in dgram it might mean something?
-            logMsg (stdout, DEBUG_MSG, CLIENT, 
-                    "Ending connection - client_recieve () - rc == 0");
-
-            close (socket_fd);  // close the socket
-            free (packet_buffer);
-
-            // FIXME: close the connection
-            // client_disconnectFromServer (client);
-            // break;
-        }
-
-        else 
-            handleRecvBuffer (client, socket_fd, packet_buffer, rc);
-    // } while (true);
-
-} */
-
-// FIXME:
 void client_recieve (Client *client, i32 fd) {
 
     ssize_t rc;
@@ -465,11 +429,6 @@ void client_recieve (Client *client, i32 fd) {
             // client_disconnectFromServer (client);
             // break;
         }
-
-        /* #ifdef CLIENT_DEBUG
-            logMsg (stdout, DEBUG_MSG, CLIENT, 
-                createString ("recv () - buffer size: %li", rc));
-        #endif */
 
         char *buffer_data = (char *) calloc (MAX_UDP_PACKET_SIZE, sizeof (char));
         if (buffer_data) {
@@ -534,7 +493,7 @@ void server_checkServerInfo (Client *client, Connection *connection, SServer *se
 
 u8 client_disconnectFromServer (Client *client, Connection *connection);
 
-// FIXME:
+// FIXME: server teardown
 void server_handlePacket (PacketInfo *pack_info) {
 
     char *end =pack_info->packetData;  
@@ -602,12 +561,34 @@ void client_send_default_auth_data (void *data) {
 
 }
 
-void client_set_send_auth_data (Client *client, Connection *connection,
+void connection_set_send_auth_data (Connection *connection,
     Action send_auth_data, void *auth_data) {
 
-    if (client && connection && send_auth_data) {
+    if (connection && send_auth_data) {
         connection->authentication = send_auth_data;
         connection->authData = auth_data;
+    }
+
+}
+
+void connection_set_auth_data (Connection *connection, void *auth_data) {
+
+    if (connection && auth_data) connection->authData = auth_data;
+
+}
+
+void connection_remove_auth_data (Connection *connection) {
+
+    if (connection && connection->authData)
+        free (connection->authData);
+
+}
+
+void connection_register_to_success_auth (Connection *connection, Action succes_action, void *args) {
+
+    if (connection) {
+        connection->successAuthAction = succes_action;
+        connection->successAuthArgs = args;
     }
 
 }
@@ -697,6 +678,9 @@ Connection *client_connection_new (u16 port, bool async) {
         if (!connection_init (connection, port, async)) {
             connection->async = async;
             connection->isConnected = false;
+
+            connection->successAuthAction = NULL;
+            connection->successAuthArgs = NULL;
 
             return connection;
         }
@@ -1020,14 +1004,14 @@ u8 client_connect_to_server (Client *client, Connection *con, const char *server
             addr->sin_port = htons (con->port);
         } 
 
-        if (send_auth_data) client_set_send_auth_data (client, con, send_auth_data, auth_data);
+        if (send_auth_data) connection_set_send_auth_data (con, send_auth_data, auth_data);
             
         else {
             ClientConnection *cc = (ClientConnection *) malloc (sizeof (ClientConnection));
             cc->client = client;
             cc->connection = con;
 
-            client_set_send_auth_data (client, con, client_send_default_auth_data, cc);
+            connection_set_send_auth_data (con, client_send_default_auth_data, cc);
         }
 
         // try to connect to the server with exponential backoff

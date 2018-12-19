@@ -1966,6 +1966,8 @@ u8 start_multiplayer (BlackCredentials *black_credentials) {
             authdata->connection = main_connection;
             authdata->credentials = black_credentials;
 
+            connection_register_to_success_auth (main_connection, toggleLaunch, NULL);
+
             client_connect_to_server (player_client, main_connection, 
                 black_server_ip, black_port, GAME_SERVER,
                 multiplayer_send_black_credentials, authdata);
@@ -1995,8 +1997,6 @@ void multiplayer_handle_failed_auth (void *data) {
     strcpy (login_error_text, "Error - Wrong credentials!");    
 
 }
-
-extern void toggleLaunch (void);
 
 void multiplayer_send_black_credentials (void *data) {
 
@@ -2050,7 +2050,16 @@ void multiplayer_submit_credentials (void *data) {
         }
 
         // just send the new credentials to the server
-        else multiplayer_send_black_credentials (credentials);
+        else {
+            BlackAuthData *authdata = (BlackAuthData *) malloc (sizeof (BlackAuthData));
+            authdata->connection = main_connection;
+            authdata->credentials = credentials;
+
+            connection_remove_auth_data (main_connection);
+            connection_set_auth_data (main_connection, authdata);
+
+            multiplayer_send_black_credentials (main_connection->authData);
+        } 
     }
 
     else {

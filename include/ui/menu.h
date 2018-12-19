@@ -20,6 +20,7 @@ extern void destroyMenuScene (void);
 
 /*** MAIN MENU ***/
 
+extern void toggleLaunch (void *);
 extern void createMainMenu (void);
 
 /*** MULTIPLAYER ***/

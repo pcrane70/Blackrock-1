@@ -5,10 +5,12 @@
 #include "blackrock.h"
 #include "game.h"
 
-#include "ui/console.h"
+#include "input.h"
 
+#include "ui/console.h"
 #include "ui/ui.h"
 #include "ui/gameUI.h"
+
 
 #include "utils/log.h"
 
@@ -18,7 +20,6 @@ bool running = false;
 bool inGame = false;
 bool wasInGame = false;
 
-bool typing = false;
 TextBox **selected_textBox = NULL;
 
 /*** MISC ***/
