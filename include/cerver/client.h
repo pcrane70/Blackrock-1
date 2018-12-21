@@ -164,6 +164,9 @@ struct _Client {
     Action errorAction;
     void *errorArgs;
 
+    Action appErrorHandler;
+    Action appPacketHandler;
+
 };
 
 typedef struct _Client Client;
@@ -234,6 +237,9 @@ typedef enum PacketType {
     AUTHENTICATION,
     GAME_PACKET,
 
+    APP_ERROR_PACKET,
+    APP_PACKET,
+
     TEST_PACKET = 100,
     DONT_CHECK_TYPE,
 
@@ -250,6 +256,9 @@ typedef struct PacketHeader {
 
 extern void *client_generatePacket (PacketType packetType, size_t packetSize);
 extern i8 client_sendPacket (Connection *connection, void *packet, size_t packetSize);
+
+extern void client_set_app_error_packet_handler (Client *client, Action errorHandler);
+extern void client_set_app_packet_handler (Client *client, Action packetHandler);
 
 // these indicate the data and more info about the packet type
 typedef enum RequestType {

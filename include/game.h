@@ -250,7 +250,37 @@ extern DoubleList *getGlobalLBData (void);
 
 #pragma region MULTIPLAYER
 
+typedef enum BlackErrorType {
+
+    BLACK_ERROR_SERVER = 0,
+
+    BLACK_ERROR_WRONG_CREDENTIALS,
+    BLACK_ERROR_USERNAME_TAKEN,
+
+} BlackErrorType;
+
+typedef struct BlackError {
+
+    BlackErrorType errorType;
+    char msg[128];
+
+} BlackError;
+
+/*** BLACKROCK PACKETS ***/
+
 extern bool multiplayer;
+
+typedef enum BlackPacketType {
+
+    PLAYER_PROFILE,
+
+} BlackPacketType;
+
+typedef struct BlackPacketData {
+
+    BlackPacketType blackPacketType;
+
+} BlackPacketData;
 
 struct _BlackCredentials {
 
@@ -269,8 +299,8 @@ typedef struct BlackAuthData {
 
 } BlackAuthData;
 
-extern u8 start_multiplayer (BlackCredentials *black_credentials);
-extern u8 stop_multiplayer (void);
+extern u8 multiplayer_start (BlackCredentials *black_credentials);
+extern u8 multiplayer_stop (void);
 
 extern void multiplayer_createLobby (void *);
 extern void multiplayer_joinLobby (void *);

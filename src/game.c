@@ -1949,16 +1949,22 @@ Lobby *current_lobby = NULL;
 
 extern char *login_error_text;
 
-void multiplayer_handle_failed_auth (void *);
+// void multiplayer_handle_failed_auth (void *);
 void multiplayer_send_black_credentials (void *);
 
-u8 start_multiplayer (BlackCredentials *black_credentials) {
+void multiplayer_error_packet_handler (void *);
+void multiplayer_packet_handler (void *);
+
+u8 multiplayer_start (BlackCredentials *black_credentials) {
 
     player_client = client_create ();
 
     if (player_client) {
-        client_register_to_error_type (player_client, multiplayer_handle_failed_auth, NULL,
-            ERR_FAILED_AUTH);
+        // client_register_to_error_type (player_client, multiplayer_handle_failed_auth, NULL,
+        //     ERR_FAILED_AUTH);
+
+        client_set_app_error_packet_handler (player_client, multiplayer_error_packet_handler);
+        client_set_app_packet_handler (player_client, multiplayer_packet_handler);
 
         main_connection = client_connection_new (black_port, true);
         if (main_connection) {
@@ -1980,7 +1986,7 @@ u8 start_multiplayer (BlackCredentials *black_credentials) {
 
 }
 
-u8 stop_multiplayer (void) {
+u8 multiplayer_stop (void) {
 
     // client_disconnectFromServer (player_client, main_connection);
     client_teardown (player_client);
@@ -1989,12 +1995,11 @@ u8 stop_multiplayer (void) {
 
 }
 
-void multiplayer_handle_failed_auth (void *data) {
+void multiplayer_handle_failed_auth (const char *msg) {
 
-    logMsg (stderr, ERROR, NO_TYPE, "Wrong credentials!");
     if (login_error_text) free (login_error_text);
     login_error_text = (char *) calloc (64, sizeof (char));
-    strcpy (login_error_text, "Error - Wrong credentials!");    
+    strcpy (login_error_text, msg);    
 
 }
 
@@ -2024,12 +2029,12 @@ void multiplayer_send_black_credentials (void *data) {
                 if (client_sendPacket (connection, req, packet_size) < 0) 
                     logMsg (stderr, ERROR, PACKET, "Failed to send black credentials packet!");
 
-                else {
-                    #ifdef BLACK_DEBUG
-                        logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
-                    #endif
-                }
-                // free (req);
+                // else {
+                //     #ifdef BLACK_DEBUG
+                //         logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
+                //     #endif
+                // }
+                free (req);
             }
         }
     }
@@ -2045,7 +2050,7 @@ void multiplayer_submit_credentials (void *data) {
             #ifdef BLACK_DEBUG
                 logMsg (stdout, DEBUG_MSG, NO_TYPE, "Starting multiplayer...");
             #endif
-            if (start_multiplayer (credentials)) 
+            if (multiplayer_start (credentials)) 
                 logMsg (stderr, ERROR, CLIENT, "Failed to start multiplayer!");
         }
 
@@ -2068,6 +2073,38 @@ void multiplayer_submit_credentials (void *data) {
         login_error_text = (char *) calloc (64, sizeof (char));
         strcpy (login_error_text, "Error - No credentials provided!");
     }
+
+}
+
+void multiplayer_error_packet_handler (void *data) {
+    
+    if (data) {
+        PacketInfo *pack_info = (PacketInfo *) data;
+        char *end = pack_info->packetData;
+        BlackError *error = (BlackError *) (end + sizeof (PacketHeader));
+
+        logMsg (stderr, ERROR, NO_TYPE, createString ("Black error - %s", error->msg));
+
+        switch (error->errorType) {
+            case BLACK_ERROR_SERVER: break;
+
+            case BLACK_ERROR_WRONG_CREDENTIALS: 
+                multiplayer_handle_failed_auth ("Error - Wrong credentials"); 
+                break;
+            case BLACK_ERROR_USERNAME_TAKEN: 
+                multiplayer_handle_failed_auth ("Error - Username already taken!");
+                break;
+
+            default:
+                #ifdef BLACK_DEBUG
+                logMsg (stdout, WARNING, NO_TYPE, "Unknown black error type!");
+                #endif
+        }
+    }
+
+}
+
+void multiplayer_packet_handler (void *data) {
 
 }
 

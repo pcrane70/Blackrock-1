@@ -287,6 +287,18 @@ void handleErrorPacket (PacketInfo *pack_info) {
 
 #pragma region CONNECTION HANDLER
 
+void client_set_app_error_packet_handler (Client *client, Action errorHandler) {
+
+    if (client) client->appErrorHandler = errorHandler;
+
+}
+
+void client_set_app_packet_handler (Client *client, Action packetHandler) {
+
+    if (client) client->appPacketHandler = packetHandler;
+
+}
+
 void server_handlePacket (PacketInfo *packet);
 
 // called with the th pool to handle a new packet
@@ -337,13 +349,21 @@ void handlePacket (void *data) {
                 // handle a game packet sent from the server
                 case GAME_PACKET: break;
 
-                case TEST_PACKET: 
-                    logMsg (stdout, TEST, NO_TYPE, "Got a successful test packet!"); 
+                case APP_ERROR_PACKET: 
+                    if (pack_info->client->appErrorHandler)  
+                        pack_info->client->appErrorHandler (pack_info);
                     break;
+
+                case APP_PACKET:
+                    if (pack_info->client->appPacketHandler)
+                        pack_info->client->appPacketHandler (pack_info);
+                    break;
+
+                case TEST_PACKET: logMsg (stdout, TEST, NO_TYPE, "Got a successful test packet!"); break;
 
                 default: 
                     #ifdef CLIENT_DEBUG
-                        logMsg (stderr, WARNING, PACKET, "Got a packet of incompatible type.");
+                        logMsg (stdout, WARNING, PACKET, "Got a packet of incompatible type.");
                     #endif 
                     break;
             }

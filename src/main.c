@@ -160,7 +160,7 @@ int main (void) {
         if (pthread_join (gameThread, NULL) != THREAD_OK)
             fprintf (stderr, "Failed to join game thread!\n");
 
-    if (multiplayer) stop_multiplayer ();
+    if (multiplayer) multiplayer_stop ();
 
     cleanUp (window, renderer);
 
