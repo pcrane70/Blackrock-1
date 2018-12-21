@@ -249,9 +249,9 @@ Item *removeFromInventory (Item *item) {
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
             if (!removed) {
-                if (item == player->inventory[x][y]) {
-                    retVal = player->inventory[x][y];
-                    player->inventory[x][y] = NULL;
+                if (item == main_player->inventory[x][y]) {
+                    retVal = main_player->inventory[x][y];
+                    main_player->inventory[x][y] = NULL;
                     removed = true;
                 }
             }
@@ -534,10 +534,10 @@ bool itemStacked (Item *item) {
 
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
-            if (player->inventory[x][y] != NULL && !stacked) {
-                if (player->inventory[x][y]->dbId == item->dbId) {
-                    if (player->inventory[x][y]->quantity < MAX_STACK) {
-                        player->inventory[x][y]->quantity += 1;
+            if (main_player->inventory[x][y] != NULL && !stacked) {
+                if (main_player->inventory[x][y]->dbId == item->dbId) {
+                    if (main_player->inventory[x][y]->quantity < MAX_STACK) {
+                        main_player->inventory[x][y]->quantity += 1;
                         destroyItem (item);
                         stacked = true;
                     }
@@ -559,8 +559,8 @@ void addToInventory (Item *item) {
         if (!itemStacked (item)) {
             for (u8 y = 0; y < 3; y++) {
                 for (u8 x = 0; x < 7; x++) {
-                    if (player->inventory[x][y] == NULL && !inserted) {
-                        player->inventory[x][y] = item;
+                    if (main_player->inventory[x][y] == NULL && !inserted) {
+                        main_player->inventory[x][y] = item;
                         inserted = true;
                         inventoryItems += 1;
                     }
@@ -573,8 +573,8 @@ void addToInventory (Item *item) {
     else {
         for (u8 y = 0; y < 3; y++) {
             for (u8 x = 0; x < 7; x++) {
-                if (player->inventory[x][y] == NULL && !inserted) {
-                    player->inventory[x][y] = item;
+                if (main_player->inventory[x][y] == NULL && !inserted) {
+                    main_player->inventory[x][y] = item;
                     inserted = true;
                     inventoryItems += 1;
                 }
@@ -609,7 +609,7 @@ void pickUp (Item *item) {
 void getItem (void) {
 
     // get a list of items nearby the player
-    DoubleList *objects = getItemsAtPos (player->pos->x, player->pos->y);
+    DoubleList *objects = getItemsAtPos (main_player->pos->x, main_player->pos->y);
 
     if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
         if (objects != NULL) free (objects);
@@ -685,7 +685,7 @@ void dropItem (Item *item) {
     // update the UI
     resetInventoryRects ();
 
-    Position pos = { .x = player->pos->x, .y = player->pos->y, .layer = MID_LAYER };
+    Position pos = { .x = main_player->pos->x, .y = main_player->pos->y, .layer = MID_LAYER };
     addGameComponent (dropItem, POSITION, &pos);
 
     Graphics *g = (Graphics *) getGameComponent (dropItem, GRAPHICS);
@@ -738,7 +738,7 @@ void toggleEquipWeapon (void *i) {
 
     // unequip
     if (weapon->isEquipped) {
-        Item *w = player->weapons[weapon->slot];
+        Item *w = main_player->weapons[weapon->slot];
         if (w != NULL) {
             addToInventory (w);
 
@@ -749,7 +749,7 @@ void toggleEquipWeapon (void *i) {
                 free (str);
             } 
 
-            player->weapons[weapon->slot] = NULL;
+            main_player->weapons[weapon->slot] = NULL;
 
             weapon->isEquipped = false;
         }
@@ -760,17 +760,17 @@ void toggleEquipWeapon (void *i) {
         Item *w = removeFromInventory (item);
         if (w != NULL) {
             // unequip our current weapon if we have one
-            if (player->weapons[weapon->slot] != NULL) 
-                toggleEquipWeapon (player->weapons[weapon->slot]);
+            if (main_player->weapons[weapon->slot] != NULL) 
+                toggleEquipWeapon (main_player->weapons[weapon->slot]);
 
             // if we are equipping a two handed and we have two one handed
             if (((Weapon *) getItemComponent (w, WEAPON))->twoHanded) {
-                if (player->weapons[1] != NULL)
-                    toggleEquipWeapon (player->weapons[1]); // unequip the off hand weapon
+                if (main_player->weapons[1] != NULL)
+                    toggleEquipWeapon (main_player->weapons[1]); // unequip the off hand weapon
 
             }
 
-            player->weapons[weapon->slot] = w;
+            main_player->weapons[weapon->slot] = w;
             Graphics *g = (Graphics *) getGameComponent (w, GRAPHICS);
             if (g != NULL) {
                 char *str = createString ("You are now wielding the %s.", g->name);
@@ -805,7 +805,7 @@ void toggleEquipArmour (void *i) {
 
     // unequip
     if (armour->isEquipped) {
-        Item *a = player->equipment[armour->slot];
+        Item *a = main_player->equipment[armour->slot];
         if (a != NULL) {
             addToInventory (a);
             Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
@@ -815,7 +815,7 @@ void toggleEquipArmour (void *i) {
                 free (str);
             } 
 
-            player->equipment[armour->slot] = NULL;
+            main_player->equipment[armour->slot] = NULL;
 
             armour->isEquipped = false;
         }
@@ -826,10 +826,10 @@ void toggleEquipArmour (void *i) {
         Item *a = removeFromInventory (item);
         if (a != NULL) {
             // unequip the armour in that slot if we have one
-            if (player->equipment[armour->slot] != NULL)
-                toggleEquipArmour (player->equipment[armour->slot]);
+            if (main_player->equipment[armour->slot] != NULL)
+                toggleEquipArmour (main_player->equipment[armour->slot]);
 
-            player->equipment[armour->slot] = a;
+            main_player->equipment[armour->slot] = a;
             Graphics *g = (Graphics *) getGameComponent (a, GRAPHICS);
             if (g != NULL) {
                 char *str = createString ("You are now wielding the %s.", g->name);
@@ -896,7 +896,7 @@ void updateLifeTime (void) {
     // weapons 
     Weapon *weapon = NULL;
     for (u8 i = 0; i < 3; i++) {
-        item = player->weapons[i];
+        item = main_player->weapons[i];
         weapon = (Weapon *) getItemComponent (item, WEAPON);
 
         // FIXME: update lifetime of weapons when hitting a mob
@@ -929,8 +929,8 @@ void healPlayer (void *i) {
 
     Item *item = (Item *) i;
 
-    i32 *currHealth = &player->combat->baseStats.health;
-    u32 maxHealth = player->combat->baseStats.maxHealth;
+    i32 *currHealth = &main_player->combat->baseStats.health;
+    u32 maxHealth = main_player->combat->baseStats.maxHealth;
 
     // FIXME: get the real data
     // FIXME: 09/09/2018 -- 23:08 -- this is just for testing

@@ -16,14 +16,25 @@ typedef enum CharClass {
 
 typedef struct PlayerProfile {
 
-    char *name;
-    
+    u32 profileID;
+    char *username;
+
+    u32 kills;
+    u32 gamesPlayed;
+    u32 highscore;
+
+    u32 n_friends;
+    char *friends;
+    // char *clan;
 
 } PlayerProfile;
 
+struct _SPlayerProfile;
+
+extern void player_profile_get_from_server (struct _SPlayerProfile *s_profile);
+
 typedef struct Player {
 
-    char *name;
     u8 genre;     // 0 female, 1 male
     // TODO: races
     CharClass cClass;
@@ -58,14 +69,32 @@ typedef struct Player {
 // shoes        8
 // ring         9
 
-
-extern Player *player;
+extern Player *main_player;
 
 extern u8 inventoryItems;
 
-extern Player *createPlayer (void);
-void initPlayer (Player *);
-extern void resetPlayer (Player *);
-extern char *getPlayerClassName (u8);
-extern u32 getPlayerClassColor (u8);
-extern void destroyPlayer (void);
+extern Player *player_create (void);
+void player_init (Player *);
+extern void player_reset (Player *);
+extern char *player_get_class_name (u8);
+extern u32 player_get_class_color (u8);
+extern void player_destroy (Player *);
+
+/*** SERIALIZATION ***/
+
+struct _SPlayerProfile {
+
+    u32 profileID;
+    char username[64];
+
+    u32 kills;
+    u32 gamesPlayed;
+    u32 highscore;
+
+    u32 n_friends;
+    // char friends[64];
+    // char clan[64];
+
+};
+
+typedef struct _SPlayerProfile SPlayerProfile;

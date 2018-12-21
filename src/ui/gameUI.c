@@ -110,8 +110,8 @@ static void renderMap (Console *console) {
     }
         
     // render the player
-    putCharAt (console, player->graphics->glyph, player->pos->x, player->pos->y, 
-        player->graphics->fgColor, player->graphics->bgColor);
+    putCharAt (console, main_player->graphics->glyph, main_player->pos->x, main_player->pos->y, 
+        main_player->graphics->fgColor, main_player->graphics->bgColor);
 
 }
 
@@ -123,8 +123,8 @@ static void rednderStats (Console *console) {
 
     putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, NO_COLOR);
 
-    int currHealth = player->combat->baseStats.health;
-    int maxHealth = player->combat->baseStats.maxHealth;
+    int currHealth = main_player->combat->baseStats.health;
+    int maxHealth = main_player->combat->baseStats.maxHealth;
     char *str = createString ("HP: %i/%i", currHealth, maxHealth);
 
     if (currHealth >= (maxHealth * 0.75)) 
@@ -572,8 +572,8 @@ void resetInventoryRects (void) {
     // display the items that are currently on the players inventory
     for (u8 y = 0; y < 3; y++) {
         for (u8 x = 0; x < 7; x++) {
-            if (player->inventory[x][y] != NULL)
-                inventoryRects[x][y]->item = player->inventory[x][y];
+            if (main_player->inventory[x][y] != NULL)
+                inventoryRects[x][y]->item = main_player->inventory[x][y];
 
         }
     }
@@ -651,7 +651,7 @@ static void renderInventory (Console *console) {
     renderInventoryItems (console);
     
     // gold
-    char *gold = createString ("%ig - %is - %ic", player->money[0], player->money[1], player->money[2]);
+    char *gold = createString ("%ig - %is - %ic", main_player->money[0], main_player->money[1], main_player->money[2]);
     putStringAt (console, gold, 13, 25, INVENTORY_TEXT, NO_COLOR);
 
     putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, NO_COLOR);
@@ -868,7 +868,7 @@ void resetCharacterRects (void) {
     //         characterRects[x][y]->item = 
 
     // weapons
-    for (u8 i = 0; i < 2; i++) characterRects[i][5]->item = player->weapons[i];
+    for (u8 i = 0; i < 2; i++) characterRects[i][5]->item = main_player->weapons[i];
 
 }
 
@@ -1239,7 +1239,7 @@ Item *itemToCompare (Item *item) {
     Weapon *w = (Weapon *) getItemComponent (item, WEAPON);
     if (w != NULL) {
         // we have a weapon, so compare it to the one we have equipped
-        Item *equipped = player->weapons[w->slot];
+        Item *equipped = main_player->weapons[w->slot];
         if (equipped != NULL) compareTo = equipped;
         
     }
@@ -1248,7 +1248,7 @@ Item *itemToCompare (Item *item) {
         Armour *a = (Armour *) getItemComponent (item, ARMOUR);
         if (a != NULL) {
             // we have an armour, so compare it to the one we have equipped
-            Item *equipped = player->equipment[a->slot];
+            Item *equipped = main_player->equipment[a->slot];
             if (equipped != NULL) compareTo = equipped;
         }
     }
@@ -1620,6 +1620,7 @@ DoubleList *initGameViews (void) {
 void destroyGameUI (void);
 
 // FIXME: destroy list function
+// FIXME: modidy to use player profiles
 UIScreen *gameScene (void) {
 
     DoubleList *igViews = initGameViews ();
@@ -1630,7 +1631,7 @@ UIScreen *gameScene (void) {
     inGameScreen->activeView = mapView;
     inGameScreen->handleEvent = hanldeGameEvent;
 
-    statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
+    // statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 

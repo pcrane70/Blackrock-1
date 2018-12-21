@@ -121,11 +121,11 @@ void initGame (void) {
 
 void *playerLogic (void *arg) {
 
-    if (player != NULL) destroyPlayer ();
+    if (main_player != NULL) player_destroy (main_player);
     
-    player = createPlayer ();
+    main_player = player_create ();
 
-    initPlayer (player);
+    player_init (main_player);
 
 }
 
@@ -154,10 +154,10 @@ void initWorld (void) {
 
     // we can now place the player and we are done 
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    player->pos->x = (u8) playerSpawnPos.x;
-    player->pos->y = (u8) playerSpawnPos.y;
+    main_player->pos->x = (u8) playerSpawnPos.x;
+    main_player->pos->y = (u8) playerSpawnPos.y;
 
-    calculateFov (player->pos->x, player->pos->y, fovMap);
+    calculateFov (main_player->pos->x, main_player->pos->y, fovMap);
     
 }
 
@@ -446,7 +446,7 @@ void destroyGO (GameObject *go) {
 void cleanUpGame (void) {
 
     // clean up the player
-    destroyPlayer ();
+    player_destroy (main_player);
     fprintf (stdout, "Done cleanning up player.\n");
 
     // clean up our lists
@@ -531,7 +531,7 @@ bool canMove (Position pos, bool isPlayer) {
 
         // check for player
         if (!isPlayer) {
-            if (pos.x == player->pos->x && pos.y == player->pos->y)
+            if (pos.x == main_player->pos->x && pos.y == main_player->pos->y)
                 move = false;
 
         }
@@ -674,7 +674,7 @@ void updateMovement (void) {
                     // fight the player!
                     GameObject *enemy = searchGameObjectById (mv->objectId);
                     if (enemy != NULL) 
-                        fight ((Combat *) getComponent (enemy, COMBAT), player->combat, false);
+                        fight ((Combat *) getComponent (enemy, COMBAT), main_player->combat, false);
                 }
                 
                 else {
@@ -1289,29 +1289,29 @@ void collectGold (void) {
             char *str = createString ("You collected: %ig %is %ic",
                 currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
             
-            if ((player->money[2] + currentLoot->money[2]) >= 100) {
-                player->money[1] += 1;
-                player->money[2] = 0;
+            if ((main_player->money[2] + currentLoot->money[2]) >= 100) {
+                main_player->money[1] += 1;
+                main_player->money[2] = 0;
                 currentLoot->money[2] = 0;
             }
 
             else {
-                player->money[2] += currentLoot->money[2];
+                main_player->money[2] += currentLoot->money[2];
                 currentLoot->money[2] = 0;
             } 
 
-            if ((player->money[1] + currentLoot->money[1]) >= 100) {
-                player->money[0] += 1;
-                player->money[1] = 0;
+            if ((main_player->money[1] + currentLoot->money[1]) >= 100) {
+                main_player->money[0] += 1;
+                main_player->money[1] = 0;
                 currentLoot->money[1] = 0;
             }
 
             else {
-                player->money[1] += currentLoot->money[1];
+                main_player->money[1] += currentLoot->money[1];
                 currentLoot->money[1] = 0;
             }
 
-            player->money[0] += currentLoot->money[0];
+            main_player->money[0] += currentLoot->money[0];
             currentLoot->money[0] = 0;
 
             logMessage (str, DEFAULT_COLOR);
@@ -1437,7 +1437,7 @@ u32 getPlayerDmg (Combat *att) {
 
     u32 damage;
 
-    Item *mainWeapon = player->weapons[MAIN_HAND];
+    Item *mainWeapon = main_player->weapons[MAIN_HAND];
     if (mainWeapon != NULL) {
         Weapon *main = (Weapon *) getItemComponent (mainWeapon, WEAPON);
         if (main == NULL) {
@@ -1448,7 +1448,7 @@ u32 getPlayerDmg (Combat *att) {
         // check if we are wielding 2 weapons
         Item *offWeapon = NULL;
         if (main->twoHanded == false) {
-            if (player->weapons[OFF_HAND] != NULL) offWeapon = player->weapons[OFF_HAND];
+            if (main_player->weapons[OFF_HAND] != NULL) offWeapon = main_player->weapons[OFF_HAND];
 
             // FIXME: take into acount if it is a shield or whatever
             // FIXME: how do we calculate the damage?
@@ -1565,7 +1565,7 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
     // check for player death
     else {
-        if (player->combat->baseStats.health <= 0) {
+        if (main_player->combat->baseStats.health <= 0) {
             logMessage ("You have died!!", KILL_COLOR);
             // TODO: player death animation?
             void gameOver (void);
@@ -1691,7 +1691,7 @@ void *updateGame (void *data) {
         frameStart = SDL_GetTicks ();
 
         if (playerTookTurn) {
-            generateTargetMap (player->pos->x, player->pos->y);
+            generateTargetMap (main_player->pos->x, main_player->pos->y);
             updateMovement ();
 
             playerTookTurn = false;
@@ -1699,7 +1699,7 @@ void *updateGame (void *data) {
 
         // recalculate the fov
         if (recalculateFov) {
-            calculateFov (player->pos->x, player->pos->y, fovMap);
+            calculateFov (main_player->pos->x, main_player->pos->y, fovMap);
             recalculateFov = false;
         }
 
@@ -1739,7 +1739,7 @@ void useStairs (void *goData) {
     void generateLevel (void);
     generateLevel ();
 
-    calculateFov (player->pos->x, player->pos->y, fovMap);
+    calculateFov (main_player->pos->x, main_player->pos->y, fovMap);
 
     // TODO: what is our win condition?
 
@@ -1850,10 +1850,10 @@ void retry (void) {
 
     // we can now place the player and we are done 
     Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    player->pos->x = (u8) playerSpawnPos.x;
-    player->pos->y = (u8) playerSpawnPos.y;
+    main_player->pos->x = (u8) playerSpawnPos.x;
+    main_player->pos->y = (u8) playerSpawnPos.y;
 
-    calculateFov (player->pos->x, player->pos->y, fovMap);
+    calculateFov (main_player->pos->x, main_player->pos->y, fovMap);
 
     fprintf (stdout, "Setting active scene...\n");
     setActiveScene (gameScene ());
@@ -1870,16 +1870,17 @@ void retry (void) {
 
 LBEntry *playerLBEntry = NULL;
 
+// FIXME: modify to use player profiles
 // we need to modify this when we add multiplayer i guess...
 LBEntry *getPlayerLBEntry (void) {
 
     LBEntry *entry = (LBEntry *) malloc (sizeof (LBEntry));
 
-    entry->playerName = (char *) calloc (strlen (player->name) + 1, sizeof (char));
-    strcpy (entry->playerName, player->name);
-    entry->completeName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
+    // entry->playerName = (char *) calloc (strlen (player->name) + 1, sizeof (char));
+    // strcpy (entry->playerName, player->name);
+    // entry->completeName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
 
-    entry->nameColor = getPlayerClassColor (player->cClass);
+    entry->nameColor = player_get_class_color (main_player->cClass);
 
     entry->level = createString ("%i", currentLevel->levelNum);
 
@@ -1986,6 +1987,7 @@ u8 multiplayer_start (BlackCredentials *black_credentials) {
 
 }
 
+// FIXME:
 u8 multiplayer_stop (void) {
 
     // client_disconnectFromServer (player_client, main_connection);
@@ -2106,6 +2108,24 @@ void multiplayer_error_packet_handler (void *data) {
 
 void multiplayer_packet_handler (void *data) {
 
+    if (data) {
+        PacketInfo *pack_info = (PacketInfo *) data;
+        char *end = pack_info->packetData;
+        BlackPacketData *black_data = (BlackPacketData *) (end += sizeof (PacketHeader));
+        switch (black_data->blackPacketType) {
+            case PLAYER_PROFILE: {
+                SPlayerProfile *s_profile = (SPlayerProfile *) (end += sizeof (BlackPacketData));
+                player_profile_get_from_server (s_profile); 
+            } break;
+
+            default: 
+            #ifdef BLACK_DEBUG
+            logMsg (stdout, WARNING, GAME, "Unknwon black packet type.");
+            #endif
+            break;
+        }
+    }
+
 }
 
 // TODO: we need to pass the game type
@@ -2211,7 +2231,7 @@ DoubleList *getLBData (Config *config) {
  
         lbEntry->playerName = getEntityValue (entity, "name");
         c = atoi (getEntityValue (entity, "class"));
-        class = getPlayerClassName (c);
+        class = player_get_class_name (c);
 
         if ((lbEntry->playerName != NULL) && (class != NULL)) 
             lbEntry->completeName = createString ("%s the %s", lbEntry->playerName, class);
@@ -2227,7 +2247,7 @@ DoubleList *getLBData (Config *config) {
             strcpy (lbEntry->completeName, "Anonymous");
         }
 
-        lbEntry->nameColor = getPlayerClassColor (c);
+        lbEntry->nameColor = player_get_class_color (c);
 
         lbEntry->level = getEntityValue (entity, "level");
 

@@ -8,26 +8,64 @@
 
 #include "utils/myUtils.h"
 
-Player *player = NULL;
+#pragma region PLAYER PROFILE
+
+PlayerProfile *main_player_profile = NULL;
+
+// TODO: how do we request the friend list from the server?
+void player_profile_get_from_server (SPlayerProfile *s_profile) {
+
+    if (s_profile) {
+        main_player_profile = (PlayerProfile *) malloc (sizeof (PlayerProfile));
+
+        if (main_player_profile) {
+            main_player_profile->profileID = s_profile->profileID;
+            main_player_profile->username = createString ("%s", s_profile->username);
+            main_player_profile->kills = s_profile->kills;
+            main_player_profile->gamesPlayed = s_profile->gamesPlayed;
+            main_player_profile->highscore = s_profile->highscore;
+            main_player_profile->n_friends = s_profile->n_friends;
+            // if (main_player_profile->n_friends > 0)
+            //     main_player_profile->friends = createString ("%s", s_profile->friends);
+            // else main_player_profile->friends = NULL;
+
+            #ifdef BLACK_DEBUG
+            printf ("Got a player profile from the server: ");
+            printf ("username: %s\n", main_player_profile->username);
+            printf ("kills: %i\n", main_player_profile->kills);
+            printf ("games played: %i\n", main_player_profile->gamesPlayed);
+            printf ("highscore: %i\n", main_player_profile->highscore);
+            printf ("no friend: %i\n", main_player_profile->n_friends);
+            #endif
+        }
+    }
+
+}
+
+#pragma endregion
+
+#pragma region PLAYER
+
+Player *main_player = NULL;
 Config *playerConfig = NULL;
 Config *classesConfig = NULL;
 
 u8 inventoryItems = 0;
 
-void getPlayerData (void) {
+void player_load_data (void) {
 
     playerConfig = parseConfigFile ("./data/player.cfg");
-    if (playerConfig == NULL) 
+    if (!playerConfig) 
         die ("Critical Error! No player config!\n");
 
 
     classesConfig = parseConfigFile ("./data/classes.cfg");
-    if (classesConfig == NULL) 
+    if (!classesConfig) 
         die ("Critical Error! No classes config!\n");
 
 }
 
-char *getPlayerClassName (u8 c) {
+char *player_get_class_name (u8 c) {
 
     char class[15];
 
@@ -48,7 +86,7 @@ char *getPlayerClassName (u8 c) {
 
 }
 
-u32 getPlayerClassColor (u8 c) {
+u32 player_get_class_color (u8 c) {
 
     u32 retVal;
 
@@ -66,7 +104,7 @@ u32 getPlayerClassColor (u8 c) {
 
 }
 
-Item ***initPlayerInventory (void) {
+Item ***player_init_inventory (void) {
 
     Item ***inventory = (Item ***) calloc (7, sizeof (Item **));
 
@@ -81,7 +119,7 @@ Item ***initPlayerInventory (void) {
 
 }
 
-Player *createPlayer (void) {
+Player *player_create (void) {
 
     Player *p = (Player *) malloc (sizeof (Player));
     p->pos = (Position *) malloc (sizeof (Position));
@@ -89,7 +127,7 @@ Player *createPlayer (void) {
     p->graphics = (Graphics *) malloc (sizeof (Graphics));
     p->combat = (Combat *) malloc (sizeof (Combat));
 
-    p->inventory = initPlayerInventory ();
+    p->inventory = player_init_inventory ();
 
     p->weapons = (Item **) calloc (2, sizeof (Item *));
     for (u8 i = 0; i < 2; i++) p->weapons[i] = NULL;
@@ -103,9 +141,9 @@ Player *createPlayer (void) {
 
 // TODO: check for a save file to retrive the information freom there instead
 // because the player is an special GO, we want to initialize him differently
-void initPlayer (Player *p) {
+void player_init (Player *p) {
 
-    getPlayerData ();
+    player_load_data ();
 
     p->pos->objectId = 0;
     p->pos->layer = TOP_LAYER;
@@ -116,8 +154,6 @@ void initPlayer (Player *p) {
 
     ConfigEntity *playerEntity = getEntityWithId (playerConfig, 1);
 
-    if (p->name != NULL) free (p->name);
-    p->name = getEntityValue (playerEntity, "name");
     p->genre = atoi (getEntityValue (playerEntity, "genre"));
     p->level = atoi (getEntityValue (playerEntity, "level"));
 
@@ -183,52 +219,62 @@ void initPlayer (Player *p) {
 
 }
 
-void resetPlayer (Player *p) {
+void player_reset (Player *player) {
 
-    if (p != NULL) {
+    if (player) {
         // reset inventory
-        for (u8 y = 0; y < 3; y++) 
-            for (u8 x = 0; x < 7; x++) 
-                p->inventory[x][y] = NULL;
+        if (player->inventory) {
+            for (u8 y = 0; y < 3; y++) 
+                for (u8 x = 0; x < 7; x++) 
+                    player->inventory[x][y] = NULL;
 
-        inventoryItems = 0;
+            inventoryItems = 0;
+        }
 
         // reset weapons
-        for (u8 i = 0; i < 2; i++) p->weapons[i] = NULL;
-
+        if (player->weapons) 
+            for (u8 i = 0; i < 2; i++) player->weapons[i] = NULL;
+        
         // reset equipment
-        for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) p->equipment[i] = NULL;
+        if (player->equipment)
+            for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
 
     }
 
 }
 
-void destroyPlayer (void) {
+void player_destroy (Player *player) {
 
-    free (player->name);
+    if (player) {
+        if (player->inventory) {
+            // clean up inventory
+            for (u8 y = 0; y < 3; y++) 
+                for (u8 x = 0; x < 7; x++) 
+                    player->inventory[x][y] = NULL;
 
-    // clean up inventory
-    for (u8 y = 0; y < 3; y++) 
-        for (u8 x = 0; x < 7; x++) 
-            player->inventory[x][y] = NULL;
+            free (player->inventory);
+        }
 
-    free (player->inventory);
+        // clean up weapons
+        if (player->weapons) {
+            for (u8 i = 0; i < 2; i++) player->weapons[i] = NULL;
+            free (player->weapons);
+        }
 
-    // clean up weapons
-    for (u8 i = 0; i < 2; i++) player->weapons[i] = NULL;
+        // clean up equipment
+        if (player->equipment) {
+            for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
+            free (player->equipment);
+        }
+            
+        if (player->pos) free (player->pos);
+        if (player->graphics) free (player->graphics);
+        if (player->physics) free (player->physics);
+        if (player->combat) free (player->combat);
 
-    free (player->weapons);
-
-    // clean up equipment
-    for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
-
-    free (player->equipment);
-        
-    free (player->pos);
-    free (player->graphics);
-    free (player->physics);
-    free (player->combat);
-
-    free (player);
+        free (player);
+    }
 
 }
+
+#pragma endregion

@@ -145,7 +145,7 @@ void resolveCombat (Position newPos) {
     for (ListElement *e = LIST_START (blockers); e != NULL; e = e->next) {
         Combat *c = (Combat *) getComponent ((GameObject *) e->data, COMBAT);
         if (c != NULL) {
-            fight (player->combat, c, true);
+            fight (main_player->combat, c, true);
             break;
         }
     }
@@ -277,7 +277,7 @@ void triggerEvent (void) {
 
 void hanldeGameEvent (UIScreen *activeScreen, SDL_Event event) {
 
-    playerPos = player->pos;
+    playerPos = main_player->pos;
 
     if (event.type == SDL_KEYDOWN) {
         SDL_Keycode key = event.key.keysym.sym;
