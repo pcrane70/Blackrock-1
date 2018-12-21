@@ -31,18 +31,20 @@ typedef struct PlayerProfile {
 
 struct _SPlayerProfile;
 
+extern PlayerProfile *main_player_profile;
+
 extern void player_profile_get_from_server (struct _SPlayerProfile *s_profile);
 
 typedef struct Player {
 
-    u8 genre;     // 0 female, 1 male
+    u8 genre;               // 0 female, 1 male
     // TODO: races
     CharClass cClass;
-    u32 color;  // for accessibility
+    u32 color;
     u8 level;
-    u16 money [3];  // gold, silver, copper
+    u16 money [3];          // gold, silver, copper
     Item ***inventory;
-    Item **weapons;      // a player can have 2 on-handed or a 2 handed or equip a shield
+    Item **weapons;
     Item **equipment;
 
     Position *pos;

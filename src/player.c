@@ -5,8 +5,8 @@
 #include "item.h"
 
 #include "utils/config.h"
-
 #include "utils/myUtils.h"
+#include "utils/log.h"
 
 #pragma region PLAYER PROFILE
 
@@ -30,12 +30,12 @@ void player_profile_get_from_server (SPlayerProfile *s_profile) {
             // else main_player_profile->friends = NULL;
 
             #ifdef BLACK_DEBUG
-            printf ("Got a player profile from the server: ");
-            printf ("username: %s\n", main_player_profile->username);
-            printf ("kills: %i\n", main_player_profile->kills);
-            printf ("games played: %i\n", main_player_profile->gamesPlayed);
-            printf ("highscore: %i\n", main_player_profile->highscore);
-            printf ("no friend: %i\n", main_player_profile->n_friends);
+            logMsg (stdout, DEBUG_MSG, NO_TYPE, "Got a player profile from the server:");
+            printf ("Username: %s\n", main_player_profile->username);
+            printf ("Kills: %i\n", main_player_profile->kills);
+            printf ("Games played: %i\n", main_player_profile->gamesPlayed);
+            printf ("Highscore: %i\n", main_player_profile->highscore);
+            printf ("No. friends: %i\n", main_player_profile->n_friends);
             #endif
         }
     }

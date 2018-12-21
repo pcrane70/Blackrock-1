@@ -1631,7 +1631,8 @@ UIScreen *gameScene (void) {
     inGameScreen->activeView = mapView;
     inGameScreen->handleEvent = hanldeGameEvent;
 
-    // statsPlayerName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
+    statsPlayerName = createString ("%s the %s", main_player_profile->username,
+         player_get_class_name (main_player->cClass));
 
     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 

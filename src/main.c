@@ -11,7 +11,6 @@
 #include "ui/ui.h"
 #include "ui/gameUI.h"
 
-
 #include "utils/log.h"
 
 #define FPS_LIMIT   20

@@ -22,8 +22,6 @@
 
 /*** WORLD STATE ***/
 
-// TODO: create an object pool of list elements for forward optimization??
-
 // Components
 DoubleList *gameObjects = NULL;
 DoubleList *positions = NULL;
@@ -43,7 +41,6 @@ Pool *combatPool = NULL;
 Pool *lootPool = NULL;
 
 // Player
-extern Player *player;
 bool playerTookTurn = false;
 
 // Level 
