@@ -59,7 +59,7 @@ void hanldeMenuEvent (UIScreen *activeScreen, SDL_Event event) {
                         selected_textBox = &loginTextBoxes[login_textboxes_idx];
                     }
 
-                    else {
+                    else if (login_textboxes_idx == 3) {
                         submitButton->bgcolor = SILVER;
                         loginTextBoxes[login_textboxes_idx]->bgcolor = WHITE;
                         login_textboxes_idx++;

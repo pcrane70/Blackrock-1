@@ -187,7 +187,7 @@ extern u8 client_end_connection (Client *client, Connection *connection);
 
 extern u8 client_connect_to_server (Client *client, Connection *con, const char *serverIp, u16 port,
     ServerType expectedType, Action send_auth_data, void *auth_data);
-extern u8 client_disconnectFromServer (Client *client, Connection *connection);
+extern u8 client_disconnect_from_server (Client *client, Connection *connection);
 
 extern void connection_set_send_auth_data (Connection *connection,
     Action send_auth_data, void *auth_data);

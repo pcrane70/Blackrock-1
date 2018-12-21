@@ -1050,7 +1050,7 @@ u8 client_connect_to_server (Client *client, Connection *con, const char *server
 void *generateRequest (PacketType packetType, RequestType reqType);
 
 // disconnect from the server
-u8 client_disconnectFromServer (Client *client, Connection *connection) {
+u8 client_disconnect_from_server (Client *client, Connection *connection) {
 
     if (client && connection) {
         if (connection->server) {
