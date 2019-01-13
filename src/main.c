@@ -13,7 +13,7 @@
 
 #include "utils/log.h"
 
-#define FPS_LIMIT   20
+#define FPS_LIMIT   30
 
 bool running = false;
 bool inGame = false;
