@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdio.h>
-#include <pthread.h>
+
+#include "engine/renderer.h"
 
 #include "blackrock.h"
 #include "game.h"
@@ -12,8 +13,6 @@
 #include "ui/gameUI.h"
 
 #include "utils/log.h"
-
-#define FPS_LIMIT   30
 
 bool running = false;
 bool inGame = false;
@@ -30,22 +29,9 @@ void die (const char *error) {
 
 };
 
-void pthread_create_detachable (void *(*work) (void *), void *args) {
-
-    pthread_attr_t attr;
-    pthread_t request_Thread;
-
-    int rc = pthread_attr_init (&attr);
-    rc = pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
-
-   if (pthread_create (&request_Thread, &attr, work, args)
-        != THREAD_OK)
-        logMsg (stderr, ERROR, NO_TYPE, "Failed o create request thread!");
-
-}
-
 /*** SCREEN ***/
 
+// FIXME: move this to a separate file
 // TODO: are we cleanning up the console and the screen??
 // do we want that to happen?
 void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
@@ -86,34 +72,35 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
 /*** SET UP ***/
 
-void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **screen) {
+// void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **screen) {
 
-    SDL_Init (SDL_INIT_VIDEO);
-    *window = SDL_CreateWindow ("Blackrock Dungeons",
-         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+//     SDL_Init (SDL_INIT_VIDEO);
+//     *window = SDL_CreateWindow ("Blackrock Dungeons",
+//          SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, 0);
 
-    *renderer = SDL_CreateRenderer (*window, 0, SDL_RENDERER_SOFTWARE | SDL_RENDERER_ACCELERATED);
+//     *renderer = SDL_CreateRenderer (*window, 0, SDL_RENDERER_SOFTWARE | SDL_RENDERER_ACCELERATED);
 
-    SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-    SDL_RenderSetLogicalSize (*renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+//     SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+//     SDL_RenderSetLogicalSize (*renderer, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
 
-    *screen = SDL_CreateTexture (*renderer, SDL_PIXELFORMAT_RGBA8888, 
-        SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+//     *screen = SDL_CreateTexture (*renderer, SDL_PIXELFORMAT_RGBA8888, 
+//         SDL_TEXTUREACCESS_STREAMING, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
 
-}
+// }
 
 /*** MAIN THREAD ***/
 
-pthread_t gameThread;
+// pthread_t gameThread;
 
 int main (void) {
 
-    srand ((unsigned) time (NULL));
+    // SDL_Window *window = NULL;
+    // SDL_Renderer *renderer = NULL;
+    // SDL_Texture *screen = NULL;
+    // setUpSDL (&window, &renderer, &screen);
 
-    SDL_Window *window = NULL;
-    SDL_Renderer *renderer = NULL;
-    SDL_Texture *screen = NULL;
-    setUpSDL (&window, &renderer, &screen);
+    SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO);
+    video_init_main ("Blackrock");
 
     SDL_Event event;
     UIScreen *screenForInput;
@@ -148,20 +135,20 @@ int main (void) {
         }
 
         // render the correct screen
-        renderScreen (renderer, screen, activeScene);
+        // renderScreen (renderer, screen, activeScene);
 
         // limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
         if (sleepTime > 0) SDL_Delay (sleepTime);
     }
 
-    if (wasInGame)
-        if (pthread_join (gameThread, NULL) != THREAD_OK)
-            logMsg (stderr, ERROR, NO_TYPE, "Failed to join game thread!");
+    // if (wasInGame)
+    //     if (pthread_join (gameThread, NULL) != THREAD_OK)
+    //         logMsg (stderr, ERROR, NO_TYPE, "Failed to join game thread!");
 
     if (multiplayer) multiplayer_stop ();
 
-    cleanUp (window, renderer);
+    // cleanUp (window, renderer);
 
     return 0;
 

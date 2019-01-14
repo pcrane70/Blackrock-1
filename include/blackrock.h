@@ -8,8 +8,10 @@
 
 #define FPS_LIMIT   20
 
-#define SCREEN_WIDTH    1280    
-#define SCREEN_HEIGHT   720
+#define DEFAULT_SCREEN_WIDTH    1920    
+#define DEFAULT_SCREEN_HEIGHT   1080
+
+#define FPS_LIMIT   30
 
 #define MAP_WIDTH   80
 #define MAP_HEIGHT  40
@@ -23,6 +25,7 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 
 typedef int8_t i8;
+typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
@@ -57,7 +60,6 @@ extern Connection *main_connection;
 
 /*** MISC ***/
 
-extern void pthread_create_detachable (void *(*work) (void *), void *args);
 extern void die (const char *error);
 
 #endif
