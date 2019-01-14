@@ -157,7 +157,7 @@ int main (void) {
 
     if (wasInGame)
         if (pthread_join (gameThread, NULL) != THREAD_OK)
-            fprintf (stderr, "Failed to join game thread!\n");
+            logMsg (stderr, ERROR, NO_TYPE, "Failed to join game thread!");
 
     if (multiplayer) multiplayer_stop ();
 
