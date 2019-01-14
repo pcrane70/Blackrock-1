@@ -1,14 +1,13 @@
-#include <time.h>
 #include <stdio.h>
+
+#include "blackrock.h"
 
 #include "engine/renderer.h"
 
-#include "blackrock.h"
 #include "game.h"
 
 #include "input.h"
 
-#include "ui/console.h"
 #include "ui/ui.h"
 #include "ui/gameUI.h"
 
@@ -70,34 +69,11 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
 }
 
-/*** SET UP ***/
-
-// void setUpSDL (SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **screen) {
-
-//     SDL_Init (SDL_INIT_VIDEO);
-//     *window = SDL_CreateWindow ("Blackrock Dungeons",
-//          SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT, 0);
-
-//     *renderer = SDL_CreateRenderer (*window, 0, SDL_RENDERER_SOFTWARE | SDL_RENDERER_ACCELERATED);
-
-//     SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-//     SDL_RenderSetLogicalSize (*renderer, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
-
-//     *screen = SDL_CreateTexture (*renderer, SDL_PIXELFORMAT_RGBA8888, 
-//         SDL_TEXTUREACCESS_STREAMING, DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
-
-// }
-
 /*** MAIN THREAD ***/
 
 // pthread_t gameThread;
 
 int main (void) {
-
-    // SDL_Window *window = NULL;
-    // SDL_Renderer *renderer = NULL;
-    // SDL_Texture *screen = NULL;
-    // setUpSDL (&window, &renderer, &screen);
 
     SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO);
     video_init_main ("Blackrock");
@@ -109,8 +85,12 @@ int main (void) {
     setActiveScene (menuScene ());
 
     u32 timePerFrame = 1000 / FPS_LIMIT;
-    u32 frameStart;
-    i32 sleepTime;
+    u32 frameStart = 0;
+    i32 sleepTime = 0;
+
+    float deltaTime = 0;
+    u32 deltaTicks = 0;
+    u32 fps = 0;
 
     char *text = (char *) calloc (20, sizeof (char));
 
@@ -140,6 +120,16 @@ int main (void) {
         // limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
         if (sleepTime > 0) SDL_Delay (sleepTime);
+
+        // count fps
+        deltaTime = SDL_GetTicks () - frameStart;
+        deltaTicks += deltaTime;
+        fps++;
+        if (deltaTicks >= 1000) {
+            printf ("fps: %i\n", fps);
+            deltaTicks = 0;
+            fps = 0;
+        }
     }
 
     // if (wasInGame)
@@ -148,7 +138,7 @@ int main (void) {
 
     if (multiplayer) multiplayer_stop ();
 
-    // cleanUp (window, renderer);
+    // FIXME: cleanup
 
     return 0;
 
