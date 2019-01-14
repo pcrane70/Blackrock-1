@@ -23,6 +23,101 @@
 // FIXME:
 #pragma region COMPONENTS 
 
+static Transform *transform_new (u32 objectID) {
+
+    Transform *new_transform = (Transform *) malloc (sizeof (Transform));
+    if (new_transform) {
+        new_transform->goID = objectID;
+        new_transform->position.x = 0;
+        new_transform->position.y = 0;
+    }
+
+    return new_transform;
+
+}
+
+static void transform_destroy (Transform *transform) { if (transform) free (transform); }
+
+static Graphics *graphics_new (u32 objectID) {
+
+    Graphics *new_graphics = (Graphics *) malloc (sizeof (Graphics));
+    if (new_graphics) {
+        new_graphics->goID = objectID;
+        new_graphics->sprite = NULL;
+        new_graphics->spriteSheet = NULL;
+        new_graphics->multipleSprites = false;
+        new_graphics->x_sprite_offset = 0;
+        new_graphics->y_sprite_offset = 0;
+        new_graphics->layer = UNSET_LAYER;
+        new_graphics->flip = NO_FLIP;
+    }
+
+    return new_graphics;
+
+}
+
+static void graphics_destroy (Graphics *graphics) {
+
+    if (graphics) {
+        if (graphics->sprite) sprite_destroy (graphics->sprite);
+        if (graphics->spriteSheet) sprite_sheet_destroy (graphics->spriteSheet);
+
+        free (graphics);
+    }
+
+}
+
+void graphics_set_sprite (Graphics *graphics, const char *filename) {
+
+    if (graphics && filename) {
+        graphics->sprite = sprite_load (filename, main_renderer);
+        graphics->spriteSheet = NULL;
+        graphics->multipleSprites = false;
+    }
+
+}
+
+void graphics_set_sprite_sheet (Graphics *graphics, const char *filename) {
+
+    if (graphics && filename) {
+        graphics->sprite = NULL;
+        graphics->spriteSheet = sprite_sheet_load (filename, main_renderer);
+        graphics->multipleSprites = true;
+    }
+
+}
+
+// FIXME:
+
+/* static BoxCollider *collider_box_new (u32 objectID) {
+
+    BoxCollider *new_collider = (BoxCollider *) malloc (sizeof (BoxCollider));
+    if (new_collider) {
+        new_collider->x = new_collider->y = 0;
+        new_collider->w = new_collider->h = 0;
+    }
+
+    return new_collider;
+
+} */
+
+/* void collider_box_init (u32 x, u32 y, u32 w, u32 h) {}
+
+bool collider_box_collision (const BoxCollider *a, const BoxCollider *b) {
+
+    if (a && b) 
+        if (a->x + a->w >= b->x &&
+            b->x + b->w >= a->x &&
+            a->y + a->h >= b->y &&
+            b->y + b->h >= a->y)
+                return true;
+
+    return false;
+
+}
+
+static void collider_box_destroy (BoxCollider *box) { if (box) free (box); } */
+
 #pragma endregion
 
 #pragma region GAME OBJECTS
