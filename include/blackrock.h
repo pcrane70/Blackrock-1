@@ -34,6 +34,16 @@ typedef unsigned char asciiChar;
 
 #define THREAD_OK   0
 
+/*** PLATFORM ***/
+
+#if defined (_WIN32)
+    #define WINDOWS
+#elif defined (__APPLE__)
+    #define MACOS
+#else
+    #define LINUX
+#endif
+
 /*** MULTIPLAYER ***/
 
 #include "cerver/client.h"
