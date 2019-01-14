@@ -20,6 +20,214 @@
 #include "cerver/client.h"
 #include "utils/log.h"
 
+// FIXME:
+#pragma region COMPONENTS 
+
+#pragma endregion
+
+#pragma region GAME OBJECTS
+
+static GameObject **gameObjects;
+static u32 max_gos;
+static u32 curr_max_objs;
+static u32 new_go_id;
+
+static bool game_objects_realloc (void) {
+
+    u32 new_max_gos = curr_max_objs * 2;
+
+    gameObjects = realloc (gameObjects, new_max_gos * sizeof (GameObject *));
+
+    if (gameObjects) {
+        max_gos = new_max_gos;
+        return true;
+    }
+
+    return false;
+
+}
+
+// init our game objects array
+static u8 game_objects_init_all (void) {
+
+    gameObjects = (GameObject **) calloc (DEFAULT_MAX_GOS, sizeof (GameObject *));
+    if (gameObjects) {
+        for (u32 i = 0; i < DEFAULT_MAX_GOS; i++) gameObjects[i] = NULL;
+
+        max_gos = DEFAULT_MAX_GOS;
+        curr_max_objs = 0;
+        new_go_id = 0;
+
+        return 0;
+    }
+
+    return 1;
+
+}
+
+static i32 game_object_get_free_spot (void) {
+
+    for (u32 i = 0; i < curr_max_objs; i++)
+        if (gameObjects[i]->id == -1)
+            return i;
+
+    return -1;
+
+}
+
+static void game_object_init (GameObject *go, u32 id, const char *name, const char *tag) {
+
+    if (go) {
+        go->id = id;
+
+        if (name) {
+            go->name = (char *) calloc (strlen (name) + 1, sizeof (char));
+            strcpy (go->name, name);
+        }
+
+        else go->name = NULL;
+
+        if (tag) {
+            go->tag = (char *) calloc (strlen (name) + 1, sizeof (char));
+            strcpy (go->tag, tag);
+        }
+
+        else go->tag = NULL;
+
+        for (u8 i = 0; i < COMP_COUNT; i++) go->components[i] = NULL;
+
+        go->children = NULL;
+
+        go->update = NULL;
+    }
+
+}
+
+// game object constructor
+GameObject *game_object_new (const char *name, const char *tag) {
+
+    GameObject *new_go = NULL;
+
+    // first check if we have a reusable go in the array
+    i32 spot = game_object_get_free_spot ();
+
+    if (spot >= 0) {
+        new_go = gameObjects[spot];
+        game_object_init (new_go, spot, name, tag);
+    } 
+
+    else {
+        if (new_go_id >= max_gos) game_objects_realloc ();
+
+        new_go = (GameObject *) malloc (sizeof (GameObject));
+        if (new_go) {
+            game_object_init (new_go, new_go_id, name, tag);
+            gameObjects[new_go->id] = new_go;
+            new_go_id++;
+            curr_max_objs++;
+        }
+    } 
+
+    return new_go;
+
+}
+
+void game_object_add_child (GameObject *parent, GameObject *child) {
+
+    if (parent && child) {
+        if (!parent->children) parent->children = llist_init (NULL);
+        llist_insert_next (parent->children, llist_end (parent->children), child);
+    }
+
+}
+
+// TODO:
+void game_object_remove_child (GameObject *parent, GameObject *child) {}
+
+// FIXME:
+// mark as inactive or reusable the game object
+static void game_object_destroy (GameObject *go) {
+
+    if (go) {
+        go->id = -1;
+        go->update = NULL;
+
+        if (go->name) free (go->name);
+        if (go->tag) free (go->tag);
+
+        if (go->children) free (go->children);
+
+        // individually destroy each component
+        /* transform_destroy ((Transform *) go->components[TRANSFORM_COMP]);
+        graphics_destroy ((Graphics *) go->components[GRAPHICS_COMP]);
+        animator_destroy ((Animator *) go->components[ANIMATOR_COMP]);
+
+        player_destroy_comp ((Player *) go->components[PLAYER_COMP]); */
+    }
+
+}
+
+// FIXME:
+static void game_object_delete (GameObject *go) {
+
+    if (go) {
+        go->update = NULL;
+
+        // individually destroy each component
+        /* transform_destroy ((Transform *) go->components[TRANSFORM_COMP]);
+        graphics_destroy ((Graphics *) go->components[GRAPHICS_COMP]);
+        animator_destroy ((Animator *) go->components[ANIMATOR_COMP]);
+
+        player_destroy_comp ((Player *) go->components[PLAYER_COMP]); */
+
+        if (go->name) free (go->name);
+        if (go->tag) free (go->tag);
+
+        free (go);
+    }
+
+}
+
+// FIXME:
+// TODO: implement object pooling for components
+void *game_object_add_component (GameObject *go, GameComponent component) {
+
+    void *retval = NULL;
+
+    if (go) {
+        /* switch (component) {
+            case TRANSFORM_COMP: 
+                retval = go->components[component] = transform_new (go->id); 
+                break;
+            case GRAPHICS_COMP: 
+                retval = go->components[component] = graphics_new (go->id); 
+                break;
+            case ANIMATOR_COMP: 
+                retval = go->components[component] = animator_new (go->id); 
+                break;
+
+            case PLAYER_COMP: 
+                retval = go->components[component] = player_create_comp (go->id); 
+                go->update = player_update;
+                break;
+
+            default: break;
+        } */
+    }
+
+    return retval;
+
+}
+
+void *game_object_get_component (GameObject *go, GameComponent component) {
+
+    if (go) return go->components[component];
+
+}
+
+#pragma endregion
+
+
 /*** WORLD STATE ***/
 
 // Components

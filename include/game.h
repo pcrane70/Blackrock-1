@@ -5,10 +5,35 @@
 
 #include "map.h"    // for Point
 
+#include "utils/llist.h"
 #include "utils/dlist.h"
 #include "utils/objectPool.h"
 
+/*** GAME OBJECTS ***/
+
+#define DEFAULT_MAX_GOS     200
+
 #define COMP_COUNT      7
+
+typedef struct GameObject {
+    
+    i32 id;
+    // FIXME: i dont want this here!!!
+    u32 dbId;   // 06/09/2018 -- we need to this somewhere
+
+    char *name;
+    char *tag;
+    void *components[COMP_COUNT];
+
+    LList *children;
+    void (*update)(void *data);
+
+} GameObject;
+
+extern GameObject *game_object_new (const char *name, const char *tag);
+extern void game_object_add_child (GameObject *parent, GameObject *child);
+
+/*** COMPONENTS ***/
 
 typedef enum GameComponent {
 
@@ -21,17 +46,6 @@ typedef enum GameComponent {
     LOOT
 
 } GameComponent;
-
-typedef struct GameObject {
-    
-    u32 id;
-    u32 dbId;   // 06/09/2018 -- we need to this somewhere
-    void *components[COMP_COUNT];
-
-} GameObject;
-
-
-/*** COMPONENTS ***/
 
 #define UNSET_LAYER     0
 #define GROUND_LAYER    1
