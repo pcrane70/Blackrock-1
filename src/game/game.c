@@ -1,9 +1,14 @@
-/*** GAME MANAGER ***/
+#include "blackrock.h"
+
+#ifdef LINUX
 #include <pthread.h>
+#endif
+
 #include <assert.h>
 
-#include "blackrock.h"
 #include "game/game.h"
+#include "game/camera.h"
+
 #include "player.h"
 #include "item.h"
 #include "map.h"
@@ -330,7 +335,7 @@ GameState *game_state = NULL;
 
 // TODO: this is only for testing
 // Map *game_map = NULL;
-// Camera *game_camera = NULL;
+Camera *game_camera = NULL;
 
 // FIXME: init the map
 static u8 game_init (void) {
@@ -342,7 +347,7 @@ static u8 game_init (void) {
 
     // main_player_go = player_init ();
 
-    // game_camera = camera_new (SCREEN_WIDTH, SCREEN_HEIGHT);
+    game_camera = camera_new (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
     // // camera_set_center (game_camera, 1600, 900);
     // camera_set_center (game_camera, 0, 0);
     // FIXME:
@@ -371,11 +376,10 @@ static void game_update (void) {
     
 }
 
-// FIXME: components
 // FIXME: we need to implement occlusion culling!
 static void game_render (void) {
 
-    /* Transform *transform = NULL;
+    Transform *transform = NULL;
     Graphics *graphics = NULL;
     for (u32 i = 0; i < curr_max_objs; i++) {
         transform = (Transform *) game_object_get_component (gameObjects[i], TRANSFORM_COMP);
@@ -392,14 +396,14 @@ static void game_render (void) {
                 transform->position.x, transform->position.y, 
                 graphics->flip);
         }
-    } */
+    }
 
 }
 
 // FIXME:
 void game_cleanUp (void) {
 
-    // camera_destroy (game_camera);
+    camera_destroy (game_camera);
 
     // map_destroy (game_map);
 

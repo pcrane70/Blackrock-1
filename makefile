@@ -7,7 +7,10 @@ MATH = -lm
 PTHREAD := -l pthread
 SQLITE3 := -l sqlite3
 
-DEFINES = $(BLACK_DEBUG) $(MULTIPLAYER) $(CLIENT_DEBUG)
+DEFINES = $(BLACK_DEBUG) $(MULTIPLAYER) $(CLIENT_DEBUG) $(DEV)
+
+# development
+DEVELOPMENT = -D DEV
 
 # additional blackrock info
 BLACK_DEBUG = -D BLACK_DEBUG

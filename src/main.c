@@ -134,7 +134,7 @@ int main (void) {
 
     // FIXME: I dont want these here!
     // FIXME: cleanup
-    // game_cleanUp ();
+    game_cleanUp ();
     // ui_destroy ();
     video_destroy_main ();
     SDL_Quit ();
