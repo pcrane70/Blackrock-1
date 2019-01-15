@@ -8,6 +8,10 @@
 #include "item.h"
 #include "map.h"
 
+#include "engine/renderer.h"
+#include "engine/textures.h"
+#include "engine/animation.h"
+
 #include "utils/objectPool.h"
 
 #include "utils/myUtils.h"
@@ -20,7 +24,6 @@
 #include "cerver/client.h"
 #include "utils/log.h"
 
-// FIXME:
 #pragma region COMPONENTS 
 
 static Transform *transform_new (u32 objectID) {
@@ -87,7 +90,7 @@ void graphics_set_sprite_sheet (Graphics *graphics, const char *filename) {
 
 }
 
-// FIXME:
+// FIXME: Add colliders logic!
 
 /* static BoxCollider *collider_box_new (u32 objectID) {
 
@@ -99,9 +102,9 @@ void graphics_set_sprite_sheet (Graphics *graphics, const char *filename) {
 
     return new_collider;
 
-} */
+}
 
-/* void collider_box_init (u32 x, u32 y, u32 w, u32 h) {}
+void collider_box_init (u32 x, u32 y, u32 w, u32 h) {}
 
 bool collider_box_collision (const BoxCollider *a, const BoxCollider *b) {
 
@@ -239,7 +242,6 @@ void game_object_add_child (GameObject *parent, GameObject *child) {
 // TODO:
 void game_object_remove_child (GameObject *parent, GameObject *child) {}
 
-// FIXME:
 // mark as inactive or reusable the game object
 static void game_object_destroy (GameObject *go) {
 
@@ -253,27 +255,26 @@ static void game_object_destroy (GameObject *go) {
         if (go->children) free (go->children);
 
         // individually destroy each component
-        /* transform_destroy ((Transform *) go->components[TRANSFORM_COMP]);
+        transform_destroy ((Transform *) go->components[TRANSFORM_COMP]);
         graphics_destroy ((Graphics *) go->components[GRAPHICS_COMP]);
         animator_destroy ((Animator *) go->components[ANIMATOR_COMP]);
 
-        player_destroy_comp ((Player *) go->components[PLAYER_COMP]); */
+        player_destroy_comp ((Player *) go->components[PLAYER_COMP]);
     }
 
 }
 
-// FIXME:
 static void game_object_delete (GameObject *go) {
 
     if (go) {
         go->update = NULL;
 
         // individually destroy each component
-        /* transform_destroy ((Transform *) go->components[TRANSFORM_COMP]);
+        transform_destroy ((Transform *) go->components[TRANSFORM_COMP]);
         graphics_destroy ((Graphics *) go->components[GRAPHICS_COMP]);
         animator_destroy ((Animator *) go->components[ANIMATOR_COMP]);
 
-        player_destroy_comp ((Player *) go->components[PLAYER_COMP]); */
+        player_destroy_comp ((Player *) go->components[PLAYER_COMP]);
 
         if (go->name) free (go->name);
         if (go->tag) free (go->tag);
@@ -283,14 +284,13 @@ static void game_object_delete (GameObject *go) {
 
 }
 
-// FIXME:
 // TODO: implement object pooling for components
 void *game_object_add_component (GameObject *go, GameComponent component) {
 
     void *retval = NULL;
 
     if (go) {
-        /* switch (component) {
+        switch (component) {
             case TRANSFORM_COMP: 
                 retval = go->components[component] = transform_new (go->id); 
                 break;
@@ -307,7 +307,7 @@ void *game_object_add_component (GameObject *go, GameComponent component) {
                 break;
 
             default: break;
-        } */
+        }
     }
 
     return retval;

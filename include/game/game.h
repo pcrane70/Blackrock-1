@@ -3,6 +3,7 @@
 
 #include "blackrock.h"
 
+#include "vector2d.h"
 #include "map.h"    // for Point
 
 #include "utils/llist.h"
@@ -80,15 +81,25 @@ extern void game_object_add_child (GameObject *parent, GameObject *child);
 
 typedef enum GameComponent {
 
-    POSITION = 0,
-    GRAPHICS,
-    PHYSICS,
-    MOVEMENT,
-    COMBAT,
-    EVENT,
-    LOOT
+    TRANSFORM_COMP = 0,
+    GRAPHICS_COMP,
+    ANIMATOR_COMP,
+    BOX_COLLIDER_COMP,
+
+    PLAYER_COMP,
 
 } GameComponent;
+
+extern void *game_object_add_component (GameObject *go, GameComponent component);
+extern void *game_object_get_component (GameObject *go, GameComponent component);
+// TODO: add remove component
+
+typedef struct Transform {
+
+    u32 goID;
+    Vector2D position;
+
+} Transform;
 
 typedef struct Position {
 
@@ -98,23 +109,55 @@ typedef struct Position {
 
 } Position;
 
-#define UNSET_LAYER     0
-#define GROUND_LAYER    1
-#define LOWER_LAYER     2
-#define MID_LAYER       3
-#define TOP_LAYER       4
+typedef enum Layer {
+
+    UNSET_LAYER = 0,
+    GROUND_LAYER = 1,
+    LOWER_LAYER = 2,
+    MID_LAYER = 3,
+    TOP_LAYER = 4,
+
+} Layer;
+
+typedef enum Flip {
+
+    NO_FLIP = 0x00000000,
+    FLIP_HORIZONTAL = 0x00000001,
+    FLIP_VERTICAL = 0x00000002
+
+} Flip;
 
 typedef struct Graphics {
 
-    u32 objectId;
-    asciiChar glyph;
-    u32 fgColor;
-    u32 bgColor;
+    u32 goID;
+
+    Sprite *sprite;
+    SpriteSheet *spriteSheet;
+
+    u32 x_sprite_offset, y_sprite_offset;
+    bool multipleSprites;
+    Layer layer; 
+    Flip flip;
     bool hasBeenSeen;
     bool visibleOutsideFov;
-    char *name;     // 19/08/2018 -- 16:47
 
 } Graphics;
+
+extern void graphics_set_sprite (Graphics *graphics, const char *filename);
+extern void graphics_set_sprite_sheet (Graphics *graphics, const char *filename);
+
+// old!
+// typedef struct Graphics {
+
+//     u32 objectId;
+//     asciiChar glyph;
+//     u32 fgColor;
+//     u32 bgColor;
+//     bool hasBeenSeen;
+//     bool visibleOutsideFov;
+//     char *name;     // 19/08/2018 -- 16:47
+
+// } Graphics;
 
 typedef struct Physics {
 
