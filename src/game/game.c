@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "blackrock.h"
-#include "game.h"
+#include "game/game.h"
 #include "player.h"
 #include "item.h"
 #include "map.h"
@@ -318,6 +318,154 @@ void *game_object_get_component (GameObject *go, GameComponent component) {
 
     if (go) return go->components[component];
 
+}
+
+#pragma endregion
+
+/*** GAME STATE ***/
+
+#pragma region GAME STATE
+
+GameState *game_state = NULL;
+
+// TODO: this is only for testing
+// Map *game_map = NULL;
+// Camera *game_camera = NULL;
+
+// FIXME: init the map
+static u8 game_init (void) {
+
+    game_objects_init_all ();
+
+    // game_map = map_create (50, 30);
+    // game_map->cave = cave_generate (game_map, game_map->width, game_map->heigth, 100, 50);
+
+    // main_player_go = player_init ();
+
+    // game_camera = camera_new (SCREEN_WIDTH, SCREEN_HEIGHT);
+    // // camera_set_center (game_camera, 1600, 900);
+    // camera_set_center (game_camera, 0, 0);
+    // FIXME:
+    // camera_set_target ((Transform *) game_object_get_component (main_player_go, TRANSFORM_COMP));
+
+    return 0;
+
+}
+
+static void game_onEnter (void) { game_init (); }
+
+static void game_onExit (void) {}
+
+static void game_update (void) {
+
+    // update every game object
+    for (u32 i = 0; i < curr_max_objs; i++) {
+        if (gameObjects[i]->id != -1) {
+            if (gameObjects[i]->update)
+                gameObjects[i]->update (NULL);
+        }
+    }
+
+    // update the camera
+    camera_update (game_camera);
+    
+}
+
+// FIXME: components
+// FIXME: we need to implement occlusion culling!
+static void game_render (void) {
+
+    /* Transform *transform = NULL;
+    Graphics *graphics = NULL;
+    for (u32 i = 0; i < curr_max_objs; i++) {
+        transform = (Transform *) game_object_get_component (gameObjects[i], TRANSFORM_COMP);
+        graphics = (Graphics *) game_object_get_component (gameObjects[i], GRAPHICS_COMP);
+        if (transform && graphics) {
+            if (graphics->multipleSprites)
+                texture_draw_frame (game_camera, graphics->spriteSheet, 
+                transform->position.x, transform->position.y, 
+                graphics->x_sprite_offset, graphics->y_sprite_offset,
+                graphics->flip);
+            
+            else
+                texture_draw (game_camera, graphics->sprite, 
+                transform->position.x, transform->position.y, 
+                graphics->flip);
+        }
+    } */
+
+}
+
+// FIXME:
+void game_cleanUp (void) {
+
+    // camera_destroy (game_camera);
+
+    // map_destroy (game_map);
+
+    // clean up game objects
+    for (u32 i = 0; i < curr_max_objs; i++) 
+        if (gameObjects[i])
+            game_object_delete (gameObjects[i]);
+
+    free (gameObjects);
+
+    #ifdef DEV
+    logMsg (stdout, SUCCESS, GAME, "Done cleaning up game data!");
+    #endif
+    
+}
+
+GameState *game_state_new (void) {
+
+    GameState *new_game_state = (GameState *) malloc (sizeof (GameState));
+    if (new_game_state) {
+        new_game_state->state = IN_GAME;
+
+        new_game_state->update = game_update;
+        new_game_state->render = game_render;
+
+        new_game_state->onEnter = game_onEnter;
+        new_game_state->onExit = game_onExit;
+    }
+
+}
+
+#pragma endregion
+
+/*** GAME MANAGER ***/
+
+#pragma region GAME MANAGER
+
+GameManager *game_manager = NULL;
+
+GameState *menu_state = NULL;
+GameState *game_over_state =  NULL;
+
+GameManager *game_manager_new (GameState *initState) {
+
+    GameManager *new_game_manager = (GameManager *) malloc (sizeof (GameManager));
+    if (new_game_manager) {
+        new_game_manager->currState = initState;
+        if (new_game_manager->currState->onEnter)
+            new_game_manager->currState->onEnter ();
+    } 
+
+    return new_game_manager;
+
+}
+
+State game_state_get_current (void) { return game_manager->currState->state; }
+
+void game_state_change_state (GameState *newState) { 
+    
+    if (game_manager->currState->onExit)
+        game_manager->currState->onExit ();
+
+    game_manager->currState = newState; 
+    if (game_manager->currState->onEnter)
+        game_manager->currState->onEnter ();
+    
 }
 
 #pragma endregion

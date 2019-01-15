@@ -4,7 +4,7 @@
 
 #include "engine/renderer.h"
 
-#include "game.h"
+#include "game/game.h"
 
 #include "input.h"
 
@@ -76,11 +76,16 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 int main (void) {
 
     SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO);
-    video_init_main ("Blackrock");
+    video_init_main ("Blackrock Dungeons");
 
     SDL_Event event;
-    UIScreen *screenForInput;
 
+    // TODO: modify to the correct game state
+    game_state = game_state_new ();
+    game_manager = game_manager_new (game_state);
+
+    // FIXME: init new UI
+    UIScreen *screenForInput;
     extern UIScreen *menuScene (void);
     setActiveScene (menuScene ());
 

@@ -9,6 +9,49 @@
 #include "utils/dlist.h"
 #include "utils/objectPool.h"
 
+/*** GAME MANAGER ***/
+
+typedef enum State {
+
+    MENU = 0,
+    IN_GAME = 1,
+    GAME_OVER = 2,
+
+} State;
+
+typedef struct GameSate {
+
+    State state;
+
+    void (*update)(void);
+    void (*render)(void);
+
+    void (*onEnter)(void);
+    void (*onExit)(void);
+
+} GameState;
+
+typedef struct GameManager {
+
+    GameState *currState;
+
+} GameManager;
+
+extern GameManager *game_manager;
+
+extern GameManager *game_manager_new (GameState *initState);
+extern State game_state_get_current (void);
+extern void game_state_change_state (GameState *newState);
+
+// TODO: maybe add a function to register when we change to a state,
+// so that we can load many things with like an array of events?
+
+/*** GAME STATE ***/
+
+extern GameState *game_state;
+
+extern GameState *game_state_new (void);
+
 /*** GAME OBJECTS ***/
 
 #define DEFAULT_MAX_GOS     200
@@ -47,12 +90,6 @@ typedef enum GameComponent {
 
 } GameComponent;
 
-#define UNSET_LAYER     0
-#define GROUND_LAYER    1
-#define LOWER_LAYER     2
-#define MID_LAYER       3
-#define TOP_LAYER       4
-
 typedef struct Position {
 
     u32 objectId;
@@ -60,6 +97,12 @@ typedef struct Position {
     u8 layer;   
 
 } Position;
+
+#define UNSET_LAYER     0
+#define GROUND_LAYER    1
+#define LOWER_LAYER     2
+#define MID_LAYER       3
+#define TOP_LAYER       4
 
 typedef struct Graphics {
 
@@ -174,6 +217,7 @@ extern Pool *physPool;
 
 /*** GAME STATE ***/
 
+// FIXME: move this into our new game manager and states -- 16/01/2018
 extern void startGame (void);
 extern void initGame (void);
 
