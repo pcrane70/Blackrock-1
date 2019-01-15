@@ -15,17 +15,21 @@ Sprite *sprite_load (const char *filename, SDL_Renderer *renderer) {
         Sprite *new_sprite = (Sprite *) malloc (sizeof (Sprite));
         if (new_sprite) {
             new_sprite->texture = texture_load (filename, renderer);
-            texture_get_dimensions (new_sprite->texture, &new_sprite->w, &new_sprite->h) ;
+            if (new_sprite->texture) {
+                texture_get_dimensions (new_sprite->texture, &new_sprite->w, &new_sprite->h) ;
 
-            // dimensions
-            new_sprite->src_rect.w = new_sprite->dest_rect.w = new_sprite->w;
-            new_sprite->src_rect.h = new_sprite->dest_rect.h = new_sprite->h;
+                // dimensions
+                new_sprite->src_rect.w = new_sprite->dest_rect.w = new_sprite->w;
+                new_sprite->src_rect.h = new_sprite->dest_rect.h = new_sprite->h;
 
-            // positions
-            new_sprite->src_rect.x = new_sprite->dest_rect.x = 0;
-            new_sprite->src_rect.y = new_sprite->dest_rect.y = 0;
+                // positions
+                new_sprite->src_rect.x = new_sprite->dest_rect.x = 0;
+                new_sprite->src_rect.y = new_sprite->dest_rect.y = 0;
 
-            return new_sprite;
+                return new_sprite;
+            }
+
+            free (new_sprite);
         }
     }
 
@@ -70,18 +74,20 @@ SpriteSheet *sprite_sheet_load (const char *filename, SDL_Renderer *renderer) {
         SpriteSheet *new_sprite_sheet = (SpriteSheet *) malloc (sizeof (SpriteSheet));
         if (new_sprite_sheet) {
             new_sprite_sheet->texture = texture_load (filename, renderer);
-            texture_get_dimensions (new_sprite_sheet->texture, &new_sprite_sheet->w,
-                &new_sprite_sheet->h);
+            if (new_sprite_sheet->texture) {
+                texture_get_dimensions (new_sprite_sheet->texture, &new_sprite_sheet->w,
+                    &new_sprite_sheet->h);
 
-            // dimensions
-            new_sprite_sheet->src_rect.w = new_sprite_sheet->dest_rect.w = 0;
-            new_sprite_sheet->src_rect.h = new_sprite_sheet->dest_rect.h = 0;
+                // dimensions
+                new_sprite_sheet->src_rect.w = new_sprite_sheet->dest_rect.w = 0;
+                new_sprite_sheet->src_rect.h = new_sprite_sheet->dest_rect.h = 0;
 
-            // positions
-            new_sprite_sheet->src_rect.x = new_sprite_sheet->dest_rect.x = 0;
-            new_sprite_sheet->src_rect.y = new_sprite_sheet->dest_rect.y = 0;
+                // positions
+                new_sprite_sheet->src_rect.x = new_sprite_sheet->dest_rect.x = 0;
+                new_sprite_sheet->src_rect.y = new_sprite_sheet->dest_rect.y = 0;
 
-            return new_sprite_sheet;
+                return new_sprite_sheet;
+            }
         }
     }
 

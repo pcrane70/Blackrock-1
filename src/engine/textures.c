@@ -6,16 +6,23 @@
 #include "engine/renderer.h"
 #include "engine/sprites.h"
 
+#include "utils/log.h"
+#include "utils/myUtils.h"
+
 /*** TEXTURE MANAGER ***/
 
 SDL_Texture *texture_load (const char *filename, SDL_Renderer *renderer) {
 
     if (filename && renderer) {
         SDL_Surface *tmpSurface = IMG_Load (filename);
-        SDL_Texture *texture = SDL_CreateTextureFromSurface (renderer, tmpSurface);
-        SDL_FreeSurface (tmpSurface);
+        if (tmpSurface) {
+            SDL_Texture *texture = SDL_CreateTextureFromSurface (renderer, tmpSurface);
+            SDL_FreeSurface (tmpSurface);
 
-        return texture;
+            return texture;
+        }
+
+        logMsg (stderr, ERROR, NO_TYPE, createString ("Failed to load asset: %s!", filename));
     }
 
     return NULL;

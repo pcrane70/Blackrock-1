@@ -6,7 +6,7 @@
 
 #include <SDL2/SDL.h>
 
-#define FPS_LIMIT   20
+#define FPS_LIMIT   30
 
 #define DEFAULT_SCREEN_WIDTH    1920    
 #define DEFAULT_SCREEN_HEIGHT   1080
@@ -45,6 +45,16 @@ typedef unsigned char asciiChar;
     #define MACOS
 #else
     #define LINUX
+#endif
+
+/*** PATH ***/
+
+#ifdef DEV
+    #define ASSETS_PATH "../assets/"
+#elif PRODUCTION
+    #define ASSETS_PATH "./assets/"
+#else 
+    #define ASSETS_PATH "../assets/"
 #endif
 
 /*** MULTIPLAYER ***/

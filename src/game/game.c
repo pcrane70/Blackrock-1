@@ -345,7 +345,7 @@ static u8 game_init (void) {
     // game_map = map_create (50, 30);
     // game_map->cave = cave_generate (game_map, game_map->width, game_map->heigth, 100, 50);
 
-    // main_player_go = player_init ();
+    main_player_go = player_init ();
 
     game_camera = camera_new (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
     // // camera_set_center (game_camera, 1600, 900);

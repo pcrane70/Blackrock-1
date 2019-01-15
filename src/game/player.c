@@ -7,6 +7,8 @@
 #include "engine/sprites.h"
 #include "engine/animation.h"
 
+#include "utils/myUtils.h"
+
 // TODO: we need a better way to reference the players we know about
 GameObject *main_player_go = NULL;
 
@@ -97,14 +99,15 @@ Player *player_create_comp (u32 goID) {
 
 GameObject *player_init (void) {
 
-    GameObject *new_player_go = game_object_new ("player", NULL);
+    GameObject *new_player_go = game_object_new ("player", "player");
     if (new_player_go) {
         my_trans = (Transform *) game_object_add_component (new_player_go, TRANSFORM_COMP);
         my_graphics = (Graphics *) game_object_add_component (new_player_go, GRAPHICS_COMP);
         my_anim = (Animator *) game_object_add_component (new_player_go, ANIMATOR_COMP);
         mainPlayer = (Player *) game_object_add_component (new_player_go, PLAYER_COMP);
 
-        graphics_set_sprite_sheet (my_graphics, "./assets/artwork/adventurer-sheet.png");
+        graphics_set_sprite_sheet (my_graphics, 
+            createString ("%s%s", ASSETS_PATH, "artwork/adventurer-sheet.png"));
         sprite_sheet_set_sprite_size (my_graphics->spriteSheet, 50, 37);
         sprite_sheet_set_scale_factor (my_graphics->spriteSheet, 6);
         sprite_sheet_crop (my_graphics->spriteSheet);
