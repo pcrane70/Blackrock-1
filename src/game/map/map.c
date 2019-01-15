@@ -1,28 +1,22 @@
-/*** MAP ***/
-
-// This code handles the algorithms for generating random map levels and nothing more
-// we will eventually handle the creation of random dungeons, caves and forests and maybe other scenes
-
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
 
 #include "blackrock.h"
-#include "game.h"
 
-#include "room.h"
-#include "map.h"
+#include "game/game.h"
+#include "game/map/room.h"
+#include "game/map/map.h"
 
 #include "utils/dlist.h"
-
 #include "utils/myUtils.h"
 
+#pragma region DUNGEON
 
-/*** OTHER ***/
+// TODO: can we use it as an spawn?
+Coord getFreeSpot (bool **mapCells) {
 
-Point getFreeSpot (bool **mapCells) {
-
-    Point freeSpot;
+    Coord freeSpot;
 
     for (;;) {
         u32 freeX = (u32) randomInt (0, MAP_WIDTH - 1);
@@ -39,24 +33,20 @@ Point getFreeSpot (bool **mapCells) {
 
 }
 
-Point randomRoomPoint (Room *room) {
+static Coord dungeon_random_room_point (Room *room) {
 
     u32 px = (u32) (rand () % (room->w - 1)) + room->x;
     u32 py = (u32) (rand () % (room->h - 1)) + room->y;
 
-    // u32 px = randomInt (room->x, (room->x + room->w - 1));
-    // u32 py = randomInt (room->y, (room->y + room->h - 1));
-
-    Point randPoint = { px, py };
+    Coord randPoint = { px, py };
     return randPoint;
 
 }
 
-i32 roomWithPoint (Point pt, Room *first) {
+static i32 dungeon_room_with_point (Coord pt, Room *first) {
 
     i32 retVal = 0;
     Room *ptr = first;
-    // if (ptr == NULL) fprintf (stderr, "\nPassing a NULL rooms list!\n");
     while (ptr != NULL) {
         if ((ptr->x <= pt.x) && ((ptr->x + ptr->w) > pt.x) &&
         (ptr->y <= pt.y) && ((ptr->y + ptr->h) > pt.y)) 
@@ -70,9 +60,7 @@ i32 roomWithPoint (Point pt, Room *first) {
 
 }
 
-/*** CARVING ***/
-
-bool carveRoom (u32 x, u32 y, u32 w, u32 h, bool **mapCells) {
+static bool dungeon_carve_room (u32 x, u32 y, u32 w, u32 h, u8 **mapCells) {
 
     for (u8 i = x - 1; i < x + (w + 1); i++) 
         for (u8 j = y - 1; j < y + (h + 1); j++)
@@ -87,7 +75,7 @@ bool carveRoom (u32 x, u32 y, u32 w, u32 h, bool **mapCells) {
 
 }
 
-void carveCorridorHor (Point from, Point to, bool **mapCells) {
+static void dungeon_carve_corridor_hor (Coord from, Coord to, u8 **mapCells) {
 
     u32 first, last;
     if (from.x < to.x) {
@@ -105,7 +93,7 @@ void carveCorridorHor (Point from, Point to, bool **mapCells) {
 
 }
 
-void carveCorridorVer (Point from, Point to, bool **mapCells) {
+static void dungeon_carve_corridor_ver (Coord from, Coord to, u8 **mapCells) {
 
     u32 first, last;
     if (from.y < to.y) {
@@ -123,14 +111,10 @@ void carveCorridorVer (Point from, Point to, bool **mapCells) {
 
 }
 
-/*** SEGMENTS ***/ 
-
-void getSegments (DoubleList *segments, Point from, Point to, Room *firstRoom) {
-
-    // if (firstRoom == NULL) fprintf (stderr, "\nPassing a NULL room list!\n");
+static void dungeon_get_segments (DoubleList *segments, Coord from, Coord to, Room *firstRoom) {
 
     bool usingWayPoint = false;
-    Point waypoint = to;
+    Coord waypoint = to;
     if (from.x != to.x && from.y != to.y) {
         usingWayPoint = true;
         if (rand() % 2 == 0) {
@@ -144,7 +128,7 @@ void getSegments (DoubleList *segments, Point from, Point to, Room *firstRoom) {
         }
     }
 
-    Point curr = from;
+    Coord curr = from;
     bool horizontal = false;
     i8 step = 1;
     if (from.y == waypoint.y) {
@@ -155,7 +139,7 @@ void getSegments (DoubleList *segments, Point from, Point to, Room *firstRoom) {
     else if (from.y > waypoint.y) step = -1;
 
     i32 currRoom = roomWithPoint (curr, firstRoom);
-    Point lastPoint = from;
+    Coord lastPoint = from;
     bool done = false;
     Segment *turnSegment = NULL;
     while (!done) {
@@ -259,15 +243,15 @@ void getSegments (DoubleList *segments, Point from, Point to, Room *firstRoom) {
 
 }
 
-void carveSegments (DoubleList *hallways, bool **mapCells) {
+static void dungeon_carve_segments (DoubleList *hallways, u8 **mapCells) {
 
     ListElement *ptr = LIST_START (hallways);
     while (ptr != NULL) {
         Segment *seg = (Segment *) ptr->data;
 
         if (seg->hasWayPoint) {
-            Point p1 = seg->start;
-            Point p2 = seg->mid;
+            Coord p1 = seg->start;
+            Coord p2 = seg->mid;
 
             if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
             else carveCorridorHor (p1, p2, mapCells);
@@ -280,8 +264,8 @@ void carveSegments (DoubleList *hallways, bool **mapCells) {
         }
 
         else {
-            Point p1 = seg->start;
-            Point p2 = seg->end;
+            Coord p1 = seg->start;
+            Coord p2 = seg->end;
 
             if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
             else carveCorridorHor (p1, p2, mapCells);
@@ -292,51 +276,25 @@ void carveSegments (DoubleList *hallways, bool **mapCells) {
 
 }
 
-
-/*** DRAWING ***/
-
-Wall walls[MAX_WALLS];
-// Wall walls[MAP_WIDTH][MAP_HEIGHT];
-
-// TODO: what color do we want for walls?
-void createWall (u32 x, u32 y) {
-
-    Wall *new = &walls[wallCount]; 
-
-    new->x = x;
-    new->y = y;
-    // new->glyph = '#';
-    // new->visibleOutsideFov = true;
-    new->hasBeenSeen = false;
-    new->blocksMovement = true;
-    new->blocksSight = true;
-
-}
-
-
-/*** GENERATION ***/
-
-// Controls the algorithms for generating random levels with the desired data
-void generateMap (bool **mapCells) {
+static void dungeon_create (Dungeon *dungeon) {
 
     // carve out non-overlaping rooms that are randomly placed, and of random size
     bool roomsDone = false;
     Room *firstRoom = NULL;
-    unsigned int roomCount = 0;
+    u32 roomCount = 0;
     u32 cellsUsed = 0;
     
     // create room data
-    // fprintf (stdout, "Generating rooms...\n");
     while (!roomsDone) {
         // generate a random width/height for a room
-        u32 w = (u32) randomInt (5, 12);
-        u32 h = (u32) randomInt (5, 12);
+        u32 w = (u32) random_int_in_range (DUNGEON_ROOM_MIN_WIDTH, DUNGEON_ROOM_MAX_WIDTH);
+        u32 h = (u32) random_int_in_range (DUNGEON_ROOM_MIN_HEIGHT, DUNGEON_ROOM_MAX_HEIGHT);
 
         // generate random positions
-        u32 x = (u32) randomInt (1, MAP_WIDTH - w - 1);
-        u32 y = (u32) randomInt (1, MAP_HEIGHT - h - 1);
+        u32 x = (u32) random_int_in_range (1, dungeon->width - w - 1);
+        u32 y = (u32) random_int_in_range (1, dungeon->height - h - 1);
 
-        if (carveRoom (x, y, w, h, mapCells)) {
+        if (dungeon_carve_room (x, y, w, h, dungeon->map)) {
             Room roomData = { x, y, w, h, NULL };
             if (roomCount == 0) firstRoom = createRoomList (firstRoom, &roomData);
             else addRoom (firstRoom, &roomData);
@@ -345,19 +303,11 @@ void generateMap (bool **mapCells) {
             cellsUsed += (w * h);
         }
 
-        if (((float) cellsUsed / (float) (MAP_HEIGHT * MAP_WIDTH)) > 0.45) roomsDone = true;
-
+        if (((float) cellsUsed / (float) (dungeon->width * dungeon->height)) > dungeon->fillPercent) 
+            roomsDone = true;
     }
 
-    // This is a simple way of drawing corridors, is this a good way, 
-    // or do we need a more advanced system??
     // join all the rooms with corridors
-    // fprintf (stdout, "Generating corridors...\n");
-    
-    // creating corridors using the list of rooms
-    // 08/08/2018 -- 7:55
-    // I think we got it working the same way as the array, but we still need to tweak
-    // how the map generates in general..
     DoubleList *hallways = dlist_init (free);
 
     Room *ptr = firstRoom->next, *preptr = firstRoom;
@@ -365,13 +315,13 @@ void generateMap (bool **mapCells) {
         Room *from = preptr;
         Room *to = ptr;
 
-        Point fromPt = randomRoomPoint (from);
-        Point toPt = randomRoomPoint (to);
+        Coord fromPt = dungeon_random_room_point (from);
+        Coord toPt = dungeon_random_room_point (to);
 
         DoubleList *segments = dlist_init (free);
 
         // break the proposed hallway into segments
-        getSegments (segments, fromPt, toPt, firstRoom);
+        dungeon_get_segments (segments, fromPt, toPt, firstRoom);
 
         // traverse the segment's list and skip adding any segments
         // that join rooms that are already joined
@@ -410,7 +360,7 @@ void generateMap (bool **mapCells) {
     }
 
     // carve out new segments and add them to the hallways list
-    carveSegments (hallways, mapCells);
+    dungeon_carve_segments (hallways, dungeon->map);
 
     // cleanning up 
     firstRoom = deleteList (firstRoom);
@@ -418,28 +368,267 @@ void generateMap (bool **mapCells) {
 
 }
 
-/*** THREAD ***/
+// FIXME:!!
+static void dungeon_draw (Dungeon *dungeon) {
 
-unsigned int wallCount = 0;
 
-
-// TODO: add the floor
-void initMap (bool **mapCells) {
-
-    // mark all the cells as filled
-    for (u8 x = 0; x < MAP_WIDTH; x++) 
-        for (u8 y = 0; y < MAP_HEIGHT; y++) 
-            mapCells[x][y] = true;
-
-    wallCount = 0;
-
-    generateMap (mapCells);
-
-    // draw the map
-    for (u8 x = 0; x < MAP_WIDTH; x++)
-        for (u8 y = 0; y < MAP_HEIGHT; y++)
-            if (mapCells[x][y]) createWall (x, y), wallCount++;
-
-    fprintf (stdout, "Done creating the map!\n");
 
 }
+
+Dungeon *dungeon_generate (Map *map, u32 width, u32 height, u32 seed, float fillPercent) {
+
+    Dungeon *dungeon = (Dungeon *) malloc (sizeof (Dungeon));
+    if (dungeon) {
+        dungeon->width = width;
+        dungeon->height = height;
+
+        dungeon->map = (u8 **) calloc (width, sizeof (u8 *));
+        for (u16 i = 0; i < width; i++) dungeon->map[i] = (u8 *) calloc (height, sizeof (u8));
+
+        // mark all the cells as filled
+        for (u16 x = 0; x < width; x++) 
+            for (u16 y = 0; y < height; y++) 
+                dungeon->map[x][y] = 1;
+
+        if ((fillPercent < 0) || (fillPercent > 1))
+            dungeon->fillPercent = DUNGEON_FILL_PERCENT;
+
+        else dungeon->fillPercent = fillPercent;
+
+        if (seed <= 0) {
+            srand ((unsigned) time (NULL));
+            dungeon->seed = random_int_in_range (0, 1000000);
+            dungeon->useRandomSeed = true;
+        }
+
+        else {
+            dungeon->seed = seed;
+            dungeon->useRandomSeed = false;
+        } 
+
+        dungeon_create (dungeon);
+        dungeon_draw (dungeon);
+    }
+
+    return dungeon;
+
+}
+
+void dungeon_destroy (Dungeon *dungeon) {
+
+    if (dungeon) {
+        if (dungeon->map) free (dungeon->map);
+        free (dungeon);
+    }
+
+}
+
+#pragma endregion
+
+#pragma region CAVE ROOM
+
+// TODO:
+// FIXME: we need to fix how to free the tiles that are in multiple lists at a time
+static void cave_room_destroy (void *data) {
+
+    if (data) {
+        Room *room = (Room *) data;
+        free (room);
+    }
+
+}
+
+static CaveRoom *cave_room_create (LList *roomTiles, u32 **map) {
+
+    CaveRoom *room = (CaveRoom *) malloc (sizeof (CaveRoom));
+    if (room) {
+        room->tiles = roomTiles;
+        room->roomSize = llist_size (room->tiles);
+        room->connectedRooms = llist_init (cave_room_destroy);
+        room->edgeTiles = llist_init (free);
+
+        Coord *tile = NULL;
+        for (Node *n = llist_start (room->tiles); n != NULL; n = n->next) {
+            tile = llist_data (n);
+            for (u8 x = tile->x - 1; x <= tile->x + 1; x++) {
+                for (u8 y = tile->y - 1; y <= tile->y + 1; y++) {
+                    if (x == tile->x || y == tile->y)
+                        if (map[x][y] == 1)
+                            llist_insert_next (room->edgeTiles, llist_end (room->edgeTiles), tile);
+                }
+            }
+        }
+    }
+
+    return room;
+
+}
+
+#pragma endregion
+
+#pragma region CAVE
+
+static void cave_random_fill_map (Cave *cave) {
+
+    random_set_seed (cave->seed);
+
+    for (u32 x = 0; x < cave->width; x++) {
+        for (u32 y = 0; y < cave->heigth; y++) {
+            if (x == 0 || x == cave->width - 1 || y == 0 || y == cave->heigth - 1)
+                cave->map[x][y] = 1;
+
+            else 
+                cave->map[x][y] = (random_int_in_range (0, 100) < cave->fillPercent) ? 1 : 0;
+            
+        }
+    }
+
+}
+
+static bool cave_is_in_map_range (Cave *cave, i32 x, i32 y) {
+
+    return (x >= 0 && x < cave->width && y >= 0 && y < cave->heigth);
+
+}
+
+static u8 cave_get_surrounding_wall_count (Cave *cave, i32 gridX, i32 gridY) {
+
+    u8 wallCount = 0;
+    for (i32 neighbourX = gridX - 1; neighbourX <= gridX + 1; neighbourX++) {
+        for (i32 neighbourY = gridY - 1; neighbourY <= gridY + 1; neighbourY++) {
+            if (cave_is_in_map_range (cave, neighbourX, neighbourY)) {
+                if (neighbourX != gridX || neighbourY != gridY)
+                    wallCount += cave->map[neighbourX][neighbourY];
+            }
+
+            else wallCount++;
+                
+        }
+    }
+
+    return wallCount;
+
+}
+
+static void cave_smooth_map (Cave *cave) {
+
+    for (u32 x = 0; x < cave->width - 1; x++){
+        for (u32 y = 0; y < cave->heigth - 1; y++) {
+            u8 neighbourWallTiles = cave_get_surrounding_wall_count (cave, x, y);
+
+            if (neighbourWallTiles > 4) cave->map[x][y] = 1;
+            else if (neighbourWallTiles < 4) cave->map[x][y] = 0;
+        }
+    }
+
+}
+
+// FIXME: draw the correct tiles
+// TODO: create a more advanced system based on c sharp accent resources manager
+// TODO: also create a more advance system for multiple sprites and gameobjects for
+// destroying the map
+// TODO: create a parent gameobejct and names based on position
+// create a game object for each cave
+static void cave_draw (Map *map, Cave *cave) {
+
+    GameObject *go = NULL;
+    Transform *transform = NULL;
+    Graphics *graphics = NULL;
+    for (u32 y = 0; y < cave->heigth; y++) {
+        for (u32 x = 0; x < cave->width; x++) {
+            if (cave->map[x][y] == 1) {
+                go = game_object_new (NULL, NULL);
+                game_object_add_component (go, TRANSFORM_COMP);
+                game_object_add_component (go, GRAPHICS_COMP);
+
+                graphics = game_object_get_component (go, GRAPHICS_COMP);
+                graphics_set_sprite (graphics, 
+                    createString ("%s%s", ASSETS_PATH, "artwork/mapTile_087.png"));
+                transform = game_object_get_component (go, TRANSFORM_COMP);
+                transform->position.x = graphics->sprite->w * x;
+                transform->position.y = graphics->sprite->h * y;
+
+                map->go_map[x][y] = go;
+            }
+        }
+    }
+
+}
+
+Cave *cave_generate (Map *map, u32 width, u32 heigth, u32 seed, u32 fillPercent) {
+
+    Cave *cave = (Cave *) malloc (sizeof (Cave));
+    if (cave) {
+        cave->width = width;
+        cave->heigth = heigth;
+
+        cave->map = (u8 **) calloc (width, sizeof (u8 *));
+        for (u16 i = 0; i < width; i++) cave->map[i] = (u8 *) calloc (heigth, sizeof (u8));
+
+        cave->fillPercent = fillPercent;
+
+        if (seed <= 0) {
+            srand ((unsigned) time (NULL));
+            cave->seed = random_int_in_range (0, 100000);
+            cave->useRandomSeed = true;
+        } 
+
+        else {
+            cave->seed = seed;
+            cave->useRandomSeed = false;
+        } 
+        
+        cave_random_fill_map (cave);
+
+        for (u8 i = 0; i < 3; i++) cave_smooth_map (cave);
+
+        cave_draw (map, cave);
+    }
+
+    return cave;
+
+}
+
+void cave_destroy (Cave *cave) {
+
+    if (cave) {
+        if (cave->map) free (cave->map);
+        free (cave);
+    }
+
+}
+
+#pragma endregion
+
+#pragma region MAP
+
+Map *map_create (u32 width, u32 heigth) {
+
+    Map *new_map = (Map *) malloc (sizeof (Map));
+    if (new_map) {
+        new_map->width = width;
+        new_map->heigth = heigth;
+
+        new_map->go_map = (GameObject ***) calloc (width, sizeof (GameObject **));
+        for (u16 i = 0; i < new_map->width; i++) 
+            new_map->go_map[i] = (GameObject **) calloc (new_map->heigth, sizeof (GameObject *));
+
+        new_map->cave = NULL;
+    }
+
+    return new_map;
+
+}
+
+void map_destroy (Map *map) {
+
+    if (map) {
+        if (map->go_map) free (map->go_map);
+        if (map->cave) cave_destroy (map->cave);
+
+        free (map);
+    }
+
+}
+
+#pragma endregion

@@ -1,30 +1,29 @@
 #ifndef MAP_H_
 #define MAP_H_
 
-#include "game.h"
+#include <stdbool.h>
 
-// 05/08/2018 -- 16:28
-// TODO: do we really need a coord system for a better programming experience??
-// also think about how do we want to implement open areas later??
-typedef struct Point {
+#include "blackrock.h"
 
-    i32 x, y;
+#include "game/game.h"
 
-}  Point;
+#include "utils/llist.h"
+
+typedef struct Coord {
+
+    i32 x;
+    i32 y;
+
+} Coord;
 
 typedef struct Segment {
 
-    Point start, mid, end;
+    Coord start, mid, end;
     i32 roomFrom, roomTo;
     bool hasWayPoint;
 
 } Segment;
 
-// TODO: lets try with this number...
-#define MAX_WALLS   2000
-
-// 19/08/2018 -- 17:51 -- we are not adding layers to the wall beacuse we render them
-// slightly differently
 typedef struct Wall {
 
     u32 x, y; // position
@@ -40,13 +39,61 @@ typedef struct Wall {
 
 } Wall;
 
-// TODO: we are testing having the walls in a separte array in memory for conviniece
-// for the other systems tha we want to implement in the other gameObjects...
-// extern Wall walls[MAP_WIDTH][MAP_HEIGHT];
+#define DUNGEON_ROOM_MIN_WIDTH      5
+#define DUNGEON_ROOM_MAX_WIDTH      5
 
-extern Wall walls[MAX_WALLS];
+#define DUNGEON_ROOM_MIN_HEIGHT     12
+#define DUNGEON_ROOM_MAX_HEIGHT     12
 
-extern void initMap (bool **mapCells);
-extern Point getFreeSpot (bool **mapCells);
+#define DUNGEON_FILL_PERCENT        0.45
+
+typedef struct Dungeon {
+
+    u32 width, height;
+    bool useRandomSeed;
+    u32 seed;
+    u32 fillPercent;
+    u8 **map;
+
+} Dungeon;
+
+extern Dungeon *dungeon_generate (Map *map, u32 width, u32 heigth, u32 seed, float fillPercent);
+extern void dungeon_destroy (Dungeon *dungeon);
+
+typedef struct CaveRoom {
+
+    LList *tiles;
+    LList *edgeTiles;
+    LList *connectedRooms;
+
+    u16 roomSize;
+    bool isMainRoom;
+    bool isAccessibleFromMain;
+
+} CaveRoom;
+
+typedef struct Cave {
+
+    u32 width, heigth;
+    bool useRandomSeed;
+    u32 seed;
+    u32 fillPercent;
+    u8 **map;
+
+} Cave;
+
+typedef struct Map {
+
+    u32 width, heigth;
+    GameObject ***go_map;
+    Cave *cave;
+
+} Map;
+
+extern Cave *cave_generate (Map *map, u32 width, u32 heigth, u32 seed, u32 fillPercent);
+extern void cave_destroy (Cave *cave);
+
+extern Map *map_create (u32 width, u32 height);
+extern void map_destroy (Map *map);
 
 #endif

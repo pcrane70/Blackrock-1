@@ -3,7 +3,8 @@
 
 #include <stdbool.h>
 
-extern int randomInt (int min, int max);
+extern void random_set_seed (unsigned int seed);
+extern int random_int_in_range (int min, int max);
 
 extern int xtoi (char *hexString);
 extern char* itoa (int i, char b[]);

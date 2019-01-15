@@ -4,10 +4,12 @@
 #include <string.h>
 #include <assert.h>
 
-// TODO: is there a better way of generating random ints??
-unsigned int randomInt (unsigned int min, unsigned int max) {
+// init psuedo random generator based on our seed
+void random_set_seed (unsigned int seed) { srand (seed); }
 
-    unsigned int low = 0, high = 0;
+int random_int_in_range (int min, int max) {
+
+    int low = 0, high = 0;
 
     if (min < max) {
         low = min;
@@ -80,8 +82,6 @@ bool system_is_little_endian (void) {
 /*** STRINGS ***/
 
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 char *createString (const char *stringWithFormat, ...) {
 
