@@ -17,9 +17,9 @@ void render (void) {
 
     SDL_RenderClear (main_renderer);
 
-    // render gameobjects
-    // if (game_manager->currState->render)
-    //     game_manager->currState->render ();
+    // render current game screen
+    if (game_manager->currState->render)
+        game_manager->currState->render ();
 
     // render game UI
     // TextBox *textBox = NULL;
@@ -41,6 +41,30 @@ void render (void) {
     // ui_cursor_draw ();
 
     SDL_RenderPresent (main_renderer);
+
+}
+
+/*** OLD WAY OF RENDERING ***/
+
+/*** SCREEN ***/
+
+// FIXME: move this to a separate file
+// TODO: are we cleanning up the console and the screen??
+// do we want that to happen?
+void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
+
+    // render the views from back to front for the current screen
+    UIView *v = NULL;
+    for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
+        v = (UIView *) LIST_DATA (e);
+        clearConsole (v->console);
+        v->render (v->console);
+        SDL_UpdateTexture (screen, v->pixelRect, v->console->pixels, v->pixelRect->w * sizeof (u32));
+    }
+
+    SDL_RenderClear (renderer);
+    SDL_RenderCopy (renderer, screen, NULL, NULL);
+    SDL_RenderPresent (renderer);
 
 }
 

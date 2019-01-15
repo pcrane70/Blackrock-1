@@ -28,28 +28,6 @@ void die (const char *error) {
 
 };
 
-/*** SCREEN ***/
-
-// FIXME: move this to a separate file
-// TODO: are we cleanning up the console and the screen??
-// do we want that to happen?
-void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
-
-    // render the views from back to front for the current screen
-    UIView *v = NULL;
-    for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
-        v = (UIView *) LIST_DATA (e);
-        clearConsole (v->console);
-        v->render (v->console);
-        SDL_UpdateTexture (screen, v->pixelRect, v->console->pixels, v->pixelRect->w * sizeof (u32));
-    }
-
-    SDL_RenderClear (renderer);
-    SDL_RenderCopy (renderer, screen, NULL, NULL);
-    SDL_RenderPresent (renderer);
-
-}
-
 /*** CLEAN UP ***/
 
 extern void cleanUpMenuScene (void);
@@ -103,7 +81,7 @@ int main (void) {
     while (running) {
         frameStart = SDL_GetTicks ();
         
-        while (SDL_PollEvent (&event) != 0) {
+        /* while (SDL_PollEvent (&event) != 0) {
             if (event.type == SDL_QUIT) {
                 running = false;
                 inGame = false;
@@ -120,7 +98,18 @@ int main (void) {
         }
 
         // render the correct screen
-        // renderScreen (renderer, screen, activeScene);
+        // renderScreen (renderer, screen, activeScene); */
+
+        /*** NEW LOOP ***/
+
+        input_handle (event);
+
+        // TODO: create a separate thread
+        if (game_manager->currState->update)
+            game_manager->currState->update ();
+
+        // rendering is done in the main thread
+        render ();
 
         // limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
@@ -141,9 +130,14 @@ int main (void) {
     //     if (pthread_join (gameThread, NULL) != THREAD_OK)
     //         logMsg (stderr, ERROR, NO_TYPE, "Failed to join game thread!");
 
-    if (multiplayer) multiplayer_stop ();
+    // if (multiplayer) multiplayer_stop ();
 
+    // FIXME: I dont want these here!
     // FIXME: cleanup
+    // game_cleanUp ();
+    // ui_destroy ();
+    video_destroy_main ();
+    SDL_Quit ();
 
     return 0;
 
