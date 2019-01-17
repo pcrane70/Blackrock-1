@@ -368,10 +368,30 @@ static void dungeon_create (Dungeon *dungeon) {
 
 }
 
-// FIXME:!!
-static void dungeon_draw (Dungeon *dungeon) {
+// FIXME: add the correct sprites with the resources manager
+static void dungeon_draw (Map *map, Dungeon *dungeon) {
 
+    GameObject *go = NULL;
+    Transform *transform = NULL;
+    Graphics *graphics  = NULL;
+    for (u32 y = 0; y < dungeon->height; y++) {
+        for (u32 x = 0; x < dungeon->width; x++) {
+            if (dungeon->map[x][y]) {
+                go = game_object_new (NULL, "map");
+                graphics = game_object_add_component (go, GRAPHICS_COMP);
+                if (graphics)
+                    graphics_set_sprite (graphics,
+                        createString ("%s%s", ASSETS_PATH, "artwork/mapTile_087.png"));
+                transform = game_object_add_component (go, TRANSFORM_COMP);
+                if (transform) {
+                    transform->position.x = graphics->sprite->w * x;
+                    transform->position.y = graphics->sprite->h * y;
+                }
 
+                map->go_map[x][y] = go;    
+            }
+        }
+    }
 
 }
 
@@ -407,7 +427,7 @@ Dungeon *dungeon_generate (Map *map, u32 width, u32 height, u32 seed, float fill
         } 
 
         dungeon_create (dungeon);
-        dungeon_draw (dungeon);
+        dungeon_draw (map, dungeon);
     }
 
     return dungeon;
@@ -537,16 +557,17 @@ static void cave_draw (Map *map, Cave *cave) {
     for (u32 y = 0; y < cave->heigth; y++) {
         for (u32 x = 0; x < cave->width; x++) {
             if (cave->map[x][y] == 1) {
-                go = game_object_new (NULL, NULL);
-                game_object_add_component (go, TRANSFORM_COMP);
-                game_object_add_component (go, GRAPHICS_COMP);
-
-                graphics = game_object_get_component (go, GRAPHICS_COMP);
-                graphics_set_sprite (graphics, 
-                    createString ("%s%s", ASSETS_PATH, "artwork/mapTile_087.png"));
-                transform = game_object_get_component (go, TRANSFORM_COMP);
-                transform->position.x = graphics->sprite->w * x;
-                transform->position.y = graphics->sprite->h * y;
+                go = game_object_new (NULL, "map");
+                graphics = game_object_add_component (go, GRAPHICS_COMP);
+                if (graphics) 
+                    graphics_set_sprite (graphics, 
+                        createString ("%s%s", ASSETS_PATH, "artwork/mapTile_087.png"));
+                
+                transform = game_object_add_component (go, TRANSFORM_COMP);
+                if (transform) {
+                    transform->position.x = graphics->sprite->w * x;
+                    transform->position.y = graphics->sprite->h * y;
+                }
 
                 map->go_map[x][y] = go;
             }

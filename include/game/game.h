@@ -59,6 +59,7 @@ extern GameState *game_state_new (void);
 
 #define COMP_COUNT      7
 
+// FIXME: better tag manager!! -> create a list for each tag?
 typedef struct GameObject {
     
     i32 id;
