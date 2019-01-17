@@ -244,11 +244,31 @@ void game_object_add_child (GameObject *parent, GameObject *child) {
 
 }
 
-// TODO:
-void game_object_remove_child (GameObject *parent, GameObject *child) {}
+// FIXME:
+GameObject *game_object_remove_child (GameObject *parent, GameObject *child) {
+
+    if (parent && child) {
+        if (parent->children) { 
+            GameObject *go = NULL;
+            for (Node *node = LIST_START (parent->children); node != NULL; node = node->next) {
+                go = (GameObject *) node->data;
+                if (go) {
+                    if (go->id == child->id) {
+                        // FIXME:
+                        // remove child from children
+                        // return the child
+                    }
+                }
+            }
+        }
+    }
+
+    return NULL;
+
+}
 
 // mark as inactive or reusable the game object
-static void game_object_destroy (GameObject *go) {
+void game_object_destroy (GameObject *go) {
 
     if (go) {
         go->id = -1;
@@ -322,6 +342,31 @@ void *game_object_add_component (GameObject *go, GameComponent component) {
 void *game_object_get_component (GameObject *go, GameComponent component) {
 
     if (go) return go->components[component];
+
+}
+
+void game_object_remove_component (GameObject *go, GameComponent component) {
+
+    if (go) {
+        switch (component) {
+            case TRANSFORM_COMP: 
+                transform_destroy (go->components[component]); 
+                break;
+            case GRAPHICS_COMP: 
+                graphics_destroy (go->components[component]);
+                break;
+            case ANIMATOR_COMP: 
+                animator_destroy (go->components[component]);
+                break;
+
+            case PLAYER_COMP: 
+                player_destroy (go->components[component]);
+                go->update = NULL;
+                break;
+
+            default: break;
+        }
+    }
 
 }
 

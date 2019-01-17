@@ -75,7 +75,10 @@ typedef struct GameObject {
 } GameObject;
 
 extern GameObject *game_object_new (const char *name, const char *tag);
+extern void game_object_destroy (GameObject *go);
+
 extern void game_object_add_child (GameObject *parent, GameObject *child);
+extern GameObject *game_object_remove_child (GameObject *parent, GameObject *child);
 
 /*** COMPONENTS ***/
 
@@ -92,7 +95,7 @@ typedef enum GameComponent {
 
 extern void *game_object_add_component (GameObject *go, GameComponent component);
 extern void *game_object_get_component (GameObject *go, GameComponent component);
-// TODO: add remove component
+extern void game_object_remove_component (GameObject *go, GameComponent component);
 
 typedef struct Transform {
 

@@ -613,6 +613,7 @@ Map *map_create (u32 width, u32 heigth) {
         for (u16 i = 0; i < new_map->width; i++) 
             new_map->go_map[i] = (GameObject **) calloc (new_map->heigth, sizeof (GameObject *));
 
+        new_map->dungeon = NULL;
         new_map->cave = NULL;
     }
 
@@ -624,6 +625,8 @@ void map_destroy (Map *map) {
 
     if (map) {
         if (map->go_map) free (map->go_map);
+
+        if (map->dungeon) dungeon_destroy (map->dungeon);
         if (map->cave) cave_destroy (map->cave);
 
         free (map);

@@ -24,21 +24,6 @@ typedef struct Segment {
 
 } Segment;
 
-typedef struct Wall {
-
-    u32 x, y; // position
-
-    // graphics
-    // asciiChar glyph;
-    bool hasBeenSeen;
-    // bool visibleOutsideFov;  
-
-    // physics
-    bool blocksMovement;
-    bool blocksSight;
-
-} Wall;
-
 #define DUNGEON_ROOM_MIN_WIDTH      5
 #define DUNGEON_ROOM_MAX_WIDTH      5
 
@@ -86,6 +71,7 @@ typedef struct Map {
 
     u32 width, heigth;
     GameObject ***go_map;
+    Dungeon *dungeon;
     Cave *cave;
 
 } Map;
