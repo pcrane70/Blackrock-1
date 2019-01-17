@@ -3,19 +3,19 @@
 
 #include <stdlib.h>
 
-typedef struct Node {
+typedef struct ListNode {
 
     void *data;
     struct Node *next;
 
-} Node;
+} ListNode;
 
 typedef struct LList {
 
     size_t size;
 
-    Node *start;
-    Node *end;
+    ListNode *start;
+    ListNode *end;
     void (*destroy) (void *);
 
 } LList;
@@ -27,6 +27,6 @@ typedef struct LList {
 
 extern LList *llist_init (void (*destroy) (void *));
 extern void llist_destroy (LList *list);
-extern void llist_insert_next (LList *list, Node *node, void *data);
+extern void llist_insert_next (LList *list, ListNode *node, void *data);
 
 #endif

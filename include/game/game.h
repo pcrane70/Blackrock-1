@@ -198,57 +198,6 @@ typedef struct Movement {
 
 } Movement;
 
-/*** COMBAT ***/
-
-// This are the general stats for every living entity
-typedef struct Stats {
-
-    u32 maxHealth;   // base health
-    i32 health;
-    u32 power;  // this represents the mana or whatever
-    u32 powerRegen; // regen power/(ticks or turns)
-    u32 strength; // this modifies the damage dealt 
-
-} Stats;
-
-typedef struct Attack {
-
-    u32 hitchance;      // chance to not miss the target
-    u32 baseDps;        // this is mostly for npcs
-    u32 attackSpeed;    // how many hits per turn
-    u32 spellPower;     // similar to attack power but for mages, etc
-    u32 criticalStrike;     // chance to hit a critical (2x more powerful than normal)
-
-} Attack;
-
-typedef struct Defense {
-
-    u32 armor;  // based on level, class, and equipment
-    u32 dodge;  // dodge chance -> everyone can dodge
-    u32 parry;  // parry chance -> only works with certain weapons and classes
-    u32 block;  // block chance -> this only works with a certain class than can handle shields
-
-} Defense;
-
-typedef struct Combat  {
-
-	u32 objectId;	
-    Stats baseStats;	
-    Attack attack;
-    Defense defense;
-
-} Combat;
-
-/*** ENTITIES ***/
-
-// a living entity
-typedef struct Entity {
-
-    u32 objectId;
-    u32 entityId;     // unique id in the db
-
-} Entity;
-
 /*** EVENTS ***/
 
 typedef void (*EventListener)(void *);
@@ -311,11 +260,6 @@ void collectGold (void);
 
 extern bool canMove (Position pos, bool isPlayer);
 extern bool recalculateFov;
-
-
-/*** COMBAT ***/
-
-extern void fight (Combat *att, Combat *def, bool isPlayer);
 
 /*** LEVEL MANAGER ***/
 

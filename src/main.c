@@ -2,22 +2,16 @@
 
 #include "blackrock.h"
 
-#include "engine/renderer.h"
-
 #include "game/game.h"
 
+#include "engine/renderer.h"
 #include "engine/input.h"
-
-#include "ui/ui.h"
-#include "ui/gameUI.h"
 
 #include "utils/log.h"
 
 bool running = false;
 bool inGame = false;
 bool wasInGame = false;
-
-TextBox **selected_textBox = NULL;
 
 /*** MISC ***/
 
@@ -30,8 +24,8 @@ void quit (void) {
 
 void die (const char *error) {
 
-    perror (error);
-    running = false;
+    logMsg (stderr, ERROR, NO_TYPE, error);
+    quit ();
 
 };
 
@@ -69,11 +63,6 @@ int main (void) {
     game_state = game_state_new ();
     game_manager = game_manager_new (game_state);
 
-    // FIXME: init new UI
-    // UIScreen *screenForInput;
-    // extern UIScreen *menuScene (void);
-    // setActiveScene (menuScene ());
-
     u32 timePerFrame = 1000 / FPS_LIMIT;
     u32 frameStart = 0;
     i32 sleepTime = 0;
@@ -87,27 +76,6 @@ int main (void) {
     running = true;
     while (running) {
         frameStart = SDL_GetTicks ();
-        
-        /* while (SDL_PollEvent (&event) != 0) {
-            if (event.type == SDL_QUIT) {
-                running = false;
-                inGame = false;
-            } 
-
-            else if (typing && event.type == SDL_TEXTINPUT) 
-                ui_textBox_update_text (*selected_textBox, event.text.text);
-
-            else {
-                // handle the event in the correct screen
-                screenForInput = activeScene;
-                screenForInput->handleEvent (screenForInput, event);
-            }
-        }
-
-        // render the correct screen
-        // renderScreen (renderer, screen, activeScene); */
-
-        /*** NEW LOOP ***/
 
         input_handle (event);
 

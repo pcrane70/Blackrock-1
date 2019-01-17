@@ -1,8 +1,8 @@
 #include "utils/llist.h"
 
-static Node *llist_node_create (void *data) {
+static ListNode *llist_node_create (void *data) {
 
-    Node *new_node = (Node *) malloc (sizeof (Node));
+    ListNode *new_node = (ListNode *) malloc (sizeof (ListNode));
     if (new_node) {
         new_node->data = data;
         new_node->next = NULL;
@@ -12,7 +12,7 @@ static Node *llist_node_create (void *data) {
 
 }
 
-static void llist_node_destroy (Node *node, void (*destroy) (void *)) {
+static void llist_node_destroy (ListNode *node, void (*destroy) (void *)) {
 
     if (node) {
         if (node->data) {
@@ -42,7 +42,7 @@ LList *llist_init (void (*destroy) (void *)) {
 void llist_destroy (LList *list) {
 
     if (list) {
-        Node *ptr = list->start, *next;
+        ListNode *ptr = list->start, *next;
         while (ptr) {
             next = ptr->next;
             llist_node_destroy (ptr, list->destroy);
@@ -54,9 +54,9 @@ void llist_destroy (LList *list) {
 
 }
 
-void llist_insert_next (LList *list, Node *node, void *data) {
+void llist_insert_next (LList *list, ListNode *node, void *data) {
 
-    Node *new_node = llist_node_create (data);
+    ListNode *new_node = llist_node_create (data);
     if (new_node) {
         // insert at the start of the list
         if (!node) {

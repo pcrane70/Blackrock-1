@@ -345,6 +345,7 @@ void *game_object_get_component (GameObject *go, GameComponent component) {
 
 }
 
+// FIXME: correctly destroy player component
 void game_object_remove_component (GameObject *go, GameComponent component) {
 
     if (go) {
@@ -379,26 +380,34 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
 
 GameState *game_state = NULL;
 
-// TODO: this is only for testing
-Map *game_map = NULL;
-Camera *game_camera = NULL;
+typedef struct World {
 
-// FIXME: init the map
+    Map *game_map;
+    Camera *game_camera;
+
+    // score
+    // enemies
+    // player(s)
+
+} World;
+
 static u8 game_init (void) {
 
     game_objects_init_all ();
 
-    game_map = map_create (80, 40);
-    game_map->dungeon = dungeon_generate (game_map, game_map->width, game_map->heigth, 100, .45);
-    // game_map->cave = cave_generate (game_map, game_map->width, game_map->heigth, 100, 50);
+    // connect to items db
+    // items_init ();
+    // connect to enemies db
+    // load enemy data
 
-    main_player_go = player_init ();
+    // init world
+    // init score
 
-    game_camera = camera_new (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
-    // // camera_set_center (game_camera, 1600, 900);
-    // camera_set_center (game_camera, 0, 0);
-    // FIXME:
-    // camera_set_target ((Transform *) game_object_get_component (main_player_go, TRANSFORM_COMP));
+    // generate level
+    // spawn items
+    // spawn enemies
+    // init camera
+    // spawn player
 
     return 0;
 
@@ -450,7 +459,7 @@ static void game_render (void) {
 // FIXME:
 void game_cleanUp (void) {
 
-    camera_destroy (game_camera);
+    // camera_destroy (game_camera);
 
     // map_destroy (game_map);
 
@@ -523,27 +532,6 @@ void game_state_change_state (GameState *newState) {
 
 
 /*** WORLD STATE ***/
-
-// Components
-// DoubleList *gameObjects = NULL;
-DoubleList *positions = NULL;
-DoubleList *graphics = NULL;
-DoubleList *physics = NULL;
-DoubleList *movement = NULL;
-DoubleList *combat = NULL;
-DoubleList *loot = NULL;
-
-// Pools
-Pool *goPool = NULL;
-Pool *posPool = NULL;
-Pool *graphicsPool = NULL;
-Pool *physPool = NULL;
-Pool *movePool = NULL;
-Pool *combatPool = NULL;
-Pool *lootPool = NULL;
-
-// Player
-bool playerTookTurn = false;
 
 // Level 
 Level *currentLevel = NULL;
@@ -1006,398 +994,6 @@ void updateMovement (void) {
         }
 
     } */
-
-}
-
-#pragma endregion
-
-/*** ENEMIES ***/
-
-#pragma region ENEMIES
-
-#include <sqlite3.h>
-
-// The path is form the makefile
-const char *enemiesDbPath = "./data/enemies.db";
-sqlite3 *enemiesDb;
-
-// this is only used for development purposes
-void createEnemiesDb (void) {
-
-    char *err_msg = 0;
-
-    // create monsters table
-    // char *sql = "DROP TABLE IF EXISTS Monsters;"
-    //             "CREATE TABLE Monsters(Id INT, Name TEXT, Probability DOUBLE)";
-
-    // // create combat stats table
-    // sql = "DROP TABLE IF EXISTS Combat;"
-    //       "CREATE TABLE Combat(Id INT, Health INT, Armour INT, Dps INT, Strength INT, Hitchance INT, Speed INT, Critical INT, Dodge INT, Parry INT, Block INT)";
-
-    // // create movement stats table
-    // sql = "DROP TABLE IF EXISTS Movement;"
-    //       "CREATE TABLE Movement(Id INT, Speed INT, Frequency INT)";
-
-    // // create graphics table
-    // sql = "DROP TABLE IF EXISTS Graphics;"
-    //       "CREATE TABLE Graphics(Id INT, Glyph INT, Color TEXT)";
-
-    // if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-    //     fprintf (stderr, "Error! Failed to create GRAPHICS table!\n");
-    //     fprintf (stderr, "SQL error: %s\n", err_msg);
-    //     sqlite3_free (err_msg);
-    // }
-
-    // else fprintf (stdout, "Table created!\n");
-
-    // 06/09/2018 -- first approach to a drop system
-    // drops
-    // char *sql = "DROP TABLE IF EXISTS Drops;"
-    //             "CREATE TABLE Drops(Id INT, Min INT, Max INT, Items TEXT)";
-
-    // if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-    //     fprintf (stderr, "Error! Failed to create Drops table!\n");
-    //     fprintf (stderr, "SQL error: %s\n", err_msg);
-    //     sqlite3_free (err_msg);
-    // }
-
-}
-
-typedef struct {
-
-    u8 minGold;
-    u8 maxGold;
-    u32 *drops;
-    u8 dropCount;
-
-} MonsterLoot;
-
-// 04/09/2018 -- 12:18
-typedef struct {
-
-    u32 id;
-    char *name;
-    double probability;
-    MonsterLoot loot;
-
-} Monster;
-
-#define MONSTER_COUNT       9
-
-DoubleList *enemyData = NULL;
-
-u8 loadMonsterLoot (u32 monId, MonsterLoot *loot) {
-
-    // get the db data
-    sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Drops WHERE Id = ?";
-
-    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
-    else {
-        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        return 1;
-    } 
-
-    int step = sqlite3_step (res);
-
-    loot->minGold = (u32) sqlite3_column_int (res, 1);
-    loot->maxGold = (u32) sqlite3_column_int (res, 2);
-
-    // get the possible drop items
-    const char *c = sqlite3_column_text (res, 3);
-    if (c != NULL) {
-        char *itemsTxt = (char *) calloc (strlen (c) + 1, sizeof (char));
-        strcpy (itemsTxt, c);
-
-        // parse the string by commas
-        char **tokens = splitString (itemsTxt, ',');
-        if (tokens) {
-            // count how many elements will be extracted
-            u32 count = 0;
-            while (*itemsTxt++) if (',' == *itemsTxt) count++;
-
-            count += 1;     // take into account the last item after the last comma
-
-            loot->dropCount = count;
-            loot->drops = (u32 *) calloc (count, sizeof (u32));
-            u32 idx = 0;
-            for (u32 i = 0; *(tokens + i); i++) {
-                loot->drops[idx] = atoi (*(tokens + i));
-                idx++;
-                free (*(tokens + i));
-            }
-
-            free (tokens);
-        }
-
-        // no drop items in the db or an error somewhere retrieving the data
-        // so only hanlde the loot with the money
-        else {
-            loot->drops = NULL;
-            loot->dropCount = 0;
-        } 
-    }
-    
-    else {
-        loot->drops = NULL;
-        loot->dropCount = 0;
-    } 
-
-    sqlite3_finalize (res);
-
-    return 0;
-
-}
-
-// Getting the enemies data from the db into memory
-static int loadEnemyData (void *data, int argc, char **argv, char **azColName) {
-   
-    Monster *mon = (Monster *) malloc (sizeof (Monster));
-
-    mon->id = atoi (argv[0]);
-    char temp[20];
-    strcpy (temp, argv[1]);
-    mon->name = (char *) calloc (strlen (temp) + 1, sizeof (char));
-    strcpy (mon->name, temp);
-    mon->probability = atof (argv[2]);
-
-    if (loadMonsterLoot (mon->id, &mon->loot) != 0)
-        fprintf (stderr, "Error getting monster loot. Monster id: %i.\n", mon->id);
-
-    dlist_insert_after (enemyData, LIST_END (enemyData), mon);
-
-   return 0;
-
-}
-
-void connectEnemiesDb () {
-
-    // connect to the items db
-    if (sqlite3_open (enemiesDbPath, &enemiesDb) != SQLITE_OK) {
-        fprintf (stderr, "%s\n", sqlite3_errmsg (enemiesDb));
-        die ("Problems with enemies db!\n");
-    } 
-    else fprintf (stdout, "Succesfully connected to the enemies db.\n");
-
-    // createEnemiesDb ();
-
-    // enemies in memory
-    enemyData = dlist_init (free);
-
-    // load the enemies data into memory
-    char *err = 0;
-    char *sql = "SELECT * FROM Monsters";
-          
-    if (sqlite3_exec (enemiesDb, sql, loadEnemyData, NULL, &err) != SQLITE_OK ) {
-        fprintf (stderr, "SQL error: %s\n", err);
-        sqlite3_free (err);
-    } 
-    
-    else fprintf(stdout, "Done loading monster data.\n");
-                                
-}
-
-Monster *searchMonById (u32 monId) {
-
-    Monster *mon = NULL;
-    for (ListElement *e = LIST_START (enemyData); e != NULL; e = e->next) {
-        mon = (Monster *) e->data;
-        if (mon->id == monId) break;
-    }
-
-    if (mon == NULL) fprintf (stderr, "No monster found with id: %i\n", monId);
-
-    return mon;
-
-}
-
-u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
-
-    // get the db data
-    /* sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Graphics WHERE Id = ?";
-
-    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
-    else {
-        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        return 1;
-    } 
-
-    int step = sqlite3_step (res);
-
-    asciiChar glyph = (asciiChar) sqlite3_column_int (res, 1);
-    char *name = (char *) calloc (strlen (monData->name) + 1, sizeof (char));
-    strcpy (name, monData->name);
-    const char *c = sqlite3_column_text (res, 2);
-    char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
-    strcpy (colour, c);
-    u32 color = (u32) xtoi (colour);
-    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-    addComponent (mon, GRAPHICS, &g);
-
-    free (name);
-    free (colour);
-    sqlite3_finalize (res);
-
-    return 0; */
-
-}
-
-u8 addMovementToMon (u32 monId, Monster *monData, GameObject *mon) {
-
-    // get the db data
-    /* sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Movement WHERE Id = ?";
-
-    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
-    else {
-        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        return 1;
-    } 
-
-    int step = sqlite3_step (res);
-
-    u32 speed = (u32) sqlite3_column_int (res, 1);
-    u32 frecuency = (u32) sqlite3_column_int (res, 2);
-    Movement mv = { .speed = speed, .frecuency = frecuency, .ticksUntilNextMov = 1, .chasingPlayer = false, .turnsSincePlayerSeen = 0 };
-    addComponent (mon, MOVEMENT, &mv);
-
-    sqlite3_finalize (res);
-
-    return 0; */
-
-}
-
-u8 addCombatToMon (u32 monId, Monster *monData, GameObject *mon) {
-
-    // get the db data
-    /* sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Combat WHERE Id = ?";
-
-    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
-    else {
-        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        return 1;
-    } 
-
-    int step = sqlite3_step (res);
-
-    Combat c;
-
-    c.baseStats.strength = (u32) sqlite3_column_int (res, 4);
-    c.attack.baseDps = (u32) sqlite3_column_int (res, 3);
-    c.attack.hitchance = (u32) sqlite3_column_int (res, 5);
-    c.attack.attackSpeed = (u32) sqlite3_column_int (res, 6);
-    c.attack.spellPower = 0;
-    c.attack.criticalStrike = (u32) sqlite3_column_int (res, 7);
-    c.defense.armor = (u32) sqlite3_column_int (res, 2);
-    c.defense.dodge = (u32) sqlite3_column_int (res, 8);
-    c.defense.parry = (u32) sqlite3_column_int (res, 9);
-    c.defense.block = (u32) sqlite3_column_int (res, 10);
-
-    c.baseStats.maxHealth = ((u32) sqlite3_column_int (res, 1)) + c.defense.armor;
-    c.baseStats.health = c.baseStats.maxHealth;
-
-    addComponent (mon, COMBAT, &c);
-
-    sqlite3_finalize (res);
-
-    return 0;  */
-
-}
-
-// NEW way for creating the monsters using the enemies db and the in game memory enemy list
-GameObject *createMonster (u32 monId) {
-
-    // get the memory data
-    /* Monster *monData = searchMonById (monId);
-    if (monData == NULL) {
-        fprintf (stderr, "Error! No monster found with the provided id!\n");
-        return NULL;
-    }
-
-    GameObject *mon = createGO ();
-    mon->dbId = monId;
-
-    // This is just a placeholder until it spawns in the world
-    Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
-    addComponent (mon, POSITION, &pos);
-
-    // graphics
-    if (addGraphicsToMon (monId, monData, mon) != 0) {
-        fprintf (stderr, "Error adding graphics component!\n");
-        return NULL;
-    } 
-
-    Physics phys = { 0, true, false };
-    addComponent (mon, PHYSICS, &phys);
-
-    // movement
-    if (addMovementToMon (monId, monData, mon) != 0) {
-        fprintf (stderr, "Error adding movement component!\n");
-        return NULL;
-    } 
-
-    // combat
-    if (addCombatToMon (monId, monData, mon) != 0) {
-        fprintf (stderr, "Error adding combat component!\n");
-        return NULL;
-    } 
-
-    return mon; */
-
-}
-
-// 22/08/2018 -- 7:11 -- this is our first random monster generation function
-// TODO: maybe later also take into account the current level
-// FIXME: create a better system
-u32 getMonsterId (void) {
-
-    // number of monster per type
-    /* u8 weak = 2;
-    u8 medium = 2;
-    u8 strong = 3;
-    u8 veryStrong = 2;
-
-    u32 choice;
-
-    switch (randomInt (1, 4)) {
-        case 1:
-            switch (randomInt (1, weak)) {
-               case 1: choice = 101; break; 
-               case 2: choice = 102; break; 
-            }
-            break;
-        case 2:
-            switch (randomInt (1, medium)) {
-                case 1: choice = 201; break;
-                case 2: choice = 202; break;
-            }
-            break;
-        case 3:
-            switch (randomInt (1, strong)) {
-                case 1: choice = 301; break;
-                case 2: choice = 302; break;
-                case 3: choice = 303; break;
-            }
-            break;
-        case 4:
-            switch (randomInt (1, veryStrong)) {
-                case 1: choice = 401; break;
-                case 2: choice = 402; break;
-            }
-            break;
-        default: break;
-    }
-
-    return choice; */
-
-}
-
-void cleanUpEnemies (void) {
-
-    dlist_destroy (enemyData);
-    sqlite3_close (enemiesDb);
 
 }
 

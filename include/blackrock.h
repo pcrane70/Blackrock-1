@@ -2,9 +2,6 @@
 #define BLACKROCK_H_
 
 #include <stdint.h>
-#include <stdbool.h>
-
-#include <SDL2/SDL.h>
 
 #define FPS_LIMIT   30
 
@@ -55,6 +52,14 @@ typedef unsigned char asciiChar;
     #define ASSETS_PATH "../assets/"
 #else 
     #define ASSETS_PATH "./assets/"
+#endif
+
+#ifdef DEV
+    #define DATA_PATH "./data/"
+#elif PRODUCTION    
+    #define DATA_PATH "../data/"
+#else 
+    #define DATA_PATH "./data/"
 #endif
 
 /*** MULTIPLAYER ***/

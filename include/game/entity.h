@@ -34,8 +34,15 @@ typedef enum CharClass {
 
 extern char *entity_get_class_name (CharClass);
 
-// FIXME: remove from game.h
-/* typedef struct Defense {
+// This are the general stats for every living entity
+typedef struct Stats {
+
+    u32 stamina;                // modifies entity health
+    u32 strength;               // modifies entity delt by the entity
+
+} Stats;
+
+typedef struct Defense {
 
     u32 armor;      // based on level, class, and equipment
     u32 dodge;      // dodge chance -> everyone can dodge
@@ -52,7 +59,7 @@ typedef struct Attack {
     u32 spellPower;         // similar to attack power but for mages, etc
     u32 criticalStrike;     // chance to hit a critical (2x more powerful than normal)
 
-} Attack; */
+} Attack;
 
 typedef struct LivingEntity {
 
@@ -60,18 +67,17 @@ typedef struct LivingEntity {
     Genre genre;
     CharRace race;
     CharClass cClass;
+    char *name;
     u32 maxHealth;
     u32 currHealth;
-    char *name;
-
-    u32 strength;
-    u32 stamina;
-
+    
     u32 level;
 
+    Stats stats;
+
     // combat stats
-    // Attack attack;
-    // Defense defense;
+    Attack attack;
+    Defense defense;
 
 } LivingEntity;
 
