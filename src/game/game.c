@@ -9,9 +9,9 @@
 #include "game/game.h"
 #include "game/camera.h"
 
-#include "player.h"
-#include "item.h"
-#include "map.h"
+#include "game/player.h"
+#include "game/item.h"
+#include "game/map/map.h"
 
 #include "engine/renderer.h"
 #include "engine/textures.h"
@@ -191,7 +191,7 @@ static void game_object_init (GameObject *go, u32 id, const char *name, const ch
         else go->name = NULL;
 
         if (tag) {
-            go->tag = (char *) calloc (strlen (name) + 1, sizeof (char));
+            go->tag = (char *) calloc (strlen (tag) + 1, sizeof (char));
             strcpy (go->tag, tag);
         }
 
@@ -360,7 +360,8 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
                 break;
 
             case PLAYER_COMP: 
-                player_destroy (go->components[component]);
+                // FIXME:
+                // player_destroy (go->components[component]);
                 go->update = NULL;
                 break;
 
@@ -379,7 +380,7 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
 GameState *game_state = NULL;
 
 // TODO: this is only for testing
-// Map *game_map = NULL;
+Map *game_map = NULL;
 Camera *game_camera = NULL;
 
 // FIXME: init the map
@@ -387,7 +388,8 @@ static u8 game_init (void) {
 
     game_objects_init_all ();
 
-    // game_map = map_create (50, 30);
+    game_map = map_create (80, 40);
+    game_map->dungeon = dungeon_generate (game_map, game_map->width, game_map->heigth, 100, .45);
     // game_map->cave = cave_generate (game_map, game_map->width, game_map->heigth, 100, 50);
 
     main_player_go = player_init ();
@@ -523,7 +525,7 @@ void game_state_change_state (GameState *newState) {
 /*** WORLD STATE ***/
 
 // Components
-DoubleList *gameObjects = NULL;
+// DoubleList *gameObjects = NULL;
 DoubleList *positions = NULL;
 DoubleList *graphics = NULL;
 DoubleList *physics = NULL;
@@ -560,12 +562,12 @@ extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 void *getGameData (void *data) {
 
-    // retrieves the data from the items db
-    initItems ();
+    // // retrieves the data from the items db
+    // initItems ();
 
-    // connect to enemies db
-    void connectEnemiesDb (void);
-    connectEnemiesDb ();
+    // // connect to enemies db
+    // void connectEnemiesDb (void);
+    // connectEnemiesDb ();
 
 }
 
@@ -580,49 +582,49 @@ void initGame (void) {
     //     die ("Error creating data thread!\n");
 
     // retrieves the data from the items db
-    initItems ();
+    // initItems ();
 
-    // connect to enemies db
-    void connectEnemiesDb (void);
-    connectEnemiesDb ();
+    // // connect to enemies db
+    // void connectEnemiesDb (void);
+    // connectEnemiesDb ();
 
-    gameObjects = dlist_init (free);
-    positions = dlist_init (free);
-    graphics = dlist_init (free);
-    physics = dlist_init (free);
-    movement = dlist_init (free);
-    combat = dlist_init (free);
-    loot = dlist_init (free);
+    // // gameObjects = dlist_init (free);
+    // positions = dlist_init (free);
+    // graphics = dlist_init (free);
+    // physics = dlist_init (free);
+    // movement = dlist_init (free);
+    // combat = dlist_init (free);
+    // loot = dlist_init (free);
 
     // FIXME: pass the correct destroy function!!!
     // init our pools
-    goPool = pool_init (free);
-    posPool = pool_init (free);
-    graphicsPool = pool_init (free);
-    physPool = pool_init (free);
-    movePool = pool_init (free);
-    combatPool = pool_init (free);
-    lootPool = pool_init (free);
+    // goPool = pool_init (free);
+    // posPool = pool_init (free);
+    // graphicsPool = pool_init (free);
+    // physPool = pool_init (free);
+    // movePool = pool_init (free);
+    // combatPool = pool_init (free);
+    // lootPool = pool_init (free);
 
-    // init the message log
-    messageLog = dlist_init (free);
+    // // init the message log
+    // messageLog = dlist_init (free);
 
     // if (pthread_join (dataThread, NULL) != THREAD_OK) die ("Error joinning data thread!\n");
 
     fprintf (stdout, "Creating world...\n");
 
-    void initWorld (void);
-    initWorld ();
+    // void initWorld (void);
+    // initWorld ();
 
 }
 
 void *playerLogic (void *arg) {
 
-    if (main_player != NULL) player_destroy (main_player);
+    /* if (main_player != NULL) player_destroy (main_player);
     
     main_player = player_create ();
 
-    player_init (main_player);
+    player_init (main_player); */
 
 }
 
@@ -630,7 +632,7 @@ void *playerLogic (void *arg) {
 // TODO: this can be a good place to check if we have a save file of a map and load that from disk
 void initWorld (void) {
 
-    pthread_t playerThread;
+    /* pthread_t playerThread;
 
     if (pthread_create (&playerThread, NULL, playerLogic, NULL) != THREAD_OK) 
         die ("Error creating player thread!\n");
@@ -654,8 +656,8 @@ void initWorld (void) {
     main_player->pos->x = (u8) playerSpawnPos.x;
     main_player->pos->y = (u8) playerSpawnPos.y;
 
-    calculateFov (main_player->pos->x, main_player->pos->y, fovMap);
-    
+    calculateFov (main_player->pos->x, main_player->pos->y, fovMap); */
+     
 }
 
 #pragma endregion
@@ -664,236 +666,11 @@ void initWorld (void) {
 
 #pragma region GAME OBJECTS
 
-// 11/08/2018 -- we assign a new id to each new GO
-u32 newId = 0;
-
-GameObject *createGO (void) {
-
-    GameObject *go = NULL;
-
-    // first check if there is an available one in the pool
-    if (POOL_SIZE (goPool) > 0) {
-        go = (GameObject *) pool_pop (goPool);
-        if (go == NULL) go = (GameObject *) malloc (sizeof (GameObject));
-    } 
-    else go = (GameObject *) malloc (sizeof (GameObject));
-
-    if (go != NULL) {
-        go->id = newId;
-        newId++;
-        for (u8 i = 0; i < COMP_COUNT; i++) go->components[i] = NULL;
-        dlist_insert_after (gameObjects, LIST_END (gameObjects), go);
-    }
-    
-    return go;
-
-}
-
-void addComponent (GameObject *go, GameComponent type, void *data) {
-
-    if (go == NULL || data == NULL) return;
-
-    switch (type) {
-        case POSITION: {
-            if (getComponent (go, type) != NULL) return;
-
-            Position *newPos = NULL;
-
-            if ((POOL_SIZE (posPool) > 0)) newPos = (Position *) pool_pop (posPool);
-            else newPos = (Position *) malloc (sizeof (Position));
-
-            Position *posData = (Position *) data;
-            newPos->objectId = go->id;
-            newPos->x = posData->x;
-            newPos->y = posData->y;
-            newPos->layer = posData->layer;
-
-            go->components[type] = newPos;
-            dlist_insert_after (positions, NULL, newPos);
-        } break;
-        case GRAPHICS: {
-            if (getComponent (go, type) != NULL) return;
-
-            Graphics *newGraphics = NULL;
-
-            if ((POOL_SIZE (graphicsPool) > 0)) newGraphics = (Graphics *) pool_pop (graphicsPool);
-            else newGraphics = (Graphics *) malloc (sizeof (Graphics));
-
-            Graphics *graphicsData = (Graphics *) data;
-            newGraphics->objectId = go->id;
-            newGraphics->name = (char *) calloc (strlen (graphicsData->name) + 1, sizeof (char));
-            strcpy (newGraphics->name, graphicsData->name);
-            newGraphics->glyph = graphicsData->glyph;
-            newGraphics->fgColor = graphicsData->fgColor;
-            newGraphics->bgColor = graphicsData->bgColor;
-
-            go->components[type] = newGraphics;
-            dlist_insert_after (graphics, NULL, newGraphics);
-        } break;
-        case PHYSICS: {
-            if (getComponent (go, type) != NULL) return;
-
-            Physics *newPhys = NULL;
-
-            if ((POOL_SIZE (physPool) > 0)) newPhys = (Physics *) pool_pop (physPool);
-            else newPhys = (Physics *) malloc (sizeof (Physics));
-
-            Physics *physData = (Physics *) data;
-            newPhys->objectId = go->id;
-            newPhys->blocksSight = physData->blocksSight;
-            newPhys->blocksMovement = physData->blocksMovement;
-
-            go->components[type] = newPhys;
-            dlist_insert_after (physics, NULL, newPhys);
-        } break;
-        case MOVEMENT: {
-            if (getComponent (go, type) != NULL) return;
-
-            Movement *newMove = NULL;
-
-            if ((POOL_SIZE (movePool) > 0)) newMove = (Movement *) pool_pop (movePool);
-            else newMove = (Movement *) malloc (sizeof (Movement));
-
-            Movement *movData = (Movement *) data;
-            newMove->objectId = go->id;
-            newMove->speed = movData->speed;
-            newMove->frecuency = movData->frecuency;
-            newMove->ticksUntilNextMov = movData->ticksUntilNextMov;
-            newMove->chasingPlayer = movData->chasingPlayer;
-            newMove->turnsSincePlayerSeen = movData->turnsSincePlayerSeen;
-
-            go->components[type] = newMove;
-            dlist_insert_after (movement, NULL, newMove);
-        } break;
-        case COMBAT: {
-            if (getComponent (go, type) != NULL) return;
-
-            Combat *newCombat = NULL;
-
-            if ((POOL_SIZE (combatPool) > 0)) newCombat = (Combat *) pool_pop (combatPool);
-            else newCombat = (Combat *) malloc (sizeof (Combat));
-
-            Combat *combatData = (Combat *) data;
-            newCombat->objectId = go->id;
-            newCombat->baseStats = combatData->baseStats;
-            newCombat->attack = combatData->attack;
-            newCombat->defense = combatData->defense;
-
-            go->components[type] = newCombat;
-            dlist_insert_after (combat, NULL, newCombat);
-        } break;
-        case EVENT: {
-            if (getComponent (go, type) != NULL) return;
-            Event *newEvent = (Event *) malloc (sizeof (Event));
-            Event *eventData = (Event *) data;
-            newEvent->objectId = go->id;
-            newEvent->callback = eventData->callback;
-
-            go->components[type] = newEvent;
-        }
-        case LOOT: {
-            if (getComponent (go, type) != NULL) return;
-            Loot *newLoot = NULL;
-
-            if (POOL_SIZE (lootPool) > 0) newLoot = (Loot *) pool_pop (lootPool);
-            else newLoot = (Loot *) malloc (sizeof (Loot));
-
-            Loot *lootData = (Loot *) data;
-            newLoot->objectId = go->id;
-            newLoot->money[0] = lootData->money[0];
-            newLoot->money[1] = lootData->money[1];
-            newLoot->money[2] = lootData->money[2];
-            newLoot->lootItems = lootData->lootItems;
-
-            go->components[type] = newLoot;
-            dlist_insert_after (loot, NULL, newLoot);
-        } break;
-
-        // We have an invalid GameComponent type, so don't do anything
-        default: break;
-    }
-
-}
-
-void removeComponent (GameObject *go, GameComponent type) {
-
-    if (go == NULL) return;
-
-    switch (type) {
-        case POSITION: {
-            Position *posComp = (Position *) getComponent (go, type);
-            if (posComp == NULL) return;
-            ListElement *e = dlist_get_ListElement (positions, posComp);
-            void *posData = NULL;
-            if (e != NULL) posData = dlist_remove_element (positions, e);
-            pool_push (posPool, posData);
-            go->components[type] = NULL;
-        } break;
-        case GRAPHICS: {
-            Graphics *graComp = (Graphics *) getComponent (go, type);
-            if (graComp == NULL) return;
-            ListElement *e = dlist_get_ListElement (graphics, graComp);
-            void *graData = NULL;
-            if (e != NULL) graData = dlist_remove_element (graphics, e);
-            pool_push (graphicsPool, graData);
-            go->components[type] = NULL;
-        } break;
-        case PHYSICS: {
-            Physics *physComp = (Physics *) getComponent (go, type);
-            if (physComp == NULL) return;
-            ListElement *e = dlist_get_ListElement (physics, physComp);
-            void *physData = NULL;
-            if (e != NULL) physData = dlist_remove_element (physics, e);
-            pool_push (physPool, physData);
-            go->components[type] = NULL;
-        } break;
-        case MOVEMENT: {
-            Movement *moveComp = (Movement *) getComponent (go, type);
-            if (moveComp == NULL) return;
-            ListElement *e = dlist_get_ListElement (movement, moveComp);
-            void *moveData = NULL;
-            if (e != NULL) moveData = dlist_remove_element (movement, e);
-            pool_push (movePool, moveData);
-            go->components[type] = NULL;
-        } break;
-        case COMBAT: {
-            Combat *combatComp = (Combat *) getComponent (go, type);
-            if (combatComp == NULL) return;
-            ListElement *e = dlist_get_ListElement (combat, combatComp);
-            void *combatData = NULL;
-            if (e != NULL) combatData = dlist_remove_element (combat, e);
-            pool_push (combatPool, combatData);
-            go->components[type] = NULL;
-        } break;
-        case LOOT: {
-            Loot *lootComp = (Loot *) getComponent (go, type);
-            if (lootComp == NULL) return;
-            ListElement *e = dlist_get_ListElement (loot, lootComp);
-            void *lootData = NULL;
-            if (e != NULL) lootData = dlist_remove_element (loot, e);
-            pool_push (lootPool, lootData);
-            go->components[type] = NULL;
-        } break;
-        case EVENT: {
-            Event *event = (Event *) getComponent (go, type);
-            if (event != NULL) {
-                free (event);
-                go->components[type] = NULL;
-            }
-        }
-
-        default: break;
-    }
-
-}
-
-void *getComponent (GameObject *go, GameComponent type) { return go->components[type]; }
-
 // TESTING 19/08/2018 -- 19:04
 // FIXME: HOW CAN WE MANAGE THE WALLS!!!!???
 DoubleList *getObjectsAtPos (u32 x, u32 y) {
 
-    Position *pos = NULL;
+    /* Position *pos = NULL;
     DoubleList *retVal = dlist_init (free);
     for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
         pos = (Position *) getComponent ((GameObject *) e->data, POSITION);
@@ -901,13 +678,13 @@ DoubleList *getObjectsAtPos (u32 x, u32 y) {
             if (pos->x == x && pos->y == y) dlist_insert_after (retVal, NULL, e->data);
     }
 
-    return retVal;
+    return retVal; */
 
 }
 
 GameObject *searchGameObjectById (u32 id) {
 
-    GameObject *go = NULL;
+    /* GameObject *go = NULL;
     for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
         go = (GameObject *) e->data;
         if (go != NULL) {
@@ -916,23 +693,7 @@ GameObject *searchGameObjectById (u32 id) {
         
     }
 
-    return NULL;
-
-}
-
-// This calls the Object pooling to deactive the go and have it in memory 
-// to reuse it when we need it
-void destroyGO (GameObject *go) {
-
-    // remove all of the gos components
-    for (u8 i = 0; i < COMP_COUNT; i++) removeComponent (go, i);
-
-    // now send the go to the pool
-    ListElement *e = dlist_get_ListElement (gameObjects, go);
-    if (e != NULL) {
-        void *data = dlist_remove_element (gameObjects, e);
-        if (data != NULL) pool_push (goPool, data);
-    }
+    return NULL; */
 
 }
 
@@ -940,10 +701,11 @@ void destroyGO (GameObject *go) {
 
 #pragma region CLEANUP
 
+// FIXME: heavy refactor in here!
 void cleanUpGame (void) {
 
     // clean up the player
-    player_destroy (main_player);
+    /* player_destroy (main_player);
     fprintf (stdout, "Done cleanning up player.\n");
 
     // clean up our lists
@@ -993,7 +755,7 @@ void cleanUpGame (void) {
     cleanLeaderBoardData ();
     fprintf (stdout, "Done cleaning up leaderboard data.\n");
 
-    fprintf (stdout, "Done cleaning up game!\n");
+    fprintf (stdout, "Done cleaning up game!\n"); */
 
 }
 
@@ -1007,7 +769,7 @@ bool isWall (u32 x, u32 y) { return (currentLevel->mapCells[x][y]); }
 
 bool canMove (Position pos, bool isPlayer) {
 
-    bool move = true;
+    /* bool move = true;
 
     // first check the if we are inside the map bounds
     if ((pos.x >= 0) && (pos.x < MAP_WIDTH) && (pos.y >= 0) && (pos.y < MAP_HEIGHT)) {
@@ -1036,7 +798,7 @@ bool canMove (Position pos, bool isPlayer) {
 
     else move = false;
 
-    return move;
+    return move; */
 
 }
 
@@ -1138,7 +900,7 @@ void fight (Combat *att, Combat *def, bool isPlayer);
 
 void updateMovement (void) {
 
-    for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
+    /* for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
         Movement *mv = (Movement *) LIST_DATA (e);
 
         // determine if we are going to move this tick
@@ -1243,7 +1005,7 @@ void updateMovement (void) {
 
         }
 
-    }
+    } */
 
 }
 
@@ -1452,7 +1214,7 @@ Monster *searchMonById (u32 monId) {
 u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
 
     // get the db data
-    sqlite3_stmt *res;
+    /* sqlite3_stmt *res;
     char *sql = "SELECT * FROM Graphics WHERE Id = ?";
 
     if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
@@ -1477,14 +1239,14 @@ u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
     free (colour);
     sqlite3_finalize (res);
 
-    return 0;
+    return 0; */
 
 }
 
 u8 addMovementToMon (u32 monId, Monster *monData, GameObject *mon) {
 
     // get the db data
-    sqlite3_stmt *res;
+    /* sqlite3_stmt *res;
     char *sql = "SELECT * FROM Movement WHERE Id = ?";
 
     if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
@@ -1502,14 +1264,14 @@ u8 addMovementToMon (u32 monId, Monster *monData, GameObject *mon) {
 
     sqlite3_finalize (res);
 
-    return 0;
+    return 0; */
 
 }
 
 u8 addCombatToMon (u32 monId, Monster *monData, GameObject *mon) {
 
     // get the db data
-    sqlite3_stmt *res;
+    /* sqlite3_stmt *res;
     char *sql = "SELECT * FROM Combat WHERE Id = ?";
 
     if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
@@ -1540,7 +1302,7 @@ u8 addCombatToMon (u32 monId, Monster *monData, GameObject *mon) {
 
     sqlite3_finalize (res);
 
-    return 0; 
+    return 0;  */
 
 }
 
@@ -1548,7 +1310,7 @@ u8 addCombatToMon (u32 monId, Monster *monData, GameObject *mon) {
 GameObject *createMonster (u32 monId) {
 
     // get the memory data
-    Monster *monData = searchMonById (monId);
+    /* Monster *monData = searchMonById (monId);
     if (monData == NULL) {
         fprintf (stderr, "Error! No monster found with the provided id!\n");
         return NULL;
@@ -1582,7 +1344,7 @@ GameObject *createMonster (u32 monId) {
         return NULL;
     } 
 
-    return mon;
+    return mon; */
 
 }
 
@@ -1592,7 +1354,7 @@ GameObject *createMonster (u32 monId) {
 u32 getMonsterId (void) {
 
     // number of monster per type
-    u8 weak = 2;
+    /* u8 weak = 2;
     u8 medium = 2;
     u8 strong = 3;
     u8 veryStrong = 2;
@@ -1628,7 +1390,7 @@ u32 getMonsterId (void) {
         default: break;
     }
 
-    return choice;
+    return choice; */
 
 }
 
@@ -1673,34 +1435,34 @@ DoubleList *generateLootItems (u32 *dropItems, u32 count) {
 
     // generate a random number of loot items
     // FIXME: this will be based depending of the enemy
-    u8 itemsNum = (u8) randomInt (0, 2);
+    // u8 itemsNum = (u8) randomInt (0, 2);
 
-    if (itemsNum == 0) return NULL;
-    else {
-        fprintf (stdout, "Creating loot items...\n");
+    // if (itemsNum == 0) return NULL;
+    // else {
+    //     fprintf (stdout, "Creating loot items...\n");
 
-        DoubleList *lootItems = dlist_init (free);
+    //     DoubleList *lootItems = dlist_init (free);
 
-        // generate random loot drops based on items probability
-        // FIXME: 07/09/2018 -- 09:44 this is just for testing
-        // we are only slectig the first items in dropItems and ignoring probs
-        // FIXME: fix the drop items index
-        Item *item = NULL;
-        u8 type;
-        for (u8 i = 0; i < itemsNum; i++) {
-            type = dropItems[i] / 1000;
-            switch (type) {
-                case 1: item = createItem (dropItems[i]); break;
-                case 2: item = createWeapon (dropItems[i]); break;
-                case 3: item = createArmour (dropItems[i]); break;
-                default: break;
-            }
+    //     // generate random loot drops based on items probability
+    //     // FIXME: 07/09/2018 -- 09:44 this is just for testing
+    //     // we are only slectig the first items in dropItems and ignoring probs
+    //     // FIXME: fix the drop items index
+    //     Item *item = NULL;
+    //     u8 type;
+    //     for (u8 i = 0; i < itemsNum; i++) {
+    //         type = dropItems[i] / 1000;
+    //         switch (type) {
+    //             case 1: item = createItem (dropItems[i]); break;
+    //             case 2: item = createWeapon (dropItems[i]); break;
+    //             case 3: item = createArmour (dropItems[i]); break;
+    //             default: break;
+    //         }
 
-            if (item) dlist_insert_after (lootItems, LIST_END (lootItems), item);
-        }
+    //         if (item) dlist_insert_after (lootItems, LIST_END (lootItems), item);
+    //     }
 
-        return lootItems;
-    }
+    //     return lootItems;
+    // }
 
 }
 
@@ -1719,14 +1481,14 @@ void *createLoot (void *arg) {
 
         // FIXME: create a better system
         // generate random money directly
-        newLoot.money[0] = randomInt (mon->loot.minGold, mon->loot.maxGold);
-        newLoot.money[1] = randomInt (0, 99);
-        newLoot.money[2] = randomInt (0, 99);
+        // newLoot.money[0] = randomInt (mon->loot.minGold, mon->loot.maxGold);
+        // newLoot.money[1] = randomInt (0, 99);
+        // newLoot.money[2] = randomInt (0, 99);
 
         newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
 
         // add the loot struct to the go as a component
-        addComponent (go, LOOT, &newLoot);
+        //addComponent (go, LOOT, &newLoot);
 
         fprintf (stdout, "New loot created!\n");
     }
@@ -1753,7 +1515,7 @@ bool emptyLoot (Loot *loot) {
 
 void displayLoot (void *goData) {
 
-    GameObject *go = NULL;
+    /* GameObject *go = NULL;
     if (goData != NULL) go = searchGameObjectById (((GameObject *)(goData))->id);
 
     if (go != NULL) {
@@ -1775,13 +1537,13 @@ void displayLoot (void *goData) {
             currentLoot = NULL;
             logMessage ("There is no loot here.", WARNING_COLOR);
         } 
-    }
+    } */
     
 }
 
 void collectGold (void) {
 
-    if (currentLoot != NULL) {
+    /* if (currentLoot != NULL) {
         if (currentLoot->money[0] > 0 || currentLoot->money[1] > 0 || currentLoot->money[2] > 0) {
             char *str = createString ("You collected: %ig %is %ic",
                 currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
@@ -1818,14 +1580,14 @@ void collectGold (void) {
 
         else logMessage ("There is not gold here to collect!", WARNING_COLOR);
 
-    }
+    } */
 
 }
 
 void destroyLoot (void) {
 
     // clean up active loot objects
-    if (loot != NULL) {
+    /* if (loot != NULL) {
         if (LIST_SIZE (loot) > 0) {
             Loot *lr = NULL;
             for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
@@ -1862,7 +1624,7 @@ void destroyLoot (void) {
             } 
         }
         pool_clear (lootPool);
-    }
+    } */
 
 }
 
@@ -1875,7 +1637,7 @@ void destroyLoot (void) {
 // FIXME: fix probability
 char *calculateDefense (Combat *def, bool isPlayer) {
 
-    GameObject *defender = NULL;
+    /* GameObject *defender = NULL;
     if (isPlayer) defender = searchGameObjectById (def->objectId);
 
     u8 chance = (u8) randomInt (0, 3);
@@ -1925,14 +1687,14 @@ char *calculateDefense (Combat *def, bool isPlayer) {
         default: break;
     }
 
-    return msg;
+    return msg; */
 
 }
 
 // FIXME:
 u32 getPlayerDmg (Combat *att) {
 
-    u32 damage;
+    /* u32 damage;
 
     Item *mainWeapon = main_player->weapons[MAIN_HAND];
     if (mainWeapon != NULL) {
@@ -1972,13 +1734,13 @@ u32 getPlayerDmg (Combat *att) {
     // FIXME: how do we want to handle strength
     damage += att->baseStats.strength;
 
-    return damage;
+    return damage; */
 
 }
 
 u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
-    GameObject *attacker = NULL;
+    /* GameObject *attacker = NULL;
     GameObject *defender = NULL;
     if (isPlayer) defender = searchGameObjectById (def->objectId);
     else attacker = searchGameObjectById (att->objectId);
@@ -2017,7 +1779,7 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
     free (str);
 
-    return damage;
+    return damage; */
 
 }
 
@@ -2026,7 +1788,7 @@ void updatePlayerScore (GameObject *);
 void checkForKill (GameObject *defender, bool isPlayer) {
 
     // check for monster kill
-    if (isPlayer) {
+    /* if (isPlayer) {
         if (((Combat *) getComponent (defender, COMBAT))->baseStats.health <= 0) {
             // we want the player to be able to walk over the corpse
             ((Position *) getComponent (defender, POSITION))->layer = MID_LAYER; 
@@ -2068,7 +1830,7 @@ void checkForKill (GameObject *defender, bool isPlayer) {
             void gameOver (void);
             gameOver ();
         }
-    }
+    } */
 
 }
 
@@ -2076,7 +1838,7 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
 void fight (Combat *att, Combat *def, bool isPlayer) {
 
-    GameObject *attacker = NULL;
+    /* GameObject *attacker = NULL;
     GameObject *defender = NULL;
     if (isPlayer) defender = searchGameObjectById (def->objectId); 
     else attacker = searchGameObjectById (att->objectId);
@@ -2114,7 +1876,7 @@ void fight (Combat *att, Combat *def, bool isPlayer) {
             logMessage (str, MISS_COLOR);
             free (str);
         }
-    }
+    } */
 
 }
 
@@ -2138,7 +1900,7 @@ void returnToMenu (void) {
 // This is called every time we generate a new level to start fresh, only from data from the pool
 void clearOldLevel (void) {
 
-    newId = 0; // reset the go id
+    /* newId = 0; // reset the go id
 
     void *data = NULL;
 
@@ -2161,17 +1923,17 @@ void clearOldLevel (void) {
                 if (data != NULL) destroyItem ((Item *) data);
             }
         }
-    }
-
+    } */
+ 
 }
 
 // game over logic
 void gameOver (void) {  
 
-    setActiveScene (postGameScreen ());
+    // setActiveScene (postGameScreen ());
 
-    destroyGameUI ();
-    resetGameUI ();
+    // destroyGameUI ();
+    // resetGameUI ();
 
 }
 
@@ -2180,7 +1942,7 @@ extern bool inGame;
 // we will have the game update every time the player moves...
 void *updateGame (void *data) {
 
-    u32 timePerFrame = 1000 / FPS_LIMIT;
+    /* u32 timePerFrame = 1000 / FPS_LIMIT;
     u32 frameStart;
     i32 sleepTime;
 
@@ -2203,7 +1965,7 @@ void *updateGame (void *data) {
         // limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
         if (sleepTime > 0) SDL_Delay (sleepTime);
-    }
+    } */
 
 }
 
@@ -2214,24 +1976,24 @@ extern pthread_t gameThread;
 void startGame (void) {
 
     // cleanUpMenuScene ();
-    activeScene = NULL;
+    // activeScene = NULL;
 
-    initGame ();
+    // initGame ();
 
-    setActiveScene (gameScene ());
+    // setActiveScene (gameScene ());
 
-    inGame = true;
-    wasInGame = true; 
+    // inGame = true;
+    // wasInGame = true; 
 
-    if (pthread_create (&gameThread, NULL, updateGame, NULL) != THREAD_OK)
-        fprintf (stderr, "Error creating game thread!\n");
+    // if (pthread_create (&gameThread, NULL, updateGame, NULL) != THREAD_OK)
+    //     fprintf (stderr, "Error creating game thread!\n");
 
 }
 
 // gets you into a nw level
 void useStairs (void *goData) {
 
-    currentLevel->levelNum += 1;
+    /* currentLevel->levelNum += 1;
 
     void generateLevel (void);
     generateLevel ();
@@ -2242,13 +2004,13 @@ void useStairs (void *goData) {
 
     char *msg = createString ("You are now on level %i", currentLevel->levelNum);
     logMessage (msg, 0xFFFFFFFF);
-    free (msg);
+    free (msg); */
 
 }
 
 void placeStairs (Point spawn) {
 
-    GameObject *stairs = createGO ();
+    /* GameObject *stairs = createGO ();
     Position p = { 0, spawn.x, spawn.y, MID_LAYER };
     addComponent (stairs, POSITION, &p);
     Graphics g = { 0, '<', 0xFFD700FF, 0x00000000, false, true, "Stairs" };
@@ -2256,7 +2018,7 @@ void placeStairs (Point spawn) {
     Physics phys = { 0, false, false };
     addComponent (stairs, PHYSICS, &phys);
     Event e = { 0, useStairs };
-    addComponent (stairs, EVENT, &e);
+    addComponent (stairs, EVENT, &e); */
 
 }
 
@@ -2264,7 +2026,7 @@ void placeStairs (Point spawn) {
 void generateLevel (void) {
 
     // make sure we have cleaned the previous level data
-    clearOldLevel ();
+    /* clearOldLevel ();
 
     // this is used to render the walls to the screen... but maybe it is not a perfect system
     initMap (currentLevel->mapCells);
@@ -2294,33 +2056,33 @@ void generateLevel (void) {
         }
     }
 
-    fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum);
+    fprintf (stdout, "%i / %i monsters created successfully\n", count, monNum); */
 
 }
 
 void enterDungeon (void) {
 
-    if (currentLevel == NULL) {
-        currentLevel = (Level *) malloc (sizeof (Level));
-        currentLevel->levelNum = 1;
-        currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
-        for (u8 i = 0; i < MAP_WIDTH; i++)
-            currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
+    // if (currentLevel == NULL) {
+    //     currentLevel = (Level *) malloc (sizeof (Level));
+    //     currentLevel->levelNum = 1;
+    //     currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
+    //     for (u8 i = 0; i < MAP_WIDTH; i++)
+    //         currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
 
-    } 
+    // } 
     
-    // generate a random world froms scratch
-    // TODO: maybe later we want to specify some parameters based on difficulty?
-    // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
-    // to generate rooms and for generating caves or open fields
+    // // generate a random world froms scratch
+    // // TODO: maybe later we want to specify some parameters based on difficulty?
+    // // or based on the type of terrain that we want to generate.. we don't want to have the same algorithms
+    // // to generate rooms and for generating caves or open fields
 
-    // after we have allocated the new level structure, we can start generating the first level
-    generateLevel ();
+    // // after we have allocated the new level structure, we can start generating the first level
+    // generateLevel ();
     
-    // TODO: add different texts here!!
-    logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
+    // // TODO: add different texts here!!
+    // // logMessage ("You have entered the dungeon!", 0xFFFFFFFF);
 
-    fprintf (stdout, "You have entered the dungeon!\n");
+    // fprintf (stdout, "You have entered the dungeon!\n");
 
 }
 
@@ -2328,34 +2090,34 @@ void enterDungeon (void) {
 // we reload the game scene as the same character
 void retry (void) {
 
-    if (!messageLog) messageLog = dlist_init (free);
+    // if (!messageLog) messageLog = dlist_init (free);
 
-    pthread_t playerThread;
+    // pthread_t playerThread;
 
-    if (pthread_create (&playerThread, NULL, playerLogic, NULL) != THREAD_OK) 
-        die ("Error creating player thread!\n");
+    // if (pthread_create (&playerThread, NULL, playerLogic, NULL) != THREAD_OK) 
+    //     die ("Error creating player thread!\n");
 
-    void resetScore (void);
-    resetScore ();
+    // void resetScore (void);
+    // resetScore ();
 
-    currentLevel->levelNum = 0;
+    // currentLevel->levelNum = 0;
 
-    // create a new level
-    enterDungeon ();
+    // // create a new level
+    // enterDungeon ();
 
-    if (pthread_join (playerThread, NULL) != THREAD_OK) die ("Error joinning player thread!\n");
+    // if (pthread_join (playerThread, NULL) != THREAD_OK) die ("Error joinning player thread!\n");
 
-    // we can now place the player and we are done 
-    Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
-    main_player->pos->x = (u8) playerSpawnPos.x;
-    main_player->pos->y = (u8) playerSpawnPos.y;
+    // // we can now place the player and we are done 
+    // /* Point playerSpawnPos = getFreeSpot (currentLevel->mapCells);
+    // main_player->pos->x = (u8) playerSpawnPos.x;
+    // main_player->pos->y = (u8) playerSpawnPos.y; 
 
-    calculateFov (main_player->pos->x, main_player->pos->y, fovMap);
+    // calculateFov (main_player->pos->x, main_player->pos->y, fovMap); */
 
-    fprintf (stdout, "Setting active scene...\n");
-    setActiveScene (gameScene ());
-    fprintf (stdout, "Destroying post gam screen...\n");
-    destroyPostGameScreen ();
+    // fprintf (stdout, "Setting active scene...\n");
+    // setActiveScene (gameScene ());
+    // fprintf (stdout, "Destroying post gam screen...\n");
+    // destroyPostGameScreen ();
 
 }
 
@@ -2365,64 +2127,64 @@ void retry (void) {
 
 #pragma region SCORE
 
-LBEntry *playerLBEntry = NULL;
+// LBEntry *playerLBEntry = NULL;
 
-// FIXME: modify to use player profiles
-// we need to modify this when we add multiplayer i guess...
-LBEntry *getPlayerLBEntry (void) {
+// // FIXME: modify to use player profiles
+// // we need to modify this when we add multiplayer i guess...
+// LBEntry *getPlayerLBEntry (void) {
 
-    LBEntry *entry = (LBEntry *) malloc (sizeof (LBEntry));
+//     /* LBEntry *entry = (LBEntry *) malloc (sizeof (LBEntry));
 
-    // entry->playerName = (char *) calloc (strlen (player->name) + 1, sizeof (char));
-    // strcpy (entry->playerName, player->name);
-    // entry->completeName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
+//     // entry->playerName = (char *) calloc (strlen (player->name) + 1, sizeof (char));
+//     // strcpy (entry->playerName, player->name);
+//     // entry->completeName = createString ("%s the %s", player->name, getPlayerClassName (player->cClass));
 
-    entry->nameColor = player_get_class_color (main_player->cClass);
+//     entry->nameColor = player_get_class_color (main_player->cClass);
 
-    entry->level = createString ("%i", currentLevel->levelNum);
+//     entry->level = createString ("%i", currentLevel->levelNum);
 
-    entry->kills = createString ("%i", playerScore->killCount);
+//     entry->kills = createString ("%i", playerScore->killCount);
 
-    entry->score = playerScore->score;
-    // 26/09/2018 -- we are reversing the string for a better display in the UI
-    entry->reverseScore = reverseString (createString ("%i", playerScore->score));
+//     entry->score = playerScore->score;
+//     // 26/09/2018 -- we are reversing the string for a better display in the UI
+//     entry->reverseScore = reverseString (createString ("%i", playerScore->score));
 
-    return entry;
+//     return entry; */
 
-}
+// }
 
-void updatePlayerScore (GameObject *monster) {
+// void updatePlayerScore (GameObject *monster) {
 
-    playerScore->score += monster->dbId;
+//     playerScore->score += monster->dbId;
 
-    playerScore->killCount++;
+//     playerScore->killCount++;
 
-}
+// }
 
-void resetScore (void) {
+// void resetScore (void) {
 
-    playerScore->killCount = 0;
-    playerScore->score = 0;
+//     playerScore->killCount = 0;
+//     playerScore->score = 0;
 
-}
+// }
 
-// TODO: later we will want to handle the logic of connecting to the server an retrieving data of
-// the global leaderboards
-void showScore (void) {
+// // TODO: later we will want to handle the logic of connecting to the server an retrieving data of
+// // the global leaderboards
+// void showScore (void) {
 
-    // clean up the level 
-    clearOldLevel ();
+//     // clean up the level 
+//     clearOldLevel ();
 
-    // get player score ready for display
-    playerLBEntry = getPlayerLBEntry ();
+//     // get player score ready for display
+//     playerLBEntry = getPlayerLBEntry ();
 
-    // render score image with the current score struct
-    toggleScoreScreen ();
+//     // render score image with the current score struct
+//     toggleScoreScreen ();
 
-    // delete death screen UI and image
-    deleteDeathScreen ();
+//     // delete death screen UI and image
+//     deleteDeathScreen ();
 
-}
+// }
 
 #pragma endregion
 
@@ -2453,243 +2215,244 @@ void multiplayer_send_black_credentials (void *);
 void multiplayer_error_packet_handler (void *);
 void multiplayer_packet_handler (void *);
 
-u8 multiplayer_start (BlackCredentials *black_credentials) {
+// u8 multiplayer_start (BlackCredentials *black_credentials) {
 
-    player_client = client_create ();
+//     player_client = client_create ();
 
-    if (player_client) {
-        // client_register_to_error_type (player_client, multiplayer_handle_failed_auth, NULL,
-        //     ERR_FAILED_AUTH);
+//     if (player_client) {
+//         // client_register_to_error_type (player_client, multiplayer_handle_failed_auth, NULL,
+//         //     ERR_FAILED_AUTH);
 
-        client_set_app_error_packet_handler (player_client, multiplayer_error_packet_handler);
-        client_set_app_packet_handler (player_client, multiplayer_packet_handler);
+//         client_set_app_error_packet_handler (player_client, multiplayer_error_packet_handler);
+//         client_set_app_packet_handler (player_client, multiplayer_packet_handler);
 
-        main_connection = client_connection_new (black_port, true);
-        if (main_connection) {
-            BlackAuthData *authdata = (BlackAuthData *) malloc (sizeof (BlackAuthData));
-            authdata->connection = main_connection;
-            authdata->credentials = black_credentials;
+//         main_connection = client_connection_new (black_port, true);
+//         if (main_connection) {
+//             BlackAuthData *authdata = (BlackAuthData *) malloc (sizeof (BlackAuthData));
+//             authdata->connection = main_connection;
+//             authdata->credentials = black_credentials;
 
-            connection_register_to_success_auth (main_connection, toggleLaunch, NULL);
+//             connection_register_to_success_auth (main_connection, toggleLaunch, NULL);
 
-            client_connect_to_server (player_client, main_connection, 
-                black_server_ip, black_port, GAME_SERVER,
-                multiplayer_send_black_credentials, authdata);
-        }
+//             client_connect_to_server (player_client, main_connection, 
+//                 black_server_ip, black_port, GAME_SERVER,
+//                 multiplayer_send_black_credentials, authdata);
+//         }
 
-        return 0;
-    }
+//         return 0;
+//     }
 
-    return 1;
+//     return 1;
 
-}
+// }
 
-// FIXME:
-u8 multiplayer_stop (void) {
+// // FIXME:
+// u8 multiplayer_stop (void) {
 
-    // client_disconnectFromServer (player_client, main_connection);
-    client_teardown (player_client);
+//     // client_disconnectFromServer (player_client, main_connection);
+//     client_teardown (player_client);
 
-    return 0;
+//     return 0;
 
-}
+// }
 
-void multiplayer_handle_failed_auth (const char *msg) {
+// void multiplayer_handle_failed_auth (const char *msg) {
 
-    if (login_error_text) free (login_error_text);
-    login_error_text = (char *) calloc (64, sizeof (char));
-    strcpy (login_error_text, msg);    
+//     if (login_error_text) free (login_error_text);
+//     login_error_text = (char *) calloc (64, sizeof (char));
+//     strcpy (login_error_text, msg);    
 
-}
+// }
 
-void multiplayer_send_black_credentials (void *data) {
+// void multiplayer_send_black_credentials (void *data) {
 
-    Connection *connection = NULL;
-    BlackCredentials *credentials = NULL;
+//     Connection *connection = NULL;
+//     BlackCredentials *credentials = NULL;
 
-    if (data) {
-        BlackAuthData *authdata = (BlackAuthData *) data;
-        connection = authdata->connection;
-        credentials = authdata->credentials;
+//     if (data) {
+//         BlackAuthData *authdata = (BlackAuthData *) data;
+//         connection = authdata->connection;
+//         credentials = authdata->credentials;
 
-        if (connection && credentials) {
-            size_t packet_size = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (BlackCredentials);
-            void *req = client_generatePacket (AUTHENTICATION, packet_size);
-            if (req) {
-                char *end = req;
-                RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
-                reqdata->type = CLIENT_AUTH_DATA;
+//         if (connection && credentials) {
+//             size_t packet_size = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (BlackCredentials);
+//             void *req = client_generatePacket (AUTHENTICATION, packet_size);
+//             if (req) {
+//                 char *end = req;
+//                 RequestData *reqdata = (RequestData *) (end += sizeof (PacketHeader));
+//                 reqdata->type = CLIENT_AUTH_DATA;
 
-                BlackCredentials *blackcr = (BlackCredentials *) (end += sizeof (RequestData));
-                strcpy (blackcr->password, credentials->password);
-                strcpy (blackcr->username, credentials->username);
-                blackcr->login = credentials->login;
+//                 BlackCredentials *blackcr = (BlackCredentials *) (end += sizeof (RequestData));
+//                 strcpy (blackcr->password, credentials->password);
+//                 strcpy (blackcr->username, credentials->username);
+//                 blackcr->login = credentials->login;
 
-                if (client_sendPacket (connection, req, packet_size) < 0) 
-                    logMsg (stderr, ERROR, PACKET, "Failed to send black credentials packet!");
+//                 if (client_sendPacket (connection, req, packet_size) < 0) 
+//                     logMsg (stderr, ERROR, PACKET, "Failed to send black credentials packet!");
 
-                // else {
-                //     #ifdef BLACK_DEBUG
-                //         logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
-                //     #endif
-                // }
-                free (req);
-            }
-        }
-    }
+//                 // else {
+//                 //     #ifdef BLACK_DEBUG
+//                 //         logMsg (stdout, SUCCESS, PACKET, "Sent authentication packet to server.");
+//                 //     #endif
+//                 // }
+//                 free (req);
+//             }
+//         }
+//     }
 
-}
+// }
 
-void multiplayer_submit_credentials (void *data) {
+// void multiplayer_submit_credentials (void *data) {
 
-    if (data) {
-        BlackCredentials *credentials = (BlackCredentials *) data;
+//     if (data) {
+//         BlackCredentials *credentials = (BlackCredentials *) data;
 
-        if (!player_client && !main_connection) {
-            #ifdef BLACK_DEBUG
-                logMsg (stdout, DEBUG_MSG, NO_TYPE, "Starting multiplayer...");
-            #endif
-            if (multiplayer_start (credentials)) 
-                logMsg (stderr, ERROR, CLIENT, "Failed to start multiplayer!");
-        }
+//         if (!player_client && !main_connection) {
+//             #ifdef BLACK_DEBUG
+//                 logMsg (stdout, DEBUG_MSG, NO_TYPE, "Starting multiplayer...");
+//             #endif
+//             if (multiplayer_start (credentials)) 
+//                 logMsg (stderr, ERROR, CLIENT, "Failed to start multiplayer!");
+//         }
 
-        // just send the new credentials to the server
-        else {
-            BlackAuthData *authdata = (BlackAuthData *) malloc (sizeof (BlackAuthData));
-            authdata->connection = main_connection;
-            authdata->credentials = credentials;
+//         // just send the new credentials to the server
+//         else {
+//             BlackAuthData *authdata = (BlackAuthData *) malloc (sizeof (BlackAuthData));
+//             authdata->connection = main_connection;
+//             authdata->credentials = credentials;
 
-            connection_remove_auth_data (main_connection);
-            connection_set_auth_data (main_connection, authdata);
+//             connection_remove_auth_data (main_connection);
+//             connection_set_auth_data (main_connection, authdata);
 
-            multiplayer_send_black_credentials (main_connection->authData);
-        } 
-    }
+//             multiplayer_send_black_credentials (main_connection->authData);
+//         } 
+//     }
 
-    else {
-        logMsg (stderr, ERROR, NO_TYPE, "No credentials provided!");
-        if (login_error_text) free (login_error_text);
-        login_error_text = (char *) calloc (64, sizeof (char));
-        strcpy (login_error_text, "Error - No credentials provided!");
-    }
+//     else {
+//         logMsg (stderr, ERROR, NO_TYPE, "No credentials provided!");
+//         if (login_error_text) free (login_error_text);
+//         login_error_text = (char *) calloc (64, sizeof (char));
+//         strcpy (login_error_text, "Error - No credentials provided!");
+//     }
 
-}
+// }
 
-void multiplayer_error_packet_handler (void *data) {
+// void multiplayer_error_packet_handler (void *data) {
     
-    if (data) {
-        PacketInfo *pack_info = (PacketInfo *) data;
-        char *end = pack_info->packetData;
-        BlackError *error = (BlackError *) (end + sizeof (PacketHeader));
+//     if (data) {
+//         PacketInfo *pack_info = (PacketInfo *) data;
+//         char *end = pack_info->packetData;
+//         BlackError *error = (BlackError *) (end + sizeof (PacketHeader));
 
-        logMsg (stderr, ERROR, NO_TYPE, createString ("Black error - %s", error->msg));
+//         logMsg (stderr, ERROR, NO_TYPE, createString ("Black error - %s", error->msg));
 
-        switch (error->errorType) {
-            case BLACK_ERROR_SERVER: break;
+//         switch (error->errorType) {
+//             case BLACK_ERROR_SERVER: break;
 
-            case BLACK_ERROR_WRONG_CREDENTIALS: 
-                multiplayer_handle_failed_auth ("Error - Wrong credentials"); 
-                break;
-            case BLACK_ERROR_USERNAME_TAKEN: 
-                multiplayer_handle_failed_auth ("Error - Username already taken!");
-                break;
+//             case BLACK_ERROR_WRONG_CREDENTIALS: 
+//                 multiplayer_handle_failed_auth ("Error - Wrong credentials"); 
+//                 break;
+//             case BLACK_ERROR_USERNAME_TAKEN: 
+//                 multiplayer_handle_failed_auth ("Error - Username already taken!");
+//                 break;
 
-            default:
-                #ifdef BLACK_DEBUG
-                logMsg (stdout, WARNING, NO_TYPE, "Unknown black error type!");
-                #endif
-        }
-    }
+//             default:
+//                 #ifdef BLACK_DEBUG
+//                 logMsg (stdout, WARNING, NO_TYPE, "Unknown black error type!");
+//                 #endif
+//         }
+//     }
 
-}
+// }
 
-void multiplayer_packet_handler (void *data) {
+// // FIXME: player profile
+// void multiplayer_packet_handler (void *data) {
 
-    if (data) {
-        PacketInfo *pack_info = (PacketInfo *) data;
-        char *end = pack_info->packetData;
-        BlackPacketData *black_data = (BlackPacketData *) (end += sizeof (PacketHeader));
-        switch (black_data->blackPacketType) {
-            case PLAYER_PROFILE: {
-                SPlayerProfile *s_profile = (SPlayerProfile *) (end += sizeof (BlackPacketData));
-                player_profile_get_from_server (s_profile); 
-            } break;
+//     if (data) {
+//         /* PacketInfo *pack_info = (PacketInfo *) data;
+//         char *end = pack_info->packetData;
+//         BlackPacketData *black_data = (BlackPacketData *) (end += sizeof (PacketHeader));
+//         switch (black_data->blackPacketType) {
+//             case PLAYER_PROFILE: {
+//                 SPlayerProfile *s_profile = (SPlayerProfile *) (end += sizeof (BlackPacketData));
+//                 player_profile_get_from_server (s_profile); 
+//             } break;
 
-            default: 
-            #ifdef BLACK_DEBUG
-            logMsg (stdout, WARNING, GAME, "Unknwon black packet type.");
-            #endif
-            break;
-        }
-    }
+//             default: 
+//             #ifdef BLACK_DEBUG
+//             logMsg (stdout, WARNING, GAME, "Unknwon black packet type.");
+//             #endif
+//             break;
+//         } */
+//     }
 
-}
+// }
 
-// TODO: we need to pass the game type
-// called from the main menu to request the server to create a new lobby
-void multiplayer_createLobby (void *data) {
+// // TODO: we need to pass the game type
+// // called from the main menu to request the server to create a new lobby
+// void multiplayer_createLobby (void *data) {
 
-    Lobby *new_lobby = (Lobby *) client_game_createLobby (player_client, main_connection, ARCADE);
-    if (new_lobby != NULL) {
-        #ifdef CLIENT_DEBUG   
-            logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
-        #endif
-        current_lobby = new_lobby;
+//     Lobby *new_lobby = (Lobby *) client_game_createLobby (player_client, main_connection, ARCADE);
+//     if (new_lobby != NULL) {
+//         #ifdef CLIENT_DEBUG   
+//             logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
+//         #endif
+//         current_lobby = new_lobby;
 
-        #ifdef CLIENT_DEBUG
-            logMsg (stdout, DEBUG_MSG, NO_TYPE, "New lobby values: ");
-            printf ("Game type: %i\n", new_lobby->settings.gameType);
-            printf ("Player timeout: %i\n", new_lobby->settings.playerTimeout);
-            printf ("FPS: %i\n", new_lobby->settings.fps);
-            printf ("Max players: %i\n", new_lobby->settings.maxPlayers);
-            printf ("Min players: %i\n", new_lobby->settings.minPlayers);
-        #endif
+//         #ifdef CLIENT_DEBUG
+//             logMsg (stdout, DEBUG_MSG, NO_TYPE, "New lobby values: ");
+//             printf ("Game type: %i\n", new_lobby->settings.gameType);
+//             printf ("Player timeout: %i\n", new_lobby->settings.playerTimeout);
+//             printf ("FPS: %i\n", new_lobby->settings.fps);
+//             printf ("Max players: %i\n", new_lobby->settings.maxPlayers);
+//             printf ("Min players: %i\n", new_lobby->settings.minPlayers);
+//         #endif
 
-        toggleLobbyMenu ();
-    }
+//         toggleLobbyMenu ();
+//     }
         
-    else {
-        #ifdef CLIENT_DEBUG
-            logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
-        #endif 
+//     else {
+//         #ifdef CLIENT_DEBUG
+//             logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
+//         #endif 
         
-        // FIXME: give feedback to the player
-    }
+//         // FIXME: give feedback to the player
+//     }
 
-}
+// }
 
-// TODO: we need to pass the game type
-// called from the main menu ro request the server to search a lobby for use
-void multiplayer_joinLobby (void *data) {
+// // TODO: we need to pass the game type
+// // called from the main menu ro request the server to search a lobby for use
+// void multiplayer_joinLobby (void *data) {
 
-    Lobby *new_lobby = (Lobby *) client_game_joinLobby (player_client, main_connection, ARCADE);
-    if (new_lobby != NULL) {
-        #ifdef CLIENT_DEBUG   
-            logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
-        #endif
-        current_lobby = new_lobby;
+//     Lobby *new_lobby = (Lobby *) client_game_joinLobby (player_client, main_connection, ARCADE);
+//     if (new_lobby != NULL) {
+//         #ifdef CLIENT_DEBUG   
+//             logMsg (stdout, SUCCESS, NO_TYPE, "Got a new lobby from server!");
+//         #endif
+//         current_lobby = new_lobby;
 
-        // FIXME: move to the lobby screen!
-    }
+//         // FIXME: move to the lobby screen!
+//     }
         
-    else {
-        #ifdef CLIENT_DEBUG
-            logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
-        #endif 
+//     else {
+//         #ifdef CLIENT_DEBUG
+//             logMsg (stderr, ERROR, NO_TYPE, "Failed to get a new lobby from server!");
+//         #endif 
         
-        // FIXME: give feedback to the player
-    }
+//         // FIXME: give feedback to the player
+//     }
 
-}
+// }
 
-// TODO:
-void multiplayer_leaveLobby (void) {
+// // TODO:
+// void multiplayer_leaveLobby (void) {
 
-    // TODO: check connection, check that we are on a game and handle logic
+//     // TODO: check connection, check that we are on a game and handle logic
 
-}
+// }
 
-#pragma end region
+#pragma endregion
 
 /*** LEADERBOARDS ***/
 
@@ -2712,11 +2475,12 @@ Config *globalLBConfig = NULL;
 DoubleList *localLBData = NULL;
 DoubleList *globalLBData = NULL;
 
+// FIXME:
 // get the config data into a list
 // we expect the data to be already sorted!!
 DoubleList *getLBData (Config *config) {
 
-    DoubleList *lbData = dlist_init (free);
+    /* DoubleList *lbData = dlist_init (free);
 
     ConfigEntity *entity = NULL;
     char *class = NULL;
@@ -2761,7 +2525,7 @@ DoubleList *getLBData (Config *config) {
         free (score);
     }
 
-    return lbData;
+    return lbData; */
 
 }
 
@@ -2775,7 +2539,7 @@ DoubleList *getLocalLBData (void) {
         lbData = getLBData (localLBConfig);
 
         // insert the current player score at the end no matter what
-        dlist_insert_after (lbData, NULL, playerLBEntry);
+        // dlist_insert_after (lbData, NULL, playerLBEntry);
 
         // then sort the list
         // lbData->start = mergeSort (LIST_START (lbData));
@@ -2795,19 +2559,19 @@ DoubleList *getLocalLBData (void) {
 // FIXME: server connection
 DoubleList *getGlobalLBData (void) {
 
-    DoubleList *globalData = NULL;
+    // DoubleList *globalData = NULL;
 
-    // check if we have already a .conf file
-    globalLBConfig = parseConfigFile ("./data/globalLB.cfg");
-    if (globalLBConfig != NULL) {
-        globalData = getLBData (globalLBConfig);
+    // // check if we have already a .conf file
+    // globalLBConfig = parseConfigFile ("./data/globalLB.cfg");
+    // if (globalLBConfig != NULL) {
+    //     globalData = getLBData (globalLBConfig);
 
-        // insert the player score no matter what
-        dlist_insert_after (globalData, NULL, playerLBEntry);
+    //     // insert the player score no matter what
+    //     dlist_insert_after (globalData, NULL, playerLBEntry);
 
-        // then sort the list
-        // globalData->start = mergeSort (LIST_START (globalData));
-    } 
+    //     // then sort the list
+    //     // globalData->start = mergeSort (LIST_START (globalData));
+    // } 
 
     // we don't have a global lb file, so connect to the server
     /* else {
@@ -2838,7 +2602,7 @@ DoubleList *getGlobalLBData (void) {
         closeConnection ();
     } */
 
-    return globalData;
+    // return globalData;
 
 }
 
@@ -2848,30 +2612,30 @@ Config *createNewLBCfg (DoubleList *lbData) {
     // make sure that we are only wrtitting the 10 best scores...
     // don't forget that the data is sorted like < 
 
-    Config *cfg = (Config *) malloc (sizeof (Config));
-    cfg->entities = dlist_init (free);
+    // Config *cfg = (Config *) malloc (sizeof (Config));
+    // cfg->entities = dlist_init (free);
 
-    u8 count = 0;
-    ListElement *e = LIST_END (lbData);
-    LBEntry *entry = NULL;
-    while (count < 10 && e != NULL) {
-        entry = (LBEntry *) e->data;
+    // u8 count = 0;
+    // ListElement *e = LIST_END (lbData);
+    // LBEntry *entry = NULL;
+    // while (count < 10 && e != NULL) {
+    //     entry = (LBEntry *) e->data;
 
-        ConfigEntity *newEntity = (ConfigEntity *) malloc (sizeof (ConfigEntity));
-        newEntity->name = createString ("%s", "ENTRY");
-        setEntityValue (newEntity, "name", entry->playerName);
-        setEntityValue (newEntity, "class", createString ("%i", entry->charClass));
-        setEntityValue (newEntity, "level", entry->level);
-        setEntityValue (newEntity, "kills", entry->kills);
-        setEntityValue (newEntity, "score", createString ("%i", entry->score));
+    //     ConfigEntity *newEntity = (ConfigEntity *) malloc (sizeof (ConfigEntity));
+    //     newEntity->name = createString ("%s", "ENTRY");
+    //     setEntityValue (newEntity, "name", entry->playerName);
+    //     setEntityValue (newEntity, "class", createString ("%i", entry->charClass));
+    //     setEntityValue (newEntity, "level", entry->level);
+    //     setEntityValue (newEntity, "kills", entry->kills);
+    //     setEntityValue (newEntity, "score", createString ("%i", entry->score));
 
-        dlist_insert_after (cfg->entities, LIST_START (cfg->entities), newEntity);
+    //     dlist_insert_after (cfg->entities, LIST_START (cfg->entities), newEntity);
 
-        e = e->prev;
-        count++;
-    }
+    //     e = e->prev;
+    //     count++;
+    // }
 
-    return cfg;
+    // return cfg;
 
 }
 

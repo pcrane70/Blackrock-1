@@ -6,7 +6,7 @@
 
 #include "game/game.h"
 
-#include "input.h"
+#include "engine/input.h"
 
 #include "ui/ui.h"
 #include "ui/gameUI.h"
@@ -20,6 +20,13 @@ bool wasInGame = false;
 TextBox **selected_textBox = NULL;
 
 /*** MISC ***/
+
+void quit (void) {
+
+    running = false;
+    inGame = false;
+
+}
 
 void die (const char *error) {
 
@@ -63,9 +70,9 @@ int main (void) {
     game_manager = game_manager_new (game_state);
 
     // FIXME: init new UI
-    UIScreen *screenForInput;
-    extern UIScreen *menuScene (void);
-    setActiveScene (menuScene ());
+    // UIScreen *screenForInput;
+    // extern UIScreen *menuScene (void);
+    // setActiveScene (menuScene ());
 
     u32 timePerFrame = 1000 / FPS_LIMIT;
     u32 frameStart = 0;

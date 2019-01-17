@@ -3,7 +3,7 @@
 
 #include "ui.h"
 
-#include "item.h"
+#include "game/item.h"
 
 #include "utils/dlist.h"
 

@@ -4,7 +4,8 @@
 #include "blackrock.h"
 
 #include "vector2d.h"
-#include "map.h"    // for Point
+
+#include "engine/sprites.h"
 
 #include "utils/llist.h"
 #include "utils/dlist.h"
@@ -14,11 +15,22 @@
 
 typedef enum State {
 
-    MENU = 0,
-    IN_GAME = 1,
-    GAME_OVER = 2,
+    LOGO = 0,
+    PRELOADING = 1, 
+    MAIN_MENU = 2,
+    IN_GAME = 3,
+    GAME_OVER = 4,
 
 } State;
+
+typedef enum SessionType {
+
+    SINGLE_PLAYER = 0,
+    MULTIPLAYER
+
+} SessionType;
+
+SessionType sessionType; 
 
 typedef struct GameSate {
 
@@ -43,6 +55,8 @@ extern GameManager *game_manager;
 extern GameManager *game_manager_new (GameState *initState);
 extern State game_state_get_current (void);
 extern void game_state_change_state (GameState *newState);
+
+extern void game_cleanUp (void);
 
 // TODO: maybe add a function to register when we change to a state,
 // so that we can load many things with like an array of events?
@@ -249,7 +263,6 @@ typedef struct Event {
 
 /*** OUR LISTS ***/
 
-extern DoubleList *gameObjects;
 extern DoubleList *positions;
 extern DoubleList *graphics;
 extern DoubleList *physics;

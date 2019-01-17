@@ -2,8 +2,8 @@
 
 #include "engine/renderer.h"
 
-#include "game.h"
-#include "ui.h"
+#include "game/game.h"
+// #include "ui.h"
 
 SDL_Window *main_window = NULL;
 SDL_Renderer *main_renderer = NULL;
@@ -51,22 +51,22 @@ void render (void) {
 // FIXME: move this to a separate file
 // TODO: are we cleanning up the console and the screen??
 // do we want that to happen?
-void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
+// void renderScreen (SDL_Renderer *renderer, SDL_Texture *screen, UIScreen *scene) {
 
     // render the views from back to front for the current screen
-    UIView *v = NULL;
-    for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
-        v = (UIView *) LIST_DATA (e);
-        clearConsole (v->console);
-        v->render (v->console);
-        SDL_UpdateTexture (screen, v->pixelRect, v->console->pixels, v->pixelRect->w * sizeof (u32));
-    }
+    // UIView *v = NULL;
+    // for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
+    //     v = (UIView *) LIST_DATA (e);
+    //     clearConsole (v->console);
+    //     v->render (v->console);
+    //     SDL_UpdateTexture (screen, v->pixelRect, v->console->pixels, v->pixelRect->w * sizeof (u32));
+    // }
 
-    SDL_RenderClear (renderer);
-    SDL_RenderCopy (renderer, screen, NULL, NULL);
-    SDL_RenderPresent (renderer);
+    // SDL_RenderClear (renderer);
+    // SDL_RenderCopy (renderer, screen, NULL, NULL);
+    // SDL_RenderPresent (renderer);
 
-}
+// }
 
 static void render_init_main (void) {
 

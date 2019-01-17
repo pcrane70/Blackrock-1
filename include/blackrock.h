@@ -50,11 +50,11 @@ typedef unsigned char asciiChar;
 /*** PATH ***/
 
 #ifdef DEV
-    #define ASSETS_PATH "../assets/"
-#elif PRODUCTION
     #define ASSETS_PATH "./assets/"
-#else 
+#elif PRODUCTION
     #define ASSETS_PATH "../assets/"
+#else 
+    #define ASSETS_PATH "./assets/"
 #endif
 
 /*** MULTIPLAYER ***/

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <time.h>
 
 #include "blackrock.h"
 
@@ -19,8 +20,8 @@ Coord getFreeSpot (bool **mapCells) {
     Coord freeSpot;
 
     for (;;) {
-        u32 freeX = (u32) randomInt (0, MAP_WIDTH - 1);
-        u32 freeY = (u32) randomInt (0, MAP_HEIGHT - 1);
+        u32 freeX = (u32) random_int_in_range (0, MAP_WIDTH - 1);
+        u32 freeY = (u32) random_int_in_range (0, MAP_HEIGHT - 1);
 
         if (mapCells[freeX][freeY] == false) {
             freeSpot.x = freeX;
@@ -138,12 +139,12 @@ static void dungeon_get_segments (DoubleList *segments, Coord from, Coord to, Ro
 
     else if (from.y > waypoint.y) step = -1;
 
-    i32 currRoom = roomWithPoint (curr, firstRoom);
+    i32 currRoom = dungeon_room_with_point (curr, firstRoom);
     Coord lastPoint = from;
     bool done = false;
     Segment *turnSegment = NULL;
     while (!done) {
-        i32 rm = roomWithPoint (curr, firstRoom);
+        i32 rm = dungeon_room_with_point (curr, firstRoom);
         if (usingWayPoint && curr.x == waypoint.x && curr.y == waypoint.y) {
             // check if we are in a room
             if (rm != -1) {
@@ -253,22 +254,22 @@ static void dungeon_carve_segments (DoubleList *hallways, u8 **mapCells) {
             Coord p1 = seg->start;
             Coord p2 = seg->mid;
 
-            if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
-            else carveCorridorHor (p1, p2, mapCells);
+            if (p1.x == p2.x) dungeon_carve_corridor_ver (p1, p2, mapCells);
+            else dungeon_carve_corridor_hor (p1, p2, mapCells);
 
             p1 = seg->mid;
             p2 = seg->end;
 
-            if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
-            else carveCorridorHor (p1, p2, mapCells);
+            if (p1.x == p2.x) dungeon_carve_corridor_ver (p1, p2, mapCells);
+            else dungeon_carve_corridor_hor (p1, p2, mapCells);
         }
 
         else {
             Coord p1 = seg->start;
             Coord p2 = seg->end;
 
-            if (p1.x == p2.x) carveCorridorVer (p1, p2, mapCells);
-            else carveCorridorHor (p1, p2, mapCells);
+            if (p1.x == p2.x) dungeon_carve_corridor_ver (p1, p2, mapCells);
+            else dungeon_carve_corridor_hor (p1, p2, mapCells);
         }
 
         ptr = ptr->next;
@@ -303,7 +304,7 @@ static void dungeon_create (Dungeon *dungeon) {
             cellsUsed += (w * h);
         }
 
-        if (((float) cellsUsed / (float) (dungeon->width * dungeon->height)) > dungeon->fillPercent) 
+        if (((float) cellsUsed / (float) (dungeon->width * dungeon->height)) >= dungeon->fillPercent) 
             roomsDone = true;
     }
 
@@ -377,7 +378,7 @@ static void dungeon_draw (Map *map, Dungeon *dungeon) {
     for (u32 y = 0; y < dungeon->height; y++) {
         for (u32 x = 0; x < dungeon->width; x++) {
             if (dungeon->map[x][y]) {
-                go = game_object_new (NULL, "map");
+                go = game_object_new (NULL, NULL);
                 graphics = game_object_add_component (go, GRAPHICS_COMP);
                 if (graphics)
                     graphics_set_sprite (graphics,
@@ -391,6 +392,13 @@ static void dungeon_draw (Map *map, Dungeon *dungeon) {
                 map->go_map[x][y] = go;    
             }
         }
+    }
+
+    for (u32 y = 0; y < dungeon->height; y++) {
+        for (u32 x = 0; x < dungeon->width; x++) {
+            printf ("%i", dungeon->map[x][y]); 
+        }
+        printf ("\n");
     }
 
 }
@@ -423,6 +431,7 @@ Dungeon *dungeon_generate (Map *map, u32 width, u32 height, u32 seed, float fill
 
         else {
             dungeon->seed = seed;
+            random_set_seed (dungeon->seed);
             dungeon->useRandomSeed = false;
         } 
 

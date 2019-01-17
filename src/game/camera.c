@@ -1,8 +1,8 @@
 #include <stdlib.h>
 
 #include "blackrock.h"
-#include "game.h"
-#include "camera.h"
+#include "game/game.h"
+#include "game/camera.h"
 
 #include "engine/input.h"
 #include "vector2d.h"

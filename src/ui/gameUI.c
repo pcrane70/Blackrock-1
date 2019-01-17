@@ -1,2005 +1,2005 @@
-/*** This file handles the in game UI and the input for playing the game ***/
+// /*** This file handles the in game UI and the input for playing the game ***/
 
-#include <string.h>     // for message functions
+// #include <string.h>     // for message functions
 
-#include "blackrock.h"
-#include "game.h"
-#include "item.h"
-#include "player.h"
-#include "map.h"    // for walls array
+// #include "blackrock.h"
+// #include "game/game.h"
+// #include "game/item.h"
+// #include "game/player.h"
+// #include "game/map/map.h"    // for walls array
 
-#include "ui/ui.h"
-#include "ui/console.h"
-#include "ui/gameUI.h"
+// #include "ui/ui.h"
+// #include "ui/console.h"
+// #include "ui/gameUI.h"
 
-#include "input.h"
+// #include "engine/input.h"
 
-#include "utils/dlist.h"       // for messages
-#include "utils/objectPool.h"
+// #include "utils/dlist.h"       // for messages
+// #include "utils/objectPool.h"
 
-#include "utils/myUtils.h"
+// #include "utils/myUtils.h"
 
-extern UIView *activeView;
+// extern UIView *activeView;
 
-/*** STATS ***/
+// /*** STATS ***/
 
-#define STATS_WIDTH		20
-#define STATS_HEIGHT 	5
+// #define STATS_WIDTH		20
+// #define STATS_HEIGHT 	5
 
-char *statsPlayerName = NULL;
+// char *statsPlayerName = NULL;
 
-u8 layerRendered[MAP_WIDTH][MAP_HEIGHT];
-extern u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
+// u8 layerRendered[MAP_WIDTH][MAP_HEIGHT];
+// extern u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 
-u32 wallsFgColor = 0xFFFFFFFF;
-u32 wallsBgColor = 0x000000FF;
-u32 wallsFadedColor;
-asciiChar wallGlyph = '#';  // 19/08/2018 -- 18:00 -- we are assuming that are walls are the same
+// u32 wallsFgColor = 0xFFFFFFFF;
+// u32 wallsBgColor = 0x000000FF;
+// u32 wallsFadedColor;
+// asciiChar wallGlyph = '#';  // 19/08/2018 -- 18:00 -- we are assuming that are walls are the same
 
-static void renderMap (Console *console) {
+// static void renderMap (Console *console) {
 
-    // setup the layer rendering    
-    for (u32 x = 0; x < MAP_WIDTH; x++)
-        for (u32 y = 0; y < MAP_HEIGHT; y ++)   
-            layerRendered[x][y] = UNSET_LAYER;
+//     // setup the layer rendering    
+//     for (u32 x = 0; x < MAP_WIDTH; x++)
+//         for (u32 y = 0; y < MAP_HEIGHT; y ++)   
+//             layerRendered[x][y] = UNSET_LAYER;
 
-    // render the gos with graphics
-    GameObject *go = NULL;
-    Position *p = NULL;
-    Graphics *g = NULL;
-    u32 fullColor;
-    u32 fadedColor;
-    for (u8 layer = GROUND_LAYER; layer <= TOP_LAYER; layer++) {
-        for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
-            go = (GameObject *) ptr->data;
-            p = (Position *) getComponent (go, POSITION);
-            if (p != NULL && p->layer == layer) {
-                g = getComponent (go, GRAPHICS);
-                if (fovMap[p->x][p->y] > 0) {
-                    g->hasBeenSeen = true;
-                    putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
-                    layerRendered[p->x][p->y] = p->layer;
-                }
+//     // render the gos with graphics
+//     GameObject *go = NULL;
+//     Position *p = NULL;
+//     Graphics *g = NULL;
+//     u32 fullColor;
+//     u32 fadedColor;
+//     for (u8 layer = GROUND_LAYER; layer <= TOP_LAYER; layer++) {
+//         for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
+//             go = (GameObject *) ptr->data;
+//             p = (Position *) getComponent (go, POSITION);
+//             if (p != NULL && p->layer == layer) {
+//                 g = getComponent (go, GRAPHICS);
+//                 if (fovMap[p->x][p->y] > 0) {
+//                     g->hasBeenSeen = true;
+//                     putCharAt (console, g->glyph, p->x, p->y, g->fgColor, g->bgColor);
+//                     layerRendered[p->x][p->y] = p->layer;
+//                 }
 
-                else if (g->visibleOutsideFov && g->hasBeenSeen) {
-                    fullColor = g->fgColor;
-                    fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
-                    putCharAt (console, g->glyph, p->x, p->y, fadedColor, 0x000000FF);
-                    layerRendered[p->x][p->y] = p->layer;
-                }
-            }
+//                 else if (g->visibleOutsideFov && g->hasBeenSeen) {
+//                     fullColor = g->fgColor;
+//                     fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
+//                     putCharAt (console, g->glyph, p->x, p->y, fadedColor, 0x000000FF);
+//                     layerRendered[p->x][p->y] = p->layer;
+//                 }
+//             }
             
-        }
-    }    
+//         }
+//     }    
 
-    // 19/08/2018 -- 17:53 -- we are assuming all walls are visible outside fov
-    for (u32 i = 0; i < wallCount; i++) {
-        if (fovMap[walls[i].x][walls[i].y] > 0) {
-            walls[i].hasBeenSeen = true;
-            putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
-        }
+//     // 19/08/2018 -- 17:53 -- we are assuming all walls are visible outside fov
+//     for (u32 i = 0; i < wallCount; i++) {
+//         if (fovMap[walls[i].x][walls[i].y] > 0) {
+//             walls[i].hasBeenSeen = true;
+//             putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFgColor, wallsBgColor);
+//         }
 
-        else if (walls[i].hasBeenSeen) 
-            putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFadedColor, wallsBgColor);
+//         else if (walls[i].hasBeenSeen) 
+//             putCharAt (console, wallGlyph, walls[i].x, walls[i].y, wallsFadedColor, wallsBgColor);
         
-    }
+//     }
 
-    // FIXME: i dont like this!!
-    Item *item = NULL;
-    Position *itemPos = NULL;
-    Graphics *itemGra = NULL;
-    for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
-        item = (Item *) e->data;
-        itemPos = getGameComponent (item, POSITION);
-        if (itemPos != NULL) {
-            itemGra = getGameComponent (item, GRAPHICS);
+//     // FIXME: i dont like this!!
+//     Item *item = NULL;
+//     Position *itemPos = NULL;
+//     Graphics *itemGra = NULL;
+//     for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+//         item = (Item *) e->data;
+//         itemPos = getGameComponent (item, POSITION);
+//         if (itemPos != NULL) {
+//             itemGra = getGameComponent (item, GRAPHICS);
 
-            if (fovMap[itemPos->x][itemPos->y] > 0) {
-                itemGra->hasBeenSeen = true;
-                putCharAt (console, itemGra->glyph, itemPos->x, itemPos->y, itemGra->fgColor, itemGra->bgColor);
-                layerRendered[itemPos->x][itemPos->y] = itemPos->layer;
-            }
+//             if (fovMap[itemPos->x][itemPos->y] > 0) {
+//                 itemGra->hasBeenSeen = true;
+//                 putCharAt (console, itemGra->glyph, itemPos->x, itemPos->y, itemGra->fgColor, itemGra->bgColor);
+//                 layerRendered[itemPos->x][itemPos->y] = itemPos->layer;
+//             }
 
-            else if (itemGra->visibleOutsideFov && itemGra->hasBeenSeen) {
-                fullColor = itemGra->fgColor;
-                fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
-                putCharAt (console, g->glyph, itemPos->x, itemPos->y, fadedColor, 0x000000FF);
-                layerRendered[itemPos->x][itemPos->y] = itemPos->layer;
-            }
-        }
-    }
+//             else if (itemGra->visibleOutsideFov && itemGra->hasBeenSeen) {
+//                 fullColor = itemGra->fgColor;
+//                 fadedColor = COLOR_FROM_RGBA (RED (fullColor), GREEN (fullColor), BLUE (fullColor), 0x77);
+//                 putCharAt (console, g->glyph, itemPos->x, itemPos->y, fadedColor, 0x000000FF);
+//                 layerRendered[itemPos->x][itemPos->y] = itemPos->layer;
+//             }
+//         }
+//     }
         
-    // render the player
-    putCharAt (console, main_player->graphics->glyph, main_player->pos->x, main_player->pos->y, 
-        main_player->graphics->fgColor, main_player->graphics->bgColor);
+//     // render the player
+//     putCharAt (console, main_player->graphics->glyph, main_player->pos->x, main_player->pos->y, 
+//         main_player->graphics->fgColor, main_player->graphics->bgColor);
 
-}
+// }
 
-// FIXME: create a more efficient way
-static void rednderStats (Console *console) {
+// // FIXME: create a more efficient way
+// static void rednderStats (Console *console) {
 
-    UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
-    ui_drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
+//     UIRect rect = { 0, 0, STATS_WIDTH, STATS_HEIGHT };
+//     ui_drawRect (console, &rect, 0x222222FF, 0, 0xFF990099);
 
-    putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, NO_COLOR);
+//     putStringAt (console, statsPlayerName, 0, 0, 0xFFFFFFFF, NO_COLOR);
 
-    int currHealth = main_player->combat->baseStats.health;
-    int maxHealth = main_player->combat->baseStats.maxHealth;
-    char *str = createString ("HP: %i/%i", currHealth, maxHealth);
+//     int currHealth = main_player->combat->baseStats.health;
+//     int maxHealth = main_player->combat->baseStats.maxHealth;
+//     char *str = createString ("HP: %i/%i", currHealth, maxHealth);
 
-    if (currHealth >= (maxHealth * 0.75)) 
-        putStringAt (console, str, 0, 1, SUCCESS_COLOR, NO_COLOR);
+//     if (currHealth >= (maxHealth * 0.75)) 
+//         putStringAt (console, str, 0, 1, SUCCESS_COLOR, NO_COLOR);
 
-    else if ((currHealth < (maxHealth * 0.75)) && (currHealth >= (maxHealth * 0.25)))
-        putStringAt (console, str, 0, 1, 0xFF990099, NO_COLOR);
+//     else if ((currHealth < (maxHealth * 0.75)) && (currHealth >= (maxHealth * 0.25)))
+//         putStringAt (console, str, 0, 1, 0xFF990099, NO_COLOR);
 
-    else putStringAt (console, str, 0, 1, WARNING_COLOR, NO_COLOR);
+//     else putStringAt (console, str, 0, 1, WARNING_COLOR, NO_COLOR);
 
-    free (str);
+//     free (str);
 
-}
+// }
 
-/*** MESSAGE LOG ***/
+// /*** MESSAGE LOG ***/
 
-#define LOG_WIDTH		60
-#define LOG_HEIGHT		5
+// #define LOG_WIDTH		60
+// #define LOG_HEIGHT		5
 
-// TODO: after a while of inactivity, vanish the log until new activity -- just for astethics
+// // TODO: after a while of inactivity, vanish the log until new activity -- just for astethics
 
-DoubleList *messageLog = NULL;
+// DoubleList *messageLog = NULL;
 
-void deleteMessage (Message *msg) {
+// void deleteMessage (Message *msg) {
 
-    if (msg) {
-        free (msg->msg);
-        free (msg);
-    }
+//     if (msg) {
+//         free (msg->msg);
+//         free (msg);
+//     }
 
-}
+// }
 
-// create a new message in the log
-void logMessage (char *msg, u32 color) {
+// // create a new message in the log
+// void logMessage (char *msg, u32 color) {
 
-    Message *m = (Message *) malloc (sizeof (Message));
+//     Message *m = (Message *) malloc (sizeof (Message));
 
-    if (m != NULL) {
-        m->msg = (char *) calloc (strlen (msg) + 1, sizeof (char));
-        // TODO: change this for my own function...
-        strcpy (m->msg, msg);
-    }
+//     if (m != NULL) {
+//         m->msg = (char *) calloc (strlen (msg) + 1, sizeof (char));
+//         // TODO: change this for my own function...
+//         strcpy (m->msg, msg);
+//     }
 
-    else m->msg = "";
+//     else m->msg = "";
 
-    m->fgColor = color;
+//     m->fgColor = color;
 
-    // add message to the log
-    dlist_insert_after (messageLog, LIST_END (messageLog), m);
+//     // add message to the log
+//     dlist_insert_after (messageLog, LIST_END (messageLog), m);
 
-    // remove the oldest message
-    if (LIST_SIZE (messageLog) > 15)
-        deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
+//     // remove the oldest message
+//     if (LIST_SIZE (messageLog) > 15)
+//         deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
 
-}
+// }
 
-// TODO: add scrolling
-static void renderLog (Console *console) {
+// // TODO: add scrolling
+// static void renderLog (Console *console) {
 
-    UIRect rect = { 0, 0, LOG_WIDTH, LOG_HEIGHT };
-    ui_drawRect (console, &rect, 0x191919FF, 0, 0xFF990099);
+//     UIRect rect = { 0, 0, LOG_WIDTH, LOG_HEIGHT };
+//     ui_drawRect (console, &rect, 0x191919FF, 0, 0xFF990099);
 
-    if (messageLog == NULL) return; // we don't have any messages to display
+//     if (messageLog == NULL) return; // we don't have any messages to display
 
-    // get the last 5 messages from the log
-    ListElement *e = LIST_END (messageLog);
-    i32 msgCount = LIST_SIZE (messageLog);
-    u32 row = 4;
-    u32 col = 1;
+//     // get the last 5 messages from the log
+//     ListElement *e = LIST_END (messageLog);
+//     i32 msgCount = LIST_SIZE (messageLog);
+//     u32 row = 4;
+//     u32 col = 1;
 
-    if (msgCount < 5) row -= (5 - msgCount);
-    else msgCount = 5;
+//     if (msgCount < 5) row -= (5 - msgCount);
+//     else msgCount = 5;
 
-    for (u32 i = 0; i < msgCount; i++) {
-        if (e != NULL) {
-            Message *m = (Message *) LIST_DATA (e);
-            Rect rect = { .x = col, .y = row, .w = LOG_WIDTH, .h = 1 };
-            putStringAtRect (console, m->msg, rect, false, m->fgColor, 0x00000000);
-            e = e->prev;
-            row -= 1;
-        }
-    }
+//     for (u32 i = 0; i < msgCount; i++) {
+//         if (e != NULL) {
+//             Message *m = (Message *) LIST_DATA (e);
+//             Rect rect = { .x = col, .y = row, .w = LOG_WIDTH, .h = 1 };
+//             putStringAtRect (console, m->msg, rect, false, m->fgColor, 0x00000000);
+//             e = e->prev;
+//             row -= 1;
+//         }
+//     }
 
-}
+// }
 
-void cleanMessageLog (void) {
+// void cleanMessageLog (void) {
 
-    while (LIST_SIZE (messageLog) > 0) 
-        deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
+//     while (LIST_SIZE (messageLog) > 0) 
+//         deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
 
-    free (messageLog);
+//     free (messageLog);
 
-}
+// }
 
-/*** LOOT ***/
+// /*** LOOT ***/
 
-#define LOOT_LEFT               26
-#define LOOT_DUAL_INV_LEFT      4
-#define LOOT_DUAL_TOOL_LEFT     9
-#define LOOT_TOP                9
-#define LOOT_WIDTH              28
-#define LOOT_HEIGHT             24
+// #define LOOT_LEFT               26
+// #define LOOT_DUAL_INV_LEFT      4
+// #define LOOT_DUAL_TOOL_LEFT     9
+// #define LOOT_TOP                9
+// #define LOOT_WIDTH              28
+// #define LOOT_HEIGHT             24
 
-#define LOOT_COLOR     0x69777DFF
-#define LOOT_TEXT      0xEEEEEEFF
+// #define LOOT_COLOR     0x69777DFF
+// #define LOOT_TEXT      0xEEEEEEFF
 
-UIView *lootView = NULL;
+// UIView *lootView = NULL;
 
-extern Loot *currentLoot;
+// extern Loot *currentLoot;
 
-#define LOOT_RECT_WIDTH     26
-#define LOOT_RECT_HEIGHT    4
+// #define LOOT_RECT_WIDTH     26
+// #define LOOT_RECT_HEIGHT    4
 
-#define LOOT_IMG_WIDTH    4
-#define LOOT_IMG_HEIGHT   4
+// #define LOOT_IMG_WIDTH    4
+// #define LOOT_IMG_HEIGHT   4
 
-typedef struct LootRect {
+// typedef struct LootRect {
 
-    UIRect *bgRect;
-    UIRect *imgRect;
-    Item *item;
+//     UIRect *bgRect;
+//     UIRect *imgRect;
+//     Item *item;
 
-} LootRect;
+// } LootRect;
 
-DoubleList *activeLootRects = NULL;
-Pool *lootRectsPool = NULL;
+// DoubleList *activeLootRects = NULL;
+// Pool *lootRectsPool = NULL;
 
-LootRect *createLootRect (u8 y, Item *i) {
+// LootRect *createLootRect (u8 y, Item *i) {
 
-    LootRect *new = NULL;
+//     LootRect *new = NULL;
 
-    if (POOL_SIZE (lootRectsPool) > 0) {
-        new = (LootRect *) pool_pop (lootRectsPool);
-        if (new == NULL) {
-            new = (LootRect *) malloc (sizeof (LootRect));
-            new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-            new->imgRect = (UIRect *) malloc (sizeof (UIRect));
-        }
-    }
+//     if (POOL_SIZE (lootRectsPool) > 0) {
+//         new = (LootRect *) pool_pop (lootRectsPool);
+//         if (new == NULL) {
+//             new = (LootRect *) malloc (sizeof (LootRect));
+//             new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+//             new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+//         }
+//     }
 
-    else {
-        new = (LootRect *) malloc (sizeof (LootRect));
-        new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-        new->imgRect = (UIRect *) malloc (sizeof (UIRect));
-    }
+//     else {
+//         new = (LootRect *) malloc (sizeof (LootRect));
+//         new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+//         new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+//     }
 
-    new->bgRect->x = 1;
-    new->bgRect->y = y + 4 + (4 * y);
-    new->bgRect->w = LOOT_RECT_WIDTH;
-    new->bgRect->h = LOOT_RECT_HEIGHT;
+//     new->bgRect->x = 1;
+//     new->bgRect->y = y + 4 + (4 * y);
+//     new->bgRect->w = LOOT_RECT_WIDTH;
+//     new->bgRect->h = LOOT_RECT_HEIGHT;
 
-    new->imgRect->x = 1;
-    new->imgRect->y = y + 4 + (4 * y);
-    new->imgRect->w = LOOT_IMG_WIDTH;
-    new->imgRect->h = LOOT_IMG_HEIGHT;
+//     new->imgRect->x = 1;
+//     new->imgRect->y = y + 4 + (4 * y);
+//     new->imgRect->w = LOOT_IMG_WIDTH;
+//     new->imgRect->h = LOOT_IMG_HEIGHT;
 
-    new->item = i;
+//     new->item = i;
 
-    return new;
+//     return new;
 
-}
+// }
 
-void destroyLootRects (void) {
+// void destroyLootRects (void) {
 
-    LootRect *lr = NULL;
+//     LootRect *lr = NULL;
 
-    if (activeLootRects != NULL) {
-        if (LIST_SIZE (activeLootRects) > 0) {
-            for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
-                lr = (LootRect *) e->data;
-                if (lr->bgRect != NULL) free (lr->bgRect);
-                if (lr->imgRect != NULL) free (lr->imgRect);
-                lr->item = NULL;
-            }
-        }
+//     if (activeLootRects != NULL) {
+//         if (LIST_SIZE (activeLootRects) > 0) {
+//             for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//                 lr = (LootRect *) e->data;
+//                 if (lr->bgRect != NULL) free (lr->bgRect);
+//                 if (lr->imgRect != NULL) free (lr->imgRect);
+//                 lr->item = NULL;
+//             }
+//         }
         
-        dlist_destroy (activeLootRects);
-    } 
+//         dlist_destroy (activeLootRects);
+//     } 
 
-    if (lootRectsPool != NULL) {
-        if (POOL_SIZE (lootRectsPool) > 0) {
-            for (PoolMember *e = POOL_TOP (lootRectsPool); e != NULL; e = e->next) {
-                lr = (LootRect *) e->data;
-                if (lr->bgRect != NULL) free (lr->bgRect);
-                if (lr->imgRect != NULL) free (lr->imgRect);
-                lr->item = NULL;
-            }
-        }
+//     if (lootRectsPool != NULL) {
+//         if (POOL_SIZE (lootRectsPool) > 0) {
+//             for (PoolMember *e = POOL_TOP (lootRectsPool); e != NULL; e = e->next) {
+//                 lr = (LootRect *) e->data;
+//                 if (lr->bgRect != NULL) free (lr->bgRect);
+//                 if (lr->imgRect != NULL) free (lr->imgRect);
+//                 lr->item = NULL;
+//             }
+//         }
 
-        pool_clear (lootRectsPool);
-    } 
+//         pool_clear (lootRectsPool);
+//     } 
 
-}
+// }
 
-void drawLootRect (Console *console, LootRect *rect, u32 bgColor) {
+// void drawLootRect (Console *console, LootRect *rect, u32 bgColor) {
 
-    ui_drawRect (console, rect->bgRect, bgColor, 0, NO_COLOR);
-    ui_drawRect (console, rect->imgRect, NO_COLOR, 0, NO_COLOR);
+//     ui_drawRect (console, rect->bgRect, bgColor, 0, NO_COLOR);
+//     ui_drawRect (console, rect->imgRect, NO_COLOR, 0, NO_COLOR);
 
-    Graphics *g = (Graphics *) getGameComponent (rect->item, GRAPHICS);
-    if (g != NULL)        
-        putStringAt (console, g->name, 7, (rect->bgRect->y) + 2,
-            getItemColor (rect->item->rarity), NO_COLOR);
+//     Graphics *g = (Graphics *) getGameComponent (rect->item, GRAPHICS);
+//     if (g != NULL)        
+//         putStringAt (console, g->name, 7, (rect->bgRect->y) + 2,
+//             getItemColor (rect->item->rarity), NO_COLOR);
 
-}
+// }
 
-u8 lootYIdx = 0;
+// u8 lootYIdx = 0;
 
-void updateLootUI (u8 yIdx) {
+// void updateLootUI (u8 yIdx) {
 
-    u8 count = 0;
-    if (activeLootRects != NULL && (LIST_SIZE (activeLootRects) > 0)) {
-        for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
-            if (count == yIdx) {
-                pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
-                break;
-            }
+//     u8 count = 0;
+//     if (activeLootRects != NULL && (LIST_SIZE (activeLootRects) > 0)) {
+//         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//             if (count == yIdx) {
+//                 pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
+//                 break;
+//             }
 
-            count ++;
-        }
-    }
+//             count ++;
+//         }
+//     }
 
-    if (lootYIdx >= LIST_SIZE (activeLootRects)) lootYIdx -= 1;
+//     if (lootYIdx >= LIST_SIZE (activeLootRects)) lootYIdx -= 1;
 
-}
+// }
 
-void renderLootRects (Console *console) {
+// void renderLootRects (Console *console) {
 
-    u8 count = 0;
-    for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
-        if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, BLACK);
-        else drawLootRect (console, (LootRect *) e->data, WHITE);
+//     u8 count = 0;
+//     for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//         if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, BLACK);
+//         else drawLootRect (console, (LootRect *) e->data, WHITE);
         
-        count++;
-    }
+//         count++;
+//     }
 
-}
+// }
 
-static void renderLoot (Console *console) {
+// static void renderLoot (Console *console) {
 
-    if (currentLoot != NULL) {
-        UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
-        ui_drawRect (console, &looRect, LOOT_COLOR, 1, 0xFF990099);
+//     if (currentLoot != NULL) {
+//         UIRect looRect = { 0, 0, LOOT_WIDTH, LOOT_HEIGHT };
+//         ui_drawRect (console, &looRect, LOOT_COLOR, 1, 0xFF990099);
 
-        putStringAt (console, "Loot", 12, 2, LOOT_TEXT, 0x00000000);
+//         putStringAt (console, "Loot", 12, 2, LOOT_TEXT, 0x00000000);
 
-        if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0))
-            renderLootRects (console);   
+//         if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0))
+//             renderLootRects (console);   
 
-        // gold
-        char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
-        putStringAt (console, gold, 8, 21, LOOT_TEXT, 0x00000000);
-        free (gold);
-    }
+//         // gold
+//         char *gold = createString ("%ig - %is - %ic", currentLoot->money[0], currentLoot->money[1], currentLoot->money[2]);
+//         putStringAt (console, gold, 8, 21, LOOT_TEXT, 0x00000000);
+//         free (gold);
+//     }
 
-}
+// }
 
-void hideLoot (void) {
+// void hideLoot (void) {
 
-    ListElement *e = dlist_get_ListElement (activeScene->views, lootView);
-    ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, e));
-    lootView = NULL;
+//     ListElement *e = dlist_get_ListElement (activeScene->views, lootView);
+//     ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, e));
+//     lootView = NULL;
 
-    // deactivate the loot rects and send them to the pool
-    if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
-        for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
-            pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
+//     // deactivate the loot rects and send them to the pool
+//     if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
+//         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
+//             pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
 
-        dlist_reset (activeLootRects);
-    }
+//         dlist_reset (activeLootRects);
+//     }
 
-}
+// }
 
-void showLoot (bool dual) {
+// void showLoot (bool dual) {
 
-    if (dual) {
-        // tooltip
-        if (tooltipView != NULL) {
-            UIRect lootRect = { (16 * LOOT_DUAL_TOOL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-            lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-        }
+//     if (dual) {
+//         // tooltip
+//         if (tooltipView != NULL) {
+//             UIRect lootRect = { (16 * LOOT_DUAL_TOOL_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+//             lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+//         }
 
-        // with inventory
-        else {
-            UIRect lootRect = { (16 * LOOT_DUAL_INV_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-            lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-        }
-    }
+//         // with inventory
+//         else {
+//             UIRect lootRect = { (16 * LOOT_DUAL_INV_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+//             lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+//         }
+//     }
 
-    else {
-        UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
-        lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
-    }
+//     else {
+//         UIRect lootRect = { (16 * LOOT_LEFT), (16 * LOOT_TOP), (16 * LOOT_WIDTH), (16 * LOOT_HEIGHT) };
+//         lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
+//     }
 
-    dlist_insert_after (activeScene->views, LIST_END (activeScene->views), lootView);
+//     dlist_insert_after (activeScene->views, LIST_END (activeScene->views), lootView);
 
-    lootYIdx = 0;
+//     lootYIdx = 0;
 
-    if (currentLoot->lootItems != NULL && LIST_SIZE (currentLoot->lootItems) > 0) {
-        LootRect *lr = NULL;
-        u8 y = 0;
-        for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
-            lr = createLootRect (y, (Item *) e->data);
-            dlist_insert_after (activeLootRects, LIST_END (activeLootRects), lr);
-            y++;
-        }
-    }
+//     if (currentLoot->lootItems != NULL && LIST_SIZE (currentLoot->lootItems) > 0) {
+//         LootRect *lr = NULL;
+//         u8 y = 0;
+//         for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
+//             lr = createLootRect (y, (Item *) e->data);
+//             dlist_insert_after (activeLootRects, LIST_END (activeLootRects), lr);
+//             y++;
+//         }
+//     }
 
-    activeView = lootView;
+//     activeView = lootView;
 
-}
+// }
 
-void updateLootPos (bool dual) {
+// void updateLootPos (bool dual) {
 
-    if (lootView != NULL) {
-        hideLoot ();
-        showLoot (dual);
-    }
+//     if (lootView != NULL) {
+//         hideLoot ();
+//         showLoot (dual);
+//     }
 
-}
+// }
 
-void updateInventoryPos (bool);
-void updateCharacterPos (bool);
+// void updateInventoryPos (bool);
+// void updateCharacterPos (bool);
 
-void toggleLootWindow (void) {
+// void toggleLootWindow (void) {
 
-    if (lootView == NULL) showLoot (false);
+//     if (lootView == NULL) showLoot (false);
     
-    else {
-        if (inventoryView != NULL) updateInventoryPos (false);
-        else if (characterView != NULL) updateCharacterPos (false);
+//     else {
+//         if (inventoryView != NULL) updateInventoryPos (false);
+//         else if (characterView != NULL) updateCharacterPos (false);
 
-        hideLoot ();
+//         hideLoot ();
 
-        activeView = (UIView *) (LIST_END (activeScene->views))->data;
-    } 
+//         activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//     } 
 
-}
+// }
 
-Item *getSelectedLootItem (void) {
+// Item *getSelectedLootItem (void) {
 
-    Item *retVal = NULL;
+//     Item *retVal = NULL;
 
-    u8 count = 0;
-    for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
-        if (count == lootYIdx) {
-            LootRect *lr = (LootRect *) e->data;
-            if (lr->item != NULL) {
-                retVal = lr->item;
-                break;
-            } 
-        }
+//     u8 count = 0;
+//     for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//         if (count == lootYIdx) {
+//             LootRect *lr = (LootRect *) e->data;
+//             if (lr->item != NULL) {
+//                 retVal = lr->item;
+//                 break;
+//             } 
+//         }
 
-        count++;
-    }
+//         count++;
+//     }
 
-    return retVal;
+//     return retVal;
 
-}
+// }
 
-/*** INVENTORY ***/
+// /*** INVENTORY ***/
 
-#define INVENTORY_LEFT		    20
-#define INVENTORY_TOP		    7
-#define INVENTORY_DUAL_LEFT     37
+// #define INVENTORY_LEFT		    20
+// #define INVENTORY_TOP		    7
+// #define INVENTORY_DUAL_LEFT     37
 
-#define INVENTORY_WIDTH		40
-#define INVENTORY_HEIGHT	30
+// #define INVENTORY_WIDTH		40
+// #define INVENTORY_HEIGHT	30
 
-#define INVENTORY_CELL_WIDTH    4
-#define INVENTORY_CELL_HEIGHT   4
+// #define INVENTORY_CELL_WIDTH    4
+// #define INVENTORY_CELL_HEIGHT   4
 
-#define INVENTORY_COLOR     0xCC8E35FF
-#define INVENTORY_TEXT      0xEEEEEEFF
+// #define INVENTORY_COLOR     0xCC8E35FF
+// #define INVENTORY_TEXT      0xEEEEEEFF
 
-#define INVENTORY_CELL_COLOR    0xD1C7B8FF
-#define INVENTORY_SELECTED      0x847967FF
+// #define INVENTORY_CELL_COLOR    0xD1C7B8FF
+// #define INVENTORY_SELECTED      0x847967FF
 
-#define ZERO_ITEMS      48
+// #define ZERO_ITEMS      48
 
-#define INV_DESC_BOX_WIDTH      34
-#define INV_DESC_BOX_HEIGHT     3
+// #define INV_DESC_BOX_WIDTH      34
+// #define INV_DESC_BOX_HEIGHT     3
 
-UIView *inventoryView = NULL;
+// UIView *inventoryView = NULL;
 
-u8 inventoryXIdx = 0;
-u8 inventoryYIdx = 0;
+// u8 inventoryXIdx = 0;
+// u8 inventoryYIdx = 0;
 
-typedef struct {
+// typedef struct {
 
-    u8 xIdx, yIdx;
-    UIRect *bgRect;
-    UIRect *imgRect;
-    Item *item;
+//     u8 xIdx, yIdx;
+//     UIRect *bgRect;
+//     UIRect *imgRect;
+//     Item *item;
 
-} ItemRect;
+// } ItemRect;
 
-ItemRect ***inventoryRects = NULL;
+// ItemRect ***inventoryRects = NULL;
 
-// TODO: image rects
-ItemRect *createInvRect (u8 x, u8 y) {
+// // TODO: image rects
+// ItemRect *createInvRect (u8 x, u8 y) {
 
-    ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
+//     ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
 
-    new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-    new->bgRect->w = INVENTORY_CELL_WIDTH;
-    new->bgRect->h = INVENTORY_CELL_HEIGHT;
-    // new->imgRect = (UIRect *) malloc (sizeof (UIRect));
-    // new->imgRect->w = INVENTORY_CELL_WIDTH;
-    // new->imgRect->h = INVENTORY_CELL_HEIGHT;
-    new->imgRect = NULL;
-    new->item = NULL;
+//     new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+//     new->bgRect->w = INVENTORY_CELL_WIDTH;
+//     new->bgRect->h = INVENTORY_CELL_HEIGHT;
+//     // new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+//     // new->imgRect->w = INVENTORY_CELL_WIDTH;
+//     // new->imgRect->h = INVENTORY_CELL_HEIGHT;
+//     new->imgRect = NULL;
+//     new->item = NULL;
 
-    new->xIdx = x;
-    new->yIdx = y;
-    new->bgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
-    new->bgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
-    // new->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
-    // new->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+//     new->xIdx = x;
+//     new->yIdx = y;
+//     new->bgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+//     new->bgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+//     // new->imgRect->x = x + 3 + (INVENTORY_CELL_WIDTH * x);
+//     // new->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
 
-    return new;
+//     return new;
 
-}
+// }
 
-ItemRect ***initInventoryRects (void) {
+// ItemRect ***initInventoryRects (void) {
 
-    ItemRect ***invRects = (ItemRect ***) malloc (7 * sizeof (ItemRect **));
-    for (u8 i = 0; i < 7; i++)
-        invRects[i] = (ItemRect **) malloc (3 * sizeof (ItemRect *));
+//     ItemRect ***invRects = (ItemRect ***) malloc (7 * sizeof (ItemRect **));
+//     for (u8 i = 0; i < 7; i++)
+//         invRects[i] = (ItemRect **) malloc (3 * sizeof (ItemRect *));
 
-    for (u8 y = 0; y < 3; y++) 
-        for (u8 x = 0; x < 7; x++) 
-            invRects[x][y] = createInvRect (x, y);
+//     for (u8 y = 0; y < 3; y++) 
+//         for (u8 x = 0; x < 7; x++) 
+//             invRects[x][y] = createInvRect (x, y);
 
-    return invRects;
+//     return invRects;
 
-}
+// }
 
-void resetInventoryRects (void) {
+// void resetInventoryRects (void) {
 
-    for (u8 y = 0; y < 3; y++) 
-        for (u8 x = 0; x < 7; x++)
-            inventoryRects[x][y]->item = NULL;
+//     for (u8 y = 0; y < 3; y++) 
+//         for (u8 x = 0; x < 7; x++)
+//             inventoryRects[x][y]->item = NULL;
 
-    // display the items that are currently on the players inventory
-    for (u8 y = 0; y < 3; y++) {
-        for (u8 x = 0; x < 7; x++) {
-            if (main_player->inventory[x][y] != NULL)
-                inventoryRects[x][y]->item = main_player->inventory[x][y];
+//     // display the items that are currently on the players inventory
+//     for (u8 y = 0; y < 3; y++) {
+//         for (u8 x = 0; x < 7; x++) {
+//             if (main_player->inventory[x][y] != NULL)
+//                 inventoryRects[x][y]->item = main_player->inventory[x][y];
 
-        }
-    }
+//         }
+//     }
 
-}
+// }
 
-void destroyInvRects (void) {
+// void destroyInvRects (void) {
 
-    for (u8 y = 0; y < 3; y++) {
-        for (u8 x = 0; x < 7; x++) {
-            free (inventoryRects[x][y]->bgRect);
-            // free (inventoryRects[x][y]->imgRect);
-            inventoryRects[x][y]->item = NULL;
-            free (inventoryRects[x][y]);
-        }
-    }
+//     for (u8 y = 0; y < 3; y++) {
+//         for (u8 x = 0; x < 7; x++) {
+//             free (inventoryRects[x][y]->bgRect);
+//             // free (inventoryRects[x][y]->imgRect);
+//             inventoryRects[x][y]->item = NULL;
+//             free (inventoryRects[x][y]);
+//         }
+//     }
 
-    free (inventoryRects);
+//     free (inventoryRects);
 
-}
+// }
 
-// TODO: draw here the item image
-void renderInventoryItems (Console *console) {
+// // TODO: draw here the item image
+// void renderInventoryItems (Console *console) {
 
-    ItemRect *invRect = NULL;
+//     ItemRect *invRect = NULL;
 
-    // draw inventory cells
-    for (u8 y = 0; y < 3; y++) {
-        for (u8 x = 0; x < 7; x++) {
-            invRect = inventoryRects[x][y];
+//     // draw inventory cells
+//     for (u8 y = 0; y < 3; y++) {
+//         for (u8 x = 0; x < 7; x++) {
+//             invRect = inventoryRects[x][y];
     
-             // draw highlighted rect
-            if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
-                ui_drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
-                // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
-                if (invRect->item != NULL) {
-                    // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
-                    Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
-                    if (g != NULL) 
-                        putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), NO_COLOR);
+//              // draw highlighted rect
+//             if (inventoryXIdx == invRect->xIdx && inventoryYIdx == invRect->yIdx) {
+//                 ui_drawRect (console, invRect->bgRect, INVENTORY_SELECTED, 0, NO_COLOR);
+//                 // drawRect (console, invRect->imgRect, INVENTORY_SELECTED, 0, 0x00000000);
+//                 if (invRect->item != NULL) {
+//                     // drawImageAt (console, apple, invRect->imgRect->x, invRect->imgRect->y);
+//                     Graphics *g = (Graphics *) getGameComponent (invRect->item, GRAPHICS);
+//                     if (g != NULL) 
+//                         putStringAt (console, g->name, 5, 22, getItemColor (invRect->item->rarity), NO_COLOR);
 
-                    u8 quantity = ZERO_ITEMS + invRect->item->quantity;
-                    // putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
-                    putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
-                }
-            }
+//                     u8 quantity = ZERO_ITEMS + invRect->item->quantity;
+//                     // putCharAt (console, quantity, invRect->imgRect->x, invRect->imgRect->y, 0xFFFFFFFF, 0x00000000);
+//                     putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
+//                 }
+//             }
 
-            // draw every other rect with an item on it
-            else if (invRect->item != NULL) {
-                ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+//             // draw every other rect with an item on it
+//             else if (invRect->item != NULL) {
+//                 ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
-                u8 quantity = ZERO_ITEMS + invRect->item->quantity;
-                putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
-            }
+//                 u8 quantity = ZERO_ITEMS + invRect->item->quantity;
+//                 putCharAt (console, quantity, invRect->bgRect->x, invRect->bgRect->y, WHITE, NO_COLOR);
+//             }
 
-            // draw the empty rects
-            else ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
-        }
-    }
+//             // draw the empty rects
+//             else ui_drawRect (console, invRect->bgRect, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+//         }
+//     }
 
-} 
+// } 
 
-static void renderInventory (Console *console) {
+// static void renderInventory (Console *console) {
 
-    UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
-    ui_drawRect (console, &rect, INVENTORY_COLOR, 0, NO_COLOR);
+//     UIRect rect = { 0, 0, INVENTORY_WIDTH, INVENTORY_HEIGHT };
+//     ui_drawRect (console, &rect, INVENTORY_COLOR, 0, NO_COLOR);
 
-    putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, NO_COLOR);
+//     putStringAt (console, "Inventory", 16, 2, INVENTORY_TEXT, NO_COLOR);
 
-    // draw item description rect
-    UIRect descBox = { 3, 21, INV_DESC_BOX_WIDTH, INV_DESC_BOX_HEIGHT };
-    ui_drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, NO_COLOR);
+//     // draw item description rect
+//     UIRect descBox = { 3, 21, INV_DESC_BOX_WIDTH, INV_DESC_BOX_HEIGHT };
+//     ui_drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, NO_COLOR);
 
-    // render items
-    renderInventoryItems (console);
+//     // render items
+//     renderInventoryItems (console);
     
-    // gold
-    char *gold = createString ("%ig - %is - %ic", main_player->money[0], main_player->money[1], main_player->money[2]);
-    putStringAt (console, gold, 13, 25, INVENTORY_TEXT, NO_COLOR);
+//     // gold
+//     char *gold = createString ("%ig - %is - %ic", main_player->money[0], main_player->money[1], main_player->money[2]);
+//     putStringAt (console, gold, 13, 25, INVENTORY_TEXT, NO_COLOR);
 
-    putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, NO_COLOR);
-    putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, NO_COLOR);
-    free (gold);
+//     putStringAt (console, "[wasd] to move", 4, 27, INVENTORY_TEXT, NO_COLOR);
+//     putStringAt (console, "[e] to use, [Spc] to drop", 4, 28, INVENTORY_TEXT, NO_COLOR);
+//     free (gold);
 
-}
+// }
 
-void updateCharacterPos (bool);
+// void updateCharacterPos (bool);
 
-void showInventory (bool dual) {
+// void showInventory (bool dual) {
 
-    if (lootView) dual = true;
+//     if (lootView) dual = true;
 
-    if (dual) {
-        UIRect inv = { (16 * INVENTORY_DUAL_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = ui_newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
-    }
+//     if (dual) {
+//         UIRect inv = { (16 * INVENTORY_DUAL_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
+//         inventoryView = ui_newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
+//     }
 
-    else {
-        UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
-        inventoryView = ui_newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
-    }
+//     else {
+//         UIRect inv = { (16 * INVENTORY_LEFT), (16 * INVENTORY_TOP), (16 * INVENTORY_WIDTH), (16 * INVENTORY_HEIGHT) };
+//         inventoryView = ui_newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
+//     }
 
-    dlist_insert_after (activeScene->views, LIST_END (activeScene->views), inventoryView);
+//     dlist_insert_after (activeScene->views, LIST_END (activeScene->views), inventoryView);
 
-    if (inventoryRects == NULL) {
-        inventoryRects = initInventoryRects ();
-        resetInventoryRects ();
-    } 
+//     if (inventoryRects == NULL) {
+//         inventoryRects = initInventoryRects ();
+//         resetInventoryRects ();
+//     } 
 
-    else resetInventoryRects ();
+//     else resetInventoryRects ();
 
-}
+// }
 
-void hideInventory (void) {
+// void hideInventory (void) {
 
-    if (inventoryView != NULL) {
-        ListElement *inv = dlist_get_ListElement (activeScene->views, inventoryView);
-        ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, inv));
-        inventoryView = NULL;
-    }
+//     if (inventoryView != NULL) {
+//         ListElement *inv = dlist_get_ListElement (activeScene->views, inventoryView);
+//         ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, inv));
+//         inventoryView = NULL;
+//     }
 
-}
+// }
 
-void updateInventoryPos (bool dual) {
+// void updateInventoryPos (bool dual) {
 
-    if (inventoryView != NULL) {
-        hideInventory ();
-        showInventory (dual);
-    }
+//     if (inventoryView != NULL) {
+//         hideInventory ();
+//         showInventory (dual);
+//     }
 
-}
+// }
 
-void toggleInventory (void) {
+// void toggleInventory (void) {
 
-    if (inventoryView == NULL) {
-        if (tooltipView != NULL) {
-            if (lootView != NULL) toggleTooltip (true);
-            else toggleTooltip (false);
-        } 
+//     if (inventoryView == NULL) {
+//         if (tooltipView != NULL) {
+//             if (lootView != NULL) toggleTooltip (true);
+//             else toggleTooltip (false);
+//         } 
 
-        if (lootView != NULL) {
-            updateLootPos (true);
-            showInventory (true);
-        }
+//         if (lootView != NULL) {
+//             updateLootPos (true);
+//             showInventory (true);
+//         }
 
-        else if (characterView != NULL) {
-            updateCharacterPos (true);
-            showInventory (true);
-        }
+//         else if (characterView != NULL) {
+//             updateCharacterPos (true);
+//             showInventory (true);
+//         }
 
-        else showInventory (false);
+//         else showInventory (false);
 
-        activeView = inventoryView;
-    } 
+//         activeView = inventoryView;
+//     } 
 
-    else {
-        if (lootView != NULL) updateLootPos (false);
-        else if (characterView != NULL) updateCharacterPos (false);
+//     else {
+//         if (lootView != NULL) updateLootPos (false);
+//         else if (characterView != NULL) updateCharacterPos (false);
 
-        hideInventory ();
+//         hideInventory ();
 
-        activeView = (UIView *) (LIST_END (activeScene->views))->data;
-    }
+//         activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//     }
     
-}
+// }
 
-Item *getInvSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYIdx]->item; }
+// Item *getInvSelectedItem (void) { return inventoryRects[inventoryXIdx][inventoryYIdx]->item; }
 
-/*** CHARACTER ***/
+// /*** CHARACTER ***/
 
-#define CHARACTER_LEFT		    25
-#define CHARACTER_TOP		    2
-#define CHARACTER_DUAL_LEFT     3
+// #define CHARACTER_LEFT		    25
+// #define CHARACTER_TOP		    2
+// #define CHARACTER_DUAL_LEFT     3
 
-#define CHARACTER_WIDTH		29
-#define CHARACTER_HEIGHT	40
+// #define CHARACTER_WIDTH		29
+// #define CHARACTER_HEIGHT	40
 
-#define CHARACTER_CELL_WIDTH    4
-#define CHARACTER_CELL_HEIGHT   4
+// #define CHARACTER_CELL_WIDTH    4
+// #define CHARACTER_CELL_HEIGHT   4
 
-#define CHARACTER_COLOR     0x4B6584FF
-#define CHARACTER_TEXT      0xEEEEEEFF
+// #define CHARACTER_COLOR     0x4B6584FF
+// #define CHARACTER_TEXT      0xEEEEEEFF
 
-#define CHARACTER_CELL_COLOR    0xD1C7B8FF
-#define CHARACTER_SELECTED      0x847967FF
+// #define CHARACTER_CELL_COLOR    0xD1C7B8FF
+// #define CHARACTER_SELECTED      0x847967FF
 
-#define CHAR_DESC_BOX_WIDTH     25
-#define CHAR_DESC_BOX_HEIGHT    3
+// #define CHAR_DESC_BOX_WIDTH     25
+// #define CHAR_DESC_BOX_HEIGHT    3
 
-UIView *characterView = NULL;
+// UIView *characterView = NULL;
 
-ItemRect ***characterRects = NULL;
+// ItemRect ***characterRects = NULL;
 
-u8 characterXIdx = 0;
-u8 characterYIdx = 0;
+// u8 characterXIdx = 0;
+// u8 characterYIdx = 0;
 
-Item *getCharSelectedItem (void) { return characterRects[characterXIdx][characterYIdx]->item; }
+// Item *getCharSelectedItem (void) { return characterRects[characterXIdx][characterYIdx]->item; }
 
-// TODO: image rects
-ItemRect *createCharRect (u8 x, u8 y) {
+// // TODO: image rects
+// ItemRect *createCharRect (u8 x, u8 y) {
 
-    ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
+//     ItemRect *new = (ItemRect *) malloc (sizeof (ItemRect));
 
-    new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-    new->bgRect->w = CHARACTER_CELL_WIDTH;
-    new->bgRect->h = CHARACTER_CELL_HEIGHT;
-    // new->imgRect = (UIRect *) malloc (sizeof (UIRect));
-    // new->imgRect->w = INVENTORY_CELL_WIDTH;
-    // new->imgRect->h = INVENTORY_CELL_HEIGHT;
-    new->imgRect = NULL;
-    new->item = NULL;
+//     new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+//     new->bgRect->w = CHARACTER_CELL_WIDTH;
+//     new->bgRect->h = CHARACTER_CELL_HEIGHT;
+//     // new->imgRect = (UIRect *) malloc (sizeof (UIRect));
+//     // new->imgRect->w = INVENTORY_CELL_WIDTH;
+//     // new->imgRect->h = INVENTORY_CELL_HEIGHT;
+//     new->imgRect = NULL;
+//     new->item = NULL;
 
-    new->xIdx = x;
-    new->yIdx = y;
+//     new->xIdx = x;
+//     new->yIdx = y;
 
-    new->bgRect->y = y + 5 + (CHARACTER_CELL_HEIGHT * y);
-    // new->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
+//     new->bgRect->y = y + 5 + (CHARACTER_CELL_HEIGHT * y);
+//     // new->imgRect->y = y + 5 + (INVENTORY_CELL_HEIGHT * y);
 
-    // armour
-    if (y != 5) {
-        if (x == 1) {
-            new->bgRect->x = ((CHARACTER_LEFT + CHARACTER_WIDTH)) - 2;
-            // new->imgRect->x = new->bgRect->x;
-        }
+//     // armour
+//     if (y != 5) {
+//         if (x == 1) {
+//             new->bgRect->x = ((CHARACTER_LEFT + CHARACTER_WIDTH)) - 2;
+//             // new->imgRect->x = new->bgRect->x;
+//         }
 
-        else {
-            new->bgRect->x = x + 2 + (CHARACTER_CELL_WIDTH * x);
-            // new->imgRect->x = new->bgRect->x;
-        }
-    }
+//         else {
+//             new->bgRect->x = x + 2 + (CHARACTER_CELL_WIDTH * x);
+//             // new->imgRect->x = new->bgRect->x;
+//         }
+//     }
 
-    // weapons
-    else {
-        if (x == 0) {
-            new->bgRect->x = 9;
-            // new->imgRect->x = new->bgRect->x;
-        }
+//     // weapons
+//     else {
+//         if (x == 0) {
+//             new->bgRect->x = 9;
+//             // new->imgRect->x = new->bgRect->x;
+//         }
 
-        else {
-            new->bgRect->x = 16;
-            // new->imgRect->x = new->bgRect->x;
-        }
+//         else {
+//             new->bgRect->x = 16;
+//             // new->imgRect->x = new->bgRect->x;
+//         }
         
-    }
+//     }
 
-    return new;
+//     return new;
 
-}
+// }
 
-ItemRect ***initCharacterRects (void) {
+// ItemRect ***initCharacterRects (void) {
 
-    ItemRect ***charRects = (ItemRect ***) malloc (2 * sizeof (ItemRect **));
-    for (u8 i = 0; i < 2; i++)
-        charRects[i] = (ItemRect **) malloc (6 * sizeof (ItemRect *));
+//     ItemRect ***charRects = (ItemRect ***) malloc (2 * sizeof (ItemRect **));
+//     for (u8 i = 0; i < 2; i++)
+//         charRects[i] = (ItemRect **) malloc (6 * sizeof (ItemRect *));
 
-    for (u8 y = 0; y < 6; y++) 
-        for (u8 x = 0; x < 2; x++) 
-            charRects[x][y] = createCharRect (x, y);
+//     for (u8 y = 0; y < 6; y++) 
+//         for (u8 x = 0; x < 2; x++) 
+//             charRects[x][y] = createCharRect (x, y);
             
-    return charRects;
+//     return charRects;
 
-}
+// }
 
-void destroyCharRects (void) {
+// void destroyCharRects (void) {
 
-    for (u8 y = 0; y < 6; y++) {
-        for (u8 x = 0; x < 2; x++) {
-            if (characterRects[x][y] != NULL) {
-                free (characterRects[x][y]->bgRect);
-                // free (characterRects[x][y]->imgRect);
-                characterRects[x][y]->item = NULL;
-                free (characterRects[x][y]);
-            }
-        }
-    }
+//     for (u8 y = 0; y < 6; y++) {
+//         for (u8 x = 0; x < 2; x++) {
+//             if (characterRects[x][y] != NULL) {
+//                 free (characterRects[x][y]->bgRect);
+//                 // free (characterRects[x][y]->imgRect);
+//                 characterRects[x][y]->item = NULL;
+//                 free (characterRects[x][y]);
+//             }
+//         }
+//     }
 
-    free (characterRects);
+//     free (characterRects);
 
-}
+// }
 
-// FIXME:
-void resetCharacterRects (void) {
+// // FIXME:
+// void resetCharacterRects (void) {
 
-    for (u8 y = 0; y < 6; y++) 
-        for (u8 x = 0; x < 2; x++) 
-            characterRects[x][y]->item = NULL;
+//     for (u8 y = 0; y < 6; y++) 
+//         for (u8 x = 0; x < 2; x++) 
+//             characterRects[x][y]->item = NULL;
 
-    // FIXME:
-    // equipment
-    // for (u8 y = 0; y < 5; y++) 
-    //     for (u8 x = 0; x < 2; x++) 
-    //         characterRects[x][y]->item = 
+//     // FIXME:
+//     // equipment
+//     // for (u8 y = 0; y < 5; y++) 
+//     //     for (u8 x = 0; x < 2; x++) 
+//     //         characterRects[x][y]->item = 
 
-    // weapons
-    for (u8 i = 0; i < 2; i++) characterRects[i][5]->item = main_player->weapons[i];
+//     // weapons
+//     for (u8 i = 0; i < 2; i++) characterRects[i][5]->item = main_player->weapons[i];
 
-}
+// }
 
-// TODO: draw images
-void renderCharacterRects (Console *console) {
+// // TODO: draw images
+// void renderCharacterRects (Console *console) {
 
-    ItemRect *charRect = NULL;
+//     ItemRect *charRect = NULL;
 
-    // draw inventory cells
-    for (u8 y = 0; y < 6; y++) {
-        for (u8 x = 0; x < 2; x++) {
-            charRect = characterRects[x][y];
+//     // draw inventory cells
+//     for (u8 y = 0; y < 6; y++) {
+//         for (u8 x = 0; x < 2; x++) {
+//             charRect = characterRects[x][y];
     
-             // draw highlighted rect
-            if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) 
-                ui_drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, NO_COLOR);
+//              // draw highlighted rect
+//             if (characterXIdx == charRect->xIdx && characterYIdx == charRect->yIdx) 
+//                 ui_drawRect (console, charRect->bgRect, CHARACTER_SELECTED, 0, NO_COLOR);
 
-            // draw every other rect with an item on it
-            else if (charRect->item != NULL) 
-                ui_drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
+//             // draw every other rect with an item on it
+//             else if (charRect->item != NULL) 
+//                 ui_drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
 
-            // draw the empty rects
-            else ui_drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
-        }
-    }
+//             // draw the empty rects
+//             else ui_drawRect (console, charRect->bgRect, CHARACTER_CELL_COLOR, 0, NO_COLOR);
+//         }
+//     }
 
-}
+// }
 
-// I don't like this function...
-char *getCharRectSlot (void) {
+// // I don't like this function...
+// char *getCharRectSlot (void) {
 
-    char slot[15];
+//     char slot[15];
 
-    if (characterXIdx == 0 && characterYIdx == 0) strcpy (slot, "Head");
-    else if (characterXIdx == 0 && characterYIdx == 1) strcpy (slot, "Necklace");
-    else if (characterXIdx == 0 && characterYIdx == 2) strcpy (slot, "Shoulders");
-    else if (characterXIdx == 0 && characterYIdx == 3) strcpy (slot, "Cape");
-    else if (characterXIdx == 0 && characterYIdx == 4) strcpy (slot, "Chest");
-    else if (characterXIdx == 1 && characterYIdx == 0) strcpy (slot, "Hands");
-    else if (characterXIdx == 1 && characterYIdx == 1) strcpy (slot, "Waist");
-    else if (characterXIdx == 1 && characterYIdx == 2) strcpy (slot, "Legs");
-    else if (characterXIdx == 1 && characterYIdx == 3) strcpy (slot, "Shoes");
-    else if (characterXIdx == 1 && characterYIdx == 4) strcpy (slot, "Ring");
+//     if (characterXIdx == 0 && characterYIdx == 0) strcpy (slot, "Head");
+//     else if (characterXIdx == 0 && characterYIdx == 1) strcpy (slot, "Necklace");
+//     else if (characterXIdx == 0 && characterYIdx == 2) strcpy (slot, "Shoulders");
+//     else if (characterXIdx == 0 && characterYIdx == 3) strcpy (slot, "Cape");
+//     else if (characterXIdx == 0 && characterYIdx == 4) strcpy (slot, "Chest");
+//     else if (characterXIdx == 1 && characterYIdx == 0) strcpy (slot, "Hands");
+//     else if (characterXIdx == 1 && characterYIdx == 1) strcpy (slot, "Waist");
+//     else if (characterXIdx == 1 && characterYIdx == 2) strcpy (slot, "Legs");
+//     else if (characterXIdx == 1 && characterYIdx == 3) strcpy (slot, "Shoes");
+//     else if (characterXIdx == 1 && characterYIdx == 4) strcpy (slot, "Ring");
 
-    else if (characterXIdx == 0 && characterYIdx == 5) strcpy (slot, "Main");
-    else if (characterXIdx == 1 && characterYIdx == 5) strcpy (slot, "Off");
+//     else if (characterXIdx == 0 && characterYIdx == 5) strcpy (slot, "Main");
+//     else if (characterXIdx == 1 && characterYIdx == 5) strcpy (slot, "Off");
 
-    char *retVal = (char *) calloc (strlen (slot), sizeof (char));
-    strcpy (retVal, slot);
+//     char *retVal = (char *) calloc (strlen (slot), sizeof (char));
+//     strcpy (retVal, slot);
 
-    return retVal;
+//     return retVal;
 
-}
+// }
 
-static void renderCharacter (Console *console) {
+// static void renderCharacter (Console *console) {
 
-    UIRect rect = { 0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT };
-    ui_drawRect (console, &rect, CHARACTER_COLOR, 0, 0xFFFFFFFF);
+//     UIRect rect = { 0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT };
+//     ui_drawRect (console, &rect, CHARACTER_COLOR, 0, 0xFFFFFFFF);
 
-    // render character info
-    putStringAt (console, statsPlayerName, 6, 2, CHARACTER_TEXT, 0x00000000);
+//     // render character info
+//     putStringAt (console, statsPlayerName, 6, 2, CHARACTER_TEXT, 0x00000000);
 
-    renderCharacterRects (console);
+//     renderCharacterRects (console);
 
-    // draw item description rect
-    UIRect descBox = { 2, 36, CHAR_DESC_BOX_WIDTH, CHAR_DESC_BOX_HEIGHT };
-    ui_drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
-    Item *selected = getCharSelectedItem ();
-    if (selected != NULL) {
-        Graphics *g = (Graphics *) getGameComponent (selected, GRAPHICS);
-        if (g != NULL) {
-            char *slot = getItemSlot (selected);
-            // FIXME: add dynamic color strings
-            char *str = createString ("%s: %s", slot, g->name);
-            putStringAt (console, str, 3, 37, getItemColor (selected->rarity), 0x00000000);
-            free (slot);
-            free (str);
-        }
-    }
+//     // draw item description rect
+//     UIRect descBox = { 2, 36, CHAR_DESC_BOX_WIDTH, CHAR_DESC_BOX_HEIGHT };
+//     ui_drawRect (console, &descBox, INVENTORY_CELL_COLOR, 0, 0x00000000);
+//     Item *selected = getCharSelectedItem ();
+//     if (selected != NULL) {
+//         Graphics *g = (Graphics *) getGameComponent (selected, GRAPHICS);
+//         if (g != NULL) {
+//             char *slot = getItemSlot (selected);
+//             // FIXME: add dynamic color strings
+//             char *str = createString ("%s: %s", slot, g->name);
+//             putStringAt (console, str, 3, 37, getItemColor (selected->rarity), 0x00000000);
+//             free (slot);
+//             free (str);
+//         }
+//     }
 
-    // the slot is empty
-    else {
-        char *slot = getCharRectSlot ();
-        // FIXME: CHANGE COLOR
-        putStringAt (console, slot, 3, 37, 0x000000FF, 0x00000000);
-        free (slot);
-    }
+//     // the slot is empty
+//     else {
+//         char *slot = getCharRectSlot ();
+//         // FIXME: CHANGE COLOR
+//         putStringAt (console, slot, 3, 37, 0x000000FF, 0x00000000);
+//         free (slot);
+//     }
     
-}
+// }
 
-void showCharacter (bool dual) {
+// void showCharacter (bool dual) {
 
-    if (dual) {
-        UIRect c = { (16 * CHARACTER_DUAL_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = ui_newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
-    }
+//     if (dual) {
+//         UIRect c = { (16 * CHARACTER_DUAL_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
+//         characterView = ui_newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
+//     }
 
-    else {
-        UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
-        characterView = ui_newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
-    }
+//     else {
+//         UIRect c = { (16 * CHARACTER_LEFT), (16 * CHARACTER_TOP), (16 * CHARACTER_WIDTH), (16 * CHARACTER_HEIGHT) };
+//         characterView = ui_newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
+//     }
 
-    dlist_insert_after (activeScene->views, LIST_END (activeScene->views), characterView);
+//     dlist_insert_after (activeScene->views, LIST_END (activeScene->views), characterView);
 
-    if (characterRects == NULL) {
-        characterRects = initCharacterRects ();
-        resetCharacterRects ();
-    } 
+//     if (characterRects == NULL) {
+//         characterRects = initCharacterRects ();
+//         resetCharacterRects ();
+//     } 
 
-    else resetCharacterRects ();
+//     else resetCharacterRects ();
 
-}
+// }
 
-void hideCharacter () {
+// void hideCharacter () {
 
-    if (characterView) {
-        ListElement *c = dlist_get_ListElement (activeScene->views, characterView);
-        ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, c));
-        characterView = NULL;
-    }
+//     if (characterView) {
+//         ListElement *c = dlist_get_ListElement (activeScene->views, characterView);
+//         ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, c));
+//         characterView = NULL;
+//     }
 
-}
+// }
 
-void updateCharacterPos (bool dual) {
+// void updateCharacterPos (bool dual) {
 
-    if (characterView != NULL) {
-        if (dual) {
-            hideCharacter (true);
-            showCharacter (true);
-        } 
+//     if (characterView != NULL) {
+//         if (dual) {
+//             hideCharacter (true);
+//             showCharacter (true);
+//         } 
 
-        else {
-            hideCharacter (false);
-            showCharacter (false);
-        } 
+//         else {
+//             hideCharacter (false);
+//             showCharacter (false);
+//         } 
         
-    }
+//     }
 
-}
+// }
 
-void toggleCharacter (void) {
+// void toggleCharacter (void) {
 
-    if (characterView == NULL) {
-        if (inventoryView != NULL) {
-            updateInventoryPos (true);
-            showCharacter (true);
-        } 
+//     if (characterView == NULL) {
+//         if (inventoryView != NULL) {
+//             updateInventoryPos (true);
+//             showCharacter (true);
+//         } 
 
-        else showCharacter (false);
+//         else showCharacter (false);
 
-        activeView = characterView;
-    } 
+//         activeView = characterView;
+//     } 
 
-    else {
-        if (inventoryView != NULL) updateInventoryPos (false);
+//     else {
+//         if (inventoryView != NULL) updateInventoryPos (false);
 
-        hideCharacter ();
+//         hideCharacter ();
 
-        activeView = (UIView *) (LIST_END (activeScene->views))->data;
-    } 
+//         activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//     } 
      
-}
+// }
 
-/*** TOOLTIP ***/
+// /*** TOOLTIP ***/
 
-#define TOOLTIP_LEFT           43
-#define TOOLTIP_TOP            9
-#define TOOLTIP_WIDTH          28
-#define TOOLTIP_HEIGHT         24
+// #define TOOLTIP_LEFT           43
+// #define TOOLTIP_TOP            9
+// #define TOOLTIP_WIDTH          28
+// #define TOOLTIP_HEIGHT         24
 
-#define TOOLTIP_COLOR     0x69777DFF
-#define TOOLTIP_TEXT      0xEEEEEEFF
+// #define TOOLTIP_COLOR     0x69777DFF
+// #define TOOLTIP_TEXT      0xEEEEEEFF
 
-#define TTIP_CHAR_LEFT      3
-#define TTIP_CHAR_RIGHT     57
-#define TTIP_CHAR_WIDTH     20
-#define TTIP_CHAR_HEIGHT    18
+// #define TTIP_CHAR_LEFT      3
+// #define TTIP_CHAR_RIGHT     57
+// #define TTIP_CHAR_WIDTH     20
+// #define TTIP_CHAR_HEIGHT    18
 
-#define TTIP_INV_LEFT       10
-#define TTIP_INV_WIDTH      20
-#define TTIP_INV_HEIGHT     18
+// #define TTIP_INV_LEFT       10
+// #define TTIP_INV_WIDTH      20
+// #define TTIP_INV_HEIGHT     18
 
-UIView *tooltipView = NULL;
+// UIView *tooltipView = NULL;
 
-u8 tooltip;
+// u8 tooltip;
 
-typedef struct {
+// typedef struct {
 
-    char *health;
-    char *dps;
-    char *armor;
-    char *strength;
-    char *stamina;
-    char *agility;
-    char *intellect;
+//     char *health;
+//     char *dps;
+//     char *armor;
+//     char *strength;
+//     char *stamina;
+//     char *agility;
+//     char *intellect;
 
-} ItemStatsUI;
+// } ItemStatsUI;
 
-typedef struct {
+// typedef struct {
 
-    char *name;
-    u32 rarityColor;
-    char *typeName;
-    char *valueTxt;
-    bool isEquipment;
-    bool isWeapon;
-    Weapon *w;
-    Armour *a;
-    ItemStatsUI stats;
-    char *lifeTxt;
-    u32 lifeColor;
+//     char *name;
+//     u32 rarityColor;
+//     char *typeName;
+//     char *valueTxt;
+//     bool isEquipment;
+//     bool isWeapon;
+//     Weapon *w;
+//     Armour *a;
+//     ItemStatsUI stats;
+//     char *lifeTxt;
+//     u32 lifeColor;
 
-} UIItemData;
+// } UIItemData;
 
-// Tooltips items
-UIItemData *lootItemUI = NULL;
-UIItemData *equippedItemUI = NULL;
-UIItemData *iData = NULL;
+// // Tooltips items
+// UIItemData *lootItemUI = NULL;
+// UIItemData *equippedItemUI = NULL;
+// UIItemData *iData = NULL;
 
-// just to be sure...
-UIItemData *newItemUIData (void) {
+// // just to be sure...
+// UIItemData *newItemUIData (void) {
 
-    UIItemData *data = (UIItemData *) malloc (sizeof (UIItemData));
+//     UIItemData *data = (UIItemData *) malloc (sizeof (UIItemData));
 
-    if (data != NULL) {
-        data->name = NULL;
-        data->valueTxt = NULL;
-        data->typeName = NULL;
+//     if (data != NULL) {
+//         data->name = NULL;
+//         data->valueTxt = NULL;
+//         data->typeName = NULL;
 
-        data->w = NULL;
-        data->a = NULL;
+//         data->w = NULL;
+//         data->a = NULL;
 
-        data->stats.health = NULL;
-        data->stats.dps = NULL;
-        data->stats.armor = NULL;
-        data->stats.strength = NULL;
-        data->stats.stamina = NULL;
-        data->stats.agility = NULL;
-        data->stats.intellect = NULL;
+//         data->stats.health = NULL;
+//         data->stats.dps = NULL;
+//         data->stats.armor = NULL;
+//         data->stats.strength = NULL;
+//         data->stats.stamina = NULL;
+//         data->stats.agility = NULL;
+//         data->stats.intellect = NULL;
 
-        data->lifeTxt = NULL;
-    }
+//         data->lifeTxt = NULL;
+//     }
 
-    return data;
+//     return data;
 
-}
+// }
 
-void cleanItemData (UIItemData *data) {
+// void cleanItemData (UIItemData *data) {
 
-    if (data != NULL) {
-        if (data->name) free (data->name);
-        if (data->valueTxt) free (data->valueTxt);
-        if (data->typeName) free (data->typeName);
+//     if (data != NULL) {
+//         if (data->name) free (data->name);
+//         if (data->valueTxt) free (data->valueTxt);
+//         if (data->typeName) free (data->typeName);
 
-        data->w = NULL;
-        data->a = NULL;
+//         data->w = NULL;
+//         data->a = NULL;
 
-        if (data->stats.health) free (data->stats.health);
-        if (data->stats.dps) free (data->stats.dps);
-        if (data->stats.armor) free (data->stats.armor);
-        if (data->stats.strength) free (data->stats.strength);
-        if (data->stats.stamina) free (data->stats.stamina);
-        if (data->stats.agility) free (data->stats.agility);
-        if (data->stats.intellect) free (data->stats.intellect);
+//         if (data->stats.health) free (data->stats.health);
+//         if (data->stats.dps) free (data->stats.dps);
+//         if (data->stats.armor) free (data->stats.armor);
+//         if (data->stats.strength) free (data->stats.strength);
+//         if (data->stats.stamina) free (data->stats.stamina);
+//         if (data->stats.agility) free (data->stats.agility);
+//         if (data->stats.intellect) free (data->stats.intellect);
 
-        if (data->lifeTxt) free (data->lifeTxt);
+//         if (data->lifeTxt) free (data->lifeTxt);
 
-        free (data);
-    }
+//         free (data);
+//     }
 
-}
+// }
 
-// FIXME: add more stats
-UIItemData *getUIItemData (Item *item) {
+// // FIXME: add more stats
+// UIItemData *getUIItemData (Item *item) {
 
-    UIItemData *data = newItemUIData ();
+//     UIItemData *data = newItemUIData ();
 
-    Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
-    data->w = (Weapon *) getItemComponent (item, WEAPON);
-    data->a = (Armour *) getItemComponent (item, ARMOUR);
+//     Graphics *g = (Graphics *) getGameComponent (item, GRAPHICS);
+//     data->w = (Weapon *) getItemComponent (item, WEAPON);
+//     data->a = (Armour *) getItemComponent (item, ARMOUR);
 
-    if (data->w != NULL || data->a != NULL) {
-        data->isEquipment = true;
-        data->typeName = getEquipmentTypeName (item);
-    } 
-    else data->isEquipment = false;
+//     if (data->w != NULL || data->a != NULL) {
+//         data->isEquipment = true;
+//         data->typeName = getEquipmentTypeName (item);
+//     } 
+//     else data->isEquipment = false;
 
-    if (data->w != NULL) data->isWeapon = true;
-    else data->isWeapon = false;
+//     if (data->w != NULL) data->isWeapon = true;
+//     else data->isWeapon = false;
 
-    data->name = (char *) calloc (strlen (g->name), sizeof (char));
-    strcpy (data->name, g->name);
+//     data->name = (char *) calloc (strlen (g->name), sizeof (char));
+//     strcpy (data->name, g->name);
 
-    data->rarityColor = getItemColor (item->rarity);
+//     data->rarityColor = getItemColor (item->rarity);
 
-    data->valueTxt = createString ("%ig - %is - %ic", item->value[0], item->value[1], item->value[2]);
+//     data->valueTxt = createString ("%ig - %is - %ic", item->value[0], item->value[1], item->value[2]);
 
-    // FIXME:
-    // get the item stats modifiers modifiers, this is for a food or a potion
+//     // FIXME:
+//     // get the item stats modifiers modifiers, this is for a food or a potion
 
-    if (data->isEquipment) {
-        if (data->isWeapon) data->stats.dps = createString ("Dps: %i", data->w->dps);
+//     if (data->isEquipment) {
+//         if (data->isWeapon) data->stats.dps = createString ("Dps: %i", data->w->dps);
 
-        if (data->isWeapon) data->lifeTxt = createString ("Lifetime: %i / %i", data->w->lifetime, data->w->maxLifetime);
-        else data->lifeTxt = createString ("Lifetime: %i / %i", data->a->lifetime, data->a->maxLifetime);
+//         if (data->isWeapon) data->lifeTxt = createString ("Lifetime: %i / %i", data->w->lifetime, data->w->maxLifetime);
+//         else data->lifeTxt = createString ("Lifetime: %i / %i", data->a->lifetime, data->a->maxLifetime);
 
-        data->lifeColor = getLifeTimeColor (item);
-    }
+//         data->lifeColor = getLifeTimeColor (item);
+//     }
 
-    return data;
+//     return data;
 
-}
+// }
 
-// TODO: do we also add the colors here?
-// This stores the difference in stats between the compared items
-typedef struct {
+// // TODO: do we also add the colors here?
+// // This stores the difference in stats between the compared items
+// typedef struct {
 
-    char *dpsDiff;
-    char *armorDiff;
-    char *strengthDiff;
-    char *staminaDiff;
-    char *agilityDiff;
-    char *intellectDiff;
+//     char *dpsDiff;
+//     char *armorDiff;
+//     char *strengthDiff;
+//     char *staminaDiff;
+//     char *agilityDiff;
+//     char *intellectDiff;
 
-} CompareItems;
+// } CompareItems;
 
-CompareItems *comp = NULL;
-bool compWeapons;
+// CompareItems *comp = NULL;
+// bool compWeapons;
 
-// just to be sure...
-CompareItems *newComp (void) {
+// // just to be sure...
+// CompareItems *newComp (void) {
 
-    CompareItems *comp = (CompareItems *) malloc (sizeof (CompareItems));
+//     CompareItems *comp = (CompareItems *) malloc (sizeof (CompareItems));
 
-    if (comp != NULL) {
-        comp->dpsDiff = NULL;
-        comp->armorDiff = NULL;
-        comp->strengthDiff = NULL;
-        comp->staminaDiff = NULL;
-        comp->agilityDiff = NULL;
-        comp->intellectDiff = NULL;
-    }
+//     if (comp != NULL) {
+//         comp->dpsDiff = NULL;
+//         comp->armorDiff = NULL;
+//         comp->strengthDiff = NULL;
+//         comp->staminaDiff = NULL;
+//         comp->agilityDiff = NULL;
+//         comp->intellectDiff = NULL;
+//     }
 
-    else fprintf (stderr, "Comp items is NULL!\n");
+//     else fprintf (stderr, "Comp items is NULL!\n");
 
-    return comp;
+//     return comp;
 
-}
+// }
 
-void destroyComp (void) {
+// void destroyComp (void) {
 
-    if (comp->dpsDiff) free (comp->dpsDiff);
-    if (comp->armorDiff) free (comp->armorDiff);
-    if (comp->strengthDiff) free (comp->strengthDiff);
-    if (comp->staminaDiff) free (comp->staminaDiff);
-    if (comp->agilityDiff) free (comp->agilityDiff);
-    if (comp->intellectDiff) free (comp->intellectDiff);
+//     if (comp->dpsDiff) free (comp->dpsDiff);
+//     if (comp->armorDiff) free (comp->armorDiff);
+//     if (comp->strengthDiff) free (comp->strengthDiff);
+//     if (comp->staminaDiff) free (comp->staminaDiff);
+//     if (comp->agilityDiff) free (comp->agilityDiff);
+//     if (comp->intellectDiff) free (comp->intellectDiff);
     
-    free (comp);
+//     free (comp);
 
-}
+// }
 
-// search an equipped item to compare to
-Item *itemToCompare (Item *item) {
+// // search an equipped item to compare to
+// Item *itemToCompare (Item *item) {
 
-    Item *compareTo = NULL;
+//     Item *compareTo = NULL;
 
-    Weapon *w = (Weapon *) getItemComponent (item, WEAPON);
-    if (w != NULL) {
-        // we have a weapon, so compare it to the one we have equipped
-        Item *equipped = main_player->weapons[w->slot];
-        if (equipped != NULL) compareTo = equipped;
+//     Weapon *w = (Weapon *) getItemComponent (item, WEAPON);
+//     if (w != NULL) {
+//         // we have a weapon, so compare it to the one we have equipped
+//         Item *equipped = main_player->weapons[w->slot];
+//         if (equipped != NULL) compareTo = equipped;
         
-    }
+//     }
 
-    else {
-        Armour *a = (Armour *) getItemComponent (item, ARMOUR);
-        if (a != NULL) {
-            // we have an armour, so compare it to the one we have equipped
-            Item *equipped = main_player->equipment[a->slot];
-            if (equipped != NULL) compareTo = equipped;
-        }
-    }
+//     else {
+//         Armour *a = (Armour *) getItemComponent (item, ARMOUR);
+//         if (a != NULL) {
+//             // we have an armour, so compare it to the one we have equipped
+//             Item *equipped = main_player->equipment[a->slot];
+//             if (equipped != NULL) compareTo = equipped;
+//         }
+//     }
 
-    return compareTo;
+//     return compareTo;
 
-}
+// }
     
-// FIXME: add more stats here!!
-CompareItems *compareItems (Item *lootItem, Item *compareTo) {
+// // FIXME: add more stats here!!
+// CompareItems *compareItems (Item *lootItem, Item *compareTo) {
 
-    CompareItems *comp = newComp ();
+//     CompareItems *comp = newComp ();
 
-    // first check if we are comparing weapons
-    Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
-    Weapon *equippedWeapon = (Weapon *) getItemComponent (compareTo, WEAPON);
+//     // first check if we are comparing weapons
+//     Weapon *lootWeapon = (Weapon *) getItemComponent (lootItem, WEAPON);
+//     Weapon *equippedWeapon = (Weapon *) getItemComponent (compareTo, WEAPON);
 
-    if ((lootWeapon != NULL) && (equippedWeapon != NULL)) {
-        i8 diff;
+//     if ((lootWeapon != NULL) && (equippedWeapon != NULL)) {
+//         i8 diff;
 
-        // dps
-        diff = lootWeapon->dps - equippedWeapon->dps;
-        if (diff < 0) comp->dpsDiff = createString ("-%i", diff);
-        else if (diff > 0) comp->dpsDiff = createString ("+%i", diff);
-        else {
-            comp->dpsDiff = (char *) calloc (3, sizeof (char));
-            strcpy (comp->dpsDiff, "--");
-        }
-    }    
+//         // dps
+//         diff = lootWeapon->dps - equippedWeapon->dps;
+//         if (diff < 0) comp->dpsDiff = createString ("-%i", diff);
+//         else if (diff > 0) comp->dpsDiff = createString ("+%i", diff);
+//         else {
+//             comp->dpsDiff = (char *) calloc (3, sizeof (char));
+//             strcpy (comp->dpsDiff, "--");
+//         }
+//     }    
 
-    return comp;
+//     return comp;
 
-}
+// }
 
-// FIXME: what happens when we have 2 one handed weapons equipped
-// FIXME: add value?
-// FIXME: how to handle the y idx??
-// TODO: change to color depending if we can equip it or not
-void renderLootTooltip (Console *console) {
+// // FIXME: what happens when we have 2 one handed weapons equipped
+// // FIXME: add value?
+// // FIXME: how to handle the y idx??
+// // TODO: change to color depending if we can equip it or not
+// void renderLootTooltip (Console *console) {
 
-    // render the loot item first
-    if (lootItemUI != NULL) {
-        putStringAt (console, lootItemUI->name, 2, 2, lootItemUI->rarityColor, NO_COLOR);
-        if (lootItemUI->isEquipment)
-            putStringAt (console, lootItemUI->typeName, 2, 4, TOOLTIP_TEXT, NO_COLOR);
+//     // render the loot item first
+//     if (lootItemUI != NULL) {
+//         putStringAt (console, lootItemUI->name, 2, 2, lootItemUI->rarityColor, NO_COLOR);
+//         if (lootItemUI->isEquipment)
+//             putStringAt (console, lootItemUI->typeName, 2, 4, TOOLTIP_TEXT, NO_COLOR);
 
-        if (lootItemUI->isWeapon) {
-            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
-            else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
-        }
+//         if (lootItemUI->isWeapon) {
+//             if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 4, WHITE, NO_COLOR);
+//             else putStringAt (console, "One-Handed", 13, 4, WHITE, NO_COLOR);
+//         }
 
-        // FIXME: loot stats
+//         // FIXME: loot stats
 
-        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 8, lootItemUI->lifeColor, NO_COLOR);
-    }
+//         if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 8, lootItemUI->lifeColor, NO_COLOR);
+//     }
 
-    // render the equipped item
-    if (equippedItemUI != NULL) {
-        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
-        putStringAt (console, lootItemUI->name, 2, 14, lootItemUI->rarityColor, NO_COLOR);
-        if (lootItemUI->isEquipment)
-            putStringAt (console, lootItemUI->typeName, 2, 16, TOOLTIP_TEXT, NO_COLOR);
+//     // render the equipped item
+//     if (equippedItemUI != NULL) {
+//         putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
+//         putStringAt (console, lootItemUI->name, 2, 14, lootItemUI->rarityColor, NO_COLOR);
+//         if (lootItemUI->isEquipment)
+//             putStringAt (console, lootItemUI->typeName, 2, 16, TOOLTIP_TEXT, NO_COLOR);
 
-        if (lootItemUI->isWeapon) {
-            if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
-            else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
-        }
+//         if (lootItemUI->isWeapon) {
+//             if (lootItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 13, 16, WHITE, NO_COLOR);
+//             else putStringAt (console, "One-Handed", 13, 16, WHITE, NO_COLOR);
+//         }
 
-        // FIXME: equipped stats
-        // FIXME: stats comparison
+//         // FIXME: equipped stats
+//         // FIXME: stats comparison
 
-        if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 20, lootItemUI->lifeColor, NO_COLOR);
-    }
+//         if (lootItemUI->isEquipment) putStringAt (console, lootItemUI->lifeTxt, 2, 20, lootItemUI->lifeColor, NO_COLOR);
+//     }
 
-}
+// }
 
-// FIXME: render stats
-// FIXME: what happens if the name doesn't fit?
-void renderInventoryTooltip (Console *console) {
+// // FIXME: render stats
+// // FIXME: what happens if the name doesn't fit?
+// void renderInventoryTooltip (Console *console) {
 
-    if (iData != NULL) {
-        putStringAt (console, iData->name, 1, 2, iData->rarityColor, NO_COLOR);
-        if (iData->isEquipment) {
-            putStringAt (console, iData->typeName, 1, 3, TOOLTIP_TEXT, NO_COLOR);
-            if (iData->isWeapon) {
-                if (iData->w->twoHanded) putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
-                else putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
-            }
+//     if (iData != NULL) {
+//         putStringAt (console, iData->name, 1, 2, iData->rarityColor, NO_COLOR);
+//         if (iData->isEquipment) {
+//             putStringAt (console, iData->typeName, 1, 3, TOOLTIP_TEXT, NO_COLOR);
+//             if (iData->isWeapon) {
+//                 if (iData->w->twoHanded) putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
+//                 else putStringAt (console, "Two-Handed", 1, 4, TOOLTIP_TEXT, NO_COLOR);
+//             }
 
-            putStringAt (console, iData->lifeTxt, 1, 7, iData->lifeColor, NO_COLOR);
-        }
+//             putStringAt (console, iData->lifeTxt, 1, 7, iData->lifeColor, NO_COLOR);
+//         }
 
-        putStringAt (console, iData->valueTxt, 1, 9, TOOLTIP_TEXT, NO_COLOR);
-    }
+//         putStringAt (console, iData->valueTxt, 1, 9, TOOLTIP_TEXT, NO_COLOR);
+//     }
 
-    if (equippedItemUI != NULL) {
-        putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
-        putStringAt (console, equippedItemUI->name, 1, 14, equippedItemUI->rarityColor, NO_COLOR);
-        if (iData->isEquipment) {
-            putStringAt (console, equippedItemUI->typeName, 1, 15, TOOLTIP_TEXT, NO_COLOR);
-            if (equippedItemUI->isWeapon) {
-                if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
-                else putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
-            }
+//     if (equippedItemUI != NULL) {
+//         putStringAtCenter (console, "Equipped", 12, SAPPHIRE, NO_COLOR);
+//         putStringAt (console, equippedItemUI->name, 1, 14, equippedItemUI->rarityColor, NO_COLOR);
+//         if (iData->isEquipment) {
+//             putStringAt (console, equippedItemUI->typeName, 1, 15, TOOLTIP_TEXT, NO_COLOR);
+//             if (equippedItemUI->isWeapon) {
+//                 if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
+//                 else putStringAt (console, "Two-Handed", 1, 16, TOOLTIP_TEXT, NO_COLOR);
+//             }
 
-            putStringAt (console, equippedItemUI->lifeTxt, 1, 17, equippedItemUI->lifeColor, NO_COLOR);
-        }
+//             putStringAt (console, equippedItemUI->lifeTxt, 1, 17, equippedItemUI->lifeColor, NO_COLOR);
+//         }
 
-        putStringAt (console, equippedItemUI->valueTxt, 1, 18, TOOLTIP_TEXT, NO_COLOR);
-    }
+//         putStringAt (console, equippedItemUI->valueTxt, 1, 18, TOOLTIP_TEXT, NO_COLOR);
+//     }
 
-}
+// }
 
-// FIXME: what if the name doesn't fit in the tooltip?
-// FIXME: add value?
-void renderCharacterTooltip (Console *console) {
+// // FIXME: what if the name doesn't fit in the tooltip?
+// // FIXME: add value?
+// void renderCharacterTooltip (Console *console) {
 
-    if (equippedItemUI != NULL) {
-        putStringAt (console, equippedItemUI->name, 1, 2, equippedItemUI->rarityColor, NO_COLOR);
-        if (equippedItemUI->isEquipment)
-            putStringAt (console, equippedItemUI->typeName, 1, 4, TOOLTIP_TEXT, NO_COLOR);
+//     if (equippedItemUI != NULL) {
+//         putStringAt (console, equippedItemUI->name, 1, 2, equippedItemUI->rarityColor, NO_COLOR);
+//         if (equippedItemUI->isEquipment)
+//             putStringAt (console, equippedItemUI->typeName, 1, 4, TOOLTIP_TEXT, NO_COLOR);
 
-        if (equippedItemUI->isWeapon) {
-            if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 8, 4, WHITE, NO_COLOR);
-            else putStringAt (console, "One-Handed", 8, 4, WHITE, NO_COLOR);
-        }
+//         if (equippedItemUI->isWeapon) {
+//             if (equippedItemUI->w->twoHanded) putStringAt (console, "Two-Handed", 8, 4, WHITE, NO_COLOR);
+//             else putStringAt (console, "One-Handed", 8, 4, WHITE, NO_COLOR);
+//         }
 
-        // FIXME: equipped stats
-        // FIXME: stats comparison
+//         // FIXME: equipped stats
+//         // FIXME: stats comparison
 
-        if (equippedItemUI->isEquipment) putStringAt (console, equippedItemUI->lifeTxt, 1, 12, equippedItemUI->lifeColor, NO_COLOR);
-    }
+//         if (equippedItemUI->isEquipment) putStringAt (console, equippedItemUI->lifeTxt, 1, 12, equippedItemUI->lifeColor, NO_COLOR);
+//     }
 
-}
+// }
 
-// FIXME: create a more efficent way for the rect
-static void renderTooltip (Console *console) {
+// // FIXME: create a more efficent way for the rect
+// static void renderTooltip (Console *console) {
 
-    switch (tooltip) {
-        // loot tooltip
-        case 0: {
-            UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
-            ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+//     switch (tooltip) {
+//         // loot tooltip
+//         case 0: {
+//             UIRect tooltipRect = { 0, 0, TOOLTIP_WIDTH, TOOLTIP_HEIGHT };
+//             ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
 
-            renderLootTooltip (console);
-        } break;
+//             renderLootTooltip (console);
+//         } break;
 
-        // inventory tooltip
-        case 1: {
-            UIRect tooltipRect = { 0, 0, TTIP_INV_WIDTH, TOOLTIP_HEIGHT };
-            ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+//         // inventory tooltip
+//         case 1: {
+//             UIRect tooltipRect = { 0, 0, TTIP_INV_WIDTH, TOOLTIP_HEIGHT };
+//             ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
 
-            renderInventoryTooltip (console);
-        } break;
+//             renderInventoryTooltip (console);
+//         } break;
 
-        // character tooltip
-        case 2: {
-            UIRect tooltipRect = { 0, 0, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT };
-            ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
+//         // character tooltip
+//         case 2: {
+//             UIRect tooltipRect = { 0, 0, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT };
+//             ui_drawRect (console, &tooltipRect, TOOLTIP_COLOR, 1, 0xFF990099);
 
-            renderCharacterTooltip (console);
-            } break;
-        default: break;
-    }
+//             renderCharacterTooltip (console);
+//             } break;
+//         default: break;
+//     }
 
-}
+// }
 
-void lootTooltip (void) {
+// void lootTooltip (void) {
 
-    // get the selected loot item
-    Item *lootItem = getSelectedLootItem ();
-    if (lootItem != NULL) {
-        if (lootItemUI != NULL) cleanItemData (lootItemUI);
-        lootItemUI = getUIItemData (lootItem);
+//     // get the selected loot item
+//     Item *lootItem = getSelectedLootItem ();
+//     if (lootItem != NULL) {
+//         if (lootItemUI != NULL) cleanItemData (lootItemUI);
+//         lootItemUI = getUIItemData (lootItem);
 
-        // check if we have items to compare
-        Item *compareTo = itemToCompare (lootItem);
+//         // check if we have items to compare
+//         Item *compareTo = itemToCompare (lootItem);
 
-        // get equipped item stats
-        if (compareTo != NULL) {
-            if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
-            equippedItemUI = getUIItemData (compareTo);
+//         // get equipped item stats
+//         if (compareTo != NULL) {
+//             if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+//             equippedItemUI = getUIItemData (compareTo);
 
-            // compare the two item stats
-            if (comp != NULL) destroyComp ();
-            comp = compareItems (lootItem, compareTo);
-        }
+//             // compare the two item stats
+//             if (comp != NULL) destroyComp ();
+//             comp = compareItems (lootItem, compareTo);
+//         }
 
-        // as of 21/09/2018 -- we are displaying the same window size, no matter if we only have one item
-        // render the item stats
-        UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
-        tooltipView = ui_newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
+//         // as of 21/09/2018 -- we are displaying the same window size, no matter if we only have one item
+//         // render the item stats
+//         UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
+//         tooltipView = ui_newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
 
-        if (lootView != NULL) updateLootPos (true);
+//         if (lootView != NULL) updateLootPos (true);
 
-    }
+//     }
 
-}
+// }
 
-void invTooltip (void) {
+// void invTooltip (void) {
 
-    // check if we have a selected item
-    Item *selectedItem = getInvSelectedItem ();
-    if (selectedItem != NULL) {
-        if (iData != NULL) cleanItemData (iData);
-        iData = getUIItemData (selectedItem);
+//     // check if we have a selected item
+//     Item *selectedItem = getInvSelectedItem ();
+//     if (selectedItem != NULL) {
+//         if (iData != NULL) cleanItemData (iData);
+//         iData = getUIItemData (selectedItem);
 
-        // check if we have items to compate
-        Item *compareTo = itemToCompare (selectedItem);
+//         // check if we have items to compate
+//         Item *compareTo = itemToCompare (selectedItem);
 
-        if (compareTo != NULL) {
-            if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
-            equippedItemUI = getUIItemData (compareTo);
+//         if (compareTo != NULL) {
+//             if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+//             equippedItemUI = getUIItemData (compareTo);
 
-            // compare the two items
-            if (comp != NULL) destroyComp ();
-            comp = compareItems (selectedItem, compareTo);
-        }
+//             // compare the two items
+//             if (comp != NULL) destroyComp ();
+//             comp = compareItems (selectedItem, compareTo);
+//         }
 
-        // FIXME: we are displaying the same window size as in the loot menu
-        UIRect lootRect = { (16 * TTIP_INV_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_INV_WIDTH), (16 * TOOLTIP_HEIGHT) };
-        tooltipView = ui_newView (lootRect, TTIP_INV_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
+//         // FIXME: we are displaying the same window size as in the loot menu
+//         UIRect lootRect = { (16 * TTIP_INV_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_INV_WIDTH), (16 * TOOLTIP_HEIGHT) };
+//         tooltipView = ui_newView (lootRect, TTIP_INV_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
 
-        if (inventoryView) updateInventoryPos (true);
-    }
+//         if (inventoryView) updateInventoryPos (true);
+//     }
 
-}
+// }
 
-void characterTooltip (void) {
+// void characterTooltip (void) {
 
-    // first check if we have an item selected
-    Item *selectedItem = getCharSelectedItem ();
-    if (selectedItem != NULL) {
-        if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
-        equippedItemUI = getUIItemData (selectedItem);
+//     // first check if we have an item selected
+//     Item *selectedItem = getCharSelectedItem ();
+//     if (selectedItem != NULL) {
+//         if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+//         equippedItemUI = getUIItemData (selectedItem);
 
-        if (characterXIdx == 0) {
-            UIRect lootRect = { (16 * TTIP_CHAR_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
-            tooltipView = ui_newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-        }
+//         if (characterXIdx == 0) {
+//             UIRect lootRect = { (16 * TTIP_CHAR_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
+//             tooltipView = ui_newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+//         }
 
-        else {
-            UIRect lootRect = { (16 * TTIP_CHAR_RIGHT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
-            tooltipView = ui_newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-        }
+//         else {
+//             UIRect lootRect = { (16 * TTIP_CHAR_RIGHT), (16 * TOOLTIP_TOP), (16 * TTIP_CHAR_WIDTH), (16 * TTIP_CHAR_HEIGHT) };
+//             tooltipView = ui_newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
+//         }
         
-        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
-    }  
+//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
+//     }  
 
-}
+// }
 
-void cleanTooltipData (void) {
+// void cleanTooltipData (void) {
 
-    if (lootItemUI != NULL) cleanItemData (lootItemUI);
-    lootItemUI = NULL;
-    if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
-    equippedItemUI = NULL;
-    if (iData != NULL) cleanItemData (iData);
-    iData = NULL;
+//     if (lootItemUI != NULL) cleanItemData (lootItemUI);
+//     lootItemUI = NULL;
+//     if (equippedItemUI != NULL) cleanItemData (equippedItemUI);
+//     equippedItemUI = NULL;
+//     if (iData != NULL) cleanItemData (iData);
+//     iData = NULL;
 
-    if (comp != NULL) destroyComp ();
-    comp = NULL;
+//     if (comp != NULL) destroyComp ();
+//     comp = NULL;
 
-}
+// }
 
-void toggleTooltip (u8 view) {
+// void toggleTooltip (u8 view) {
 
-    if (tooltipView == NULL) {
-        switch (view) {
-            case 0: lootTooltip (); tooltip = 0; break;
-            case 1: invTooltip (); tooltip = 1; break;
-            case 2: characterTooltip (); tooltip = 2; break;
-            default: break;
-        }
-    }
+//     if (tooltipView == NULL) {
+//         switch (view) {
+//             case 0: lootTooltip (); tooltip = 0; break;
+//             case 1: invTooltip (); tooltip = 1; break;
+//             case 2: characterTooltip (); tooltip = 2; break;
+//             default: break;
+//         }
+//     }
 
-    // FIXME: handle character, inventory and tooltip at the same time
-    else if (tooltipView) {
-        cleanTooltipData ();
+//     // FIXME: handle character, inventory and tooltip at the same time
+//     else if (tooltipView) {
+//         cleanTooltipData ();
 
-        ListElement *e = dlist_get_ListElement (activeScene->views, tooltipView);
-        if (e != NULL) ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, e));
-        else ui_destroyView (tooltipView);
-        tooltipView = NULL;
+//         ListElement *e = dlist_get_ListElement (activeScene->views, tooltipView);
+//         if (e != NULL) ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, e));
+//         else ui_destroyView (tooltipView);
+//         tooltipView = NULL;
 
-        if (lootView) updateLootPos (false);
-        if (characterView) updateCharacterPos (false);
-        if (inventoryView) updateInventoryPos (false);
+//         if (lootView) updateLootPos (false);
+//         if (characterView) updateCharacterPos (false);
+//         if (inventoryView) updateInventoryPos (false);
 
-        activeView = (UIView *) LIST_END (activeScene->views)->data;
-    }
+//         activeView = (UIView *) LIST_END (activeScene->views)->data;
+//     }
 
-}
+// }
 
-/*** PAUSE MENU ***/
+// /*** PAUSE MENU ***/
 
-#define PAUSE_LEFT		20
-#define PAUSE_TOP		7
-#define PAUSE_WIDTH		40
-#define PAUSE_HEIGHT	30
+// #define PAUSE_LEFT		20
+// #define PAUSE_TOP		7
+// #define PAUSE_WIDTH		40
+// #define PAUSE_HEIGHT	30
 
-#define PAUSE_COLOR     0x4B6584FF
+// #define PAUSE_COLOR     0x4B6584FF
 
-UIView *pauseMenu = NULL;
+// UIView *pauseMenu = NULL;
 
-static void renderPauseMenu (Console *console) {
+// static void renderPauseMenu (Console *console) {
 
-    UIRect rect = { 0, 0, PAUSE_WIDTH, PAUSE_HEIGHT };
-    ui_drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
+//     UIRect rect = { 0, 0, PAUSE_WIDTH, PAUSE_HEIGHT };
+//     ui_drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
 
-    putStringAt (console, "Pause Menu", 15, 2, INVENTORY_TEXT, NO_COLOR);
+//     putStringAt (console, "Pause Menu", 15, 2, INVENTORY_TEXT, NO_COLOR);
 
-}
+// }
 
-void togglePauseMenu (void) {
+// void togglePauseMenu (void) {
 
-    if (pauseMenu == NULL) {
-        UIRect pause = { (16 * PAUSE_LEFT), (16 * PAUSE_TOP), (16 * PAUSE_WIDTH), (16 * PAUSE_HEIGHT) };
-        pauseMenu = ui_newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
-        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), pauseMenu);
+//     if (pauseMenu == NULL) {
+//         UIRect pause = { (16 * PAUSE_LEFT), (16 * PAUSE_TOP), (16 * PAUSE_WIDTH), (16 * PAUSE_HEIGHT) };
+//         pauseMenu = ui_newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
+//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), pauseMenu);
 
-        activeView = pauseMenu;
-    }
+//         activeView = pauseMenu;
+//     }
 
-    else {
-        if (pauseMenu != NULL) {
-            ListElement *pause = dlist_get_ListElement (activeScene->views, pauseMenu);
-            ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, pause));
-            pauseMenu = NULL;
+//     else {
+//         if (pauseMenu != NULL) {
+//             ListElement *pause = dlist_get_ListElement (activeScene->views, pauseMenu);
+//             ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, pause));
+//             pauseMenu = NULL;
 
-            activeView = (UIView *) (LIST_END (activeScene->views))->data;
-        }
-    }
+//             activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//         }
+//     }
 
-}
+// }
 
-/*** INIT GAME SCREEN ***/
+// /*** INIT GAME SCREEN ***/
 
-UIScreen *inGameScreen = NULL;
+// UIScreen *inGameScreen = NULL;
 
-UIView *mapView = NULL;
+// UIView *mapView = NULL;
 
-// FIXME: destroy function
-DoubleList *initGameViews (void) {
+// // FIXME: destroy function
+// DoubleList *initGameViews (void) {
 
-    DoubleList *views = dlist_init (free);
+//     DoubleList *views = dlist_init (free);
 
-    UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
-    bool colorize = true;
-    u32 bgColor = BLACK;
+//     UIRect mapRect = { 0, 0, (16 * MAP_WIDTH), (16 * MAP_HEIGHT) };
+//     bool colorize = true;
+//     u32 bgColor = BLACK;
 
-    mapView = ui_newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
-    dlist_insert_after (views, NULL, mapView);
+//     mapView = ui_newView (mapRect, MAP_WIDTH, MAP_HEIGHT, tileset, 0, bgColor, colorize, renderMap);
+//     dlist_insert_after (views, NULL, mapView);
 
-    UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
-    UIView *statsView = ui_newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, BLACK, true, rednderStats);
-    dlist_insert_after (views, NULL, statsView);
+//     UIRect statsRect = { 0, (16 * MAP_HEIGHT), (16 * STATS_WIDTH), (16 * STATS_HEIGHT) };
+//     UIView *statsView = ui_newView (statsRect, STATS_WIDTH, STATS_HEIGHT, tileset, 0, BLACK, true, rednderStats);
+//     dlist_insert_after (views, NULL, statsView);
 
-    UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
-    UIView *logView = ui_newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, BLACK, true, renderLog);
-    dlist_insert_after (views, NULL, logView);
+//     UIRect logRect = { (16 * 20), (16 * MAP_HEIGHT), (16 * LOG_WIDTH), (16 * LOG_HEIGHT) };
+//     UIView *logView = ui_newView (logRect, LOG_WIDTH, LOG_HEIGHT, tileset, 0, BLACK, true, renderLog);
+//     dlist_insert_after (views, NULL, logView);
 
-    return views;
+//     return views;
 
-}
+// }
 
-void destroyGameUI (void);
+// void destroyGameUI (void);
 
-// FIXME: destroy list function
-// FIXME: modidy to use player profiles
-UIScreen *gameScene (void) {
+// // FIXME: destroy list function
+// // FIXME: modidy to use player profiles
+// UIScreen *gameScene (void) {
 
-    DoubleList *igViews = initGameViews ();
+//     DoubleList *igViews = initGameViews ();
 
-    if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
+//     if (inGameScreen == NULL) inGameScreen = (UIScreen *) malloc (sizeof (UIScreen));
     
-    inGameScreen->views = igViews;
-    inGameScreen->activeView = mapView;
-    inGameScreen->handleEvent = hanldeGameEvent;
+//     inGameScreen->views = igViews;
+//     inGameScreen->activeView = mapView;
+//     inGameScreen->handleEvent = hanldeGameEvent;
 
-    statsPlayerName = createString ("%s the %s", main_player_profile->username,
-         player_get_class_name (main_player->cClass));
+//     statsPlayerName = createString ("%s the %s", main_player_profile->username,
+//          player_get_class_name (main_player->cClass));
 
-    wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
+//     wallsFadedColor = COLOR_FROM_RGBA (RED (wallsFgColor), GREEN (wallsFgColor), BLUE (wallsFgColor), 0x77);
 
-    inventoryRects = initInventoryRects ();
-    characterRects = initCharacterRects ();
+//     inventoryRects = initInventoryRects ();
+//     characterRects = initCharacterRects ();
 
-    // FIXME: pass the correct destroy function
-    activeLootRects = dlist_init (free);
-    lootRectsPool = pool_init (free);
+//     // FIXME: pass the correct destroy function
+//     activeLootRects = dlist_init (free);
+//     lootRectsPool = pool_init (free);
 
-    activeView = mapView;
+//     activeView = mapView;
 
-    destroyCurrentScreen = destroyGameUI;
+//     destroyCurrentScreen = destroyGameUI;
 
-    return inGameScreen;
+//     return inGameScreen;
 
-}
+// }
 
-/*** CLEAN UP ***/
+// /*** CLEAN UP ***/
 
-void resetGameUI (void) {
+// void resetGameUI (void) {
 
-    messageLog = NULL;
+//     messageLog = NULL;
 
-    iData = NULL;
-    lootItemUI = NULL;
-    equippedItemUI = NULL;
-    comp = NULL;
+//     iData = NULL;
+//     lootItemUI = NULL;
+//     equippedItemUI = NULL;
+//     comp = NULL;
 
-    inventoryRects = NULL;
-    characterRects = NULL;
+//     inventoryRects = NULL;
+//     characterRects = NULL;
 
-}
+// }
 
-// FIXME: destroy list
-void destroyGameUI (void) {
+// // FIXME: destroy list
+// void destroyGameUI (void) {
 
-    if (inGameScreen != NULL) {
-        fprintf (stdout, "Cleaning in game UI...\n");
+//     if (inGameScreen != NULL) {
+//         fprintf (stdout, "Cleaning in game UI...\n");
 
-        cleanMessageLog ();     // message log
-        cleanTooltipData ();    // tooltip
+//         cleanMessageLog ();     // message log
+//         cleanTooltipData ();    // tooltip
 
-        if (inventoryRects) destroyInvRects ();
-        if (characterRects) destroyCharRects ();
+//         if (inventoryRects) destroyInvRects ();
+//         if (characterRects) destroyCharRects ();
 
-        destroyLootRects ();
+//         destroyLootRects ();
 
-        fprintf (stdout, "Cleaning in game views...\n");
+//         fprintf (stdout, "Cleaning in game views...\n");
 
-        // FIXME:
-        // while (LIST_SIZE (inGameScreen->views) > 0)
-        //     destroyView ((UIView *) removeElement (inGameScreen->views, LIST_END (inGameScreen->views)));
+//         // FIXME:
+//         // while (LIST_SIZE (inGameScreen->views) > 0)
+//         //     destroyView ((UIView *) removeElement (inGameScreen->views, LIST_END (inGameScreen->views)));
         
-        free (inGameScreen->views);
-        free (inGameScreen);
-        inGameScreen = NULL;
+//         free (inGameScreen->views);
+//         free (inGameScreen);
+//         inGameScreen = NULL;
 
-        fprintf (stdout, "Done cleanning up game UI!\n");
-    }
+//         fprintf (stdout, "Done cleanning up game UI!\n");
+//     }
 
-}
+// }
 
-/*** POST GAME SCREEN ***/
+// /*** POST GAME SCREEN ***/
 
-UIScreen *postGameScene = NULL;
+// UIScreen *postGameScene = NULL;
 
-/*** DEATH SCREEN ***/
+// /*** DEATH SCREEN ***/
 
-BitmapImage *deathImg = NULL;
-char *deathImgPath = "./resources/death-720.png"; 
+// BitmapImage *deathImg = NULL;
+// char *deathImgPath = "./resources/death-720.png"; 
 
-UIView *deathScreen = NULL;
+// UIView *deathScreen = NULL;
 
-static void renderDeathScreen (Console *console) { ui_drawImageAt (console, deathImg, 0, 0); }
+// static void renderDeathScreen (Console *console) { ui_drawImageAt (console, deathImg, 0, 0); }
 
-void deleteDeathScreen (void) {
+// void deleteDeathScreen (void) {
 
-    if (deathScreen) {
-        if (deathImg) {
-            destroyImage (deathImg);
-            deathImg = NULL;
-        } 
+//     if (deathScreen) {
+//         if (deathImg) {
+//             destroyImage (deathImg);
+//             deathImg = NULL;
+//         } 
 
-        ListElement *death = dlist_get_ListElement (postGameScene->views, deathScreen);
-        ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, death));
-        deathScreen = NULL;
+//         ListElement *death = dlist_get_ListElement (postGameScene->views, deathScreen);
+//         ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, death));
+//         deathScreen = NULL;
 
-        postGameScene->activeView = (UIView *) (LIST_END (postGameScene->views))->data;
-    }
+//         postGameScene->activeView = (UIView *) (LIST_END (postGameScene->views))->data;
+//     }
 
-}
+// }
 
-/*** SCORE SCREEN ***/
+// /*** SCORE SCREEN ***/
 
-BitmapImage *scoreImg = NULL;
-char *scoreImgPath = "./resources/score-720.png"; 
+// BitmapImage *scoreImg = NULL;
+// char *scoreImgPath = "./resources/score-720.png"; 
 
-UIView *scoreScreen = NULL;
+// UIView *scoreScreen = NULL;
 
-// FIXME: render the actual player score
-static void renderScoreScreen (Console *console) {
+// // FIXME: render the actual player score
+// static void renderScoreScreen (Console *console) {
 
-    ui_drawImageAt (console, scoreImg, 0, 0);
+//     ui_drawImageAt (console, scoreImg, 0, 0);
 
-}
+// }
 
-// FIXME: handle the active view when toggling
-void toggleScoreScreen (void) {
+// // FIXME: handle the active view when toggling
+// void toggleScoreScreen (void) {
 
-    if (scoreScreen == NULL) {
-        UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-        scoreScreen = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderScoreScreen);
-        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), scoreScreen);
+//     if (scoreScreen == NULL) {
+//         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
+//         scoreScreen = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderScoreScreen);
+//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), scoreScreen);
 
-        if (!scoreImg) scoreImg = loadImageFromFile (scoreImgPath);
+//         if (!scoreImg) scoreImg = loadImageFromFile (scoreImgPath);
 
-        postGameScene->activeView = scoreScreen;
-    }
+//         postGameScene->activeView = scoreScreen;
+//     }
 
-    else {
-        if (scoreScreen) {
-            if (scoreImg) {
-                destroyImage (scoreImg);
-                scoreImg = NULL;
-            } 
+//     else {
+//         if (scoreScreen) {
+//             if (scoreImg) {
+//                 destroyImage (scoreImg);
+//                 scoreImg = NULL;
+//             } 
 
-            ListElement *death = dlist_get_ListElement (activeScene->views, scoreScreen);
-            ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, death));
-            scoreScreen = NULL;
+//             ListElement *death = dlist_get_ListElement (activeScene->views, scoreScreen);
+//             ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, death));
+//             scoreScreen = NULL;
 
-            // activeView = (UIView *) (LIST_END (activeScene->views))->data;
-        }
-    }
+//             // activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//         }
+//     }
 
-}
+// }
 
 
-/*** LEADERBOARDS ***/
+// /*** LEADERBOARDS ***/
 
-#define ODD_ROW_COLOR       0x485460FF
-#define EVEN_ROW_COLOR      0X3C6382FF
+// #define ODD_ROW_COLOR       0x485460FF
+// #define EVEN_ROW_COLOR      0X3C6382FF
 
-UIView *leaderBoardView = NULL;
-bool isLocalLB;
+// UIView *leaderBoardView = NULL;
+// bool isLocalLB;
 
-typedef struct {
+// typedef struct {
 
-    UIRect *bgRect;
-    LBEntry *entry;
+//     UIRect *bgRect;
+//     LBEntry *entry;
 
-} LBRect;
+// } LBRect;
 
-DoubleList *lbRects = NULL;
+// DoubleList *lbRects = NULL;
 
-LBRect *createLBRect (u8 y, LBEntry *entry) {
+// LBRect *createLBRect (u8 y, LBEntry *entry) {
 
-    LBRect *new = (LBRect *) malloc (sizeof (LBRect));
+//     LBRect *new = (LBRect *) malloc (sizeof (LBRect));
 
-    new->bgRect = (UIRect *) malloc (sizeof (UIRect));
-    new->bgRect->x = 4;
-    new->bgRect->y = y;
-    new->bgRect->w = 72;
-    new->bgRect->h = 3;
+//     new->bgRect = (UIRect *) malloc (sizeof (UIRect));
+//     new->bgRect->x = 4;
+//     new->bgRect->y = y;
+//     new->bgRect->w = 72;
+//     new->bgRect->h = 3;
 
-    new->entry = entry;
+//     new->entry = entry;
 
-    return new;
+//     return new;
 
-}
+// }
 
-// FIXME: destroy list
-DoubleList *createLBUI (DoubleList *lbData) {
+// // FIXME: destroy list
+// DoubleList *createLBUI (DoubleList *lbData) {
 
-    DoubleList *rects = dlist_init (free);
+//     DoubleList *rects = dlist_init (free);
 
-    LBEntry *entry = NULL;
-    u8 yIdx = 10;
+//     LBEntry *entry = NULL;
+//     u8 yIdx = 10;
 
-    // the list is sorted from the smallest to the biggest
-    // only display the top 10 scores
-    u8 i = 0;
-    ListElement *e = LIST_END (lbData);
-    while (i < 10 && e != NULL) {
-        dlist_insert_after (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
+//     // the list is sorted from the smallest to the biggest
+//     // only display the top 10 scores
+//     u8 i = 0;
+//     ListElement *e = LIST_END (lbData);
+//     while (i < 10 && e != NULL) {
+//         dlist_insert_after (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
 
-        yIdx += 3;
-        i++;
-        e = e->prev;
-    }
+//         yIdx += 3;
+//         i++;
+//         e = e->prev;
+//     }
 
-    return rects;
+//     return rects;
 
-}
+// }
 
-void renderLBRects (Console *console) {
+// void renderLBRects (Console *console) {
 
-    if (lbRects != NULL) {
-        LBRect *rect = NULL;
-        u8 count = 1;
-        u8 yIdx = 11;
-        for (ListElement *e = LIST_START (lbRects); e != NULL; e = e->next) {
-            rect = (LBRect *) e->data;
+//     if (lbRects != NULL) {
+//         LBRect *rect = NULL;
+//         u8 count = 1;
+//         u8 yIdx = 11;
+//         for (ListElement *e = LIST_START (lbRects); e != NULL; e = e->next) {
+//             rect = (LBRect *) e->data;
 
-            if (count % 2 == 0) ui_drawRect (console, rect->bgRect, EVEN_ROW_COLOR, 0, NO_COLOR);
-            else ui_drawRect (console, rect->bgRect, ODD_ROW_COLOR, 0, NO_COLOR);
+//             if (count % 2 == 0) ui_drawRect (console, rect->bgRect, EVEN_ROW_COLOR, 0, NO_COLOR);
+//             else ui_drawRect (console, rect->bgRect, ODD_ROW_COLOR, 0, NO_COLOR);
 
-            putStringAt (console, rect->entry->completeName, 5, yIdx, rect->entry->nameColor, NO_COLOR);
-            putStringAt (console, rect->entry->level, 37, yIdx, WHITE, NO_COLOR);
-            putStringAt (console, rect->entry->kills, 50, yIdx, WHITE, NO_COLOR);
-            putReverseString (console, rect->entry->reverseScore, 68, yIdx, WHITE, NO_COLOR);
+//             putStringAt (console, rect->entry->completeName, 5, yIdx, rect->entry->nameColor, NO_COLOR);
+//             putStringAt (console, rect->entry->level, 37, yIdx, WHITE, NO_COLOR);
+//             putStringAt (console, rect->entry->kills, 50, yIdx, WHITE, NO_COLOR);
+//             putReverseString (console, rect->entry->reverseScore, 68, yIdx, WHITE, NO_COLOR);
 
-            count++;
-            yIdx += 3;
-        }
-    }
+//             count++;
+//             yIdx += 3;
+//         }
+//     }
 
-    // FIXME: else NO DATA!!
+//     // FIXME: else NO DATA!!
 
-}
+// }
 
-void renderLocalLB (Console *console) {
+// void renderLocalLB (Console *console) {
 
-    // FIXME: where do we want this?
-    if (localLBData == NULL) {
-        fprintf (stdout, "Getting local leaderboard data...\n");
-        localLBData = getLocalLBData ();
-        if (localLBData != NULL) {
-            lbRects = createLBUI (localLBData);
-            fprintf (stdout, "Lb rects: %li!\n", LIST_SIZE (lbRects));
-        } 
-        // FIXME: DISPLAY AN ERROR else 
-    } 
+//     // FIXME: where do we want this?
+//     if (localLBData == NULL) {
+//         fprintf (stdout, "Getting local leaderboard data...\n");
+//         localLBData = getLocalLBData ();
+//         if (localLBData != NULL) {
+//             lbRects = createLBUI (localLBData);
+//             fprintf (stdout, "Lb rects: %li!\n", LIST_SIZE (lbRects));
+//         } 
+//         // FIXME: DISPLAY AN ERROR else 
+//     } 
     
-    else {
-        putStringAtCenter (console, "Local LeaderBoards", 2, WHITE, NO_COLOR);
+//     else {
+//         putStringAtCenter (console, "Local LeaderBoards", 2, WHITE, NO_COLOR);
 
-        // display table titles
-        putStringAt (console, "Name", 17, 7, WHITE, NO_COLOR);
-        putStringAt (console, "Level", 35, 7, WHITE, NO_COLOR);
-        putStringAt (console, "Kills", 48, 7, WHITE, NO_COLOR);
-        putStringAt (console, "Score", 62, 7, WHITE, NO_COLOR);
+//         // display table titles
+//         putStringAt (console, "Name", 17, 7, WHITE, NO_COLOR);
+//         putStringAt (console, "Level", 35, 7, WHITE, NO_COLOR);
+//         putStringAt (console, "Kills", 48, 7, WHITE, NO_COLOR);
+//         putStringAt (console, "Score", 62, 7, WHITE, NO_COLOR);
 
-        // display each player and its data on their rects
-        renderLBRects (console);
-    }
+//         // display each player and its data on their rects
+//         renderLBRects (console);
+//     }
 
-}
+// }
 
-void renderGlobalLb (Console *console) {
+// void renderGlobalLb (Console *console) {
 
-    // FIXME: where do we want this?
-    if (globalLBData == NULL) globalLBData = getGlobalLBData ();
-    else {
-        // TODO: render the list of players
-    }
+//     // FIXME: where do we want this?
+//     if (globalLBData == NULL) globalLBData = getGlobalLBData ();
+//     else {
+//         // TODO: render the list of players
+//     }
 
-}
+// }
 
-static void renderLeaderboard (Console *console) {
+// static void renderLeaderboard (Console *console) {
 
-    // FIXME: color
-    UIRect rect = { 0, 0, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT };
-    ui_drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
+//     // FIXME: color
+//     UIRect rect = { 0, 0, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT };
+//     ui_drawRect (console, &rect, PAUSE_COLOR, 0, WHITE);
 
-    if (isLocalLB) renderLocalLB (console);
-    else renderGlobalLb (console);
+//     if (isLocalLB) renderLocalLB (console);
+//     else renderGlobalLb (console);
 
-}
+// }
 
-void toggleLeaderBoards (void) {
+// void toggleLeaderBoards (void) {
 
-    if (leaderBoardView == NULL) {
-        UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-        leaderBoardView = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderLeaderboard);
-        dlist_insert_after (activeScene->views, LIST_END (activeScene->views), leaderBoardView);
-        postGameScene->activeView = leaderBoardView;
+//     if (leaderBoardView == NULL) {
+//         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
+//         leaderBoardView = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderLeaderboard);
+//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), leaderBoardView);
+//         postGameScene->activeView = leaderBoardView;
 
-        // render local leaderboard by default
-        isLocalLB = true;
-    }
+//         // render local leaderboard by default
+//         isLocalLB = true;
+//     }
 
-    else {
-        if (leaderBoardView) {
-            ListElement *leader = dlist_get_ListElement (activeScene->views, leaderBoardView);
-            if (leader) dlist_remove_element (activeScene->views, leader);
-            ui_destroyView (leaderBoardView);
-            leaderBoardView = NULL;
+//     else {
+//         if (leaderBoardView) {
+//             ListElement *leader = dlist_get_ListElement (activeScene->views, leaderBoardView);
+//             if (leader) dlist_remove_element (activeScene->views, leader);
+//             ui_destroyView (leaderBoardView);
+//             leaderBoardView = NULL;
 
-            // FIXME: do we need this?
-            // activeView = (UIView *) (LIST_END (activeScene->views))->data;
-        }
-    }
+//             // FIXME: do we need this?
+//             // activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//         }
+//     }
 
-}
+// }
 
-void destroyLBUI (void) {
+// void destroyLBUI (void) {
 
-    if (lbRects != NULL) {
-        LBRect *rect = NULL;
-        while (LIST_SIZE (lbRects) > 0) {
-            rect = (LBRect *) dlist_remove_element (lbRects, LIST_END (lbRects));
-            if (rect != NULL) {
-                free (rect->bgRect);
-                rect->entry = NULL;
-                free (rect);
-            }
-        }
+//     if (lbRects != NULL) {
+//         LBRect *rect = NULL;
+//         while (LIST_SIZE (lbRects) > 0) {
+//             rect = (LBRect *) dlist_remove_element (lbRects, LIST_END (lbRects));
+//             if (rect != NULL) {
+//                 free (rect->bgRect);
+//                 rect->entry = NULL;
+//                 free (rect);
+//             }
+//         }
 
-        dlist_destroy (lbRects);
-    }
+//         dlist_destroy (lbRects);
+//     }
 
-}
+// }
 
-// FIXME: destroy list function
-// TODO: delete all other UI elements!!
-void destroyPostGameScreen (void) {
+// // FIXME: destroy list function
+// // TODO: delete all other UI elements!!
+// void destroyPostGameScreen (void) {
 
-    if (postGameScene) {
-        if (deathImg) {
-            destroyImage (deathImg);
-            deathImg = NULL;
-        } 
+//     if (postGameScene) {
+//         if (deathImg) {
+//             destroyImage (deathImg);
+//             deathImg = NULL;
+//         } 
         
-        if (scoreImg) {
-            destroyImage (scoreImg);
-            scoreImg = NULL;
-        } 
+//         if (scoreImg) {
+//             destroyImage (scoreImg);
+//             scoreImg = NULL;
+//         } 
 
-        destroyLBUI ();
+//         destroyLBUI ();
 
-        // FIXME:
-        while (LIST_SIZE (postGameScene->views) > 0) 
-            ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, LIST_END (postGameScene->views)));
+//         // FIXME:
+//         while (LIST_SIZE (postGameScene->views) > 0) 
+//             ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, LIST_END (postGameScene->views)));
         
-        free (postGameScene->views);
-        free (postGameScene);
-        postGameScene = NULL;
+//         free (postGameScene->views);
+//         free (postGameScene);
+//         postGameScene = NULL;
 
-        fprintf (stdout, "Post game screen destroyed!\n");
-    }
+//         fprintf (stdout, "Post game screen destroyed!\n");
+//     }
 
-}
+// }
 
-// FIXME:
-// default view is the game death screen
-UIScreen *postGameScreen (void) {
+// // FIXME:
+// // default view is the game death screen
+// UIScreen *postGameScreen (void) {
 
-    // FIXME:
-    DoubleList *views = dlist_init (free);
+//     // FIXME:
+//     DoubleList *views = dlist_init (free);
 
-    UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
-    deathScreen = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderDeathScreen);
-    dlist_insert_after (views, NULL, deathScreen);
+//     UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
+//     deathScreen = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderDeathScreen);
+//     dlist_insert_after (views, NULL, deathScreen);
 
-    if (!deathImg) deathImg = loadImageFromFile (deathImgPath);
+//     if (!deathImg) deathImg = loadImageFromFile (deathImgPath);
 
-    postGameScene = (UIScreen *) malloc (sizeof (UIScreen));
+//     postGameScene = (UIScreen *) malloc (sizeof (UIScreen));
     
-    postGameScene->views = views;
-    postGameScene->activeView = deathScreen;
-    postGameScene->handleEvent = handlePostGameEvent;
+//     postGameScene->views = views;
+//     postGameScene->activeView = deathScreen;
+//     postGameScene->handleEvent = handlePostGameEvent;
 
-    destroyCurrentScreen = destroyPostGameScreen;
+//     destroyCurrentScreen = destroyPostGameScreen;
 
-    fprintf (stdout, "Post game init!\n");
+//     fprintf (stdout, "Post game init!\n");
 
-    return postGameScene;
+//     return postGameScene;
 
-}
+// }
