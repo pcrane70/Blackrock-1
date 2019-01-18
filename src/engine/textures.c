@@ -3,6 +3,8 @@
 
 #include "blackrock.h"
 
+#include "game/camera.h"
+
 #include "engine/renderer.h"
 #include "engine/sprites.h"
 
@@ -34,8 +36,6 @@ void texture_get_dimensions (SDL_Texture *texture, u32 *w, u32 *h) {
     if (texture) SDL_QueryTexture (texture, NULL, NULL, w, h);
 
 }
-
-#include "game/camera.h"
 
 void texture_draw (Camera *cam, Sprite *sprite, i32 x, i32 y, SDL_RendererFlip flip) {
 

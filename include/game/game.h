@@ -21,6 +21,8 @@ typedef enum State {
     IN_GAME = 3,
     GAME_OVER = 4,
 
+    LOADING = 10,
+
 } State;
 
 typedef enum SessionType {
@@ -233,10 +235,15 @@ extern void retry (void);
 
 /*** WORLD ***/
 
+#include "game/camera.h"
+#include "game/map/map.h"
+
+struct _Camera;
+
 typedef struct World {
 
     Map *game_map;
-    Camera *game_camera;
+    struct _Camera *game_camera;
 
     LList *players;
     LList *enemies;

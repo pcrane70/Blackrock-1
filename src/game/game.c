@@ -812,7 +812,7 @@ void cleanUpGame (void) {
 
 #pragma region MOVEMENT
 
-bool isWall (u32 x, u32 y) { return (currentLevel->mapCells[x][y]); }
+// bool isWall (u32 x, u32 y) { return (currentLevel->mapCells[x][y]); }
 
 bool canMove (Position pos, bool isPlayer) {
 
@@ -878,52 +878,51 @@ void cleanTargetMap (void) {
 
 // 13/08/2018 -- simple representation of a Dijkstra's map, maybe later we will want a more complex map 
 // or implement a more advance system
-void generateTargetMap (i32 targetX, i32 targetY) {
+// void generateTargetMap (i32 targetX, i32 targetY) {
 
-    if (dmap == NULL) dmap = initTargetMap ();
+//     if (dmap == NULL) dmap = initTargetMap ();
 
-    // reset the target map
-    for (u8 x = 0; x < MAP_WIDTH; x++)
-        for (u8 y = 0; y < MAP_HEIGHT; y++)
-            dmap[x][y] = UNSET;
+//     // reset the target map
+//     for (u8 x = 0; x < MAP_WIDTH; x++)
+//         for (u8 y = 0; y < MAP_HEIGHT; y++)
+//             dmap[x][y] = UNSET;
 
-    dmap[targetX][targetY] = 0;
+//     dmap[targetX][targetY] = 0;
 
-    bool changesMade = true;
-    while (changesMade) {
-        changesMade = false;
+//     bool changesMade = true;
+//     while (changesMade) {
+//         changesMade = false;
 
-        for (u8 x = 0; x < MAP_WIDTH; x++) {
-            for (u8 y = 0; y < MAP_HEIGHT; y++) {
-                i32 currCellValue = dmap[x][y];
-                // check cells around and update them if necessary
-                if (currCellValue != UNSET) {
-                    if ((!isWall (x + 1, y)) && (dmap[x + 1][y] > currCellValue + 1)) {
-                        dmap[x + 1][y] = currCellValue + 1;
-                        changesMade = true;
-                    }
+//         for (u8 x = 0; x < MAP_WIDTH; x++) {
+//             for (u8 y = 0; y < MAP_HEIGHT; y++) {
+//                 i32 currCellValue = dmap[x][y];
+//                 // check cells around and update them if necessary
+//                 if (currCellValue != UNSET) {
+//                     if ((!isWall (x + 1, y)) && (dmap[x + 1][y] > currCellValue + 1)) {
+//                         dmap[x + 1][y] = currCellValue + 1;
+//                         changesMade = true;
+//                     }
 
-                    if ((!isWall (x - 1, y)) && (dmap[x - 1][y] > currCellValue + 1)) {
-                        dmap[x - 1][y] = currCellValue + 1;
-                        changesMade = true;
-                    }
+//                     if ((!isWall (x - 1, y)) && (dmap[x - 1][y] > currCellValue + 1)) {
+//                         dmap[x - 1][y] = currCellValue + 1;
+//                         changesMade = true;
+//                     }
 
-                    if ((!isWall (x, y - 1)) && (dmap[x][y - 1] > currCellValue + 1)) {
-                        dmap[x][y - 1] = currCellValue + 1;
-                        changesMade = true;
-                    }
+//                     if ((!isWall (x, y - 1)) && (dmap[x][y - 1] > currCellValue + 1)) {
+//                         dmap[x][y - 1] = currCellValue + 1;
+//                         changesMade = true;
+//                     }
 
-                    if ((!isWall (x, y + 1)) && (dmap[x][y + 1] > currCellValue + 1)) {
-                        dmap[x][y + 1] = currCellValue + 1;
-                        changesMade = true;
-                    }
-                }
-            }
-        }
-    }
+//                     if ((!isWall (x, y + 1)) && (dmap[x][y + 1] > currCellValue + 1)) {
+//                         dmap[x][y + 1] = currCellValue + 1;
+//                         changesMade = true;
+//                     }
+//                 }
+//             }
+//         }
+//     }
 
-}
-
+// }
 
 // 13/08/2018 -- 22:27 -- I don't like neither of these!
 Position *getPos (i32 id) {

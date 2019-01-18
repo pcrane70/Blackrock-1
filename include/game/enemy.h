@@ -18,6 +18,21 @@ typedef struct EnemyLoot {
 
 } EnemyLoot;
 
+#define DB_COL_ENEMY_HEALTH             1
+#define DB_COL_ENEMY_STAMINA            2
+#define DB_COL_ENEMY_STRENGTH           3
+
+#define DB_COL_ENEMY_ARMOUR             4
+#define DB_COL_ENEMY_DODGE              5
+#define DB_COL_ENEMY_PARRY              6
+#define DB_COL_ENEMY_BLOCK              7
+
+#define DB_COL_ENEMY_HITCHANCE          8
+#define DB_COL_ENEMY_DPS                9
+#define DB_COL_ENEMY_ATTACK_SPEED       10
+#define DB_COL_ENEMY_SPELL_POWER        11
+#define DB_COL_ENEMY_CRITICAL           12
+
 // basic enemy data
 typedef struct EnemyData {
 

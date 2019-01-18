@@ -5,7 +5,7 @@
 
 #include <SDL2/SDL.h>
 
-#include "game.h"
+#include "game/game.h"
 
 #include "vector2d.h"
 
@@ -23,7 +23,7 @@
 
 typedef struct SDL_Rect CamRect;
 
-typedef struct Camera {
+struct _Camera {
 
     u32 windowWidth, windowHeight;
 
@@ -43,7 +43,9 @@ typedef struct Camera {
     bool isFollwing;
     Transform *target;
 
-} Camera;
+};
+
+typedef struct _Camera Camera;
 
 extern Camera *camera_new (u32 windowWidth, u32 windowHeight);
 extern void camera_destroy (Camera *cam);

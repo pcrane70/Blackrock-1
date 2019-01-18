@@ -23,48 +23,6 @@ sqlite3 *enemiesDb;
 
 LList *enemyData = NULL;
 
-#ifdef DEV
-void createEnemiesDb (void) {
-
-    char *err_msg = 0;
-
-    // create monsters table
-    char *sql = "DROP TABLE IF EXISTS Monsters;"
-                "CREATE TABLE Monsters(Id INT, Name TEXT, Probability DOUBLE)";
-
-    // create combat stats table
-    sql = "DROP TABLE IF EXISTS Combat;"
-          "CREATE TABLE Combat(Id INT, Health INT, Armour INT, Dps INT, Strength INT, Hitchance INT, Speed INT, Critical INT, Dodge INT, Parry INT, Block INT)";
-
-    // create movement stats table
-    sql = "DROP TABLE IF EXISTS Movement;"
-          "CREATE TABLE Movement(Id INT, Speed INT, Frequency INT)";
-
-    // create graphics table
-    sql = "DROP TABLE IF EXISTS Graphics;"
-          "CREATE TABLE Graphics(Id INT, Glyph INT, Color TEXT)";
-
-    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed to create GRAPHICS table!\n");
-        fprintf (stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free (err_msg);
-    }
-
-    else fprintf (stdout, "Table created!\n");
-
-    // 06/09/2018 -- first approach to a drop system
-    char *sql = "DROP TABLE IF EXISTS Drops;"
-                "CREATE TABLE Drops(Id INT, Min INT, Max INT, Items TEXT)";
-
-    if (sqlite3_exec (enemiesDb, sql, 0, 0, &err_msg) != SQLITE_OK) {
-        fprintf (stderr, "Error! Failed to create Drops table!\n");
-        fprintf (stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free (err_msg);
-    }
-
-}
-#endif
-
 static u8 enemy_loot_load (u32 monId, EnemyLoot *loot) {
 
     // get the db data
@@ -175,7 +133,7 @@ u8 enemies_connect_db (void) {
     // connect to the enemies db
     if (sqlite3_open (enemiesDbPath, &enemiesDb) != SQLITE_OK) {
         #ifdef DEV
-        logMsg (stderr, ERROR, GAME, "Problems connectin to enemies db!");
+        logMsg (stderr, ERROR, GAME, "Problems connecting to enemies db!");
         logMsg (stderr, ERROR, GAME, createString ("%s", sqlite3_errmsg (enemiesDb)));
         #elif PRODUCTION
         logMsg (stderr, ERROR, NO_TYPE, "Failed to load game data!");
@@ -289,7 +247,6 @@ static void enemy_add_animator (GameObject *enemy_go, u32 dbID) {
 
 }
 
-// FIXME:
 static void enemy_get_stats (GameObject *enemy_go, u32 dbID) {
 
     if (enemy_go) {
@@ -297,6 +254,38 @@ static void enemy_get_stats (GameObject *enemy_go, u32 dbID) {
         enemy->dbID = dbID;
 
         // get enemy stats from enemy db
+        sqlite3_stmt *res;
+        char *sql = "SELECT * FROM Stats WHERE Id = ?";
+
+        if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) {
+            sqlite3_bind_int (res, 1, dbID);
+            int step = sqlite3_step (res);
+
+            enemy->entity->maxHealth = (u32) sqlite3_column_int (res, DB_COL_ENEMY_HEALTH);
+            enemy->entity->currHealth = enemy->entity->maxHealth;
+            enemy->entity->stats.stamina = (u32) sqlite3_column_int (res, DB_COL_ENEMY_STAMINA);
+            enemy->entity->stats.strength = (u32) sqlite3_column_int (res, DB_COL_ENEMY_STRENGTH);
+
+            enemy->entity->defense.armor = (u32) sqlite3_column_int (res, DB_COL_ENEMY_ARMOUR);
+            enemy->entity->defense.dodge = (u32) sqlite3_column_int (res, DB_COL_ENEMY_DODGE);
+            enemy->entity->defense.parry = (u32) sqlite3_column_int (res, DB_COL_ENEMY_PARRY);
+            enemy->entity->defense.block = (u32) sqlite3_column_int (res, DB_COL_ENEMY_BLOCK);
+
+            enemy->entity->attack.hitchance = (u32) sqlite3_column_int (res, DB_COL_ENEMY_HITCHANCE);
+            enemy->entity->attack.baseDps = (u32) sqlite3_column_int (res, DB_COL_ENEMY_DPS);
+            enemy->entity->attack.attackSpeed = (u32) sqlite3_column_int (res, DB_COL_ENEMY_ATTACK_SPEED);
+            enemy->entity->attack.spellPower = (u32) sqlite3_column_int (res, DB_COL_ENEMY_SPELL_POWER);
+            enemy->entity->attack.criticalStrike = (u32) sqlite3_column_int (res, DB_COL_ENEMY_CRITICAL);
+
+            sqlite3_finalize (res);
+        } 
+
+        else {
+            #ifdef DEV
+            logMsg (stderr, ERROR, NO_TYPE, 
+                "Failed to execute enemy db statement -- enemy_get_stats");
+            #endif
+        }
     }
 
 }
@@ -372,86 +361,6 @@ GameObject *enemy_create (u32 dbID) {
     sqlite3_finalize (res);
 
     return 0; */
-
-// }
-
-// u8 addCombatToMon (u32 monId, Monster *monData, GameObject *mon) {
-
-    // get the db data
-    /* sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Combat WHERE Id = ?";
-
-    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
-    else {
-        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        return 1;
-    } 
-
-    int step = sqlite3_step (res);
-
-    Combat c;
-
-    c.baseStats.strength = (u32) sqlite3_column_int (res, 4);
-    c.attack.baseDps = (u32) sqlite3_column_int (res, 3);
-    c.attack.hitchance = (u32) sqlite3_column_int (res, 5);
-    c.attack.attackSpeed = (u32) sqlite3_column_int (res, 6);
-    c.attack.spellPower = 0;
-    c.attack.criticalStrike = (u32) sqlite3_column_int (res, 7);
-    c.defense.armor = (u32) sqlite3_column_int (res, 2);
-    c.defense.dodge = (u32) sqlite3_column_int (res, 8);
-    c.defense.parry = (u32) sqlite3_column_int (res, 9);
-    c.defense.block = (u32) sqlite3_column_int (res, 10);
-
-    c.baseStats.maxHealth = ((u32) sqlite3_column_int (res, 1)) + c.defense.armor;
-    c.baseStats.health = c.baseStats.maxHealth;
-
-    addComponent (mon, COMBAT, &c);
-
-    sqlite3_finalize (res);
-
-    return 0;  */
-
-// }
-
-// // NEW way for creating the monsters using the enemies db and the in game memory enemy list
-// GameObject *createMonster (u32 monId) {
-
-    // get the memory data
-    /* Monster *monData = searchMonById (monId);
-    if (monData == NULL) {
-        fprintf (stderr, "Error! No monster found with the provided id!\n");
-        return NULL;
-    }
-
-    GameObject *mon = createGO ();
-    mon->dbId = monId;
-
-    // This is just a placeholder until it spawns in the world
-    Position pos = { .x = 0, .y = 0, .layer = MID_LAYER };
-    addComponent (mon, POSITION, &pos);
-
-    // graphics
-    if (addGraphicsToMon (monId, monData, mon) != 0) {
-        fprintf (stderr, "Error adding graphics component!\n");
-        return NULL;
-    } 
-
-    Physics phys = { 0, true, false };
-    addComponent (mon, PHYSICS, &phys);
-
-    // movement
-    if (addMovementToMon (monId, monData, mon) != 0) {
-        fprintf (stderr, "Error adding movement component!\n");
-        return NULL;
-    } 
-
-    // combat
-    if (addCombatToMon (monId, monData, mon) != 0) {
-        fprintf (stderr, "Error adding combat component!\n");
-        return NULL;
-    } 
-
-    return mon; */
 
 // }
 
