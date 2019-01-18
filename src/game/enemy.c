@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <sqlite3.h>
 
 #include "blackrock.h"
@@ -18,7 +20,6 @@ sqlite3 *enemiesDb;
 
 LList *enemyData = NULL;
 
-// this is only used for development purposes
 #ifdef DEV
 void createEnemiesDb (void) {
 
@@ -142,7 +143,7 @@ static int enemy_data_load_all (void *data, int argc, char **argv, char **azColN
         #endif
     }
 
-    llist_insert_next (enemyData, LIST_END (enemyData), edata);
+    llist_insert_next (enemyData, llist_end (enemyData), edata);
 
     return 0;
 
@@ -192,7 +193,7 @@ u8 enemies_connect_db (void) {
             
         if (sqlite3_exec (enemiesDb, sql, enemy_data_load_all, NULL, &err) != SQLITE_OK) {
             #ifdef DEV
-            logMsg (stderr, ERROR, GAME, "Problemsloading enemy data from db!");
+            logMsg (stderr, ERROR, GAME, "Problems loading enemy data from db!");
             logMsg (stderr, ERROR, GAME, createString ("%s", err));
             #elif PRODUCTION
             logMsg (stderr, ERROR, NO_TYPE, "Failed to load game data!");
@@ -207,6 +208,13 @@ u8 enemies_connect_db (void) {
             return 0;
         }
     }
+
+}
+
+void enemies_disconnect_db (void) {
+
+    sqlite3_close (enemiesDb);
+    enemy_data_delete_all ();
 
 }
 
@@ -412,6 +420,6 @@ u8 enemies_connect_db (void) {
 // void cleanUpEnemies (void) {
 
 //     dlist_destroy (enemyData);
-//     sqlite3_close (enemiesDb);
+//     
 
 // }

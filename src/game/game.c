@@ -10,6 +10,7 @@
 #include "game/camera.h"
 
 #include "game/player.h"
+#include "game/enemy.h"
 #include "game/item.h"
 #include "game/map/map.h"
 
@@ -250,7 +251,7 @@ GameObject *game_object_remove_child (GameObject *parent, GameObject *child) {
     if (parent && child) {
         if (parent->children) { 
             GameObject *go = NULL;
-            for (Node *node = LIST_START (parent->children); node != NULL; node = node->next) {
+            for (ListNode *node = LIST_START (parent->children); node != NULL; node = node->next) {
                 go = (GameObject *) node->data;
                 if (go) {
                     if (go->id == child->id) {
@@ -288,6 +289,8 @@ void game_object_destroy (GameObject *go) {
     }
 
 }
+
+void game_object_destroy_ref (void *data) { game_object_destroy ((GameObject *) data); } 
 
 static void game_object_delete (GameObject *go) {
 
@@ -374,11 +377,7 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
 
 #pragma endregion
 
-/*** GAME STATE ***/
-
-#pragma region GAME STATE
-
-GameState *game_state = NULL;
+#pragma region World
 
 typedef struct World {
 
@@ -387,29 +386,101 @@ typedef struct World {
 
     // score
     // enemies
-    // player(s)
+    LList *players;
 
 } World;
+
+World *world =  NULL;
+
+// TODO: what other things do we want inside the world??
+// FIXME: fix camera size!
+static World *world_create (void) {
+
+    World *new_world = (World *) malloc (sizeof (World));
+    if (new_world) {
+        new_world->game_map = NULL;
+        new_world->game_camera = camera_new (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
+
+        new_world->players = llist_init (game_object_destroy_ref);
+    }
+
+    return new_world;
+}
+
+// TODO: correctly destroy all world elements
+static void world_destroy (World *world) {
+
+    if (world) {
+        if (world->game_map) map_destroy (world->game_map);
+        if (world->game_camera) camera_destroy (world->game_camera);
+
+        free (world);
+    }
+
+}
+
+#pragma endregion
+
+// TODO: this shouuld go at the bottom of the file
+/*** GAME STATE ***/
+
+#pragma region GAME STATE
+
+GameState *game_state = NULL;
+
+// TODO:
+static u8 load_game_data (void) {
+
+    // connect to items db
+    // items_init ();
+    // connect to enemies db and load enemy data
+    if (!enemies_connect_db ()) 
+        return 0;
+
+    return 0;
+
+}
+
+// FIXME:
+static void game_update (void);
 
 static u8 game_init (void) {
 
     game_objects_init_all ();
 
-    // connect to items db
-    // items_init ();
-    // connect to enemies db
-    // load enemy data
+    if (!load_game_data ()) {
+        // init world
+        world = world_create ();
 
-    // init world
-    // init score
+        // init map
+        // FIXME: from where do we get this values?
+        // single player -> random values
+        // multiplayer -> we get it from the server
+        world->game_map = map_create (100, 40);
+        world->game_map->dungeon = dungeon_generate (world->game_map, 
+            world->game_map->width, world->game_map->heigth, 100, .45);
 
-    // generate level
-    // spawn items
-    // spawn enemies
-    // init camera
-    // spawn player
+        // init score
 
-    return 0;
+        // generate level
+        // spawn items
+        // spawn enemies
+
+        // init player(s)
+        llist_insert_next (world->players, llist_start (world->players), player_init ());
+
+        // spawn players
+
+        // update camera
+
+        // FIXME:
+        game_state->update = game_update;
+        // game_manager->currState->update = game_update;
+
+        return 0;
+    } 
+
+    return 1;
 
 }
 
@@ -428,7 +499,7 @@ static void game_update (void) {
     }
 
     // update the camera
-    camera_update (game_camera);
+    camera_update (world->game_camera);
     
 }
 
@@ -442,13 +513,13 @@ static void game_render (void) {
         graphics = (Graphics *) game_object_get_component (gameObjects[i], GRAPHICS_COMP);
         if (transform && graphics) {
             if (graphics->multipleSprites)
-                texture_draw_frame (game_camera, graphics->spriteSheet, 
+                texture_draw_frame (world->game_camera, graphics->spriteSheet, 
                 transform->position.x, transform->position.y, 
                 graphics->x_sprite_offset, graphics->y_sprite_offset,
                 graphics->flip);
             
             else
-                texture_draw (game_camera, graphics->sprite, 
+                texture_draw (world->game_camera, graphics->sprite, 
                 transform->position.x, transform->position.y, 
                 graphics->flip);
         }
@@ -456,12 +527,7 @@ static void game_render (void) {
 
 }
 
-// FIXME:
 void game_cleanUp (void) {
-
-    // camera_destroy (game_camera);
-
-    // map_destroy (game_map);
 
     // clean up game objects
     for (u32 i = 0; i < curr_max_objs; i++) 
@@ -482,7 +548,8 @@ GameState *game_state_new (void) {
     if (new_game_state) {
         new_game_state->state = IN_GAME;
 
-        new_game_state->update = game_update;
+        // new_game_state->update = game_update;
+        new_game_state->update = NULL;
         new_game_state->render = game_render;
 
         new_game_state->onEnter = game_onEnter;
@@ -532,9 +599,6 @@ void game_state_change_state (GameState *newState) {
 
 
 /*** WORLD STATE ***/
-
-// Level 
-Level *currentLevel = NULL;
 
 // Score
 Score *playerScore = NULL;
@@ -869,12 +933,12 @@ void generateTargetMap (i32 targetX, i32 targetY) {
 // 13/08/2018 -- 22:27 -- I don't like neither of these!
 Position *getPos (i32 id) {
 
-    for (ListElement *e = LIST_START (positions); e != NULL; e = e->next) {
-        Position *pos = (Position *) LIST_DATA (e);
-        if (pos->objectId == id) return pos;
-    }
+    // for (ListElement *e = LIST_START (positions); e != NULL; e = e->next) {
+    //     Position *pos = (Position *) LIST_DATA (e);
+    //     if (pos->objectId == id) return pos;
+    // }
 
-    return NULL;
+    // return NULL;
 
 }
 
@@ -884,7 +948,7 @@ Position *getPos (i32 id) {
 // TODO: maybe a more efficient way is to only update the movement of the
 // enemies that are in a close range?
 
-void fight (Combat *att, Combat *def, bool isPlayer);
+// void fight (Combat *att, Combat *def, bool isPlayer);
 
 void updateMovement (void) {
 
@@ -1068,12 +1132,12 @@ void *createLoot (void *arg) {
 
     GameObject *go = (GameObject *) arg;
 
-    Monster *mon = searchMonById (go->dbId);
+    // Monster *mon = searchMonById (go->dbId);
 
-    if (mon != NULL) {
+    // if (mon != NULL) {
         fprintf (stdout, "Creating new loot...\n");
 
-        Loot newLoot;
+        // Loot newLoot;
 
         // FIXME: create a better system
         // generate random money directly
@@ -1081,13 +1145,13 @@ void *createLoot (void *arg) {
         // newLoot.money[1] = randomInt (0, 99);
         // newLoot.money[2] = randomInt (0, 99);
 
-        newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
+        // newLoot.lootItems = generateLootItems (mon->loot.drops, mon->loot.dropCount);
 
-        // add the loot struct to the go as a component
-        //addComponent (go, LOOT, &newLoot);
+        // // add the loot struct to the go as a component
+        // //addComponent (go, LOOT, &newLoot);
 
-        fprintf (stdout, "New loot created!\n");
-    }
+        // fprintf (stdout, "New loot created!\n");
+    // }
 
 }
 
@@ -1231,7 +1295,7 @@ void destroyLoot (void) {
 #pragma region COMBAT
 
 // FIXME: fix probability
-char *calculateDefense (Combat *def, bool isPlayer) {
+// char *calculateDefense (Combat *def, bool isPlayer) {
 
     /* GameObject *defender = NULL;
     if (isPlayer) defender = searchGameObjectById (def->objectId);
@@ -1285,10 +1349,10 @@ char *calculateDefense (Combat *def, bool isPlayer) {
 
     return msg; */
 
-}
+// }
 
 // FIXME:
-u32 getPlayerDmg (Combat *att) {
+// u32 getPlayerDmg (Combat *att) {
 
     /* u32 damage;
 
@@ -1332,9 +1396,9 @@ u32 getPlayerDmg (Combat *att) {
 
     return damage; */
 
-}
+// }
 
-u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
+// u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
     /* GameObject *attacker = NULL;
     GameObject *defender = NULL;
@@ -1377,7 +1441,7 @@ u32 calculateDamage (Combat *att, Combat *def, bool isPlayer) {
 
     return damage; */
 
-}
+// }
 
 void updatePlayerScore (GameObject *);
 
@@ -1432,7 +1496,7 @@ void checkForKill (GameObject *defender, bool isPlayer) {
 
 // FIXME:
 // TODO: 16/08/2018 -- 18:59 -- we can only handle melee weapons
-void fight (Combat *att, Combat *def, bool isPlayer) {
+// void fight (Combat *att, Combat *def, bool isPlayer) {
 
     /* GameObject *attacker = NULL;
     GameObject *defender = NULL;
@@ -1474,7 +1538,7 @@ void fight (Combat *att, Combat *def, bool isPlayer) {
         }
     } */
 
-}
+// }
 
 #pragma endregion
 

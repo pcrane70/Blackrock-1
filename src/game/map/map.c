@@ -9,6 +9,7 @@
 #include "game/map/room.h"
 #include "game/map/map.h"
 
+#include "utils/llist.h"
 #include "utils/dlist.h"
 #include "utils/myUtils.h"
 
@@ -477,7 +478,7 @@ static CaveRoom *cave_room_create (LList *roomTiles, u32 **map) {
         room->edgeTiles = llist_init (free);
 
         Coord *tile = NULL;
-        for (Node *n = llist_start (room->tiles); n != NULL; n = n->next) {
+        for (ListNode *n = llist_start (room->tiles); n != NULL; n = n->next) {
             tile = llist_data (n);
             for (u8 x = tile->x - 1; x <= tile->x + 1; x++) {
                 for (u8 y = tile->y - 1; y <= tile->y + 1; y++) {

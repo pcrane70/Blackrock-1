@@ -91,6 +91,7 @@ typedef struct GameObject {
 
 extern GameObject *game_object_new (const char *name, const char *tag);
 extern void game_object_destroy (GameObject *go);
+extern void game_object_destroy_ref (void *data);
 
 extern void game_object_add_child (GameObject *parent, GameObject *child);
 extern GameObject *game_object_remove_child (GameObject *parent, GameObject *child);
@@ -262,17 +263,6 @@ extern bool canMove (Position pos, bool isPlayer);
 extern bool recalculateFov;
 
 /*** LEVEL MANAGER ***/
-
-typedef struct {
-
-    u8 levelNum;
-    bool **mapCells;    // dungeon map
-
-} Level;
-
-extern Level *currentLevel;
-
-extern unsigned int wallCount;
 
 extern void retry (void);
 

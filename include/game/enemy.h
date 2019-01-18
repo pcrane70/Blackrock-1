@@ -5,6 +5,8 @@
 
 #include "game/entity.h"
 
+#include "utils/llist.h"
+
 #define N_MONSTER_TYPES       9
 
 typedef struct EnemyLoot {

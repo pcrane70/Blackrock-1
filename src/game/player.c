@@ -9,9 +9,6 @@
 
 #include "utils/myUtils.h"
 
-// TODO: we need a better way to reference the players we know about
-GameObject *main_player_go = NULL;
-
 static Player *mainPlayer = NULL;
 
 static Transform *my_trans = NULL;
