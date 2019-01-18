@@ -77,8 +77,6 @@ extern GameState *game_state_new (void);
 typedef struct GameObject {
     
     i32 id;
-    // FIXME: i dont want this here!!!
-    u32 dbId;   // 06/09/2018 -- we need to this somewhere
 
     char *name;
     char *tag;
@@ -106,6 +104,7 @@ typedef enum GameComponent {
     BOX_COLLIDER_COMP,
 
     PLAYER_COMP,
+    ENEMY_COMP,
 
 } GameComponent;
 
@@ -210,40 +209,6 @@ typedef struct Event {
 
 } Event;
 
-
-/*** OUR LISTS ***/
-
-extern DoubleList *positions;
-extern DoubleList *graphics;
-extern DoubleList *physics;
-
-/*** POOLS ***/
-
-extern Pool *goPool;
-extern Pool *posPool;
-extern Pool *graphicsPool;
-extern Pool *physPool;
-
-
-/*** GAME STATE ***/
-
-// FIXME: move this into our new game manager and states -- 16/01/2018
-extern void startGame (void);
-extern void initGame (void);
-
-extern bool playerTookTurn;
-
-extern void *updateGame (void *);
-
-
-/*** Game Objects ***/
-
-extern GameObject *createGO (void);
-extern void *getComponent (GameObject *, GameComponent);
-extern void addComponent (GameObject *go, GameComponent type, void *data);
-extern DoubleList *getObjectsAtPos (u32 x, u32 y);
-extern GameObject *searchGameObjectById (u32);
-
 /*** LOOT ***/
 
 typedef struct Loot {
@@ -265,6 +230,18 @@ extern bool recalculateFov;
 /*** LEVEL MANAGER ***/
 
 extern void retry (void);
+
+/*** WORLD ***/
+
+typedef struct World {
+
+    Map *game_map;
+    Camera *game_camera;
+
+    LList *players;
+    LList *enemies;
+
+} World;
 
 /*** SCORE ***/
 

@@ -333,6 +333,10 @@ void *game_object_add_component (GameObject *go, GameComponent component) {
                 retval = go->components[component] = player_create_comp (go->id); 
                 go->update = player_update;
                 break;
+            case ENEMY_COMP:
+                retval = go->components[component] = enemy_create_comp (go->id);
+                go->update = enemy_update;
+                break;
 
             default: break;
         }
@@ -348,7 +352,6 @@ void *game_object_get_component (GameObject *go, GameComponent component) {
 
 }
 
-// FIXME: correctly destroy player component
 void game_object_remove_component (GameObject *go, GameComponent component) {
 
     if (go) {
@@ -364,8 +367,11 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
                 break;
 
             case PLAYER_COMP: 
-                // FIXME:
-                // player_destroy (go->components[component]);
+                player_destroy_comp (go->components[component]);
+                go->update = NULL;
+                break;
+            case ENEMY_COMP:
+                enemy_destroy_comp (go->components[component]);
                 go->update = NULL;
                 break;
 
@@ -379,21 +385,8 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
 
 #pragma region World
 
-typedef struct World {
-
-    Map *game_map;
-    Camera *game_camera;
-
-    // score
-    // enemies
-    LList *players;
-
-} World;
-
 World *world =  NULL;
 
-// TODO: what other things do we want inside the world??
-// FIXME: fix camera size!
 static World *world_create (void) {
 
     World *new_world = (World *) malloc (sizeof (World));
@@ -402,17 +395,20 @@ static World *world_create (void) {
         new_world->game_camera = camera_new (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
 
         new_world->players = llist_init (game_object_destroy_ref);
+        new_world->enemies = llist_init (game_object_destroy_ref);
     }
 
     return new_world;
 }
 
-// TODO: correctly destroy all world elements
 static void world_destroy (World *world) {
 
     if (world) {
         if (world->game_map) map_destroy (world->game_map);
         if (world->game_camera) camera_destroy (world->game_camera);
+
+        if (world->players) llist_destroy (world->players);
+        if (world->enemies) llist_destroy (world->enemies);
 
         free (world);
     }
@@ -460,9 +456,6 @@ static u8 game_init (void) {
         world->game_map->dungeon = dungeon_generate (world->game_map, 
             world->game_map->width, world->game_map->heigth, 100, .45);
 
-        // init score
-
-        // generate level
         // spawn items
         // spawn enemies
 
@@ -473,7 +466,9 @@ static u8 game_init (void) {
 
         // update camera
 
-        // FIXME:
+        // init score
+
+        // FIXME: we are ready to start updating the game
         game_state->update = game_update;
         // game_manager->currState->update = game_update;
 

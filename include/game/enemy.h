@@ -36,11 +36,20 @@ extern void enemy_data_delete_all (void);
 // component for a game object
 typedef struct Enemy {
 
-    u32 dbid;
+    u32 goID;
+
+    u32 dbID;
     LivingEntity *entity;
 
 } Enemy;
 
 extern u8 enemies_connect_db (void);
+
+extern Enemy *enemy_create_comp (u32 goID);
+extern void enemy_destroy_comp (Enemy *enemy);
+
+extern void enemy_update (void *data);
+
+extern GameObject *enemy_create (u32 dbID);
 
 #endif

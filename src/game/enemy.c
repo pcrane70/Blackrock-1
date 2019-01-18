@@ -6,8 +6,11 @@
 
 #include "blackrock.h"
 
+#include "game/game.h"
 #include "game/entity.h"
 #include "game/enemy.h"
+
+#include "engine/animation.h"
 
 #include "utils/llist.h"
 #include "utils/log.h"
@@ -218,21 +221,102 @@ void enemies_disconnect_db (void) {
 
 }
 
-#pragma endregion
+EnemyData *enemy_data_get_by_id (u32 id) {
 
-/* Monster *searchMonById (u32 monId) {
-
-    Monster *mon = NULL;
-    for (ListElement *e = LIST_START (enemyData); e != NULL; e = e->next) {
-        mon = (Monster *) e->data;
-        if (mon->id == monId) break;
+    EnemyData *edata = NULL;
+    for (ListNode *n = llist_start (enemyData); n != NULL; n = n->next) {
+        edata = (EnemyData *) n->data;
+        if (edata->dbId == id) return edata;
     }
 
-    if (mon == NULL) fprintf (stderr, "No monster found with id: %i\n", monId);
+    return NULL;
 
-    return mon;
+}
 
-} */
+#pragma endregion
+
+#pragma region Enemy Component
+
+Enemy *enemy_create_comp (u32 goID) {
+
+    Enemy *enemy = (Enemy *) malloc (sizeof (Enemy));
+    if (enemy) {
+        enemy->goID = goID;
+        enemy->entity = entity_new ();
+    }
+
+    return enemy;
+
+}
+
+void enemy_destroy_comp (Enemy *enemy) {
+
+    if (enemy) {
+        entity_destroy (enemy->entity);
+        free (enemy);
+    }
+
+}
+
+// TODO: 
+void enemy_update (void *data) {}
+
+#pragma endregion
+
+#pragma region Enemy
+
+static void enemy_add_transform (GameObject *enemy_go) {
+
+    if (enemy_go) game_object_add_component (enemy_go, TRANSFORM_COMP);
+
+}
+
+// FIXME:
+static void enemy_add_graphics (GameObject *enemy_go, u32 dbID) {
+
+    if (enemy_go) {
+        Graphics *graphics = game_object_add_component (enemy_go, GRAPHICS_COMP);
+    }
+
+}
+
+// FIXME:
+static void enemy_add_animator (GameObject *enemy_go, u32 dbID) {
+
+    if (enemy_go) {
+        Animator *animator = game_object_add_component (enemy_go, ANIMATOR_COMP);
+    }
+
+}
+
+// FIXME:
+static void enemy_get_stats (GameObject *enemy_go, u32 dbID) {
+
+    if (enemy_go) {
+        Enemy *enemy = game_object_add_component (enemy_go, ENEMY_COMP);
+        enemy->dbID = dbID;
+
+        // get enemy stats from enemy db
+    }
+
+}
+
+GameObject *enemy_create (u32 dbID) {
+
+    GameObject *enemy_go = game_object_new (NULL, "enemy");
+    if (enemy_go) {
+        enemy_add_transform (enemy_go);
+        enemy_add_graphics (enemy_go, dbID);
+        enemy_add_animator (enemy_go, dbID);
+        
+        enemy_get_stats (enemy_go, dbID);
+    }
+
+    return enemy_go;
+
+}
+
+#pragma endregion
 
 // u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
 
