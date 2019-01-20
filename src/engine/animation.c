@@ -77,7 +77,6 @@ Animator *animator_new (u32 objectID) {
 
 }
 
-// FIXME: remove from the list
 void animator_destroy (Animator *animator) {
 
     if (animator) {
@@ -89,7 +88,11 @@ void animator_destroy (Animator *animator) {
             free (animator->animations);
         }
 
-        free (animator);
+        timer_destroy (animator->timer);
+
+        void *data = llist_remove (animators, llist_get_list_node (animators, animator));
+        if (data) free (data);
+        else free (animator);
     }
 
 }

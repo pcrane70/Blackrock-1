@@ -5,6 +5,7 @@
 
 typedef struct ListNode {
 
+    int idx;
     void *data;
     struct ListNode *next;
 
@@ -27,6 +28,10 @@ typedef struct LList {
 
 extern LList *llist_init (void (*destroy) (void *));
 extern void llist_destroy (LList *list);
+
 extern void llist_insert_next (LList *list, ListNode *node, void *data);
+extern void *llist_remove (LList *list, ListNode *node);
+
+extern ListNode *llist_get_list_node (LList *list, void *data);
 
 #endif

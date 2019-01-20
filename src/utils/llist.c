@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "utils/llist.h"
 
 static ListNode *llist_node_create (void *data) {
@@ -63,15 +65,26 @@ void llist_insert_next (LList *list, ListNode *node, void *data) {
             if (llist_size (list) == 0) list->end = new_node;
 
             new_node->next = NULL;
+            new_node->idx = 0;
             list->start = new_node;
         }
 
         // insert somewhere else
         else {
-            if (!node->next) list->end = new_node;
+            if (!node->next) {
+                list->end = new_node;
+                new_node->idx = list->size;
+            } 
 
             new_node->next = node->next;
             node->next = new_node;
+            new_node->idx = node->next->idx;
+
+            int newIdx = new_node->idx + 1;
+            for (ListNode *n = new_node->next; n != NULL; n = n->next) {
+                n->idx = newIdx;
+                newIdx++;
+            }
         }
 
         list->size++;
@@ -79,7 +92,67 @@ void llist_insert_next (LList *list, ListNode *node, void *data) {
 
 }
 
-// FIXME: add llist_remove
+void *llist_remove (LList *list, ListNode *node) {
+
+    void *retval = NULL;
+
+    if (list && list->size > 0) {
+        ListNode *old = NULL;
+    
+        // remove the start of the list
+        if (!node) {
+            retval = list->start->data;
+            old = list->start;
+            list->start = list->start->next;
+
+            int newIdx = 0;
+            for (ListNode *n = list->start; n != NULL; n = n->next) {
+                n->idx = 0;
+                newIdx++;
+            }
+        }
+
+        else {
+            retval = node->data;
+            old = node;
+            
+            // get the previous node
+            ListNode *prevNode = list->start;
+            int i = 0;
+            while (i < (node->idx - 1)) {
+                prevNode = prevNode->next;
+                i++;
+            } 
+
+            prevNode->next = old->next;
+            int newIdx = node->idx;
+            for (ListNode *n = old->next; n != NULL; n = n->next) {
+                n->idx = newIdx;
+                newIdx++;
+            }
+        }
+
+        if (old) free (old);
+    }
+
+    return retval;
+
+}
+
+// searches the list and returns the list node associated with the data
+ListNode *llist_get_list_node (LList *list, void *data) {
+
+    if (list && data) {
+        ListNode *ptr = llist_start (list);
+        while (ptr != NULL) {
+            if (ptr->data == data) return ptr;
+            ptr = ptr->next;
+        }
+    }
+
+    return NULL;
+
+}
 
 // TODO: add a node get data
 // TODO: add a list sort based on a comparator
