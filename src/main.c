@@ -112,8 +112,8 @@ int main (void) {
 
     // FIXME: I dont want these here!
     // FIXME: cleanup
-    animations_end ();
     game_cleanUp ();
+    animations_end ();
     // ui_destroy ();
     video_destroy_main ();
     SDL_Quit ();

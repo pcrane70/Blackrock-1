@@ -44,13 +44,15 @@ LList *llist_init (void (*destroy) (void *)) {
 void llist_destroy (LList *list) {
 
     if (list) {
-        ListNode *ptr = list->start, *next;
-        while (ptr) {
-            next = ptr->next;
-            llist_node_destroy (ptr, list->destroy);
-            ptr = next;
+        if (list->size > 0) {
+            ListNode *ptr = list->start, *next;
+            while (ptr) {
+                next = ptr->next;
+                llist_node_destroy (ptr, list->destroy);
+                ptr = next;
+            }
         }
-
+        
         free (list);
     }
 
@@ -133,6 +135,7 @@ void *llist_remove (LList *list, ListNode *node) {
         }
 
         if (old) free (old);
+        list->size--;
     }
 
     return retval;

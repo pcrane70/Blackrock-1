@@ -97,6 +97,12 @@ void animator_destroy (Animator *animator) {
 
 }
 
+static void animator_destroy_ref (void *data) { 
+    
+    if (data) animator_destroy ((Animator *) data);
+    
+}
+
 void animator_set_default_animation (Animator *animator, Animation *animation) {
 
     if (animator && animation) 
@@ -180,7 +186,7 @@ void *animations_update (void *data) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            printf ("anim fps: %i\n", fps);
+            // printf ("anim fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }
@@ -190,7 +196,7 @@ void *animations_update (void *data) {
 
 int animations_init (void) {
 
-    animators = llist_init (NULL);
+    animators = llist_init (animator_destroy_ref);
 
     return pthread_create (&animThread, NULL, animations_update, NULL);
 
@@ -198,9 +204,7 @@ int animations_init (void) {
 
 int animations_end (void) {
 
-    // FIXME: animator compoments are destroyed by game objects components
-    // llist_destroy (animators);
-    free (animators);
+    llist_destroy (animators);
 
     return pthread_join (animThread, NULL);
 
