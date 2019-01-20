@@ -7,6 +7,7 @@
 
 #include "game/game.h"
 
+#include "engine/timer.h"
 #include "engine/sprites.h"
 #include "engine/animation.h"
 
@@ -60,10 +61,14 @@ Animator *animator_new (u32 objectID) {
     Animator *new_animator = (Animator *) malloc (sizeof (Animator));
     if (new_animator) {
         new_animator->goID = objectID;
+        new_animator->start = true;
+        new_animator->playing = false;
+        new_animator->defaultAnimation = NULL;
         new_animator->currAnimation = NULL;
         new_animator->currFrame = 0;
         new_animator->n_animations = 0;
         new_animator->animations = NULL;
+        new_animator->timer = timer_new ();
 
         llist_insert_next (animators, llist_end (animators), new_animator);
     }
@@ -72,6 +77,7 @@ Animator *animator_new (u32 objectID) {
 
 }
 
+// FIXME: remove from the list
 void animator_destroy (Animator *animator) {
 
     if (animator) {
@@ -88,6 +94,13 @@ void animator_destroy (Animator *animator) {
 
 }
 
+void animator_set_default_animation (Animator *animator, Animation *animation) {
+
+    if (animator && animation) 
+        animator->defaultAnimation = animation;
+
+}
+
 void animator_set_current_animation (Animator *animator, Animation *animation) {
 
     if (animator && animation) 
@@ -99,8 +112,10 @@ void animator_play_animation (Animator *animator, Animation *animation) {
 
     if (animator && animation) {
         animator_set_current_animation (animator, animation);
+        animator->start = true;
         animator->playing = true;
         animator->currFrame = 0;
+        timer_start (animator->timer);
     } 
 
 }
@@ -131,16 +146,31 @@ void *animations_update (void *data) {
             animator = (Animator *) node->data;
             graphics = (Graphics *) game_object_get_component (game_object_get_by_id (animator->goID), GRAPHICS_COMP);
 
-            animator->currFrame = (int) (((SDL_GetTicks () / animator->currAnimation->speed) %
-                animator->currAnimation->n_frames));
+            animator->currFrame = (int) (((animator->timer->ticks / animator->currAnimation->speed) %
+                    animator->currAnimation->n_frames));
 
             graphics->x_sprite_offset = animator->currAnimation->frames[animator->currFrame]->col;
             graphics->y_sprite_offset = animator->currAnimation->frames[animator->currFrame]->row;
+
+            if (animator->playing) {
+                if (animator->currFrame >= (animator->currAnimation->n_frames - 1)) {
+                    animator->playing = false;
+                    animator->currAnimation = animator->defaultAnimation;
+                    animator->currFrame = 0;
+                    timer_start (animator->timer);
+                }
+            }
         }
 
         // limit the FPS
         sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
         if (sleepTime > 0) SDL_Delay (sleepTime);
+
+        // update animators timers
+        for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
+            animator = (Animator *) node->data;
+            animator->timer->ticks = SDL_GetTicks () - animator->timer->startTicks;
+        }
 
         // count fps
         deltaTime = SDL_GetTicks () - frameStart;

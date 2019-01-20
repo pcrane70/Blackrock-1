@@ -3,7 +3,10 @@
 
 #include <stdbool.h>
 
-#include "sprites.h"
+#include "blackrock.h"
+
+#include "engine/timer.h"
+#include "engine/sprites.h"
 
 #define DEFAULT_ANIM_SPEED      100
 
@@ -18,11 +21,14 @@ typedef struct Animation {
 typedef struct Animator {
 
     u32 goID;
+    bool start;
     bool playing;
-    Animation *currAnimation;
-    u8 n_animations;
     u8 currFrame;
+    u8 n_animations;
     Animation **animations;
+    Animation *currAnimation;
+    Animation *defaultAnimation;
+    Timer *timer;
 
 } Animator;
 
@@ -32,6 +38,8 @@ extern void animation_set_speed (Animation *animation, u32 speed);
 
 extern Animator *animator_new (u32 objectID);
 extern void animator_destroy (Animator *animator);
+
+void animator_set_default_animation (Animator *animator, Animation *animation);
 extern void animator_set_current_animation (Animator *animator, Animation *animation);
 extern void animator_play_animation (Animator *animator, Animation *animation);
 

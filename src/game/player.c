@@ -135,6 +135,7 @@ GameObject *player_init (void) {
         animation_set_speed (player_attack_anim, 100);  
 
         animator_set_current_animation (my_anim, player_idle_anim);
+        animator_set_default_animation (my_anim, player_idle_anim);
     }
 
     return new_player_go;
