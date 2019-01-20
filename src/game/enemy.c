@@ -100,7 +100,7 @@ static int enemy_data_load_all (void *data, int argc, char **argv, char **azColN
 
     if (enemy_loot_load (edata->dbId, &edata->loot)) {
         #ifdef DEV
-        logMsg (stderr, ERROR, GAME, "Failed getting enemy loot. Enemy id: %i", edata->id);
+        logMsg (stderr, ERROR, GAME, createString ("Failed getting enemy loot. Enemy id: %i", edata->dbId));
         #endif
     }
 
@@ -131,7 +131,7 @@ void enemy_data_delete_all (void) {
 u8 enemies_connect_db (void) {
 
     // connect to the enemies db
-    if (sqlite3_open (enemiesDbPath, &enemiesDb) != SQLITE_OK) {
+    if (sqlite3_open (createString ("%s%s", DATA_PATH, enemiesDbPath), &enemiesDb) != SQLITE_OK) {
         #ifdef DEV
         logMsg (stderr, ERROR, GAME, "Problems connecting to enemies db!");
         logMsg (stderr, ERROR, GAME, createString ("%s", sqlite3_errmsg (enemiesDb)));

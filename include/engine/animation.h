@@ -35,4 +35,9 @@ extern void animator_destroy (Animator *animator);
 extern void animator_set_current_animation (Animator *animator, Animation *animation);
 extern void animator_play_animation (Animator *animator, Animation *animation);
 
+/*** ANIM THREAD ***/
+
+extern int animations_init (void);
+extern int animations_end (void);
+
 #endif

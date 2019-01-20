@@ -77,4 +77,8 @@ extern Connection *main_connection;
 
 extern void die (const char *error);
 
+extern bool running;
+extern bool inGame;
+extern bool wasInGame;
+
 #endif

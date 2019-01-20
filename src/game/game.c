@@ -268,6 +268,12 @@ GameObject *game_object_remove_child (GameObject *parent, GameObject *child) {
 
 }
 
+GameObject *game_object_get_by_id (u32 id) {
+
+    if (id <= curr_max_objs) return gameObjects[id];
+
+}
+
 // mark as inactive or reusable the game object
 void game_object_destroy (GameObject *go) {
 

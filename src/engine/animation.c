@@ -5,8 +5,12 @@
 
 #include "blackrock.h"
 
+#include "game/game.h"
+
 #include "engine/sprites.h"
 #include "engine/animation.h"
+
+#include "utils/llist.h"
 
 /*** ANIMATION ***/
 
@@ -49,6 +53,8 @@ void animation_set_speed (Animation *animation, u32 speed) {
 
 /*** ANIMATOR ***/
 
+LList *animators = NULL;
+
 Animator *animator_new (u32 objectID) {
 
     Animator *new_animator = (Animator *) malloc (sizeof (Animator));
@@ -58,6 +64,8 @@ Animator *animator_new (u32 objectID) {
         new_animator->currFrame = 0;
         new_animator->n_animations = 0;
         new_animator->animations = NULL;
+
+        llist_insert_next (animators, llist_end (animators), new_animator);
     }
     
     return new_animator;
@@ -94,5 +102,73 @@ void animator_play_animation (Animator *animator, Animation *animation) {
         animator->playing = true;
         animator->currFrame = 0;
     } 
+
+}
+
+/*** ANIM THREAD ***/
+
+#include <pthread.h>
+
+pthread_t animThread;
+
+void *animations_update (void *data) {
+
+    u32 timePerFrame = 1000 / FPS_LIMIT;
+    u32 frameStart = 0;
+    i32 sleepTime = 0;
+
+    float deltaTime = 0;
+    u32 deltaTicks = 0;
+    u32 fps = 0;
+
+    while (running) {
+        frameStart = SDL_GetTicks ();
+
+        // update all animations
+        Animator *animator = NULL;
+        Graphics *graphics = NULL;
+        for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
+            animator = (Animator *) node->data;
+            graphics = (Graphics *) game_object_get_component (game_object_get_by_id (animator->goID), GRAPHICS_COMP);
+
+            animator->currFrame = (int) (((SDL_GetTicks () / animator->currAnimation->speed) %
+                animator->currAnimation->n_frames));
+
+            graphics->x_sprite_offset = animator->currAnimation->frames[animator->currFrame]->col;
+            graphics->y_sprite_offset = animator->currAnimation->frames[animator->currFrame]->row;
+        }
+
+        // limit the FPS
+        sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
+        if (sleepTime > 0) SDL_Delay (sleepTime);
+
+        // count fps
+        deltaTime = SDL_GetTicks () - frameStart;
+        deltaTicks += deltaTime;
+        fps++;
+        if (deltaTicks >= 1000) {
+            printf ("anim fps: %i\n", fps);
+            deltaTicks = 0;
+            fps = 0;
+        }
+    }
+
+}
+
+int animations_init (void) {
+
+    animators = llist_init (NULL);
+
+    return pthread_create (&animThread, NULL, animations_update, NULL);
+
+}
+
+int animations_end (void) {
+
+    // FIXME: animator compoments are destroyed by game objects components
+    // llist_destroy (animators);
+    free (animators);
+
+    return pthread_join (animThread, NULL);
 
 }

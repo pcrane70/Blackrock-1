@@ -4,8 +4,9 @@
 
 #include "game/game.h"
 
-#include "engine/renderer.h"
 #include "engine/input.h"
+#include "engine/renderer.h"
+#include "engine/animation.h"
 
 #include "utils/log.h"
 
@@ -59,10 +60,6 @@ int main (void) {
 
     SDL_Event event;
 
-    // TODO: modify to the correct game state
-    game_state = game_state_new ();
-    game_manager = game_manager_new (game_state);
-
     u32 timePerFrame = 1000 / FPS_LIMIT;
     u32 frameStart = 0;
     i32 sleepTime = 0;
@@ -74,6 +71,12 @@ int main (void) {
     char *text = (char *) calloc (20, sizeof (char));
 
     running = true;
+    animations_init ();
+
+    // TODO: modify to the correct game state
+    game_state = game_state_new ();
+    game_manager = game_manager_new (game_state);
+
     while (running) {
         frameStart = SDL_GetTicks ();
 
@@ -95,7 +98,7 @@ int main (void) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            printf ("fps: %i\n", fps);
+            printf ("main fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }
@@ -109,6 +112,7 @@ int main (void) {
 
     // FIXME: I dont want these here!
     // FIXME: cleanup
+    animations_end ();
     game_cleanUp ();
     // ui_destroy ();
     video_destroy_main ();

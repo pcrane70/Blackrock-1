@@ -96,6 +96,8 @@ extern void game_object_destroy_ref (void *data);
 extern void game_object_add_child (GameObject *parent, GameObject *child);
 extern GameObject *game_object_remove_child (GameObject *parent, GameObject *child);
 
+extern GameObject *game_object_get_by_id (u32 id);
+
 /*** COMPONENTS ***/
 
 typedef enum GameComponent {
