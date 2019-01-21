@@ -1,335 +1,1045 @@
-// /*** This handles the functions for rendering ui stuff to the screen ***/
+#include <stdlib.h>
+#include <stdbool.h>
 
-// #include <string.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
-// #include "blackrock.h"
+#include "blackrock.h"
+#include "ui/ui.h"
 
-// #include "ui/ui.h"
+#include "engine/renderer.h"
+#include "engine/sprites.h"
+#include "engine/textures.h"
+#include "engine/input.h"
 
-// #include "utils/myUtils.h"
+#include "utils/log.h"
+#include "utils/myUtils.h"
 
-// char *tileset = "./resources/terminal-art.png";  
+/*** COMMON RGBA COLORS ***/
 
-// /*** SCENE MANAGER ***/
+RGBA_Color RGBA_NO_COLOR = { 0, 0, 0, 0 };
+RGBA_Color RGBA_WHITE = { 255, 255, 255, 255 };
+RGBA_Color RGBA_BLACK = { 0, 0, 0, 255 };
 
-// UIScreen *activeScene = NULL;
+/*** BASIC UI ELEMENTS ***/
 
-// // don't forget to manually clean the previous screen
-// void setActiveScene (UIScreen *newScreen) { activeScene = newScreen; }
+#pragma region BASIC UI ELEMENTS
 
-// // FIXME:
-// void destroyUIScreen (UIScreen *screen) {
+static inline UIRect ui_rect_create (u32 x, u32 y, u32 w, u32 h) {
 
-//     /* if (screen != NULL) {
-//         if (screen->views != NULL) {
-//             if (LIST_SIZE (screen->views) > 0) {
-//                 screen->activeView = NULL;
+    UIRect ret = { x, y, w, h };
+    return ret;
 
-//                 // destroy screen views
-//                 while (LIST_SIZE (screen->views) > 0) 
-//                     ui_destroyView ((UIView *) removeElement (screen->views, NULL));
+}
 
-//             }
+static inline UIRect ui_rect_union (UIRect a, UIRect b) {
 
-//             destroyList (screen->views);
-//         }
+    u32 x1 = MIN (a.x, b.x);
+    u32 y1 = MIN (a.y, b.y);
+    u32 x2 = MAX (a.x + a.w, b.x + b.w);
+    u32 y2 = MAX (a.y + a.h, b.y + b.h);
 
-//         free (screen);
-//     } */
+    UIRect retval = { x1, y1, MAX (0, x2 - x1), MAX (0, y2 - y1) };
+    return retval;
 
-// }
+}
 
-// CleanUI destroyCurrentScreen;
+RGBA_Color ui_rgba_color_create (u8 r, u8 g, u8 b, u8 a) { 
 
-// /*** UI ***/
+    RGBA_Color retval = { r, g, b, a };
+    return retval;
 
-// UIView *ui_newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
-//     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
-//      UIRenderFunction renderFunc) {
+}
 
-//     UIView *view = (UIView *) malloc (sizeof (UIView));
-//     UIRect *rect = (UIRect *) malloc (sizeof (Rect));
+#pragma endregion
 
-//     memcpy (rect, &pixelRect, sizeof (Rect));
+/*** UI ELEMENTS ***/
 
-//     Console *console = initConsole (rect->w, rect->h, rowCount, colCount, bgColor, colorize);
+#pragma region UI ELEMENTS
 
-//     i32 cellWidthPixels = pixelRect.w / colCount;
-//     i32 cellHeightPixels = pixelRect.h / rowCount;
+UIElement **ui_elements = NULL;
+static u32 max_ui_elements;
+u32 curr_max_ui_elements;
+static u32 new_ui_element_id;
 
-//     setConsoleBitmapFont (console, fontFile, firstCharInAtlas, cellWidthPixels, cellHeightPixels);
+static u8 ui_elements_realloc (void) {
 
-//     view->console = console;
-//     view->pixelRect = rect;
-//     view->render = renderFunc;
+    u32 new_max_ui_elements = curr_max_ui_elements * 2;
 
-//     return view;
+    ui_elements = realloc (ui_elements, new_max_ui_elements * sizeof (UIElement *));
+    if (ui_elements) {
+        max_ui_elements = new_max_ui_elements;
+        return 0;
+    }
 
-// }
+    return 1;
 
-// void ui_destroyView (void *data) {
+}
 
-//     if (data) {
-//         UIView *view = (UIView *) data;
-//         if (view->pixelRect) free (view->pixelRect);
-//         destroyConsole (view->console);
-//         free (view);
-//     }
+// init our ui elements structures
+static u8 ui_elements_init (void) {
 
-// }
+    ui_elements = (UIElement **) calloc (DEFAULT_MAX_UI_ELEMENTS, sizeof (UIElement *));
+    if (ui_elements) {
+        for (u32 i = 0; i < DEFAULT_MAX_UI_ELEMENTS; i++) ui_elements[i] = NULL;
 
-// void ui_drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor) {
+        max_ui_elements = DEFAULT_MAX_UI_ELEMENTS;
+        curr_max_ui_elements = 0;
+        new_ui_element_id = 0;
 
-//     char c;
-//     for (u32 y = rect->y; y < rect->y + rect->h; y++) {
-//         for (i32 x = rect->x; x < rect->x + rect->w; x++) {
-//             c = ' ';
-//             if (borderWidth > 0) {
-//                 // sides
-//                 if ((x == rect->x) || (x == rect->x + rect->w - 1))
-//                     c = (borderWidth == 1) ? 179 : 186;
+        return 0;
+    }
 
-//                 // top
-//                 if (y == rect->y) {
-//                     // top left corner
-//                     if (x == rect->x) c = (borderWidth == 1) ? 218 : 201;
+    return 1;
 
-//                     // top right corner
-//                     else if (x == rect->x + rect->w - 1)
-//                         c = (borderWidth == 1) ? 191 : 187;
+}
 
-//                     // top border
-//                     else c = (borderWidth == 1) ? 196 : 205;
-//                 }
+static i32 ui_element_get_free_spot (void) {
 
-//                 // bottom 
-//                 if (y == rect->y + rect->h - 1) {
-//                     // bottom left corner
-//                     if (x == rect->x) c = (borderWidth == 1) ? 192 : 200;
+    for (u32 i = 0; i < curr_max_ui_elements; i++) 
+        if (ui_elements[i]->id == -1)
+            return i;
 
-//                     // bottom right corner
-//                     else if (x == rect->x + rect->w - 1)
-//                         c = (borderWidth == 1) ? 217 : 188;
+    return -1;
 
-//                     else c = (borderWidth == 1) ? 196 : 205;
-//                 }
-//             }
+}
 
-//             putCharAt (con, c, x, y, borderColor, color);
-//         }
-//     }
+// ui element constructor
+static UIElement *ui_element_new (UIElementType type) {
 
-// }
+    UIElement *new_element = NULL;
 
-// /*** IMAGE DRAWING ***/
+    // first check if we have a reusable ui element
+    i32 spot = ui_element_get_free_spot ();
 
-// // void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY) {
+    if (spot >= 0) {
+        new_element = ui_elements[spot];
+        new_element->id = spot;
+        new_element->type = type;
+        new_element->element = NULL;
+    }
 
-// //     u32 dstX = cellX * console->cellWidth;
-// //     for (u32 srcY = 0; srcY < image->height; srcY++) {
-// //         u32 dstY = (cellY * console->cellHeight) + srcY;
-// //         memcpy (&console->pixels[(dstY * console->width) + dstX],
-// //             &image->pixels[srcY * image->width], image->width * sizeof (u32));
-// //     }
+    else {
+        if (new_ui_element_id >= max_ui_elements) ui_elements_realloc ();
 
-// // }
+        new_element = (UIElement *) malloc (sizeof (UIElement));
+        if (new_element) {
+            new_element->id = new_ui_element_id;
+            new_element->type = type;
+            new_element->element = NULL;
+            ui_elements[new_element->id] = new_element;
+            new_ui_element_id++;
+            curr_max_ui_elements++;
+        }
+    }
 
-// /*** UI ELEMENTS ***/
+    return new_element;
 
-// TextBox *ui_textBox_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor, 
-//     const char *text, bool password, u32 textColor) {
+}
 
-//     TextBox *new_textBox = (TextBox *) malloc (sizeof (TextBox));
-//     if (new_textBox) {
-//         new_textBox->bgrect = (UIRect *) malloc (sizeof (UIRect));
-//         new_textBox->bgrect->x = x;
-//         new_textBox->bgrect->y = y;
-//         new_textBox->bgrect->w = w;
-//         new_textBox->bgrect->h = h;
+void ui_textBox_destroy (TextBox *textbox);
 
-//         new_textBox->bgcolor = bgcolor;
-//         new_textBox->textColor = textColor;
+// mark as inactive or reusable the ui element
+static void ui_element_destroy (UIElement *ui_element) {
 
-//         new_textBox->text = (char *) calloc (64, sizeof (char));
-
-//         new_textBox->ispassword = password;
-//         if (password) {
-//             new_textBox->pswd = (char *) calloc (64, sizeof (char));
-
-//             if (text) {
-//                 strcpy (new_textBox->pswd, text);
-//                 u32 len = strlen (text);
-//                 for (u8 i = 0; i < len; i++) new_textBox->text[i] = '*';
-//             }
-//         }
-
-//         else {
-//             if (text) strcpy (new_textBox->text, text);
-//             new_textBox->pswd = NULL;
-//         } 
-
-//         new_textBox->borderWidth = 0;
-//         new_textBox->borderColor = NO_COLOR;
-//     }
-
-//     return new_textBox;
-
-// }
-
-// void ui_textBox_destroy (TextBox *textbox) {
-
-//     if (textbox) {
-//         if (textbox->bgrect) free (textbox->bgrect);
-//         if (textbox->text) free (textbox->text);
-//         if (textbox->pswd) free (textbox->pswd);
-
-//         free (textbox);
-//     }
-
-// }
-
-// void ui_textBox_setBorders (TextBox *textbox, u8 borderWidth, u32 borderColor) {
-
-//     if (textbox) {
-//         textbox->borderWidth = borderWidth;
-//         textbox->borderColor = borderColor;
-//     }
-
-// }
-
-// void ui_textBox_update_text (TextBox *textbox, const char *text) {
-
-//     if (textbox) {
-//         if (textbox->ispassword) {
-//             if (textbox->pswd) strcat (textbox->pswd, text);
-//             if (textbox->text) {
-//                 u32 len = strlen (textbox->pswd);
-//                 for (u8 i = 0; i < len; i++) textbox->text[i] = '*';
-//             }
-//         }
+    if (ui_element) {
+        ui_element->id = -1;
         
-//         else if (textbox->text) strcat (textbox->text, text);
-//     }
+        switch (ui_element->type) {
+            case UI_TEXTBOX: ui_textBox_destroy ((TextBox *) ui_element->element); break;
+            case UI_BUTTON: break;
 
-// }
+            default: break;
+        }
+    }
 
-// void ui_textbox_delete_text (TextBox *textbox) {
+}
 
-//     if (textbox) {
-//         u32 len = strlen (textbox->text);
-//         if (len > 0) {
-//             if (len == 1) {
-//                 free (textbox->text);
-//                 textbox->text = (char *) calloc (64, sizeof (char));
+static void ui_element_delete (UIElement *ui_element) {
 
-//                 if (textbox->ispassword) {
-//                     free (textbox->pswd);
-//                     textbox->pswd = (char *) calloc (64, sizeof (char));
-//                 }
-//             }
+    if (ui_element) {
+        ui_element_destroy (ui_element);
+        free (ui_element);
+    }
 
-//             else {
-//                 char *temp = (char *) calloc (64, sizeof (char));
+}
 
-//                 if (textbox->ispassword) {
-//                     for (u8 i = 0; i < len - 1; i++) temp[i] = textbox->pswd[i];
-//                     free (textbox->text);
-//                     free (textbox->pswd);
-//                     textbox->pswd = createString ("%s", temp);
-//                     u32 newlen = strlen (textbox->pswd);
-//                     textbox->text = (char *) calloc (64, sizeof (char));
-//                     for (u8 i = 0; i < newlen; i++) textbox->text[i] = '*';
-//                 }
+#pragma endregion
 
-//                 else {
-//                     for (u8 i = 0; i < len - 1; i++) temp[i] = textbox->text[i];
-//                     free (textbox->text);
-//                     textbox->text = createString ("%s", temp);
-//                 }
+#pragma region FONT 
 
-//                 free (temp);
-//             }
-//         }
-//     }
+static const char *mainFontPath = "./assets/fonts/Roboto-Regular.ttf";
+Font *mainFont = NULL;
 
-// }
+static u8 has_render_target_support = 0;
 
-// void ui_textBox_draw (Console *console, TextBox *textbox) {
+/*** MISC ***/
 
-//     if (console && textbox) {
-//         ui_drawRect (console, textbox->bgrect, textbox->bgcolor,
-//             textbox->borderWidth, textbox->borderColor);
+static int u8_charsize (const char *character) {
 
-//         if (textbox->text)
-//             putStringAt (console, textbox->text, textbox->bgrect->x + 1, textbox->bgrect->y + 1, 
-//                 textbox->textColor, NO_COLOR);
-//     }
+    if (!character) return 0;
+
+    if((unsigned char) *character <= 0x7F) return 1;
+    else if((unsigned char) *character < 0xE0) return 2;
+    else if((unsigned char) *character < 0xF0) return 3;
+    else return 4;
+
+    return 1;
+}
+
+static inline const char *u8_next (const char *string) {
+
+    return string + u8_charsize (string);
+
+}
+
+static int u8_charcpy (char *buffer, const char *source, int buffer_size) {
+
+    if(buffer == NULL || source == NULL || buffer_size < 1)
+        return 0;
+
+    int charsize = u8_charsize (source);
+    if (charsize > buffer_size)
+        return 0;
+
+    memcpy (buffer, source, charsize);
+
+    return charsize;
+
+}
+
+static u32 get_code_point_from_UTF8 (const char **c, u8 advancePtr) {
+
+    if (c && *c) {
+        u32 retval = 0;
+        const char *str = *c;
+
+        if((unsigned char)*str <= 0x7F) retval = *str;
+        else if((unsigned char)*str < 0xE0) {
+            retval |= (unsigned char)(*str) << 8;
+            retval |= (unsigned char)(*(str + 1));
+            if (advancePtr) *c += 1;
+        }
+
+        else if((unsigned char)*str < 0xF0) {
+            retval |= (unsigned char)(*str) << 16;
+            retval |= (unsigned char)(*(str + 1)) << 8;
+            retval |= (unsigned char)(*(str + 2));
+            if (advancePtr) *c += 2;
+        }
+        else {
+            retval |= (unsigned char)(*str) << 24;
+            retval |= (unsigned char)(*(str + 1)) << 16;
+            retval |= (unsigned char)(*(str + 2)) << 8;
+            retval |= (unsigned char)(*(str + 3));
+            if (advancePtr) *c += 3;
+        }
+
+        return retval;
+    }
+
+    return 0;
+
+}
+
+static char *font_get_string_ASCII (void) {
+
+    static char *buffer = NULL;
+    if (!buffer) {
+        int i;
+        char c;
+        buffer = (char *) calloc (512, sizeof (char));
+        i = 0;
+        c = 32;
+        while (1) {
+            buffer[i] = c;
+            if (c == 126)
+                break;
+            ++i;
+            ++c;
+        }
+    }
+
+    char *retval = (char*) calloc (strlen (buffer) + 1, sizeof (char));
+    if (retval) strcpy (retval, buffer);
+
+    return retval;
+
+}
+
+static inline SDL_Surface *font_create_surface (u32 width, u32 height) {
+
+    #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        return SDL_CreateRGBSurface (SDL_SWSURFACE, width, height, 32, 
+            0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+    #else
+        return SDL_CreateRGBSurface (SDL_SWSURFACE, width, height, 32, 
+            0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+    #endif
+
+}
+
+/*** FONT MAP ***/
+
+static FontMap *font_map_create (u32 n_buckets) {
+
+    FontMap *fontMap = (FontMap *) malloc (sizeof (FontMap));
+    if (fontMap) {
+        fontMap->n_buckets = n_buckets;
+        fontMap->buckets = (FontMapNode **) calloc (n_buckets, sizeof (FontMapNode *));
+        for (u32 i = 0; i < n_buckets; i++) fontMap->buckets[i] = NULL;
+    }
+
+    return fontMap;
+
+}
+
+static void font_map_destroy (FontMap *fontMap) {
+
+    if (fontMap) {
+        FontMapNode *node = NULL, *last = NULL;;
+        for (u32 i = 0; i < fontMap->n_buckets; i++) {
+            node = fontMap->buckets[i];
+            if (node) {
+                last = node;
+                node = node->next;
+                free (last);
+            }
+        }
+
+        free (fontMap->buckets);
+        free (fontMap);
+    }
+
+}
+
+static GlyphData *font_map_find (FontMap *fontMap, u32 codepoint) {
+
+    if (fontMap) {
+        FontMapNode *node = NULL;
+        u32 index = codepoint % fontMap->n_buckets;
+
+        for (node = fontMap->buckets[index]; node != NULL; node = node->next)
+            if (node->key == codepoint)
+                return &node->value;
+    }
+
+    return NULL;    
+
+}
+
+static GlyphData *font_map_insert (FontMap *map, u32 codepoint, GlyphData glyph) {
+
+    if (map) {
+        FontMapNode *node = NULL;
+        u32 index = codepoint % map->n_buckets;
+
+        if (!map->buckets[index]) {
+            node = map->buckets[index] = (FontMapNode *) malloc (sizeof (FontMapNode));
+            node->key = codepoint;
+            node->value = glyph;
+            node->next = NULL;
+            return &node->value;
+        }
+
+        for(node = map->buckets[index]; node != NULL; node = node->next) {
+            if(!node->next) {
+                node->next = (FontMapNode*) malloc (sizeof (FontMapNode));
+                node = node->next;
+
+                node->key = codepoint;
+                node->value = glyph;
+                node->next = NULL;
+                return &node->value;
+            }
+        }
+    }
+
+    return NULL;
+
+}
+
+/*** GLYPH ***/
+static GlyphData glyph_data_make (int cacheLevel, i16 x, i16 y, u16 w, u16 h) {
+
+    GlyphData gd;
+
+    gd.rect.x = x;
+    gd.rect.y = y;
+    gd.rect.w = w;
+    gd.rect.h = h;
+    gd.cacheLevel = cacheLevel;
+
+    return gd;
+
+}
+
+static GlyphData *glyph_data_pack (Font *font, u32 codepoint, u16 width, 
+    u16 maxWidth, u16 maxHeight) {
+
+    FontMap *glyphs = font->glyphs;
+    GlyphData *last_glyph = &font->last_glyph;
+    u16 height = font->height + 1;
+
+    if (last_glyph->rect.x + last_glyph->rect.w + width >= maxWidth - 1) {
+        if(last_glyph->rect.y + height + height >= maxHeight - 1) {
+            last_glyph->cacheLevel = font->glyph_cache_count;
+            last_glyph->rect.x = 1;
+            last_glyph->rect.y = 1;
+            last_glyph->rect.w = 0;
+            return NULL;
+        }
+
+        else {
+            last_glyph->rect.x = 1;
+            last_glyph->rect.y += height;
+            last_glyph->rect.w = 0;
+        }
+    }
+
+    // move to next space
+    last_glyph->rect.x += last_glyph->rect.w + 1 + 1;
+    last_glyph->rect.w = width;
+
+    return font_map_insert (glyphs, codepoint, 
+        glyph_data_make (last_glyph->cacheLevel, last_glyph->rect.x, last_glyph->rect.y,
+                        last_glyph->rect.w, last_glyph->rect.h));
+}
+
+static u8 glyph_get_data (Font *font, GlyphData *result, u32 codepoint) {
+
+    GlyphData *g = font_map_find (font->glyphs, codepoint);
+    if (g) {
+        *result = *g;
+        return 0;   // success
+    } 
+
+    // TODO: maybe add the new glyph data to the font cache? check draft code
+
+    return 1;   // error
+
+}
+
+
+static u8 glyph_set_cache_level (Font* font, int cache_level, SDL_Texture *cache_texture) {
+
+    if (font && cache_level >= 0) {
+        if (cache_level <= font->glyph_cache_count + 1) {
+            if (cache_level == font->glyph_cache_count) {
+                font->glyph_cache_count++;
+
+                if (font->glyph_cache_count > font->glyph_cache_size) {
+                    font->glyph_cache = 
+                        (SDL_Texture **) realloc (font->glyph_cache, sizeof (font->glyph_cache_count));
+                    font->glyph_cache_size = font->glyph_cache_count;
+                }
+            }
+
+            font->glyph_cache[cache_level] = cache_texture;
+
+            return 0;
+        }
+    }
+
+    return 1;   // error
+
+}
+
+static inline SDL_Texture *glyph_get_cache_level (Font *font, int cacheLevel) {
+
+    if (font && cacheLevel >= 0 && cacheLevel <= font->glyph_cache_count)
+        return font->glyph_cache[cacheLevel];
+
+}
+
+static u8 glyph_upload_cache (Font *font, int cacheLevel, SDL_Surface *dataSurface) {
+
+    if (font && dataSurface) {
+        SDL_Texture *new_level = NULL;
+
+        if (has_render_target_support) {
+            char old_filter_mode[16];  
+            snprintf(old_filter_mode, 16, "%s", SDL_GetHint (SDL_HINT_RENDER_SCALE_QUALITY));
+
+            if (font->filter == FILTER_LINEAR) SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "1");
+            else SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "0");
+            
+            new_level = SDL_CreateTexture (main_renderer, dataSurface->format->format, 
+                SDL_TEXTUREACCESS_TARGET, dataSurface->w, dataSurface->h);;
+
+            SDL_SetTextureBlendMode (new_level, SDL_BLENDMODE_BLEND);
+
+            // reset filter mode for the temp texture
+            SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "0");
+
+            u8 r, g, b, a;
+            SDL_Texture *temp = SDL_CreateTextureFromSurface (main_renderer, dataSurface);
+            SDL_SetTextureBlendMode (temp, SDL_BLENDMODE_NONE);
+            SDL_SetRenderTarget (main_renderer, new_level);
+
+            SDL_GetRenderDrawColor (main_renderer, &r, &g, &b, &a);
+            SDL_SetRenderDrawColor (main_renderer, 0, 0, 0, 0);
+            SDL_RenderClear (main_renderer);
+            SDL_SetRenderDrawColor (main_renderer, r, g, b, a);
+
+            SDL_RenderCopy (main_renderer, temp, NULL, NULL);
+            SDL_SetRenderTarget (main_renderer, NULL);
+
+            SDL_DestroyTexture (temp);
+
+            SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, old_filter_mode);
+        }
+
+        if (!glyph_set_cache_level (font, cacheLevel, new_level)) return 0;   // success
         
-// }
+        #ifdef DEV
+        logMsg (stderr, ERROR, NO_TYPE, "Font cache ran out of packing space "
+        "and could not add another cache level!");
+        #else
+        SDL_DestroyTexture (new_level);
+        #endif
+    }
 
-// Button *ui_button_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor,
-//     const char *text, u32 textColor, EventListener event) {
+    return 1;   // error
 
-//     Button *new_button = (Button *) malloc (sizeof (Button));
-//     if (new_button) {
-//         new_button->bgrect = (UIRect *) malloc (sizeof (UIRect));
-//         new_button->bgrect->x = x;
-//         new_button->bgrect->y = y;
-//         new_button->bgrect->w = w;
-//         new_button->bgrect->h = h;
+}
 
-//         new_button->bgcolor = bgcolor;
-//         new_button->textColor = textColor;
+/*** FONT ***/
 
-//         new_button->text = (char *) calloc (64, sizeof (char));
-//         if (text) strcpy (new_button->text, text);
+static void ui_font_init (Font *font) {
 
-//         new_button->borderWidth = 0;
-//         new_button->borderColor = NO_COLOR;
+    font->ttf_source = NULL;
+    font->owns_ttf_source = 0;
 
-//         new_button->event = event;
-//     }
+    font->filter = FILTER_NEAREST;
 
-//     return new_button;
+    font->default_color.r = font->default_color.g = font->default_color.b = 0;
+    font->default_color.a = 255;
 
-// }
+    font->height = 0;
+    font->maxWidth = 0;
+    font->baseline = 0;
+    font->ascent = 0;
+    font->descent = 0;
 
-// void ui_button_destroy (Button *button) {
+    font->lineSpacing = 0;
+    font->letterSpacing = 0;
 
-//     if (button) {
-//         if (button->bgrect) free (button->bgrect);
-//         if (button->text) free (button->text);
+    font->last_glyph.rect.x = font->last_glyph.rect.y = 1;
+    font->last_glyph.rect.w = font->last_glyph.rect.h = 0;
+    font->last_glyph.cacheLevel = 0;
 
-//         free (button);
-//     }
+    if (font->glyphs) font_map_destroy (font->glyphs);
+    font->glyphs = font_map_create (DEFAULT_FONT_MAP_N_BUCKETS);
 
-// }
+    font->glyph_cache_size = 3;
+    font->glyph_cache_count = 0;
+    font->glyph_cache = (FontImage **) calloc (font->glyph_cache_size, sizeof (FontImage *));
 
-// void ui_button_setBorders (Button *button, u8 borderWidth, u32 borderColor) {
+    font->loading_string = font_get_string_ASCII ();
 
-//     if (button) {
-//         button->borderWidth = borderWidth;
-//         button->borderColor = borderColor;
-//     }
+}
 
-// }
+Font *ui_font_create (void) {
 
-// // TODO: center the text at y pos
-// void ui_button_draw (Console *console, Button *button) {
+    Font *font = (Font *) malloc (sizeof (Font));
+    if (font) {
+        memset (font, 0, sizeof (Font));
+        ui_font_init (font);
+    } 
 
-//     if (console && button) {
-//         ui_drawRect (console, button->bgrect, button->bgcolor,
-//             button->borderWidth, button->borderColor);
+    return font;
 
-//         if (button->text) {
-//             u32 stringlen = strlen (button->text);
-//             u32 x = (button->bgrect->w / 2) - (stringlen / 2);
-//             x += button->bgrect->x;
+}
 
-//             for (u8 i = 0; i < stringlen; i++)
-//                 putCharAt (console, (asciiChar) button->text[i], x + i, button->bgrect->y + 1, 
-//                     button->textColor, NO_COLOR);
-//         }
-//     }
+void ui_font_destroy (Font *font) {
 
-// }
+    if (font) {
+        if (font->owns_ttf_source) TTF_CloseFont (font->ttf_source);
+
+        font_map_destroy (font->glyphs);
+
+        // delete glyph cache
+        if (font->glyph_cache) {
+            for (u32 i = 0; i < font->glyph_cache_count; i++) 
+                if (font->glyph_cache[i])
+                    SDL_DestroyTexture (font->glyph_cache[i]);
+
+            free (font->glyph_cache);
+        }
+
+        if (font->loading_string) free (font->loading_string);
+
+        free (font);
+    }
+
+}
+
+static u8 ui_font_load_from_ttf (Font *font, TTF_Font *ttf, RGBA_Color color) {
+
+    // TODO: do we need to clear up the font?
+    // FC_ClearFont(font);
+
+    SDL_RendererInfo info;
+    SDL_GetRendererInfo (main_renderer, &info);
+    has_render_target_support = (info.flags & SDL_RENDERER_TARGETTEXTURE);
+
+    font->ttf_source = ttf;
+
+    font->height = TTF_FontHeight(ttf);
+    font->ascent = TTF_FontAscent(ttf);
+    font->descent = -TTF_FontDescent(ttf);
+    
+    // Some bug for certain fonts can result in an incorrect height.
+    if (font->height < font->ascent - font->descent)
+        font->height = font->ascent - font->descent;
+
+    font->baseline = font->height - font->descent;
+
+    font->default_color = color;
+
+    SDL_Surface *glyph_surf = NULL;
+    char buff[5];
+    memset (buff, 0, 5);
+    const char *buff_ptr = buff;
+    const char *source_string = font->loading_string;
+    u8 packed = 0;
+
+    u32 w = font->height * 12;
+    u32 h = font->height * 12;
+
+    SDL_Surface *surfaces[FONT_LOAD_MAX_SURFACES];
+    int num_surfaces = 1;
+    surfaces[0] = font_create_surface (w, h);
+
+    font->last_glyph.rect.x = font->last_glyph.rect.y = 1;
+    font->last_glyph.rect.w = 0;
+    font->last_glyph.rect.h = font->height;
+
+    for (; *source_string != '\0'; source_string = u8_next (source_string)) {
+        if (!u8_charcpy (buff, source_string, 5)) continue;
+
+        glyph_surf = TTF_RenderUTF8_Blended (ttf, buff, RGBA_WHITE);
+        if (!glyph_surf) continue;
+
+        packed = (glyph_data_pack (font, get_code_point_from_UTF8 (&buff_ptr, 0),
+            glyph_surf->w, surfaces[num_surfaces - 1]->w, surfaces[num_surfaces-1]->h) != NULL);
+        if (!packed) {
+            int i = num_surfaces - 1;
+            if (num_surfaces >= FONT_LOAD_MAX_SURFACES) {
+                // FIXME: better handle this error - also set a retval
+                #ifdef DEV
+                logMsg (stderr, ERROR, NO_TYPE, "Font cache error - Could not create"
+                "enough cache surfaces to fit all of the loading string!");
+                #else
+                logMsg (stderr, ERROR, NO_TYPE, "Failed to create font cache!");
+                #endif
+                SDL_FreeSurface (glyph_surf);
+                break;
+            }
+
+            // upload the current surface to the glyph cache
+            glyph_upload_cache (font, i, surfaces[i]);
+            SDL_FreeSurface (surfaces[i]);
+            font->last_glyph.cacheLevel = num_surfaces;
+
+            surfaces[num_surfaces] = font_create_surface (w, h);
+            num_surfaces++;
+        }
+
+        if (packed || glyph_data_pack (font, get_code_point_from_UTF8 (&buff_ptr, 0),
+            glyph_surf->w, surfaces[num_surfaces - 1]->w, surfaces[num_surfaces - 1]->h) != NULL) {
+            SDL_SetSurfaceBlendMode (glyph_surf, SDL_BLENDMODE_NONE);
+            SDL_Rect srcRect = { 0, 0, glyph_surf->w, glyph_surf->h };
+            SDL_Rect destRect = font->last_glyph.rect;
+            SDL_BlitSurface (glyph_surf, &srcRect, surfaces[num_surfaces - 1], &destRect);
+        }
+
+        SDL_FreeSurface (glyph_surf);
+    }
+
+    int n = num_surfaces - 1;
+    glyph_upload_cache (font, n, surfaces[n]);
+    SDL_FreeSurface (surfaces[n]);
+    SDL_SetTextureBlendMode (font->glyph_cache[n], SDL_BLENDMODE_BLEND);
+
+    return 0;
+
+}
+
+static u8 ui_font_load_rw (Font *font, SDL_RWops *file_rwops_ttf,
+    u8 own_rwops, u32 pointSize, RGBA_Color color, int style) {
+
+    u8 retval, outline;
+
+    TTF_Font *ttf = TTF_OpenFontRW (file_rwops_ttf, own_rwops, pointSize);
+    if (!ttf) {
+        logMsg (stderr, ERROR, NO_TYPE, "Unable to load ttf!");
+        return 1;
+    }
+
+    outline = (style & TTF_STYLE_OUTLINE);
+    if (outline) {
+        style &= ~TTF_STYLE_OUTLINE;
+        TTF_SetFontOutline (ttf, 1);
+    }
+
+    TTF_SetFontStyle (ttf, style);
+
+    retval = ui_font_load_from_ttf (font, ttf, color);
+
+    font->owns_ttf_source = own_rwops;
+    if (!own_rwops) {
+        TTF_CloseFont (font->ttf_source);
+        font->ttf_source = NULL;
+    }
+
+    return retval;
+
+}
+
+u8 ui_font_load (Font *font, const char *filename, u32 pointSize, 
+    RGBA_Color color, int style) {
+
+    if (font) {
+        SDL_RWops *rwops = SDL_RWFromFile (filename, "rb");
+        if (rwops) return ui_font_load_rw (font, rwops, 1, pointSize, color, style);
+
+        else logMsg (stderr, ERROR, NO_TYPE, 
+            createString ("Unable to open file for reading: %s", filename));
+    }
+
+    return 1;
+
+}
+
+#pragma endregion
+
+#pragma region TEXTBOX
+
+// TODO: handle input fields like in blackrock
+
+void ui_textBox_set_text (TextBox *textBox, const char *newText) {
+
+    if (textBox) {
+        if (textBox->text) free (textBox->text);
+        if (textBox->pswd) free (textBox->pswd);
+
+        if (newText) {
+            if (textBox->ispassword) {
+                textBox->pswd = (char *) calloc (strlen (newText) + 1, sizeof (char));
+                strcpy (textBox->pswd, newText);
+                u32 len = strlen (newText);
+                for (u8 i = 0; i < len; i++) textBox->text[i] = '*';
+            }
+
+            else {
+                textBox->text = (char *) calloc (strlen (newText) + 1, sizeof (char));
+                strcpy (textBox->text, newText);
+                textBox->pswd = NULL;
+            }
+        }
+
+        else textBox->text = textBox->pswd = NULL;
+
+        if (!textBox->isVolatile) {
+            if (textBox->texture) SDL_DestroyTexture (textBox->texture);
+            SDL_Surface *surface = TTF_RenderText_Solid (textBox->font->ttf_source, newText, textBox->textColor);
+            textBox->texture = SDL_CreateTextureFromSurface (main_renderer, surface);
+       
+            textBox->bgrect.w = surface->w;
+            textBox->bgrect.h = surface->h;
+
+            SDL_FreeSurface(surface);
+        }
+
+    }
+
+}
+
+void ui_textBox_set_text_color (TextBox *textBox, RGBA_Color newColor) {
+
+    if (textBox) {
+        textBox->textColor = newColor;
+
+        if (!textBox->isVolatile) {
+            SDL_Surface *surface = TTF_RenderText_Solid (textBox->font->ttf_source, 
+                textBox->text, textBox->textColor);
+            textBox->texture = SDL_CreateTextureFromSurface (main_renderer, surface);
+    
+            textBox->bgrect.w = surface->w;
+            textBox->bgrect.h = surface->h;
+
+            SDL_FreeSurface(surface);
+        }
+    }
+
+}
+
+void ui_textBox_set_bg_color (TextBox *textBox, RGBA_Color newColor) {
+
+    if (textBox) textBox->bgcolor = newColor;
+
+}
+
+static TextBox *ui_textBox_new (u32 x, u32 y, RGBA_Color bgColor,
+    const char *text, RGBA_Color textColor, Font *font, bool isPassword) {
+
+    UIElement *ui_element = ui_element_new (UI_TEXTBOX);
+    if (ui_element) {
+        TextBox *textBox = (TextBox *) malloc (sizeof (TextBox));
+        if (textBox) {
+            textBox->texture = NULL;
+            textBox->font = font ? font : mainFont;
+
+            textBox->bgrect.x = x;
+            textBox->bgrect.y = y;
+            textBox->bgrect.w = textBox->bgrect.h = 0;
+            textBox->bgcolor = bgColor;
+
+            textBox->textColor = textColor;
+
+            textBox->ispassword = isPassword;
+
+            if (text) {
+                if (isPassword) {
+                    textBox->pswd = (char *) calloc (strlen (text) + 1, sizeof (char));
+                    strcpy (textBox->pswd, text);
+                    u32 len = strlen (text);
+                    for (u8 i = 0; i < len; i++) textBox->text[i] = '*';
+                }
+
+                else {
+                    textBox->text = (char *) calloc (strlen (text) + 1, sizeof (char));
+                    strcpy (textBox->text, text);
+                    textBox->pswd = NULL;
+                }
+            }
+
+            else textBox->text = textBox->pswd = NULL;
+
+            ui_element->element = textBox;
+
+            return textBox;
+        }
+    }
+
+    return NULL;
+
+}
+
+// TODO: generate a smoother text like with the volatile ones
+// TODO: handle password logic
+TextBox *ui_textBox_create_static (u32 x, u32 y, RGBA_Color bgColor,
+    const char *text, RGBA_Color textColor, Font *font, bool isPassword) {
+
+    TextBox *textBox = ui_textBox_new (x, y, bgColor, text, textColor, font, isPassword);
+    if (textBox) {
+        SDL_Surface *surface = TTF_RenderText_Solid (textBox->font->ttf_source, text, textColor);
+        textBox->texture = SDL_CreateTextureFromSurface (main_renderer, surface);
+
+        textBox->bgrect.x = x;
+        textBox->bgrect.y = y;        
+        textBox->bgrect.w = surface->w;
+        textBox->bgrect.h = surface->h;
+
+        SDL_FreeSurface(surface);
+
+        textBox->isVolatile = false;
+    }
+
+    return textBox;
+
+}
+
+TextBox *ui_textBox_create_volatile (u32 x, u32 y, RGBA_Color bgColor,
+    const char *text, RGBA_Color textColor, Font *font, bool isPassword) {
+
+    TextBox *textBox = ui_textBox_new (x, y, bgColor, text, textColor, font, isPassword);
+    if (textBox) {
+        textBox->texture = NULL;
+        textBox->isVolatile = true;
+    }
+
+    return textBox;
+
+}
+
+void ui_textBox_destroy (TextBox *textbox) {
+
+    if (textbox) {
+        textbox->font = NULL;
+        if (textbox->texture) SDL_DestroyTexture (textbox->texture);
+        if (textbox->text) free (textbox->text);
+        if (textbox->pswd) free (textbox->pswd);
+
+        free (textbox);
+    }
+
+}
+
+// FIXME: move this form here!
+// FC_Default_RenderCallback
+UIRect ui_rect_render (SDL_Texture *srcTexture, UIRect *srcRect, u32 x, u32 y) {
+
+    UIRect retval;
+
+    SDL_RendererFlip flip = SDL_FLIP_NONE;
+    UIRect r = *srcRect;
+    UIRect dr = { x, y, r.w, r.h };
+    SDL_RenderCopyEx (main_renderer, srcTexture, &r, &dr, 0, NULL, flip);
+
+    retval.x = x;
+    retval.y = y;
+    retval.w = srcRect->w;
+    retval.h = srcRect->h;
+
+    return retval;
+
+}
+
+// FIXME: handle text color change
+// FIXME: handle password logic
+// TODO: maybe add scale
+// TODO: we need a better way for selecting font sizes!!
+// this was FC_RenderLeft...
+void ui_textbox_draw (TextBox *textbox) {
+
+    if (textbox) {
+        const char *c = textbox->text;
+
+        // TODO: do we want this inside the textbox?
+        UIRect srcRect, destRect, 
+            dirtyRect = ui_rect_create (textbox->bgrect.x, textbox->bgrect.y, 0, 0);
+
+        GlyphData glyph;
+        u32 codepoint;
+
+        u32 destX = textbox->bgrect.x;
+        u32 destY = textbox->bgrect.y;
+        float destH, destLineSpacing, destLetterSpacing;
+
+        // TODO: add scale here!
+        destH = textbox->font->height;
+        destLineSpacing = textbox->font->lineSpacing;
+        destLetterSpacing = textbox->font->letterSpacing;
+
+        int newLineX = textbox->bgrect.x;
+
+        for (; *c != '\0'; c++) {
+            if (*c == '\n') {
+                destX = newLineX;
+                destY += destH + destLineSpacing;
+                continue;
+            }
+
+            codepoint = get_code_point_from_UTF8 (&c, 1);
+            if (glyph_get_data (textbox->font, &glyph, codepoint)) {
+                // FIXME: handle bas caharcters
+            }
+
+            if (codepoint == ' ') {
+                destX += glyph.rect.w + destLetterSpacing;
+                continue;
+            }
+
+            srcRect = glyph.rect;
+
+            destRect = ui_rect_render (glyph_get_cache_level (textbox->font, glyph.cacheLevel),
+                &srcRect, destX, destY);
+
+            if (dirtyRect.w == 0 || dirtyRect.h == 0) dirtyRect = destRect;
+            else dirtyRect = ui_rect_union (dirtyRect, destRect);
+
+            destX += glyph.rect.w + destLetterSpacing;
+        }
+
+        // FIXME:
+        // return dirtyRect;
+    }
+
+}
+
+#pragma endregion
+
+#pragma region CURSOR
+
+SDL_Cursor *sysCursor; 
+Sprite *cursorImg = NULL;
+
+static void ui_cursor_init (void) {
+
+    // hide the system cursor inside the window
+    i32 cursorData[2] = { 0, 0 };
+    sysCursor = SDL_CreateCursor ((Uint8 *) cursorData, (Uint8 *) cursorData, 8, 8, 4, 4);
+    SDL_SetCursor (sysCursor);
+
+    cursorImg = sprite_load ("./assets/artwork/mapTile_087.png", main_renderer);
+    if (!cursorImg) logMsg (stderr, ERROR, NO_TYPE, "Failed to load cursor imgs!");
+
+}
+
+void ui_cursor_draw (void) {
+
+    cursorImg->dest_rect.x = mousePos.x;
+    cursorImg->dest_rect.y = mousePos.y;
+
+    SDL_RenderCopyEx (main_renderer, cursorImg->texture, &cursorImg->src_rect, &cursorImg->dest_rect, 
+        0, 0, NO_FLIP);   
+
+}
+
+#pragma endregion
+
+/*** PUBLIC UI FUNCS ***/
+
+// init main ui elements
+u8 ui_init (void) {
+
+    // init and load fonts
+    TTF_Init ();
+    mainFont = ui_font_create ();
+    if (!mainFont) {
+        #ifdef DEV
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to allocate space for new font!");
+        #endif
+        return 1;
+    }
+
+    if (ui_font_load (mainFont, mainFontPath, DEFAULT_FONT_SIZE, RGBA_WHITE, TTF_STYLE_NORMAL)) {
+        #ifdef DEV
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to load font and create font cache!");
+        #endif
+        return 1;
+    }
+
+    // init ui elements
+    ui_elements_init ();
+
+    // init cursor
+    ui_cursor_init ();
+
+    return 0;   // success
+
+}
+
+// destroy main ui elements
+u8 ui_destroy (void) {
+
+    // ui elements
+    for (u32 i = 0; i < curr_max_ui_elements; i++)
+        ui_element_delete (ui_elements[i]);
+
+    // fonts
+    ui_font_destroy (mainFont);
+    TTF_Quit ();
+
+    #ifdef DEV
+    logMsg (stdout, SUCCESS, GAME, "Done cleaning up the UI!");
+    #endif
+
+    SDL_FreeCursor (sysCursor);
+
+    return 0;
+
+}

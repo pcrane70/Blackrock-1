@@ -1,123 +1,170 @@
-#ifndef UI_H_
-#define UI_H_
+#ifndef UI_H
+#define UI_H
+
+#include <stdbool.h>
 
 #include <SDL2/SDL.h>
 
-#include "utils/dlist.h"
+#include "blackrock.h"
 
-/*** COMMON COLORS ***/
+/*** COMMON HEX COLORS ***/
 
-#define NO_COLOR        0x00000000
-#define WHITE           0xFFFFFFFF
-#define BLACK           0x000000FF
+#define HEX_NO_COLOR        0x00000000
+#define HEX_WHITE           0xFFFFFFFF
+#define HEX_BLACK           0x000000FF
 
-#define FULL_GREEN      0x00FF00FF
-#define FULL_RED        0xFF0000FF
+#define HEX_FULL_GREEN      0x00FF00FF
+#define HEX_FULL_RED        0xFF0000FF
 
-#define YELLOW          0xFFD32AFF
-#define SAPPHIRE        0x1E3799FF
+#define HEX_YELLOW          0xFFD32AFF
+#define HEX_SAPPHIRE        0x1E3799FF
 
-#define SILVER          0xBDC3C7FF
+#define HEX_SILVER          0xBDC3C7FF
 
-/*** FULL SCREEN ***/
+/*** COMMON RGBA COLORS ***/
 
-#define FULL_SCREEN_LEFT		0
-#define FULL_SCREEN_TOP		    0
-#define FULL_SCREEN_WIDTH		80
-#define FULL_SCREEN_HEIGHT	    45
+typedef SDL_Color RGBA_Color;
 
-typedef SDL_Rect UIRect;
-
-struct UIScreen;
-
-// typedef void (*UIRenderFunction)(Console *);
-typedef void (*UIEventHandler)(struct UIScreen *, SDL_Event);
-
-typedef struct UIView {
-
-    // Console *console;
-    // UIRect *pixelRect;
-    // UIRenderFunction render;
-
-} UIView;
-
-typedef struct UIScreen {
-
-    DoubleList *views;
-    UIView *activeView;
-    UIEventHandler handleEvent;
-
-} UIScreen;
-
-/*** SCREENS ***/
-
-extern UIScreen *activeScene;
-extern void setActiveScene (UIScreen *);
-extern void destroyUIScreen (UIScreen *);
-
-typedef void (*CleanUI)(void);
-extern CleanUI destroyCurrentScreen;
-
-/*** VIEWS **/
-
-// extern UIView *ui_newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
-//     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
-//      UIRenderFunction renderFunc);
-
-extern void ui_destroyView (void *data);
-
-// extern void ui_drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor);
-
-// extern void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY);
+extern RGBA_Color RGBA_NO_COLOR;
+extern RGBA_Color RGBA_WHITE;
+extern RGBA_Color RGBA_BLACK;
 
 /*** UI ELEMENTS ***/
 
-extern char *tileset;
+typedef enum UIElementType {
 
+    UI_TEXTBOX,
+    UI_BUTTON,
+
+} UIElementType;
+
+#define DEFAULT_MAX_UI_ELEMENTS     10
+
+typedef struct UIElement {
+
+    i32 id;
+    UIElementType type;
+    void *element;
+
+} UIElement;
+
+extern UIElement **ui_elements;
+extern u32 curr_max_ui_elements;;
+
+typedef SDL_Rect UIRect;
+
+extern RGBA_Color ui_rgba_color_create (u8 r, u8 g, u8 b, u8 a);
+
+/*** FONTS/TEXT ***/
+
+#pragma region FONT-TEXT
+
+#include <SDL2/SDL_ttf.h>
+
+typedef SDL_Texture FontImage;
+
+#define DEFAULT_FONT_SIZE           50
+
+#define TTF_STYLE_OUTLINE	        16
+#define FONT_LOAD_MAX_SURFACES      10
+
+typedef enum FilterEnum {
+
+    FILTER_NEAREST,
+    FILTER_LINEAR,
+
+} FilterEnum;
+
+typedef struct GlyphData {
+
+    UIRect rect;
+    int cacheLevel;
+
+} GlyphData;
+
+typedef struct FontMapNode {
+
+    u32 key;
+    GlyphData value;
+    struct FontMapNode *next;
+
+} FontMapNode;
+
+#define DEFAULT_FONT_MAP_N_BUCKETS      300
+
+typedef struct FontMap {
+
+    i32 n_buckets;
+    FontMapNode **buckets;
+
+} FontMap;
+
+typedef struct Font {
+
+    TTF_Font *ttf_source;
+    u8 owns_ttf_source;
+
+    FilterEnum filter;
+
+    RGBA_Color default_color;
+    u16 height;
+    u16 maxWidth;
+    u16 baseline;
+    i32 ascent;
+    i32 descent;
+
+    i32 lineSpacing;
+    i32 letterSpacing;
+
+    FontMap *glyphs;
+    GlyphData last_glyph;
+    i32 glyph_cache_size;
+    i32 glyph_cache_count;
+    FontImage **glyph_cache;
+    char *loading_string;
+
+} Font;
+
+extern Font *ui_font_create (void);
+extern void ui_font_destroy (Font *font);
+
+/*** TEXTBOX ***/
+
+// TODO: handle input logic
 typedef struct TextBox {
 
-    UIRect *bgrect;
-    u32 bgcolor;
+    Font *font;
+    SDL_Texture *texture;
+    UIRect bgrect;
+    RGBA_Color bgcolor;
 
+    RGBA_Color textColor;
     char *text;
     bool ispassword;
     char *pswd;
-    u32 textColor;
 
-    u8 borderWidth;
-    u32 borderColor;
+    bool isVolatile;
 
 } TextBox;
 
-extern TextBox *ui_textBox_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor, 
-    const char *text, bool password, u32 textColor);
+extern TextBox *ui_textBox_create_static (u32 x, u32 y, RGBA_Color bgColor,
+    const char *text, RGBA_Color textColor, Font *font, bool isPassword);
+extern TextBox *ui_textBox_create_volatile (u32 x, u32 y, RGBA_Color bgColor,
+    const char *text, RGBA_Color textColor, Font *font, bool isPassword);
+
+extern void ui_textBox_set_text (TextBox *textBox, const char *newText);
+extern void ui_textBox_set_text_color (TextBox *textBox, RGBA_Color newColor);
+extern void ui_textBox_set_bg_color (TextBox *textBox, RGBA_Color newColor);
+
+extern void ui_textbox_draw (TextBox *textbox);
+
 extern void ui_textBox_destroy (TextBox *textbox);
-extern void ui_textBox_setBorders (TextBox *textbox, u8 borderWidth, u32 borderColor);
-extern void ui_textBox_update_text (TextBox *textbox, const char *text);
-extern void ui_textbox_delete_text (TextBox *textbox);
-// extern void ui_textBox_draw (Console *console, TextBox *textbox);
 
-typedef void (*EventListener)(void *);
+#pragma endregion
 
-typedef struct Button {
+/*** PUBLIC UI FUNCS ***/
 
-    UIRect *bgrect;
-    u32 bgcolor;
-
-    char *text;
-    u32 textColor;
-
-    u8 borderWidth;
-    u32 borderColor;
-
-    EventListener event;
-
-} Button;
-
-extern Button *ui_button_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor,
-    const char *text, u32 textColor, EventListener event);
-extern void ui_button_destroy (Button *button);
-extern void ui_button_setBorders (Button *button, u8 borderWidth, u32 borderColor);
-// extern void ui_button_draw (Console *console, Button *button);
+extern u8 ui_init (void);
+extern u8 ui_destroy (void);
 
 #endif

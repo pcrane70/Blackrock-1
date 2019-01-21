@@ -19,7 +19,7 @@
 
 /*** MAP ***/
 
-extern UIView *mapView;
+// extern UIView *mapView;
 
 /*** MESSAGES ***/
 
@@ -70,69 +70,69 @@ extern void cleanMessageLog (void);
 
 /*** LOOT ***/
 
-extern UIView *lootView;
+// extern UIView *lootView;
 
-extern void toggleLootWindow (void);
-extern void updateLootUI (u8 yIdx);
+// extern void toggleLootWindow (void);
+// extern void updateLootUI (u8 yIdx);
 
-extern DoubleList *activeLootRects;
-extern u8 lootYIdx;
+// extern DoubleList *activeLootRects;
+// extern u8 lootYIdx;
 
-/*** TOOLTIP ***/
+// /*** TOOLTIP ***/
 
-extern UIView *tooltipView;
-extern void toggleTooltip (u8);
+// extern UIView *tooltipView;
+// extern void toggleTooltip (u8);
 
-extern Item *lootItem;
+// extern Item *lootItem;
 
-/*** INVENTORY ***/
+// /*** INVENTORY ***/
 
-extern UIView *inventoryView;
+// extern UIView *inventoryView;
 
-extern u8 inventoryXIdx;
-extern u8 inventoryYIdx;
+// extern u8 inventoryXIdx;
+// extern u8 inventoryYIdx;
 
-extern void toggleInventory (void);
-extern Item *getInvSelectedItem (void);
-extern void resetInventoryRects (void);
+// extern void toggleInventory (void);
+// extern Item *getInvSelectedItem (void);
+// extern void resetInventoryRects (void);
 
-/*** CHARACTER ***/
+// /*** CHARACTER ***/
 
-extern UIView *characterView;
+// extern UIView *characterView;
 
-extern u8 characterXIdx;
-extern u8 characterYIdx;
+// extern u8 characterXIdx;
+// extern u8 characterYIdx;
 
-extern Item *getCharSelectedItem (void);
+// extern Item *getCharSelectedItem (void);
 
-extern void resetCharacterRects (void);
-extern void toggleCharacter (void);
+// extern void resetCharacterRects (void);
+// extern void toggleCharacter (void);
 
-/*** PAUSE MENU ***/
+// /*** PAUSE MENU ***/
 
-extern void togglePauseMenu (void);
+// extern void togglePauseMenu (void);
 
-extern UIScreen *gameScene (void);
+// extern UIScreen *gameScene (void);
 
-/*** CLEAN UP GAME UI ***/
+// /*** CLEAN UP GAME UI ***/
 
-extern void resetGameUI (void);
-extern void destroyGameUI (void);
+// extern void resetGameUI (void);
+// extern void destroyGameUI (void);
 
-/*** POST GAME ***/
+// /*** POST GAME ***/
 
-extern UIScreen *postGameScene;
+// extern UIScreen *postGameScene;
 
-extern UIView *deathScreen;
-extern void  deleteDeathScreen (void);
+// extern UIView *deathScreen;
+// extern void  deleteDeathScreen (void);
 
-extern UIView *scoreScreen;
-extern void toggleScoreScreen (void);
+// extern UIView *scoreScreen;
+// extern void toggleScoreScreen (void);
 
-extern void toggleLeaderBoards (void);
+// extern void toggleLeaderBoards (void);
 
-extern UIScreen *postGameScreen (void);
+// extern UIScreen *postGameScreen (void);
 
-extern void destroyPostGameScreen (void);
+// extern void destroyPostGameScreen (void);
 
 #endif

@@ -15,7 +15,7 @@ typedef enum MenuView {
 
 extern MenuView activeMenuView;
 
-extern UIScreen *menuScene (void);
+// extern UIScreen *menuScene (void);
 extern void destroyMenuScene (void);
 
 /*** MAIN MENU ***/
@@ -25,10 +25,10 @@ extern void createMainMenu (void);
 
 /*** MULTIPLAYER ***/
 
-extern BlackCredentials *getBlackCredentials (void);
+// extern BlackCredentials *getBlackCredentials (void);
 
-extern void toggleMultiplayerMenu (void);
+// extern void toggleMultiplayerMenu (void);
 
-extern void toggleLobbyMenu (void);
+// extern void toggleLobbyMenu (void);
 
 #endif
