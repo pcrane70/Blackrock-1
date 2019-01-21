@@ -168,7 +168,7 @@ static void ui_element_delete (UIElement *ui_element) {
 
 #pragma region FONT 
 
-static const char *mainFontPath = "./assets/fonts/Roboto-Regular.ttf";
+static const char *mainFontPath = "fonts/Roboto-Regular.ttf";
 Font *mainFont = NULL;
 
 static u8 has_render_target_support = 0;
@@ -967,6 +967,7 @@ void ui_textbox_draw (TextBox *textbox) {
 SDL_Cursor *sysCursor; 
 Sprite *cursorImg = NULL;
 
+// FIXME: set the correct sprite
 static void ui_cursor_init (void) {
 
     // hide the system cursor inside the window
@@ -993,6 +994,28 @@ void ui_cursor_draw (void) {
 
 /*** PUBLIC UI FUNCS ***/
 
+void ui_render (void) {
+
+    TextBox *textBox = NULL;
+    for (u32 i = 0; i < curr_max_ui_elements; i++) {
+        switch (ui_elements[i]->type) {
+            case UI_TEXTBOX: 
+                textBox = (TextBox *) ui_elements[i]->element;
+                if (textBox->isVolatile) ui_textbox_draw (textBox);
+                else SDL_RenderCopy (main_renderer, textBox->texture, NULL, &textBox->bgrect);
+
+                break;
+            case UI_BUTTON: break;
+
+            default: break;
+        }
+    }
+
+    // render the cursor on top of everything
+    ui_cursor_draw ();
+
+}
+
 // init main ui elements
 u8 ui_init (void) {
 
@@ -1006,7 +1029,8 @@ u8 ui_init (void) {
         return 1;
     }
 
-    if (ui_font_load (mainFont, mainFontPath, DEFAULT_FONT_SIZE, RGBA_WHITE, TTF_STYLE_NORMAL)) {
+    if (ui_font_load (mainFont, createString ("%s%s", ASSETS_PATH, mainFontPath), 
+        DEFAULT_FONT_SIZE, RGBA_WHITE, TTF_STYLE_NORMAL)) {
         #ifdef DEV
         logMsg (stderr, ERROR, NO_TYPE, "Failed to load font and create font cache!");
         #endif
@@ -1034,11 +1058,11 @@ u8 ui_destroy (void) {
     ui_font_destroy (mainFont);
     TTF_Quit ();
 
+    SDL_FreeCursor (sysCursor);
+
     #ifdef DEV
     logMsg (stdout, SUCCESS, GAME, "Done cleaning up the UI!");
     #endif
-
-    SDL_FreeCursor (sysCursor);
 
     return 0;
 

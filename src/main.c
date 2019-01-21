@@ -76,6 +76,13 @@ int main (void) {
     running = true;
     animations_init ();
 
+    ui_init ();
+
+    TextBox *static_text = ui_textBox_create_static (100, 100, ui_rgba_color_create (100, 45, 67, 255),
+        "this is a static text!", RGBA_WHITE, NULL, false);
+    TextBox *volatile_text = ui_textBox_create_volatile (200, 200, ui_rgba_color_create (100, 45, 67, 255),
+        "this is a volatile text!", RGBA_WHITE, NULL, false);
+
     // TODO: modify to the correct game state
     game_state = game_state_new ();
     game_manager = game_manager_new (game_state);
@@ -106,7 +113,7 @@ int main (void) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            printf ("main fps: %i\n", fps);
+            // printf ("main fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }
@@ -118,7 +125,7 @@ int main (void) {
     // FIXME: cleanup
     game_cleanUp ();
     animations_end ();
-    // ui_destroy ();
+    ui_destroy ();
     video_destroy_main ();
     SDL_Quit ();
 

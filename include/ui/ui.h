@@ -48,9 +48,6 @@ typedef struct UIElement {
 
 } UIElement;
 
-extern UIElement **ui_elements;
-extern u32 curr_max_ui_elements;;
-
 typedef SDL_Rect UIRect;
 
 extern RGBA_Color ui_rgba_color_create (u8 r, u8 g, u8 b, u8 a);
@@ -156,13 +153,13 @@ extern void ui_textBox_set_text (TextBox *textBox, const char *newText);
 extern void ui_textBox_set_text_color (TextBox *textBox, RGBA_Color newColor);
 extern void ui_textBox_set_bg_color (TextBox *textBox, RGBA_Color newColor);
 
-extern void ui_textbox_draw (TextBox *textbox);
-
 extern void ui_textBox_destroy (TextBox *textbox);
 
 #pragma endregion
 
 /*** PUBLIC UI FUNCS ***/
+
+extern void ui_render (void);
 
 extern u8 ui_init (void);
 extern u8 ui_destroy (void);

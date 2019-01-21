@@ -7,7 +7,7 @@
 #include "engine/renderer.h"
 
 #include "game/game.h"
-// #include "ui.h"
+#include "ui/ui.h"
 
 #ifdef DEV
 #include "utils/myUtils.h"
@@ -23,12 +23,8 @@ WindowSize windowSize;
 
 bool isFullscreen;
 
-// TODO: i dont want this here!
-// extern void ui_cursor_draw (void);
-
 #pragma region RENDERER
 
-// FIXME:
 // TODO: render by layers
 void render (void) {
 
@@ -38,24 +34,7 @@ void render (void) {
     if (game_manager->currState->render)
         game_manager->currState->render ();
 
-    // render game UI
-    // TextBox *textBox = NULL;
-    // for (u32 i = 0; i < curr_max_ui_elements; i++) {
-    //     switch (ui_elements[i]->type) {
-    //         case UI_TEXTBOX: 
-    //             textBox = (TextBox *) ui_elements[i]->element;
-    //             if (textBox->isVolatile) ui_textbox_draw (textBox);
-    //             else SDL_RenderCopy (main_renderer, textBox->texture, NULL, &textBox->bgrect);
-
-    //             break;
-    //         case UI_BUTTON: break;
-
-    //         default: break;
-    //     }
-    // }
-
-    // // render the cursor on top of everything
-    // ui_cursor_draw ();
+    ui_render ();       // render ui elements
 
     SDL_RenderPresent (main_renderer);
 
