@@ -3,10 +3,6 @@
 
 #include <SDL2/SDL.h>
 
-#include "resources.h"
-
-#include "console.h"
-
 #include "utils/dlist.h"
 
 /*** COMMON COLORS ***/
@@ -34,14 +30,14 @@ typedef SDL_Rect UIRect;
 
 struct UIScreen;
 
-typedef void (*UIRenderFunction)(Console *);
+// typedef void (*UIRenderFunction)(Console *);
 typedef void (*UIEventHandler)(struct UIScreen *, SDL_Event);
 
 typedef struct UIView {
 
-    Console *console;
-    UIRect *pixelRect;
-    UIRenderFunction render;
+    // Console *console;
+    // UIRect *pixelRect;
+    // UIRenderFunction render;
 
 } UIView;
 
@@ -64,15 +60,15 @@ extern CleanUI destroyCurrentScreen;
 
 /*** VIEWS **/
 
-extern UIView *ui_newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
-    char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
-     UIRenderFunction renderFunc);
+// extern UIView *ui_newView (UIRect pixelRect, u32 colCount, u32 rowCount, 
+//     char *fontFile, asciiChar firstCharInAtlas, u32 bgColor, bool colorize,
+//      UIRenderFunction renderFunc);
 
 extern void ui_destroyView (void *data);
 
-extern void ui_drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor);
+// extern void ui_drawRect (Console *con, UIRect *rect, u32 color, i32 borderWidth, u32 borderColor);
 
-extern void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY);
+// extern void ui_drawImageAt (Console *console, BitmapImage *image, i32 cellX, i32 cellY);
 
 /*** UI ELEMENTS ***/
 
@@ -99,7 +95,7 @@ extern void ui_textBox_destroy (TextBox *textbox);
 extern void ui_textBox_setBorders (TextBox *textbox, u8 borderWidth, u32 borderColor);
 extern void ui_textBox_update_text (TextBox *textbox, const char *text);
 extern void ui_textbox_delete_text (TextBox *textbox);
-extern void ui_textBox_draw (Console *console, TextBox *textbox);
+// extern void ui_textBox_draw (Console *console, TextBox *textbox);
 
 typedef void (*EventListener)(void *);
 
@@ -122,6 +118,6 @@ extern Button *ui_button_create (u8 x, u8 y, u8 w, u8 h, u32 bgcolor,
     const char *text, u32 textColor, EventListener event);
 extern void ui_button_destroy (Button *button);
 extern void ui_button_setBorders (Button *button, u8 borderWidth, u32 borderColor);
-extern void ui_button_draw (Console *console, Button *button);
+// extern void ui_button_draw (Console *console, Button *button);
 
 #endif

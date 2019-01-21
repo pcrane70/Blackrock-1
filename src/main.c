@@ -40,7 +40,7 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
     if (wasInGame) cleanUpGame ();
 
     // clean the UI
-    destroyCurrentScreen ();
+    // FIXME:
     
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);

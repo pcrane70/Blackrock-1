@@ -5,7 +5,7 @@
 
 #include "ui/ui.h"
 
-#include "vector2d.h"
+#include "game/vector2d.h"
 
 extern bool typing;
 

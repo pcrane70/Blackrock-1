@@ -7,7 +7,7 @@
 #include "engine/renderer.h"
 #include "engine/input.h"
 
-#include "vector2d.h"
+#include "game/vector2d.h"
 
 #include "utils/myUtils.h"
 

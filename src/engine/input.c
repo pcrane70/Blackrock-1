@@ -388,7 +388,7 @@
 
 #include "blackrock.h"
 
-#include "vector2d.h" 
+#include "game/vector2d.h" 
 
 #include "engine/input.h"
 

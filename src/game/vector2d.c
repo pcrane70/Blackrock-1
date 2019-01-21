@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "vector2d.h"
+#include "game/vector2d.h"
 
 const Vector2D zeroVector = { 0, 0 };
 
