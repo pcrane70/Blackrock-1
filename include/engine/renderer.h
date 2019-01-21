@@ -6,14 +6,14 @@
 extern SDL_Window *main_window;
 extern SDL_Renderer *main_renderer;
 
-typedef struct ScreenSize {
+typedef struct WindowSize {
 
     u32 width, height;
 
-} ScreenSize;
+} WindowSize;
 
-extern ScreenSize maxScreenSize;
-extern ScreenSize currentScreenSize;
+extern WindowSize windowSize;;
+extern bool isFullscreen;
 
 extern void window_toggle_full_screen (SDL_Window *window);
 extern void window_resize (SDL_Window *window, u32 newWidth, u32 newHeight);
