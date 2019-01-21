@@ -398,7 +398,7 @@ static World *world_create (void) {
     World *new_world = (World *) malloc (sizeof (World));
     if (new_world) {
         new_world->game_map = NULL;
-        new_world->game_camera = camera_new (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT);
+        new_world->game_camera = camera_new (currentScreenSize.width, currentScreenSize.height);
 
         new_world->players = llist_init (game_object_destroy_ref);
         new_world->enemies = llist_init (game_object_destroy_ref);

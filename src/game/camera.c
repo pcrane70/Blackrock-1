@@ -4,7 +4,9 @@
 #include "game/game.h"
 #include "game/camera.h"
 
+#include "engine/renderer.h"
 #include "engine/input.h"
+
 #include "vector2d.h"
 
 #include "utils/myUtils.h"
@@ -70,8 +72,8 @@ void camera_set_target (Camera *cam, Transform *target) {
 static void camera_init (Camera *cam, u32 windowWidth, u32 windowHeight) {
 
     // position
-    cam->transform.position.x = DEFAULT_SCREEN_WIDTH / 2;
-    cam->transform.position.y = DEFAULT_SCREEN_HEIGHT / 2;
+    cam->transform.position.x = currentScreenSize.width / 2;
+    cam->transform.position.y = currentScreenSize.height / 2;
 
     cam->windowWidth = windowWidth;
     cam->windowHeight = windowHeight;

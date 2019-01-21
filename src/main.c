@@ -60,7 +60,7 @@ int main (void) {
     // register to the quit signal
     signal (SIGINT, quit);
 
-    SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO);
+    SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO); 
     video_init_main ("Blackrock Dungeons");
 
     SDL_Event event;
@@ -84,6 +84,11 @@ int main (void) {
         frameStart = SDL_GetTicks ();
 
         input_handle (event);
+
+        if (input_is_key_down (SDL_SCANCODE_T))
+            window_resize (main_window, 1920, 1080);
+        
+            // window_toggle_full_screen (main_window);
 
         // TODO: create a separate thread
         if (game_manager->currState->update)
