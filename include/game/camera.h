@@ -55,6 +55,8 @@ extern void camera_update (Camera *cam);
 extern void camera_set_center (Camera *cam, u32 x, u32 y);
 extern void camera_set_size (Camera *cam, u32 width, u32 height);
 
+extern void camera_set_target (Camera *cam, Transform *target);
+
 extern CamRect camera_world_to_screen (Camera *cam, const CamRect destRect);
 
 #endif

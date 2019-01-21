@@ -62,6 +62,11 @@ typedef unsigned char asciiChar;
     #define DATA_PATH "./data/"
 #endif
 
+/*** THREAD ***/
+
+extern float deltaTime;
+extern u32 fps;
+
 /*** MULTIPLAYER ***/
 
 #include "cerver/client.h"

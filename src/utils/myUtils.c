@@ -3,7 +3,32 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
-#include <assert.h>
+
+/*** MISC ***/
+
+bool system_is_little_endian (void) {
+
+    unsigned int x = 0x76543210;
+    char *c = (char *) &x;
+    if (*c == 0x10) return true;
+    else return false;
+
+}
+
+/*** MATH ***/
+
+int clamp_int (int val, int min, int max) {
+
+    const int t = val < min ? min : val;
+    return t > max ? max : t;
+
+}
+
+int abs_int (int value) { return value > 0 ? value : (value * -1); }
+
+float lerp (float first, float second, float by) { return first * (1 - by) + second * by; }
+
+/*** RANDOM ***/
 
 // init psuedo random generator based on our seed
 void random_set_seed (unsigned int seed) { srand (seed); }
@@ -25,6 +50,8 @@ int random_int_in_range (int min, int max) {
     return (rand () % (high - low)) + low;
 
 }
+
+/*** CONVERTERS ***/
 
 // convert a string representing a hex to a string
 int xtoi (char *hexString) {
@@ -71,17 +98,9 @@ char *itoa (int i, char b[]) {
 
 }
 
-bool system_is_little_endian (void) {
-
-    unsigned int x = 0x76543210;
-    char *c = (char *) &x;
-    if (*c == 0x10) return true;
-    else return false;
-
-}
-
 /*** STRINGS ***/
 
+#include <assert.h>
 #include <stdarg.h>
 
 char *createString (const char *stringWithFormat, ...) {

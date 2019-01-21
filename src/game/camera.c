@@ -57,6 +57,15 @@ void camera_set_acceleration (Camera *cam, Vector2D accel) { if (cam) cam->accel
 
 void camera_set_direction (Camera *cam, Vector2D dir) { if (cam) cam->direction = dir; }
 
+void camera_set_target (Camera *cam, Transform *target) {
+
+    if (cam && target) {
+        cam->target = target;
+        cam->isFollwing = true;
+    }
+
+}
+
 // set camera parameters to default
 static void camera_init (Camera *cam, u32 windowWidth, u32 windowHeight) {
 
@@ -128,21 +137,6 @@ CamRect camera_world_to_screen (Camera *cam, const CamRect destRect) {
 
 }
 
-// FIXME:
-CamRect *camera_screen_to_world (Camera *cam, const CamRect *sr) {
-
-    // CamRect *rect = sr;
-
-    // float xScale = (float) cam->bounds.w / cam->windowWidth;
-    // float yScale = (float) cam->bounds.h / cam->windowHeight;
-
-    // Point p = { rect->x, rect->y };
-    // FIXME:
-
-    // rect->x = 
-
-}
-
 #pragma endregion
 
 /*** MOVEMENT ***/
@@ -171,48 +165,6 @@ void camera_pan (Camera *cam, float xdir, float ydir) {
 
 #pragma endregion
 
-// void Camera2D::Camera::updateMotion(float deltaTime)
-// {
-
-// 		m_acceleration.limit(m_accelerationRate);
-// 		m_velocity += m_acceleration * deltaTime;
-
-// 		m_centre += m_velocity * deltaTime;
-// 		m_velocity.limit(m_maxVelocity);
-
-// 	m_timeSinceLastXAccel += deltaTime;
-// 	m_timeSinceLastYAccel += deltaTime;
-
-// 	if (m_timeSinceLastXAccel > MAX_TIME_BEFORE_ACCEL_RESET && m_zoomToFitActive == false) //too long since last x accel
-// 	{
-// 		if (abs(m_velocity.x) < MIN_VEL) //moving slow enough then just stop 
-// 		{
-// 			m_velocity.x = 0.f;
-// 		}
-// 		else //apply drag
-// 		{
-// 			m_velocity.x -= m_velocity.x *  deltaTime * m_drag;
-// 		}
-// 	}
-// 	if (m_timeSinceLastYAccel > MAX_TIME_BEFORE_ACCEL_RESET && m_zoomToFitActive == false) //too long since last y accel
-// 	{
-// 		if (abs(m_velocity.y) < MIN_VEL) //moving slow enough then just stop 
-// 		{
-// 			m_velocity.y = 0.f;
-// 		}
-// 		else //apply drag
-// 		{
-// 			m_velocity.y -= m_velocity.y *  deltaTime * m_drag;
-// 		}
-// 	}
-
-// 	if (m_timeSinceLastXAccel > MAX_TIME_BEFORE_ACCEL_RESET && m_timeSinceLastYAccel > MAX_TIME_BEFORE_ACCEL_RESET && m_zoomToFitActive == false)
-// 	{
-// 		m_acceleration.limit(0.f);
-// 	}
-
-// }
-
 void camera_update (Camera *cam) {
 
     // camera input
@@ -222,6 +174,19 @@ void camera_update (Camera *cam) {
         if (input_is_key_down (SDL_SCANCODE_UP)) camera_pan (cam, 0, -1);
         if (input_is_key_down (SDL_SCANCODE_DOWN)) camera_pan (cam, 0, 1);
     #endif
+
+    // camera movement
+    u32 x = cam->transform.position.x;
+    u32 y = cam->transform.position.y;
+
+    // FIXME:
+    // if (cam->isFollwing) {
+    //     if (abs (x - cam->target->position.x) > cam->margin.x)
+    //         x = lerp (x, cam->target->position.x, cam->smoothing.x * deltaTime);
+
+    //     if (abs (y - cam->target->position.y) > cam->margin.y)
+    //         y = lerp (y, cam->target->position.y, cam->smoothing.y * deltaTime);
+    // }
 
     // bounds - used to calculate what gets rendered to the screen
     cam->bounds.x = (cam->center.x - cam->bounds.w * 0.5);

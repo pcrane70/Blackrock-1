@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <signal.h>
 
 #include "blackrock.h"
 
@@ -16,7 +17,7 @@ bool wasInGame = false;
 
 /*** MISC ***/
 
-void quit (void) {
+void quit (int dummy) {
 
     running = false;
     inGame = false;
@@ -26,7 +27,7 @@ void quit (void) {
 void die (const char *error) {
 
     logMsg (stderr, ERROR, NO_TYPE, error);
-    quit ();
+    quit (1);
 
 };
 
@@ -51,9 +52,13 @@ void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
 /*** MAIN THREAD ***/
 
-// pthread_t gameThread;
+float deltaTime = 0;
+u32 fps = 0;
 
 int main (void) {
+
+    // register to the quit signal
+    signal (SIGINT, quit);
 
     SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO);
     video_init_main ("Blackrock Dungeons");
@@ -64,9 +69,7 @@ int main (void) {
     u32 frameStart = 0;
     i32 sleepTime = 0;
 
-    float deltaTime = 0;
     u32 deltaTicks = 0;
-    u32 fps = 0;
 
     char *text = (char *) calloc (20, sizeof (char));
 
@@ -103,10 +106,6 @@ int main (void) {
             fps = 0;
         }
     }
-
-    // if (wasInGame)
-    //     if (pthread_join (gameThread, NULL) != THREAD_OK)
-    //         logMsg (stderr, ERROR, NO_TYPE, "Failed to join game thread!");
 
     // if (multiplayer) multiplayer_stop ();
 
