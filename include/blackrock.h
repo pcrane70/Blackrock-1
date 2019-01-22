@@ -44,7 +44,9 @@ typedef unsigned char asciiChar;
     #define LINUX
 #endif
 
-/*** PATH ***/
+/*** PATHS ***/
+
+// FIXME: portability!!
 
 #ifdef DEV
     #define ASSETS_PATH "./assets/"
@@ -52,6 +54,14 @@ typedef unsigned char asciiChar;
     #define ASSETS_PATH "../assets/"
 #else 
     #define ASSETS_PATH "./assets/"
+#endif
+
+#ifdef DEV
+    #define CONFIG_PATH "./config/"
+#elif PRODUCTION    
+    #define CONFIG_PATH "../config/"
+#else 
+    #define CONFIG_PATH "./config/"
 #endif
 
 #ifdef DEV

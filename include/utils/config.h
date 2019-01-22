@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "blackrock.h"
+
 #include "utils/dlist.h"
 
 #define CONFIG_MAX_LINE_LEN     128
@@ -28,7 +30,7 @@ typedef struct Config {
 
 extern Config *parseConfigFile (char *filename);
 extern char *getEntityValue (ConfigEntity *entity, char *key);
-extern ConfigEntity *getEntityWithId (Config *cfg, uint8_t id);
+extern ConfigEntity *getEntityWithId (Config *cfg, u8 id);
 
 extern void setEntityValue (ConfigEntity *entity, char *key, char *value);
 extern void writeConfigFile (const char *filename, Config *config);

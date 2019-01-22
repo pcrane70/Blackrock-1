@@ -3,6 +3,8 @@
 
 #include "blackrock.h"
 
+#include "settings.h"
+
 #include "game/game.h"
 
 #include "engine/input.h"
@@ -17,7 +19,7 @@ bool wasInGame = false;
 
 /*** MISC ***/
 
-void quit (int dummy) {
+void quit (int code) {
 
     running = false;
     inGame = false;
@@ -59,6 +61,8 @@ int main (void) {
 
     // register to the quit signal
     signal (SIGINT, quit);
+
+    main_settings = settings_load ();
 
     SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO); 
     video_init_main ("Blackrock Dungeons");
