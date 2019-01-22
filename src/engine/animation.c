@@ -148,25 +148,27 @@ void *animations_update (void *data) {
     while (running) {
         frameStart = SDL_GetTicks ();
 
-        // update all animations
-        Animator *animator = NULL;
-        Graphics *graphics = NULL;
-        for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
-            animator = (Animator *) node->data;
-            graphics = (Graphics *) game_object_get_component (game_object_get_by_id (animator->goID), GRAPHICS_COMP);
+        if (llist_size (animators) > 0) {
+             // update all animations
+            Animator *animator = NULL;
+            Graphics *graphics = NULL;
+            for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
+                animator = (Animator *) node->data;
+                graphics = (Graphics *) game_object_get_component (game_object_get_by_id (animator->goID), GRAPHICS_COMP);
 
-            animator->currFrame = (int) (((animator->timer->ticks / animator->currAnimation->speed) %
-                    animator->currAnimation->n_frames));
+                animator->currFrame = (int) (((animator->timer->ticks / animator->currAnimation->speed) %
+                        animator->currAnimation->n_frames));
 
-            graphics->x_sprite_offset = animator->currAnimation->frames[animator->currFrame]->col;
-            graphics->y_sprite_offset = animator->currAnimation->frames[animator->currFrame]->row;
+                graphics->x_sprite_offset = animator->currAnimation->frames[animator->currFrame]->col;
+                graphics->y_sprite_offset = animator->currAnimation->frames[animator->currFrame]->row;
 
-            if (animator->playing) {
-                if (animator->currFrame >= (animator->currAnimation->n_frames - 1)) {
-                    animator->playing = false;
-                    animator->currAnimation = animator->defaultAnimation;
-                    animator->currFrame = 0;
-                    timer_start (animator->timer);
+                if (animator->playing) {
+                    if (animator->currFrame >= (animator->currAnimation->n_frames - 1)) {
+                        animator->playing = false;
+                        animator->currAnimation = animator->defaultAnimation;
+                        animator->currFrame = 0;
+                        timer_start (animator->timer);
+                    }
                 }
             }
         }
@@ -176,9 +178,12 @@ void *animations_update (void *data) {
         if (sleepTime > 0) SDL_Delay (sleepTime);
 
         // update animators timers
-        for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
-            animator = (Animator *) node->data;
-            animator->timer->ticks = SDL_GetTicks () - animator->timer->startTicks;
+        if (llist_size (animators) > 0) {
+            Animator *animator = NULL;
+            for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
+                animator = (Animator *) node->data;
+                animator->timer->ticks = SDL_GetTicks () - animator->timer->startTicks;
+            }
         }
 
         // count fps

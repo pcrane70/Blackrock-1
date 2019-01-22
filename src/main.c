@@ -96,11 +96,6 @@ int main (void) {
 
         input_handle (event);
 
-        if (input_is_key_down (SDL_SCANCODE_T))
-            window_resize (main_window, 1920, 1080);
-        
-            // window_toggle_full_screen (main_window);
-
         // TODO: create a separate thread
         if (game_manager->currState->update)
             game_manager->currState->update ();

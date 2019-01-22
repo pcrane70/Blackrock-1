@@ -82,4 +82,6 @@ extern void cave_destroy (Cave *cave);
 extern Map *map_create (u32 width, u32 height);
 extern void map_destroy (Map *map);
 
+extern Coord map_get_free_spot (Map *map);
+
 #endif

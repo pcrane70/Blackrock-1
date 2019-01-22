@@ -15,24 +15,22 @@
 
 #pragma region DUNGEON
 
-// FIXME:
-// TODO: can we use it as an spawn?
-Coord getFreeSpot (bool **mapCells) {
+static Coord dungeon_get_free_spot (Dungeon *dungeon) {
 
-    /* Coord freeSpot;
+    Coord freespot;
 
     for (;;) {
-        u32 freeX = (u32) random_int_in_range (0, MAP_WIDTH - 1);
-        u32 freeY = (u32) random_int_in_range (0, MAP_HEIGHT - 1);
+        u32 freeX = (u32) random_int_in_range (0, dungeon->width - 1);
+        u32 freeY = (u32) random_int_in_range (0, dungeon->height - 1);
 
-        if (mapCells[freeX][freeY] == false) {
-            freeSpot.x = freeX;
-            freeSpot.y = freeY;
+        if (dungeon->map[freeX][freeY] == 0) {
+            freespot.x = freeX;
+            freespot.y = freeY;
             break;
         }
     }
 
-    return freeSpot; */
+    return freespot;
 
 }
 
@@ -499,6 +497,25 @@ static CaveRoom *cave_room_create (LList *roomTiles, u32 **map) {
 
 #pragma region CAVE
 
+static Coord cave_get_free_spot (Cave *cave) {
+
+    Coord freespot;
+
+    for (;;) {
+        u32 freeX = (u32) random_int_in_range (0, cave->width - 1);
+        u32 freeY = (u32) random_int_in_range (0, cave->heigth - 1);
+
+        if (cave->map[freeX][freeY] == 0) {
+            freespot.x = freeX;
+            freespot.y = freeY;
+            break;
+        }
+    }
+
+    return freespot;
+
+}
+
 static void cave_random_fill_map (Cave *cave) {
 
     random_set_seed (cave->seed);
@@ -662,6 +679,17 @@ void map_destroy (Map *map) {
         if (map->cave) cave_destroy (map->cave);
 
         free (map);
+    }
+
+}
+
+Coord map_get_free_spot (Map *map) {
+
+    if (map) {
+        srand ((unsigned) time (NULL));
+
+        if (map->dungeon) return dungeon_get_free_spot (map->dungeon);
+        else return cave_get_free_spot (map->cave);
     }
 
 }

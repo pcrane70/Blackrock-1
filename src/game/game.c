@@ -245,22 +245,19 @@ void game_object_add_child (GameObject *parent, GameObject *child) {
 
 }
 
-// FIXME:
 GameObject *game_object_remove_child (GameObject *parent, GameObject *child) {
 
     if (parent && child) {
         if (parent->children) { 
             GameObject *go = NULL;
-            for (ListNode *node = LIST_START (parent->children); node != NULL; node = node->next) {
-                go = (GameObject *) node->data;
-                if (go) {
-                    if (go->id == child->id) {
-                        // FIXME:
-                        // remove child from children
-                        // return the child
-                    }
-                }
+            ListNode *n = llist_start (parent->children);
+            while (n != NULL) { 
+                go = (GameObject *) n->data;
+                if (go->id == child->id) break;
+                n = n->next;
             }
+
+            if (n) return (GameObject *) llist_remove (parent->children, n);
         }
     }
 
@@ -318,7 +315,6 @@ static void game_object_delete (GameObject *go) {
 
 }
 
-// TODO: implement object pooling for components
 void *game_object_add_component (GameObject *go, GameComponent component) {
 
     void *retval = NULL;
@@ -469,8 +465,22 @@ static u8 game_init (void) {
         llist_insert_next (world->players, llist_start (world->players), player_init ());
 
         // spawn players
+        GameObject *go = NULL;
+        Transform *transform = NULL;
+        for (ListNode *n = llist_start (world->players); n != NULL; n = n->next) {
+            go = (GameObject *) n->data;
+            transform = (Transform *) game_object_get_component (go, TRANSFORM_COMP);
+            Coord spawnPoint = map_get_free_spot (world->game_map);
+            printf ("spawn point: %ix%i\n", spawnPoint.x, spawnPoint.y);
+            // FIXME: fix wolrd scale!!!
+            transform->position.x = spawnPoint.x * 64;
+            transform->position.y = spawnPoint.y * 64;
+        }
 
         // update camera
+        GameObject *main_player = (GameObject *) (llist_start (world->players)->data );
+        transform = (Transform *) game_object_get_component (main_player, TRANSFORM_COMP);
+        world->game_camera->center = transform->position;
 
         // init score
 
