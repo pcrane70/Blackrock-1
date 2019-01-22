@@ -15,10 +15,11 @@
 
 #pragma region DUNGEON
 
+// FIXME:
 // TODO: can we use it as an spawn?
 Coord getFreeSpot (bool **mapCells) {
 
-    Coord freeSpot;
+    /* Coord freeSpot;
 
     for (;;) {
         u32 freeX = (u32) random_int_in_range (0, MAP_WIDTH - 1);
@@ -31,7 +32,7 @@ Coord getFreeSpot (bool **mapCells) {
         }
     }
 
-    return freeSpot;
+    return freeSpot; */
 
 }
 

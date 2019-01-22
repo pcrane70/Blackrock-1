@@ -4,6 +4,8 @@
 
 #include "blackrock.h"
 
+#include "settings.h"
+
 #include "engine/renderer.h"
 
 #include "game/game.h"
@@ -114,7 +116,6 @@ void window_resize (SDL_Window *window, u32 newWidth, u32 newHeight) {
 
 // FIXME: players with higher resolution have an advantage -> they see more of the world
 // TODO: check SDL_GetCurrentDisplayMode
-// TODO: handle multiple displays
 // TODO: get refresh rate -> do we need vsync?
 // TODO: check for a prefernces saved file to get current screen size & if we are full screen
 static void window_init_main (const char *title) {
@@ -129,7 +130,8 @@ static void window_init_main (const char *title) {
     // creates a window of the size of the screen
     main_window = SDL_CreateWindow (title,
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
-        displayMode.w, displayMode.h, 0);
+        main_settings->resolution.width, main_settings->resolution.height,
+        main_settings->window ? 0 : SDL_WINDOW_FULLSCREEN);
 
     window_update_size (main_window);
 

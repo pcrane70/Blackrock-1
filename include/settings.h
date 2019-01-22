@@ -5,10 +5,18 @@
 #define SETTINGS_DEFAULT_SCALE      1
 #define SETTINGS_DEFAULT_MUTE       0
 
+#include "blackrock.h"
+
+typedef struct Resolution {
+
+    u32 width, height;
+
+} Resolution;
+
 typedef struct Settings {
 
     bool window;
-    char *resolution;
+    Resolution resolution;
     int scale;
     bool mute;
     char *serverIp;

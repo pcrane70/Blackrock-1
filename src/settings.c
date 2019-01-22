@@ -24,7 +24,6 @@ static Settings *settings_new (void) {
 static void settings_destroy (Settings *settings) {
 
     if (settings) {
-        if (settings->resolution) free (settings->resolution);
         if (settings->serverIp) free (settings->serverIp);
 
         free (settings);
@@ -47,7 +46,8 @@ static Settings *settings_fill (Config *cfg) {
 
         else settings->window = SETTINGS_DEFAULT_WINDOW;
 
-        settings->resolution = getEntityValue (entity, "resolution");
+        Resolution str_to_res (char *str);
+        settings->resolution =  str_to_res (getEntityValue (entity, "resolution"));
 
         char *scale = getEntityValue (entity, "scale");
         if (scale) {
@@ -72,6 +72,30 @@ static Settings *settings_fill (Config *cfg) {
     return settings;
 
 }
+
+#pragma region RESOLUTION
+
+Resolution str_to_res (char *str) {
+
+    Resolution retval = { 1280, 720 };
+
+    if (str) {
+        char **values = splitString (str, 'x');
+        if (values) {
+            retval.width = atoi (values[0]);
+            retval.height = atoi (values[1]);
+        }
+    }
+
+    return retval;
+
+}
+
+char *res_to_str (const Resolution res) {}
+
+#pragma endregion
+
+#pragma region PUBLIC FUNCTIONS
 
 Settings *settings_load (void) {
 
@@ -100,3 +124,5 @@ u8 settings_save (Settings *settings) {
 
 
 }
+
+#pragma endregion

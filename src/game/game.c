@@ -605,9 +605,9 @@ void game_state_change_state (GameState *newState) {
 Score *playerScore = NULL;
 
 // FOV
-u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
+// u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 bool recalculateFov = false;
-extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
+// extern void calculateFov (u32 xPos, u32 yPos, u32 [MAP_WIDTH][MAP_HEIGHT]);
 
 /*** INITIALIZATION **/
 
@@ -861,24 +861,24 @@ static i32 **dmap = NULL;
 
 i32 **initTargetMap (void) {
 
-    i32 **tmap = NULL;
+    /* i32 **tmap = NULL;
 
     tmap = (i32 **) calloc (MAP_WIDTH, sizeof (i32 *));
     for (u8 i = 0; i < MAP_WIDTH; i++)
         tmap[i] = (i32 *) calloc (MAP_HEIGHT, sizeof (i32));
 
-    return tmap;
+    return tmap; */ 
 
 }
 
 void cleanTargetMap (void) {
 
-    if (dmap != NULL) {
+    /* if (dmap != NULL) {
         for (u8 i = 0; i < MAP_WIDTH; i++)
             free (dmap[i]);
 
         free (dmap);
-    } 
+    }  */
 
 }
 

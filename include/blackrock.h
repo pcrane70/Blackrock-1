@@ -5,16 +5,10 @@
 
 #define FPS_LIMIT   30
 
-#define DEFAULT_SCREEN_WIDTH    1920    
-#define DEFAULT_SCREEN_HEIGHT   1080
+#define DEFAULT_SCREEN_WIDTH    1280    
+#define DEFAULT_SCREEN_HEIGHT   720
 
 #define FPS_LIMIT   30
-
-#define MAP_WIDTH   80
-#define MAP_HEIGHT  40
-
-#define NUM_COLS    80
-#define NUM_ROWS    45
 
 typedef uint8_t u8;
 typedef uint16_t u16;
