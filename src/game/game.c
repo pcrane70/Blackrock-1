@@ -471,7 +471,6 @@ static u8 game_init (void) {
             go = (GameObject *) n->data;
             transform = (Transform *) game_object_get_component (go, TRANSFORM_COMP);
             Coord spawnPoint = map_get_free_spot (world->game_map);
-            printf ("spawn point: %ix%i\n", spawnPoint.x, spawnPoint.y);
             // FIXME: fix wolrd scale!!!
             transform->position.x = spawnPoint.x * 64;
             transform->position.y = spawnPoint.y * 64;

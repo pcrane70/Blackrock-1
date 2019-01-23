@@ -104,7 +104,7 @@ GameObject *player_init (void) {
         mainPlayer = (Player *) game_object_add_component (new_player_go, PLAYER_COMP);
 
         graphics_set_sprite_sheet (my_graphics, 
-            createString ("%s%s", ASSETS_PATH, "artwork/adventurer-sheet.png"));
+            createString ("%s%s", ASSETS_PATH, "artwork/characters/adventurer-sheet.png"));
         sprite_sheet_set_sprite_size (my_graphics->spriteSheet, 50, 37);
         sprite_sheet_set_scale_factor (my_graphics->spriteSheet, 6);
         sprite_sheet_crop (my_graphics->spriteSheet);
