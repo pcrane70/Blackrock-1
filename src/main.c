@@ -39,10 +39,8 @@ extern void cleanUpMenuScene (void);
 
 void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
 
-    if (wasInGame) cleanUpGame ();
-
-    // clean the UI
-    // FIXME:
+    // clean up the game
+    // clean up the ui
     
     // SDL CLEANUP
     SDL_DestroyRenderer (renderer);

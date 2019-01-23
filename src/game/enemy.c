@@ -229,7 +229,7 @@ static void enemy_add_transform (GameObject *enemy_go) {
 
 }
 
-// FIXME:
+// FIXME: we just need to load this once!!
 static void enemy_add_graphics (GameObject *enemy_go, u32 dbID) {
 
     if (enemy_go) {
@@ -238,7 +238,7 @@ static void enemy_add_graphics (GameObject *enemy_go, u32 dbID) {
 
 }
 
-// FIXME:
+// FIXME: we just need to load this once!!
 static void enemy_add_animator (GameObject *enemy_go, u32 dbID) {
 
     if (enemy_go) {
@@ -247,7 +247,7 @@ static void enemy_add_animator (GameObject *enemy_go, u32 dbID) {
 
 }
 
-static void enemy_get_stats (GameObject *enemy_go, u32 dbID) {
+static void enemy_add_enemy_comp (GameObject *enemy_go, u32 dbID) {
 
     if (enemy_go) {
         Enemy *enemy = game_object_add_component (enemy_go, ENEMY_COMP);
@@ -298,10 +298,87 @@ GameObject *enemy_create (u32 dbID) {
         enemy_add_graphics (enemy_go, dbID);
         enemy_add_animator (enemy_go, dbID);
         
-        enemy_get_stats (enemy_go, dbID);
+        enemy_add_enemy_comp (enemy_go, dbID);
     }
 
     return enemy_go;
+
+}
+
+// // 22/08/2018 -- 7:11 -- this is our first random monster generation function
+// // TODO: maybe later also take into account the current level
+// // FIXME: create a better system
+/* u32 getMonsterId (void) {
+
+    // number of monster per type
+    u8 weak = 2;
+    u8 medium = 2;
+    u8 strong = 3;
+    u8 veryStrong = 2;
+
+    u32 choice;
+
+    switch (randomInt (1, 4)) {
+        case 1:
+            switch (randomInt (1, weak)) {
+               case 1: choice = 101; break; 
+               case 2: choice = 102; break; 
+            }
+            break;
+        case 2:
+            switch (randomInt (1, medium)) {
+                case 1: choice = 201; break;
+                case 2: choice = 202; break;
+            }
+            break;
+        case 3:
+            switch (randomInt (1, strong)) {
+                case 1: choice = 301; break;
+                case 2: choice = 302; break;
+                case 3: choice = 303; break;
+            }
+            break;
+        case 4:
+            switch (randomInt (1, veryStrong)) {
+                case 1: choice = 401; break;
+                case 2: choice = 402; break;
+            }
+            break;
+        default: break;
+    }
+
+    return choice;
+
+} */
+
+// spawn n monsters at the same time
+void enemies_spawn_all (World *world, u8 monNum) {
+
+    u8 count = 0;
+    GameObject *newMon = NULL;
+    Transform *transform = NULL;
+    for (u8 i = 0; i < monNum; i++) {
+        // generate a random monster
+        newMon = enemy_create (102);
+        if (newMon) {
+            // get spawn point
+            transform = game_object_get_component (newMon, TRANSFORM_COMP);
+            Coord spawnPoint = map_get_free_spot (world->game_map);
+            // FIXME: fix wolrd scale!!!
+            transform->position.x = spawnPoint.x * 64;
+            transform->position.y = spawnPoint.y * 64;
+
+            // add monster to list
+            llist_insert_next (world->enemies, llist_end (world->enemies), newMon);
+
+            count++;
+        }
+    }
+
+    #ifdef DEV
+    logMsg (stdout, DEBUG_MSG, GAME, 
+        createString ("%i / %i monsters created successfully.", count, monNum));
+    #endif
 
 }
 
@@ -361,52 +438,6 @@ GameObject *enemy_create (u32 dbID) {
     sqlite3_finalize (res);
 
     return 0; */
-
-// }
-
-// // 22/08/2018 -- 7:11 -- this is our first random monster generation function
-// // TODO: maybe later also take into account the current level
-// // FIXME: create a better system
-// u32 getMonsterId (void) {
-
-    // number of monster per type
-    /* u8 weak = 2;
-    u8 medium = 2;
-    u8 strong = 3;
-    u8 veryStrong = 2;
-
-    u32 choice;
-
-    switch (randomInt (1, 4)) {
-        case 1:
-            switch (randomInt (1, weak)) {
-               case 1: choice = 101; break; 
-               case 2: choice = 102; break; 
-            }
-            break;
-        case 2:
-            switch (randomInt (1, medium)) {
-                case 1: choice = 201; break;
-                case 2: choice = 202; break;
-            }
-            break;
-        case 3:
-            switch (randomInt (1, strong)) {
-                case 1: choice = 301; break;
-                case 2: choice = 302; break;
-                case 3: choice = 303; break;
-            }
-            break;
-        case 4:
-            switch (randomInt (1, veryStrong)) {
-                case 1: choice = 401; break;
-                case 2: choice = 402; break;
-            }
-            break;
-        default: break;
-    }
-
-    return choice; */
 
 // }
 

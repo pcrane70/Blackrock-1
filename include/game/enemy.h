@@ -67,4 +67,6 @@ extern void enemy_update (void *data);
 
 extern GameObject *enemy_create (u32 dbID);
 
+extern void enemies_spawn_all (World *world, u8 monNum);
+
 #endif

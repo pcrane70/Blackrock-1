@@ -419,12 +419,13 @@ static void world_destroy (World *world) {
 
 #pragma endregion
 
-// TODO: this shouuld go at the bottom of the file
-/*** GAME STATE ***/
+/*** GAME ***/
 
-#pragma region GAME STATE
+#pragma region GAME 
 
-GameState *game_state = NULL;
+// FIXME: how do we want to manage the score?
+// Score
+Score *playerScore = NULL;
 
 // TODO:
 static u8 load_game_data (void) {
@@ -442,6 +443,10 @@ static u8 load_game_data (void) {
 // FIXME:
 static void game_update (void);
 
+// TODO: this inits the game to the tavern/village
+// TODO: this can be a good place to check if we have a save file of a map and load that from disk
+
+// FIXME: move this from here
 static u8 game_init (void) {
 
     game_objects_init_all ();
@@ -458,8 +463,10 @@ static u8 game_init (void) {
         world->game_map->dungeon = dungeon_generate (world->game_map, 
             world->game_map->width, world->game_map->heigth, 100, .45);
 
-        // spawn items
         // spawn enemies
+        enemies_spawn_all (world, random_int_in_range (5, 10));
+
+        // spawn items
 
         // init player(s)
         llist_insert_next (world->players, llist_start (world->players), player_init ());
@@ -493,6 +500,15 @@ static u8 game_init (void) {
     return 1;
 
 }
+
+#pragma endregion
+
+// TODO: this shouuld go at the bottom of the file
+/*** GAME STATE ***/
+
+#pragma region GAME STATE
+
+GameState *game_state = NULL;
 
 static void game_onEnter (void) { game_init (); }
 
@@ -610,9 +626,6 @@ void game_state_change_state (GameState *newState) {
 
 /*** WORLD STATE ***/
 
-// Score
-Score *playerScore = NULL;
-
 // FOV
 // u32 fovMap[MAP_WIDTH][MAP_HEIGHT];
 bool recalculateFov = false;
@@ -622,76 +635,7 @@ bool recalculateFov = false;
 
 #pragma region INIT GAME
 
-void *getGameData (void *data) {
 
-    // // retrieves the data from the items db
-    // initItems ();
-
-    // // connect to enemies db
-    // void connectEnemiesDb (void);
-    // connectEnemiesDb ();
-
-}
-
-// This should only be called once!
-// Inits the global state of the game
-// Inits all the data and structures for an initial game
-void initGame (void) {
-
-    pthread_t dataThread;
-
-    // if (pthread_create (&dataThread, NULL, getGameData, NULL) != THREAD_OK) 
-    //     die ("Error creating data thread!\n");
-
-    // retrieves the data from the items db
-    // initItems ();
-
-    // // connect to enemies db
-    // void connectEnemiesDb (void);
-    // connectEnemiesDb ();
-
-    // // gameObjects = dlist_init (free);
-    // positions = dlist_init (free);
-    // graphics = dlist_init (free);
-    // physics = dlist_init (free);
-    // movement = dlist_init (free);
-    // combat = dlist_init (free);
-    // loot = dlist_init (free);
-
-    // FIXME: pass the correct destroy function!!!
-    // init our pools
-    // goPool = pool_init (free);
-    // posPool = pool_init (free);
-    // graphicsPool = pool_init (free);
-    // physPool = pool_init (free);
-    // movePool = pool_init (free);
-    // combatPool = pool_init (free);
-    // lootPool = pool_init (free);
-
-    // // init the message log
-    // messageLog = dlist_init (free);
-
-    // if (pthread_join (dataThread, NULL) != THREAD_OK) die ("Error joinning data thread!\n");
-
-    fprintf (stdout, "Creating world...\n");
-
-    // void initWorld (void);
-    // initWorld ();
-
-}
-
-void *playerLogic (void *arg) {
-
-    /* if (main_player != NULL) player_destroy (main_player);
-    
-    main_player = player_create ();
-
-    player_init (main_player); */
-
-}
-
-// TODO: this inits the game to the tavern/village
-// TODO: this can be a good place to check if we have a save file of a map and load that from disk
 void initWorld (void) {
 
     /* pthread_t playerThread;
@@ -741,83 +685,6 @@ DoubleList *getObjectsAtPos (u32 x, u32 y) {
     }
 
     return retVal; */
-
-}
-
-GameObject *searchGameObjectById (u32 id) {
-
-    /* GameObject *go = NULL;
-    for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
-        go = (GameObject *) e->data;
-        if (go != NULL) {
-            if (go->id == id) return go;
-        }
-        
-    }
-
-    return NULL; */
-
-}
-
-#pragma endregion
-
-#pragma region CLEANUP
-
-// FIXME: heavy refactor in here!
-void cleanUpGame (void) {
-
-    // clean up the player
-    /* player_destroy (main_player);
-    fprintf (stdout, "Done cleanning up player.\n");
-
-    // clean up our lists
-    dlist_destroy (gameObjects);
-    dlist_destroy (positions);
-    dlist_destroy (graphics);
-    dlist_destroy (physics);
-    dlist_destroy (movement);
-    dlist_destroy (combat);
-
-    fprintf (stdout, "Done cleanning up lists.\n");
-
-    void destroyLoot (void);
-    destroyLoot ();
-
-    fprintf (stdout, "Done cleanning up loot.\n");
-    
-    // cleanup the pools
-    pool_clear (goPool);
-    pool_clear (posPool);
-    pool_clear (graphicsPool);
-    pool_clear (physPool);
-    pool_clear (movePool);
-    pool_clear (combatPool);
-
-    fprintf (stdout, "Done cleaning up pools.\n");
-
-    // clean up items
-    cleanUpItems ();
-    fprintf (stdout, "Done cleaning up items.\n");
-
-    // clean up enemies memory and db
-    void cleanUpEnemies (void);
-    cleanUpEnemies ();
-    fprintf (stdout, "Done cleaning up enemies.\n");
-
-    // clean up pathfinding structs
-    void cleanTargetMap (void);
-    cleanTargetMap ();
-
-    free (currentLevel->mapCells);
-    free (currentLevel);
-    fprintf (stdout, "Done cleaning up map.\n");
-
-    // clear all leaderboard data
-    void cleanLeaderBoardData (void);
-    cleanLeaderBoardData ();
-    fprintf (stdout, "Done cleaning up leaderboard data.\n");
-
-    fprintf (stdout, "Done cleaning up game!\n"); */
 
 }
 
@@ -1731,14 +1598,6 @@ void generateLevel (void) {
 
 void enterDungeon (void) {
 
-    // if (currentLevel == NULL) {
-    //     currentLevel = (Level *) malloc (sizeof (Level));
-    //     currentLevel->levelNum = 1;
-    //     currentLevel->mapCells = (bool **) calloc (MAP_WIDTH, sizeof (bool *));
-    //     for (u8 i = 0; i < MAP_WIDTH; i++)
-    //         currentLevel->mapCells[i] = (bool *) calloc (MAP_HEIGHT, sizeof (bool));
-
-    // } 
     
     // // generate a random world froms scratch
     // // TODO: maybe later we want to specify some parameters based on difficulty?
