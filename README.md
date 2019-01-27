@@ -6,7 +6,6 @@
 [Installing](#installing)  
 [Contributing](#contributing)  
 [Copyright & Licensing](#copyright--licensing)
-[Contact](#contact)
 
 ## About
 
@@ -33,20 +32,6 @@ This game is also intended to serve as a much more complex tutorial for anyone t
 - Only one race -> human  
 - Leaderboards
 - Support for Linux
-
-## Upcoming Features
-  
-- Better UI
-- New player profile    
-- Bosses!  
-- Crafting system and resources gathering 
-- More classes
-- Adding sounds!  
-- Adding new and better graphics  
-- Support for Mac and Windows
-- Bigger open world  
-- Multiplayer
-- Achievements  
 
 ## Installing
 
@@ -83,7 +68,3 @@ Anyone can make a pull request and I will try to check it, and if it seems fine 
 ## Copyright & Licensing
 
 Pending...
-
-## Contact
-
-You can contact me for whatever you need at erick_salas@ermiry.com.
