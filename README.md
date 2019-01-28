@@ -5,7 +5,6 @@
 [Upcoming Features](#upcoming-features)  
 [Installing](#installing)  
 [Contributing](#contributing)  
-[Copyright & Licensing](#copyright--licensing)
 
 ## About
 
@@ -64,7 +63,3 @@ _Running_ ->  Use 'make run'.
 ## Contributing
 
 Anyone can make a pull request and I will try to check it, and if it seems fine with the flow of the game, I will include it on the project.
-
-## Copyright & Licensing
-
-Pending...
