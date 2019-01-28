@@ -170,6 +170,9 @@ typedef struct Graphics {
 extern void graphics_set_sprite (Graphics *graphics, const char *filename);
 extern void graphics_set_sprite_sheet (Graphics *graphics, const char *filename);
 
+extern void graphics_ref_sprite (Graphics *graphics, Sprite *sprite);
+extern void graphics_ref_sprite_sheet (Graphics *graphics, SpriteSheet *spriteSheet);
+
 // old!
 // typedef struct Graphics {
 

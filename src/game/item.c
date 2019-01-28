@@ -49,7 +49,8 @@ u8 items_connect_db (void) {
 
 }
 
-// TODO: crop the sprite sheetss
+// FIXME: set scale factor for sprite sheets
+// TODO: how to handle a missing sprite sheet?
 // load items sprite sheets
 static u8 items_load_sprite_sheets (void) {
 
@@ -61,7 +62,30 @@ static u8 items_load_sprite_sheets (void) {
     misc = sprite_sheet_load (createString ("%sitems/%s", ASSETS_PATH, miscPath), main_renderer);
     weapons = sprite_sheet_load (createString ("%sitems/%s", ASSETS_PATH, weaponsPath), main_renderer);
 
-    if (!accesories || !armor || !food || !misc || !weapons) retval = 1;
+    // crop the sprite sheets
+    if (accesories && armor && food && misc && weapons) {
+        // accesories
+        sprite_sheet_set_sprite_size (accesories, ITEMS_PIXEL_SIZE, ITEMS_PIXEL_SIZE);
+        sprite_sheet_crop (accesories);
+
+        // armor
+        sprite_sheet_set_sprite_size (armor, ITEMS_PIXEL_SIZE, ITEMS_PIXEL_SIZE);
+        sprite_sheet_crop (armor);
+        
+        // food
+        sprite_sheet_set_sprite_size (food, ITEMS_PIXEL_SIZE, ITEMS_PIXEL_SIZE);
+        sprite_sheet_crop (food);
+
+        // misc
+        sprite_sheet_set_sprite_size (misc, ITEMS_PIXEL_SIZE, ITEMS_PIXEL_SIZE);
+        sprite_sheet_crop (misc);
+
+        // weapons
+        sprite_sheet_set_sprite_size (weapons, ITEMS_PIXEL_SIZE, ITEMS_PIXEL_SIZE);
+        sprite_sheet_crop (weapons);
+    }  
+
+    else retval = 1; 
 
     return retval;
 
@@ -77,9 +101,23 @@ u8 items_init (void) {
 
 }
 
+void items_end () {
+
+    // close items db
+    sqlite3_close (itemsDb);
+
+    // delete items sprites sheets
+    sprite_sheet_destroy (accesories);
+    sprite_sheet_destroy (armor);
+    sprite_sheet_destroy (food);
+    sprite_sheet_destroy (misc);
+    sprite_sheet_destroy (weapons);
+
+} 
+
 #pragma endregion
 
-#pragma region ITEM COMPONENT
+#pragma region ITEM GO COMPONENT
 
 Item *item_create_comp (u32 goID) {
 
@@ -104,7 +142,7 @@ void item_destroy_comp (Item *item) {
 }
 
 // FIXME:
-static void item_add_item_comp (GameObject *item_go, u32 dbID) {
+static Item *item_add_item_comp (GameObject *item_go, u32 dbID) {
 
     if (item_go) {
         Item *item = game_object_add_component (item_go, ITEM_COMP);
@@ -117,6 +155,14 @@ static void item_add_item_comp (GameObject *item_go, u32 dbID) {
 
 #pragma endregion
 
+#pragma region ITEM COMPONENTS
+
+static Weapon *weapon_new () {}
+
+static Armour *armour_new () {}
+
+#pragma endregion
+
 #pragma region ITEM
 
 static void item_add_transform (GameObject *item_go) {
@@ -126,11 +172,38 @@ static void item_add_transform (GameObject *item_go) {
 }
 
 // FIXME:
-static void item_add_graphics (GameObject *item_go) {
+static void item_add_graphics (GameObject *item_go, Item *item) {
 
     if (item_go) {
         Graphics *graphics = game_object_add_component (item_go, GRAPHICS_COMP);
-        // FIXME: reference the correct sprite sheet
+        if (graphics) {
+            // reference the correct sprite sheet based on item type
+            switch (item->type) {
+                case ITEM_ACCESORY: graphics_ref_sprite_sheet (graphics, accesories); break;
+                case ITEM_ARMOR: graphics_ref_sprite_sheet (graphics, armor); break;
+                case ITEM_FOOD: graphics_ref_sprite_sheet (graphics, food); break;
+                case ITEM_MISC: graphics_ref_sprite_sheet (graphics, misc); break;
+                case ITEM_WEAPON: graphics_ref_sprite_sheet (graphics, weapons); break;
+
+                default: break;
+            }
+
+            // FIXME:
+            // gte graphics values from db
+        }
+    }
+
+}
+
+static void *item_add_component (Item *item, ItemComponent component) {
+
+    if (item) {
+        switch (component) {
+            case WEAPON: break;
+            case ARMOUR: break;
+
+            default: break;
+        }
     }
 
 }
@@ -139,10 +212,10 @@ GameObject *item_create (u32 dbID) {
 
     GameObject *item_go = game_object_new (NULL, "item");
     if (item_go) {
-        // add transform
-        // add graphics
+        Item *item = item_add_item_comp (item_go, dbID);
 
-        // add item component
+        item_add_transform (item_go);
+        item_add_graphics (item_go, item);
     }
 
     return item_go;

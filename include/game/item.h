@@ -4,6 +4,8 @@
 #include "utils/dlist.h"
 #include "utils/objectPool.h"
 
+#define ITEMS_PIXEL_SIZE        16
+
 /*** ITEM RARITY COLOR ***/
 
 #define RUBISH_COLOR        0x798679FF
@@ -27,6 +29,9 @@
 
 #define MAX_STACK           20
 
+extern u8 items_connect_db (void);
+extern u8 items_init (void);
+
 typedef enum ItemRarity {
 
     COMMON,
@@ -35,7 +40,11 @@ typedef enum ItemRarity {
 
 typedef enum ItemType {
 
-    ITEM_CONSUMABLE,
+    ITEM_ACCESORY,
+    ITEM_ARMOR,
+    ITEM_FOOD,
+    ITEM_MISC,
+    ITEM_WEAPON
 
 } ItemType;
 
@@ -60,7 +69,7 @@ typedef struct Item {
     u8 quantity;                      
     u32 value[3];                   // gold, silver, copper
     double probability;
-    EventListener callback;         // FIXME:
+    EventListener callback;
 
     void *components[ITEM_COMPS];
 
@@ -129,9 +138,6 @@ typedef struct Weapon {
     bool twoHanded;
 
 } Weapon;
-
-extern u8 items_connect_db (void);
-extern u8 items_init (void);
 
 extern Item *createItem (int itemId);
 extern Item *createWeapon (u32 itemId);

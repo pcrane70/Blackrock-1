@@ -104,7 +104,7 @@ void graphics_set_sprite_sheet (Graphics *graphics, const char *filename) {
 
 }
 
-void graphics_ref_sprite (Graphics *graphics, const Sprite *sprite) {
+void graphics_ref_sprite (Graphics *graphics, Sprite *sprite) {
 
     if (graphics && sprite) {
         graphics->sprite = sprite;
@@ -115,7 +115,7 @@ void graphics_ref_sprite (Graphics *graphics, const Sprite *sprite) {
 
 }
 
-void graphics_ref_sprite_sheet (Graphics *graphics, const SpriteSheet *spriteSheet) {
+void graphics_ref_sprite_sheet (Graphics *graphics, SpriteSheet *spriteSheet) {
 
     if (graphics && spriteSheet) {
         graphics->sprite = NULL;
