@@ -1,19 +1,85 @@
-#include <sqlite3.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
+#include <sqlite3.h>
+
 #include "blackrock.h"
+
 #include "game/game.h"
 #include "game/item.h"
-#include "game/player.h"
 
-#include "utils/dlist.h"
-#include "utils/objectPool.h"
-
-#include "ui/gameUI.h" // for strings
+#include "engine/renderer.h"
+#include "engine/sprites.h"
 
 #include "utils/myUtils.h"
+#include "utils/log.h"
 
-#pragma region Item Component
+#pragma region ITEMS
+
+const char *itemsDbPath = "items.db";
+static sqlite3 *itemsDb;
+
+const char *accesoriesPath = "accesories-sprite-sheet.png";
+const char *armorPath = "armor-sprite-sheet.png";
+const char *foodPath = "food-sprite-sheet.png";
+const char *miscPath = "misc-sprite-sheet";
+const char *weaponsPath = "weapons-sprite-sheet";
+
+SpriteSheet *accesories, *armor, *food, *misc, *weapons;
+
+u8 items_connect_db (void) {
+
+    if (sqlite3_open (createString ("%s%s", DATA_PATH, itemsDbPath), &itemsDb) != SQLITE_OK) {
+        #ifdef DEV
+        logMsg (stderr, ERROR, GAME, "Problems connecting to items db!");
+        logMsg (stderr, ERROR, GAME, createString ("%s", sqlite3_errmsg (itemsDb)));
+        #elif PRODUCTION
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to load game data!");
+        #endif
+        return 1;
+    } 
+
+    else {
+        #ifdef DEV
+        logMsg (stdout, DEBUG_MSG, GAME, "Connected to enemies db.");
+        #endif
+        return 1;
+    }
+
+}
+
+// TODO: crop the sprite sheetss
+// load items sprite sheets
+static u8 items_load_sprite_sheets (void) {
+
+    u8 retval = 0;
+
+    accesories = sprite_sheet_load (createString ("%sitems/%s", ASSETS_PATH, accesoriesPath), main_renderer);
+    armor = sprite_sheet_load (createString ("%sitems/%s", ASSETS_PATH, armorPath), main_renderer);
+    food = sprite_sheet_load (createString ("%sitems/%s", ASSETS_PATH, foodPath), main_renderer);
+    misc = sprite_sheet_load (createString ("%sitems/%s", ASSETS_PATH, miscPath), main_renderer);
+    weapons = sprite_sheet_load (createString ("%sitems/%s", ASSETS_PATH, weaponsPath), main_renderer);
+
+    if (!accesories || !armor || !food || !misc || !weapons) retval = 1;
+
+    return retval;
+
+}
+
+u8 items_init (void) {
+
+    // load item sprite sheets && connect to item db
+    if (!items_load_sprite_sheets () && !items_connect_db ())
+        return 0;
+
+    return 1; 
+
+}
+
+#pragma endregion
+
+#pragma region ITEM COMPONENT
 
 Item *item_create_comp (u32 goID) {
 
@@ -52,6 +118,22 @@ static void item_add_item_comp (GameObject *item_go, u32 dbID) {
 #pragma endregion
 
 #pragma region ITEM
+
+static void item_add_transform (GameObject *item_go) {
+
+    if (item_go) game_object_add_component (item_go, TRANSFORM_COMP);
+
+}
+
+// FIXME:
+static void item_add_graphics (GameObject *item_go) {
+
+    if (item_go) {
+        Graphics *graphics = game_object_add_component (item_go, GRAPHICS_COMP);
+        // FIXME: reference the correct sprite sheet
+    }
+
+}
 
 GameObject *item_create (u32 dbID) {
 

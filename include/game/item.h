@@ -131,8 +131,7 @@ typedef struct Weapon {
 } Weapon;
 
 extern u8 items_connect_db (void);
-
-extern void initItems (void);
+extern u8 items_init (void);
 
 extern Item *createItem (int itemId);
 extern Item *createWeapon (u32 itemId);

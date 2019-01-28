@@ -17,7 +17,7 @@
 #include "utils/myUtils.h"
 
 const char *enemiesDbPath = "enemies.db";
-sqlite3 *enemiesDb;
+static sqlite3 *enemiesDb;
 
 #pragma region Enemy Data
 

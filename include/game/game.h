@@ -156,6 +156,7 @@ typedef struct Graphics {
 
     Sprite *sprite;
     SpriteSheet *spriteSheet;
+    bool refSprite;
 
     u32 x_sprite_offset, y_sprite_offset;
     bool multipleSprites;

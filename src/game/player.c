@@ -184,20 +184,6 @@ void player_update (void *data) {
         default: break;
     }
 
-    // update player animation 
-    // my_anim->currFrame = (int) (((SDL_GetTicks () / my_anim->currAnimation->speed) % 
-    //     my_anim->currAnimation->n_frames));
-
-    // my_anim->currFrame = (int) (SDL_GetTicks () / my_anim->currAnimation->speed);
-
-    // if (my_anim->currFrame < my_anim->currAnimation->n_frames) {
-    //     my_graphics->x_sprite_offset = my_anim->currAnimation->frames[my_anim->currFrame]->col;
-    //     my_graphics->y_sprite_offset = my_anim->currAnimation->frames[my_anim->currFrame]->row;
-    // }
-
-    // my_graphics->x_sprite_offset = my_anim->currAnimation->frames[my_anim->currFrame]->col;
-    // my_graphics->y_sprite_offset = my_anim->currAnimation->frames[my_anim->currFrame]->row;
-
 }
 
 // FIXME: correctly clean up the player component
