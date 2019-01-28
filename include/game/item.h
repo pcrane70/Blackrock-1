@@ -4,7 +4,7 @@
 #include "utils/dlist.h"
 #include "utils/objectPool.h"
 
-/*** ITEM RARITY ***/
+/*** ITEM RARITY COLOR ***/
 
 #define RUBISH_COLOR        0x798679FF
 #define COMMON_COLOR        0x0CB21DFF
@@ -14,16 +14,30 @@
 
 /*** DB COLS ***/
 
-#define ITEM_ID_COL          0
-#define ITEM_NAME_COL        1
-#define ITEM_RARITRY_COL     2
-#define ITEM_GOLD_COL        3
-#define ITEM_SILVER_COL      4
-#define ITEM_COPPER_COL      5
-#define ITEM_PROB_COL        6
-#define ITEM_QUANTITY_COL    7  
-#define ITEM_STACKABLE_COL   8
-#define ITEM_CALLBACK_COL    9
+#define DB_COL_ITEM_ID              0
+#define DB_COL_ITEM_NAME            1
+#define DB_COL_ITEM_RARITY          2
+#define DB_COL_ITEM_GOLD            3
+#define DB_COL_ITEM_SILVER          4
+#define DB_COL_ITEM_COPPER          5
+#define DB_COL_ITEM_COL             6
+#define DB_COL_ITEM_QUANTITY        7
+#define DB_COL_ITEM_STACKABLE       8
+#define DB_COL_ITEM_CALLBACK        9
+
+#define MAX_STACK           20
+
+typedef enum ItemRarity {
+
+    COMMON,
+
+} ItemRarity;
+
+typedef enum ItemType {
+
+    ITEM_CONSUMABLE,
+
+} ItemType;
 
 typedef enum ItemComponent {
 
@@ -34,57 +48,89 @@ typedef enum ItemComponent {
 
 #define ITEM_COMPS  2
 
-#define GAME_OBJECT_COMPS   2
-
-extern DoubleList *items;
-extern Pool *itemsPool;
-
-#define MAX_STACK   20
-
+// component for a game object
 typedef struct Item {
 
-    u32 itemId;     
-    u32 dbId;       // item's unique identifire in our db
-    u8 type;        // consumable, weapon, etc?
-    u8 rarity;      // epic, rare, common, rubish, etc.
-    bool stackable; // this is used to handle stacks, max stack is 20
-    u8 quantity;    
-    u32 value[3];   // gold, silver, copper
+    u32 goID;
+    u32 dbID;                       // item's unique identifire in our db
+    
+    ItemType type;                  // consumable, weapon, etc
+    u8 rarity;                      // epic, rare, common, rubish, etc.
+    bool stackable;                 // max stack is 20
+    u8 quantity;                      
+    u32 value[3];                   // gold, silver, copper
     double probability;
-    EventListener callback;      // FIXME:
-    void *components[GAME_OBJECT_COMPS];  
-    void *itemComps[ITEM_COMPS];
+    EventListener callback;         // FIXME:
+
+    void *components[ITEM_COMPS];
 
 } Item;
 
-// 23/08/2018 -- 6:55 -- testing how does this works
+extern Item *item_create_comp (u32 goID);
+
+// TODO:
+typedef enum ArmorType {
+
+    ARMOR_HEAD,
+
+} ArmorType;
+
+// TODO:
+typedef enum ArmorSlot {
+
+    SLOT_HEAD,
+
+} ArmorSlot;
+
+// armour component for an item
 typedef struct Armour {
 
-    u32 itemId;     
-    u32 dbId;       // item's unique identifire in our db
-    u8 type;
+    u32 itemID;         // item's go id
+    u32 dbID;
+
+    ArmorType type;
+    ArmorSlot slot;
+
     u32 maxLifetime;
     u32 lifetime;
-    u8 slot;
     bool isEquipped;
 
 } Armour;
 
+// TODO: 
+typedef enum WeaponType {
+
+    WEAPON_SWORD,
+
+} WeaponType;
+
+// TODO:
+typedef enum WeaponSlot {
+
+    SLOT_MAIN,
+
+} WeaponSlot;
+
 // TODO: add class specific weapons
 // TODO: add modifiers
+// weapon component for an item
 typedef struct Weapon {
 
-    u32 itemId;     
-    u32 dbId;       // item's unique identifire in our db
-    u8 type;
+    u32 itemID;     
+    u32 dbID;
+
+    WeaponType type;
+    WeaponSlot slot;
+
     u8 dps;
     u32 maxLifetime;
     u32 lifetime;
     bool isEquipped;
-    u8 slot;
     bool twoHanded;
 
 } Weapon;
+
+extern u8 items_connect_db (void);
 
 extern void initItems (void);
 

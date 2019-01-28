@@ -1,17 +1,73 @@
-// #include <sqlite3.h>
-// #include <string.h>
+#include <sqlite3.h>
+#include <string.h>
 
-// #include "blackrock.h"
-// #include "game/game.h"
-// #include "game/item.h"
-// #include "game/player.h"
+#include "blackrock.h"
+#include "game/game.h"
+#include "game/item.h"
+#include "game/player.h"
 
-// #include "utils/dlist.h"
-// #include "utils/objectPool.h"
+#include "utils/dlist.h"
+#include "utils/objectPool.h"
 
-// #include "ui/gameUI.h" // for strings
+#include "ui/gameUI.h" // for strings
 
-// #include "utils/myUtils.h"
+#include "utils/myUtils.h"
+
+#pragma region Item Component
+
+Item *item_create_comp (u32 goID) {
+
+    Item *item = (Item *) malloc (sizeof (Item));
+    if (item) {
+        memset (item, 0, sizeof (Item));
+        item->goID = goID;
+    }
+
+    return item;
+
+}
+
+void item_destroy_comp (Item *item) {
+
+    if (item) {
+        // FIXME: destroy item components
+
+        free (item);
+    }
+
+}
+
+// FIXME:
+static void item_add_item_comp (GameObject *item_go, u32 dbID) {
+
+    if (item_go) {
+        Item *item = game_object_add_component (item_go, ITEM_COMP);
+        if (item) {
+            item->dbID = dbID;
+        }
+    }
+
+}
+
+#pragma endregion
+
+#pragma region ITEM
+
+GameObject *item_create (u32 dbID) {
+
+    GameObject *item_go = game_object_new (NULL, "item");
+    if (item_go) {
+        // add transform
+        // add graphics
+
+        // add item component
+    }
+
+    return item_go;
+
+}
+
+#pragma endregion
 
 // // our items db
 // const char *itemsDbPath = "./data/items.db";    // The path is form the makefile

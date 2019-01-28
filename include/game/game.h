@@ -109,6 +109,7 @@ typedef enum GameComponent {
 
     PLAYER_COMP,
     ENEMY_COMP,
+    ITEM_COMP,
 
 } GameComponent;
 
