@@ -50,8 +50,8 @@ typedef enum ItemType {
 
 typedef enum ItemComponent {
 
-    WEAPON = 0,
-    ARMOUR
+    WEAPON_COMP = 0,
+    ARMOUR_COMP
 
 } ItemComponent;
 
@@ -75,7 +75,12 @@ typedef struct Item {
 
 } Item;
 
+extern GameObject *item_create (u32 dbID);
+
 extern Item *item_create_comp (u32 goID);
+
+extern void *item_get_item_component (Item *item, ItemComponent component);
+extern void item_remove_item_component (Item *item, ItemComponent component);
 
 // TODO:
 typedef enum ArmorType {
@@ -138,27 +143,5 @@ typedef struct Weapon {
     bool twoHanded;
 
 } Weapon;
-
-extern Item *createItem (int itemId);
-extern Item *createWeapon (u32 itemId);
-extern Item *createArmour (u32 itemId);
-
-extern void getItem (void);
-extern void dropItem (Item *);
-extern void getLootItem (u8);
-extern void *getGameComponent (Item *, GameComponent);
-extern void *getItemComponent (Item *, ItemComponent);
-
-extern u32 getItemColor (u8 rarity);
-extern u32 getLifeTimeColor (Item *);
-extern char *getItemSlot (Item *);
-extern char *getEquipmentTypeName (Item *);
-
-extern char *getItemTypeName (Item *);
-
-extern Item *destroyItem (Item *);
-extern Item *deleteItem (Item *);
-
-extern void cleanUpItems (void);
 
 #endif

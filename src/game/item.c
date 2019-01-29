@@ -101,7 +101,7 @@ u8 items_init (void) {
 
 }
 
-void items_end () {
+void items_end (void) {
 
     // close items db
     sqlite3_close (itemsDb);
@@ -131,23 +131,27 @@ Item *item_create_comp (u32 goID) {
 
 }
 
+static void weapon_destroy (Weapon *weapon);
+static void armour_destroy (Armour *armor);
+
 void item_destroy_comp (Item *item) {
 
     if (item) {
-        // FIXME: destroy item components
+        weapon_destroy (item->components[WEAPON_COMP]);
+        armour_destroy (item->components[ARMOUR_COMP]);
 
         free (item);
     }
 
 }
 
-// FIXME:
-static Item *item_add_item_comp (GameObject *item_go, u32 dbID) {
+Item *item_add_item_comp (GameObject *item_go, u32 dbID) {
 
     if (item_go) {
         Item *item = game_object_add_component (item_go, ITEM_COMP);
         if (item) {
             item->dbID = dbID;
+            // FIXME: load info from the db
         }
     }
 
@@ -157,9 +161,50 @@ static Item *item_add_item_comp (GameObject *item_go, u32 dbID) {
 
 #pragma region ITEM COMPONENTS
 
-static Weapon *weapon_new () {}
+static Weapon *weapon_new (u32 dbID) {
 
-static Armour *armour_new () {}
+    Weapon *weapon = (Weapon *) malloc (sizeof (Weapon));
+    if (weapon) {
+        // FIXME: load info from the db
+    }
+
+    return weapon;
+
+}
+
+static void weapon_destroy (Weapon *weapon) { if (weapon) free (weapon); }
+
+static Armour *armour_new (u32 dbID) {
+
+    Armour *armour = (Armour *) malloc (sizeof (Armour));
+    if (armour) {
+        // FIXME: load info from the db
+    }
+
+    return armour;
+
+}
+
+static void armour_destroy (Armour *armor) { if (armor) free (armor); }
+
+void *item_get_item_component (Item *item, ItemComponent component) {
+
+    if (item) return item->components[component];
+
+}
+
+void item_remove_item_component (Item *item, ItemComponent component) {
+
+    if (item) {
+        switch (component) {
+            case WEAPON_COMP: weapon_destroy (item->components[component]); break;
+            case ARMOUR_COMP: armour_destroy (item->components[component]); break;
+
+            default: break;
+        }
+    }
+
+}
 
 #pragma endregion
 
@@ -171,8 +216,7 @@ static void item_add_transform (GameObject *item_go) {
 
 }
 
-// FIXME:
-static void item_add_graphics (GameObject *item_go, Item *item) {
+static u8 item_add_graphics (GameObject *item_go, Item *item) {
 
     if (item_go) {
         Graphics *graphics = game_object_add_component (item_go, GRAPHICS_COMP);
@@ -188,23 +232,54 @@ static void item_add_graphics (GameObject *item_go, Item *item) {
                 default: break;
             }
 
-            // FIXME:
-            // gte graphics values from db
+            // get graphics values from db
+            sqlite3_stmt *res;
+            char *sql = "SELECT * FROM Graphics WHERE Id = ?";
+
+            if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) {
+                sqlite3_bind_int (res, 1, item->dbID);
+
+                int step = sqlite3_step (res);
+
+                // FIXME: assign values
+
+                sqlite3_finalize (res);
+
+                return 0;
+            }
+
+            else {
+                logMsg (stderr, ERROR, NO_TYPE, 
+                    createString ("Failed to get graphics data for item: %i", item->dbID));
+                #ifdef DEV
+                logMsg (stderr, ERROR, NO_TYPE, createString ("DB error: %s", sqlite3_errmsg (itemsDb)));
+                #endif
+            } 
         }
     }
+
+    return 1;
 
 }
 
 static void *item_add_component (Item *item, ItemComponent component) {
 
+    void *retval = NULL;
+
     if (item) {
         switch (component) {
-            case WEAPON: break;
-            case ARMOUR: break;
+            case WEAPON_COMP: 
+                retval = item->components[component] = weapon_new (item->dbID); 
+                break;
+            case ARMOUR_COMP: 
+                retval = item->components[component] = armour_new (item->dbID);
+                break;
 
             default: break;
         }
     }
+
+    return retval;
 
 }
 
@@ -223,233 +298,6 @@ GameObject *item_create (u32 dbID) {
 }
 
 #pragma endregion
-
-// // our items db
-// const char *itemsDbPath = "./data/items.db";    // The path is form the makefile
-// sqlite3 *itemsDb;
-
-// DoubleList *items = NULL;
-// Pool *itemsPool = NULL;
-
-// // static u32 itemsId = 0;
-
-// extern unsigned int newId;
-
-// // FIXME: problems with items pool
-// void initItems (void) {
-
-//     items = dlist_init (free);
-//     // FIXME: pass the correct destroy function
-//     itemsPool = pool_init (free);
-
-//     // connect to the items db
-//     if (sqlite3_open (itemsDbPath, &itemsDb) != SQLITE_OK) {
-//         fprintf (stderr, "%s\n", sqlite3_errmsg (itemsDb));
-//         die ("Problems with items db!\n");
-//     } 
-
-//     // development functions
-//     // This are used only for testing and to populate our dbs
-//     void createItemsDb (void);
-//     // createItemsDb ();
-
-// }
-
-// /*** ITEMS IN MEMORY ***/
-
-// // FIXME: problems with items pool!!
-// Item *newItem (void) {
-
-//     Item *i = NULL;
-
-//     // check if there is a an available one in the items pool
-//     // if (POOL_SIZE (itemsPool) > 0) {
-//     //     i = (Item *) pool_pop (itemsPool);
-//     //     if (i == NULL) i = (Item *) malloc (sizeof (Item));
-//     // } 
-//     // else i = (Item *) malloc (sizeof (Item));
-
-//     i = (Item *) malloc (sizeof (Item));
-
-//     if (i != NULL) {
-//         i->itemId = newId;
-//         newId++;
-//         for (u8 u = 0; u < GAME_OBJECT_COMPS; u++) i->components[u] = NULL;
-//         for (u8 u = 0; u < ITEM_COMPS; u++) i->itemComps[u] = NULL;
-//         dlist_insert_after (items, NULL, i);
-//     }
-
-//     return i;
-
-// }
-
-// void *getGameComponent (Item *item, GameComponent type) { return item->components[type]; }
-
-// void *getItemComponent (Item *item, ItemComponent type) { return item->itemComps[type]; }
-
-// void addGameComponent (Item *item, GameComponent type, void *data) {
-
-//     if (item == NULL || data == NULL) return;
-
-//     switch (type) {
-//         case POSITION: {
-//             if (getGameComponent (item, type) != NULL) return;
-//             Position *newPos = NULL;
-//             if (POOL_SIZE (posPool) > 0) {
-//                 newPos = (Position *) pool_pop (posPool);
-//                 if (newPos == NULL) newPos = (Position *) malloc (sizeof (Position));
-//             }
-//             else newPos = (Position *) malloc (sizeof (Position));
-
-//             Position *posData = (Position *) data;
-//             newPos->objectId = item->itemId;
-//             newPos->x = posData->x;
-//             newPos->y = posData->y;
-//             newPos->layer = posData->layer;
-
-//             item->components[type] = newPos;
-//             dlist_insert_after (positions, NULL, newPos);
-//         } break;
-//         case GRAPHICS: {
-//             if (getGameComponent (item, type) != NULL) return;
-//             Graphics *newGraphics = NULL;
-//             if (POOL_SIZE (graphicsPool) > 0) {
-//                 newGraphics = (Graphics *) pool_pop (graphicsPool);
-//                 if (newGraphics == NULL) newGraphics = (Graphics *) malloc (sizeof (Graphics));
-//             }
-//             else newGraphics = (Graphics *) malloc (sizeof (Graphics));
-
-//             Graphics *graphicsData = (Graphics *) data;
-//             newGraphics->objectId = item->itemId;
-//             newGraphics->name = (char *) calloc (strlen (graphicsData->name) + 1, sizeof (char));
-//             strcpy (newGraphics->name, graphicsData->name);
-//             newGraphics->glyph = graphicsData->glyph;
-//             newGraphics->fgColor = graphicsData->fgColor;
-//             newGraphics->bgColor = graphicsData->bgColor;
-
-//             item->components[type] = newGraphics;
-//             dlist_insert_after (graphics, NULL, newGraphics);
-//         } break;
-//         default: break;
-//     }
-
-// }
-
-// void addItemComp (Item *item, ItemComponent type, void *data) {
-
-//     if (item == NULL || data == NULL) return;
-
-//     switch (type) {
-//         case WEAPON: {
-//             if (getItemComponent (item, type) != NULL) return;
-//             Weapon *newWeapon = (Weapon *) malloc (sizeof (Weapon));
-//             Weapon *weaponData = (Weapon *) data;
-//             newWeapon->itemId = item->itemId;
-//             newWeapon->dbId = item->dbId;
-//             newWeapon->type = weaponData->type;
-//             newWeapon->dps = weaponData->dps;
-//             newWeapon->maxLifetime = weaponData->maxLifetime;
-//             newWeapon->lifetime = weaponData->lifetime;
-//             newWeapon->isEquipped = weaponData->isEquipped;
-//             newWeapon->slot = weaponData->slot;
-//             item->itemComps[type] = newWeapon;
-//         } break;
-//         case ARMOUR: {
-//             if (getItemComponent (item, type) != NULL) return;
-//             Armour *newArmour = (Armour *) malloc (sizeof (Armour));
-//             Armour *armourData = (Armour *) data;
-//             newArmour->itemId = item->itemId;
-//             newArmour->dbId = item->dbId;
-//             newArmour->type = armourData->type;
-//             newArmour->maxLifetime = armourData->maxLifetime;
-//             newArmour->lifetime = armourData->lifetime;
-//             newArmour->slot = armourData->slot;
-//             newArmour->isEquipped = armourData->isEquipped;
-//             item->itemComps[type] = newArmour;
-//         } break;
-//         default: break;
-//     }
-
-// }
- 
-// void removeGameComponent (Item *item, GameComponent type) {
-
-//     if (item == NULL) return;
-
-//     switch (type) {
-//         case POSITION: {
-//             Position *posComp = (Position *) getGameComponent (item, type);
-//             if (posComp != NULL) {
-//                 ListElement *e = dlist_get_ListElement (positions, posComp);
-//                 if (e != NULL) pool_push (posPool, dlist_remove_element (positions, e));
-//                 item->components[type] = NULL;
-//             }
-//         } break;
-//         case GRAPHICS: {
-//             Graphics *graComp = (Graphics *) getGameComponent (item, type);
-//             if (graComp != NULL) {
-//                 ListElement *e = dlist_get_ListElement (graphics, graComp);
-//                 if (e != NULL) pool_push (graphicsPool, dlist_remove_element (graphics, e));
-//                 item->components[type] = NULL;
-//             }
-//         } break;
-//         default: break;
-//     }
-
-// }
-
-// void removeItemComponent (Item *item, ItemComponent type) {
-
-//     if (item == NULL) return;
-
-//     switch (type) {
-//         case WEAPON: {
-//             Weapon *weapon = (Weapon *) getItemComponent (item , type);
-//             if (weapon != NULL) {
-//                 item->itemComps[type] = NULL;
-//                 free (weapon);
-//             }
-//         } break;
-//         case ARMOUR: {
-//             Armour *armour = (Armour *) getItemComponent (item, type);
-//             if (armour != NULL) {
-//                 item->itemComps[type] = NULL;
-//                 free (armour);
-//             }
-//         } break;
-//         default: break;
-//     }
-
-// }
-
-// // FIXME: problems with items pool
-// Item *destroyItem (Item *item) {
-
-//     if (item != NULL) {
-//         for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
-//         for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
-
-//         pool_push (itemsPool, item);
-//     }
-
-//     return NULL;
-    
-// }
-
-// Item *deleteItem (Item *item) {
-
-//     for (u8 i = 0; i < GAME_OBJECT_COMPS; i++) removeGameComponent (item, i);
-//     for (u8 i = 0; i < ITEM_COMPS; i++) removeItemComponent (item, i);
-
-//     ListElement *e = dlist_get_ListElement (items, item);
-//     if (e != NULL) {
-//         void *old = dlist_remove_element (items, e);
-//         if (old != NULL) free (old);
-//     }
-
-//     return NULL;
-
-// }
 
 // // search for the item in the inventory and remove it
 // Item *removeFromInventory (Item *item) {
@@ -478,28 +326,7 @@ GameObject *item_create (u32 dbID) {
 
 // u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
 
-//     // get the db data
-//     sqlite3_stmt *res;
-//     char *sql = "SELECT * FROM Graphics WHERE Id = ?";
-
-//     if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, itemId);
-//     else {
-//         fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (itemsDb));
-//         return 1;
-//     } 
-
-//     int step = sqlite3_step (res);
-
-//     asciiChar glyph = (asciiChar) sqlite3_column_int (res, 1);
-//     const char *c = sqlite3_column_text (res, 2);
-//     char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
-//     strcpy (colour, c);
-//     u32 color = (u32) xtoi (colour);
-//     Graphics g = { 0, glyph, color, 0x000000FF, false, false, itemName };
-//     addGameComponent (item, GRAPHICS, &g);
-
-//     free (colour);
-//     sqlite3_finalize (res);
+//     
 
 //     return 0;
 
