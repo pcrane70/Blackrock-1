@@ -165,7 +165,29 @@ static Weapon *weapon_new (u32 dbID) {
 
     Weapon *weapon = (Weapon *) malloc (sizeof (Weapon));
     if (weapon) {
-        // FIXME: load info from the db
+        // get weapon values from db
+        sqlite3_stmt *res;
+        char *sql = "SELECT * FROM Weapons WHERE Id = ?";
+
+        if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) {
+            sqlite3_bind_int (res, 1, dbID);
+
+            int step = sqlite3_step (res);
+
+            // FIXME: assign values
+
+            sqlite3_finalize (res);
+
+            return 0;
+        }
+
+        else {
+            logMsg (stderr, ERROR, NO_TYPE, 
+                createString ("Failed to get weapon data for item: %i", dbID));
+            #ifdef DEV
+            logMsg (stderr, ERROR, NO_TYPE, createString ("DB error: %s", sqlite3_errmsg (itemsDb)));
+            #endif
+        } 
     }
 
     return weapon;
@@ -178,7 +200,29 @@ static Armour *armour_new (u32 dbID) {
 
     Armour *armour = (Armour *) malloc (sizeof (Armour));
     if (armour) {
-        // FIXME: load info from the db
+        // get armour values from db
+        sqlite3_stmt *res;
+        char *sql = "SELECT * FROM Armour WHERE Id = ?";
+
+        if (sqlite3_prepare_v2 (itemsDb, sql, -1, &res, 0) == SQLITE_OK) {
+            sqlite3_bind_int (res, 1, dbID);
+
+            int step = sqlite3_step (res);
+
+            // FIXME: assign values
+
+            sqlite3_finalize (res);
+
+            return 0;
+        }
+
+        else {
+            logMsg (stderr, ERROR, NO_TYPE, 
+                createString ("Failed to get armour data for item: %i", dbID));
+            #ifdef DEV
+            logMsg (stderr, ERROR, NO_TYPE, createString ("DB error: %s", sqlite3_errmsg (itemsDb)));
+            #endif
+        } 
     }
 
     return armour;
@@ -323,14 +367,6 @@ GameObject *item_create (u32 dbID) {
 // }
 
 // /*** CREATING ITEMS ***/
-
-// u8 addGraphicsToItem (u32 itemId, Item *item, char *itemName) {
-
-//     
-
-//     return 0;
-
-// }
 
 // void healPlayer (void *);
 // void toggleEquipWeapon (void *);

@@ -33,9 +33,9 @@ typedef struct Character {
     LivingEntity *entity;
 
     u16 money [3];          // gold, silver, copper
-    // Item ***inventory;
-    // Item **weapons;
-    // Item **equipment;
+    GameObject ***inventory;
+    GameObject **weapons;
+    GameObject **equipment;
 
 } Character;
 

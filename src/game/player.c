@@ -23,17 +23,69 @@ static u8 moveSpeed = 8;
 
 #pragma region CHARACTER
 
-// TODO: do we want this only when creating a new character or also when we are 
-// loading a saved profile?
+static GameObject ***character_init_inventory (void) {
+
+    GameObject ***inventory = (GameObject ***) calloc (7, sizeof (GameObject **));
+
+    for (u8 i = 0; i < 7; i++)
+        inventory[i] = (GameObject **) calloc (3, sizeof (GameObject *));
+
+    for (u8 y = 0; y < 3; y++)
+        for (u8 x = 0; x < 7; x++)
+            inventory[x][y] = NULL;
+
+    return inventory;
+
+}
+
+// create an empty character
 Character *character_new (void) {
 
     Character *new_character = (Character *) malloc (sizeof (Character));
     if (new_character) {
         new_character->entity = entity_new ();
-        // TODO: money
+        
+        new_character->money[0] = new_character->money[1] = new_character->money[2] = 0;
+
+        new_character->inventory = character_init_inventory ();
+
+        new_character->equipment = (GameObject **) calloc (EQUIPMENT_ELEMENTS, sizeof (GameObject *));
+        for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) new_character->equipment[i] = NULL;
+
+        new_character->weapons = (GameObject **) calloc (2, sizeof (GameObject **));
+        for (u8 i = 0; i < 2; i++) new_character->weapons[i] = NULL;
     }
 
     return new_character;
+
+}
+
+void character_destroy (Character *character) {
+
+    if (character) {
+        if (character->inventory) {
+            // clean up inventory
+            for (u8 y = 0; y < 3; y++) 
+                for (u8 x = 0; x < 7; x++) 
+                    character->inventory[x][y] = NULL;
+
+            free (character->inventory);
+        }
+
+        // clean up weapons
+        if (character->weapons) {
+            for (u8 i = 0; i < 2; i++) character->weapons[i] = NULL;
+            free (character->weapons);
+        }
+
+        // clean up equipment
+        if (character->equipment) {
+            for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) character->equipment[i] = NULL;
+            free (character->equipment);
+        }
+
+        free (character);
+    }
 
 }
 
@@ -110,7 +162,7 @@ GameObject *player_init (void) {
         sprite_sheet_crop (my_graphics->spriteSheet);
 
         // set up animations
-        // player idel without sword
+        // player idle without sword
         // player_idle_anim = animation_create (4,
         //     my_graphics->spriteSheet->individualSprites[0][0], my_graphics->spriteSheet->individualSprites[1][0], 
         //     my_graphics->spriteSheet->individualSprites[2][0], my_graphics->spriteSheet->individualSprites[3][0]);
@@ -258,41 +310,6 @@ u32 player_get_class_color (u8 c) {
 
 }
 
-Item ***player_init_inventory (void) {
-
-    Item ***inventory = (Item ***) calloc (7, sizeof (Item **));
-
-    for (u8 i = 0; i < 7; i++)
-        inventory[i] = (Item **) calloc (3, sizeof (Item *));
-
-    for (u8 y = 0; y < 3; y++) 
-        for (u8 x = 0; x < 7; x++) 
-            inventory[x][y] = NULL;
-
-    return inventory;
-
-}
-
-Player *player_create (void) {
-
-    Player *p = (Player *) malloc (sizeof (Player));
-    p->pos = (Position *) malloc (sizeof (Position));
-    p->physics = (Physics *) malloc (sizeof (Physics));
-    p->graphics = (Graphics *) malloc (sizeof (Graphics));
-    p->combat = (Combat *) malloc (sizeof (Combat));
-
-    p->inventory = player_init_inventory ();
-
-    p->weapons = (Item **) calloc (2, sizeof (Item *));
-    for (u8 i = 0; i < 2; i++) p->weapons[i] = NULL;
-
-    p->equipment = (Item **) calloc (EQUIPMENT_ELEMENTS, sizeof (Item *));
-    for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) p->equipment[i] = NULL;
-
-    return p;
-
-}
-
 // TODO: check for a save file to retrive the information freom there instead
 // because the player is an special GO, we want to initialize him differently
 void player_init (Player *p) {
@@ -393,40 +410,6 @@ void player_reset (Player *player) {
         if (player->equipment)
             for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
 
-    }
-
-}
-
-void player_destroy (Player *player) {
-
-    if (player) {
-        if (player->inventory) {
-            // clean up inventory
-            for (u8 y = 0; y < 3; y++) 
-                for (u8 x = 0; x < 7; x++) 
-                    player->inventory[x][y] = NULL;
-
-            free (player->inventory);
-        }
-
-        // clean up weapons
-        if (player->weapons) {
-            for (u8 i = 0; i < 2; i++) player->weapons[i] = NULL;
-            free (player->weapons);
-        }
-
-        // clean up equipment
-        if (player->equipment) {
-            for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) player->equipment[i] = NULL;
-            free (player->equipment);
-        }
-            
-        if (player->pos) free (player->pos);
-        if (player->graphics) free (player->graphics);
-        if (player->physics) free (player->physics);
-        if (player->combat) free (player->combat);
-
-        free (player);
     }
 
 }
