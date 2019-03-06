@@ -58,8 +58,6 @@ _Compiling_ -> Just use 'make' in the project folder.
 
 _Running_ ->  Use 'make run'.
 
-**_Just give me the exe_** -> If you just want to download the executable, check the releases tab in the top of this page and select the one you want.
-
 ## Contributing
 
 Anyone can make a pull request and I will try to check it, and if it seems fine with the flow of the game, I will include it on the project.
