@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <signal.h>
 
+#include "myos.h"
+
 #include "blackrock.h"
 
 #include "settings.h"
@@ -130,7 +132,7 @@ int main (void) {
         logMsg (stderr, ERROR, NO_TYPE, "Failed to init blackrock!");
         running = false;
     }
-    
+
     // char *text = (char *) calloc (20, sizeof (char));
 
     TextBox *static_text = ui_textBox_create_static (100, 100, ui_rgba_color_create (100, 45, 67, 255),

@@ -6,8 +6,11 @@
 
 #include "blackrock.h"
 
+#include "myos.h"
+
 #include "game/game.h"
 
+#include "engine/mythread.h"
 #include "engine/timer.h"
 #include "engine/sprites.h"
 #include "engine/animation.h"
@@ -138,11 +141,11 @@ void animator_play_animation (Animator *animator, Animation *animation) {
 
 /*** ANIM THREAD ***/
 
-#include <pthread.h>
-
-pthread_t animThread;
+static pthread_t animThread;
 
 void *animations_update (void *data) {
+
+    thread_set_name ("animation");
 
     u32 timePerFrame = 1000 / FPS_LIMIT;
     u32 frameStart = 0;
@@ -198,7 +201,7 @@ void *animations_update (void *data) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            printf ("anim fps: %i\n", fps);
+            // printf ("anim fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }
