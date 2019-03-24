@@ -1,4 +1,4 @@
-![Alt text](resources/blackrock-title.png?raw=true "Blackrock")
+![Alt text](assets/artwork/blackrock-title.png?raw=true "Blackrock")
 
 [About](#about)  
 [Current Features](#current-features)  
@@ -32,7 +32,7 @@ This game is also intended to serve as a much more complex tutorial for anyone t
 - Leaderboards
 - Support for Linux
 
-## Installing
+## Instalation
 
 ### Linux
 
