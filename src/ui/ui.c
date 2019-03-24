@@ -968,7 +968,9 @@ SDL_Cursor *sysCursor;
 Sprite *cursorImg = NULL;
 
 // FIXME: set the correct sprite
-static void ui_cursor_init (void) {
+static u8 ui_cursor_init (void) {
+
+    u8 retval = 1;
 
     // hide the system cursor inside the window
     i32 cursorData[2] = { 0, 0 };
@@ -976,7 +978,14 @@ static void ui_cursor_init (void) {
     SDL_SetCursor (sysCursor);
 
     cursorImg = sprite_load ("./assets/artwork/mapTile_087.png", main_renderer);
-    if (!cursorImg) logMsg (stderr, ERROR, NO_TYPE, "Failed to load cursor imgs!");
+    if (cursorImg) retval = 0;
+    else {
+        #ifdef BLACK_DEBUG
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to load cursor imgs!");
+        #endif
+    }
+
+    return retval;
 
 }
 
@@ -1019,6 +1028,8 @@ void ui_render (void) {
 // init main ui elements
 u8 ui_init (void) {
 
+    int errors = 0;
+
     // init and load fonts
     TTF_Init ();
     mainFont = ui_font_create ();
@@ -1038,12 +1049,12 @@ u8 ui_init (void) {
     }
 
     // init ui elements
-    ui_elements_init ();
+    errors = ui_elements_init ();
 
     // init cursor
-    ui_cursor_init ();
+    errors = ui_cursor_init ();
 
-    return 0;   // success
+    return errors;
 
 }
 
@@ -1051,9 +1062,13 @@ u8 ui_init (void) {
 u8 ui_destroy (void) {
 
     // ui elements
-    for (u32 i = 0; i < curr_max_ui_elements; i++)
-        ui_element_delete (ui_elements[i]);
+    if (ui_elements) {
+        for (u32 i = 0; i < curr_max_ui_elements; i++)
+            ui_element_delete (ui_elements[i]);
 
+        free (ui_elements);
+    }
+    
     // fonts
     ui_font_destroy (mainFont);
     TTF_Quit ();

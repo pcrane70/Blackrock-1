@@ -46,6 +46,6 @@ extern void animator_play_animation (Animator *animator, Animation *animation);
 /*** ANIM THREAD ***/
 
 extern int animations_init (void);
-extern int animations_end (void);
+extern void animations_end (void);
 
 #endif

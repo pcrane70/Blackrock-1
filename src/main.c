@@ -122,11 +122,15 @@ static void run (void) {
 float deltaTime = 0;
 u32 fps = 0;
 
-static int main (void) {
+int main (void) {
 
-    if (!init ()) running = true;
-    else logMsg (stderr, ERROR, NO_TYPE, "Failed to init blackrock!");
+    running = true;
 
+    if (init ()) {
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to init blackrock!");
+        running = false;
+    }
+    
     // char *text = (char *) calloc (20, sizeof (char));
 
     TextBox *static_text = ui_textBox_create_static (100, 100, ui_rgba_color_create (100, 45, 67, 255),

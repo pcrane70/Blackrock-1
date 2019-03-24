@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include <SDL2/SDL.h>
 
@@ -12,6 +13,12 @@
 #include "engine/animation.h"
 
 #include "utils/llist.h"
+
+#ifdef DEV
+    #include "utils/log.h"
+#endif
+
+static bool anim_init = false;
 
 /*** ANIMATION ***/
 
@@ -191,7 +198,7 @@ void *animations_update (void *data) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            // printf ("anim fps: %i\n", fps);
+            printf ("anim fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }
@@ -201,16 +208,34 @@ void *animations_update (void *data) {
 
 int animations_init (void) {
 
-    animators = llist_init (animator_destroy_ref);
+    int errors = 0;
 
-    return pthread_create (&animThread, NULL, animations_update, NULL);
+    animators = llist_init (animator_destroy_ref);
+    if (animators) {
+        if (!pthread_create (&animThread, NULL, animations_update, NULL)) anim_init = true;
+        else {
+            #ifdef DEV
+            logMsg (stderr, ERROR, NO_TYPE, "Failed to create animations thread.");
+            #endif
+            errors = 1;
+        }
+    }
+
+    else {
+        #ifdef DEV
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to create animators list!");
+        #endif
+        errors = 1;
+    }
+
+    return errors;
 
 }
 
-int animations_end (void) {
+void animations_end (void) {
 
     llist_destroy (animators);
 
-    return pthread_join (animThread, NULL);
+    if (anim_init) pthread_join (animThread, NULL);
 
 }
