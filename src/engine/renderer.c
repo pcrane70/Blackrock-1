@@ -66,12 +66,20 @@ void render (void) {
 
 // }
 
-static void render_init_main (void) {
+static int render_init_main (void) {
+
+    int retval = 1;
 
     main_renderer = SDL_CreateRenderer (main_window, 0, SDL_RENDERER_SOFTWARE | SDL_RENDERER_ACCELERATED);
-    SDL_SetRenderDrawColor (main_renderer, 0, 0, 0, 255);
-    SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "0");
-    SDL_RenderSetLogicalSize (main_renderer, windowSize.width, windowSize.height);
+    if (main_renderer) {
+        SDL_SetRenderDrawColor (main_renderer, 0, 0, 0, 255);
+        SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "0");
+        SDL_RenderSetLogicalSize (main_renderer, windowSize.width, windowSize.height);
+
+        retval = 0;
+    }
+    
+    return retval;
 
 }
 
@@ -118,7 +126,9 @@ void window_resize (SDL_Window *window, u32 newWidth, u32 newHeight) {
 // TODO: check SDL_GetCurrentDisplayMode
 // TODO: get refresh rate -> do we need vsync?
 // TODO: check for a prefernces saved file to get current screen size & if we are full screen
-static void window_init_main (const char *title) {
+static int window_init_main (const char *title) {
+
+    int retval = 1;
 
     SDL_GetCurrentDisplayMode (0, &displayMode); 
     #ifdef DEV
@@ -133,22 +143,31 @@ static void window_init_main (const char *title) {
         main_settings->resolution.width, main_settings->resolution.height,
         main_settings->window ? 0 : SDL_WINDOW_FULLSCREEN);
 
-    window_update_size (main_window);
+    if (main_window) {
+        window_update_size (main_window);
+        retval = 0;
+    }
+
+    return retval;
 
 }
 
 #pragma endregion
 
-void video_init_main (const char *title) {
+int video_init_main (const char *title) {
 
-    window_init_main (title);
-    render_init_main ();
+    int errors = 0;
+
+    errors = window_init_main (title);
+    errors = render_init_main ();
+
+    return errors;
 
 }
 
 void video_destroy_main (void) {
 
-    SDL_DestroyRenderer (main_renderer);
-    SDL_DestroyWindow (main_window);
+    if (main_renderer) SDL_DestroyRenderer (main_renderer);
+    if (main_window) SDL_DestroyWindow (main_window);
 
 }

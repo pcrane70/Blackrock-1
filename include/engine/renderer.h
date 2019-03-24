@@ -18,7 +18,7 @@ extern bool isFullscreen;
 extern void window_toggle_full_screen (SDL_Window *window);
 extern void window_resize (SDL_Window *window, u32 newWidth, u32 newHeight);
 
-extern void video_init_main (const char *title);
+extern int video_init_main (const char *title);
 extern void video_destroy_main (void);
 
 extern void render (void);

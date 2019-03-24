@@ -31,7 +31,7 @@ SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
-CFLAGS      := -g $(DEFINES) $(RUN_MAKE)
+CFLAGS      := -g $(DEFINES)
 LIB         :=  $(PTHREAD) $(SQLITE3) $(SDL2) $(MATH)
 INC         := -I $(INCDIR) -I /usr/local/include
 INCDEP      := -I $(INCDIR)
@@ -44,7 +44,7 @@ all: directories $(TARGET)
 run: 
 	./$(TARGETDIR)/$(TARGET)
 
-remake: cleaner all
+remake: clean all
 
 directories:
 	@mkdir -p $(TARGETDIR)
@@ -52,7 +52,7 @@ directories:
 
 # clean only Objecst
 clean:
-	@$(RM) -rf $(BUILDDIR)
+	@$(RM) -rf $(BUILDDIR)	@$(RM) -rf $(TARGETDIR)
 
 # full Clean, Objects and Binaries
 cleaner: clean

@@ -12,6 +12,7 @@
 #include "engine/animation.h"
 
 #include "utils/log.h"
+#include "utils/myUtils.h"
 
 bool running = false;
 bool inGame = false;
@@ -33,37 +34,51 @@ void die (const char *error) {
 
 };
 
-/*** CLEAN UP ***/
+static int init (void) {
 
-extern void cleanUpMenuScene (void);
+    int errors = 0;
 
-void cleanUp (SDL_Window *window, SDL_Renderer *renderer) {
-
-    // clean up the game
-    // clean up the ui
-    
-    // SDL CLEANUP
-    SDL_DestroyRenderer (renderer);
-    SDL_DestroyWindow (window);
-
-    SDL_Quit ();
-
-}
-
-/*** MAIN THREAD ***/
-
-float deltaTime = 0;
-u32 fps = 0;
-
-int main (void) {
-
-    // register to the quit signal
+    // register to some signals
     signal (SIGINT, quit);
+    signal (SIGSEGV, quit);
 
     main_settings = settings_load ();
 
-    SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO); 
-    video_init_main ("Blackrock Dungeons");
+    if (!SDL_Init (SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_VIDEO)) {
+        errors = video_init_main ("Blackrock Dungeons");
+
+        errors = animations_init ();
+        errors = ui_init ();
+    }
+
+    else {
+        logMsg (stderr, ERROR, NO_TYPE, "Unable to initialize SDL!");
+        #ifdef BLACK_DEBUG
+        logMsg (stderr, ERROR, NO_TYPE, createString ("%s", SDL_GetError ()));
+        #endif
+        errors = 1;
+    }
+
+    return errors;
+
+}
+
+static int end (void) {
+
+    // if (multiplayer) multiplayer_stop ();
+
+    game_cleanUp ();
+    animations_end ();
+    ui_destroy ();
+    video_destroy_main ();
+
+    SDL_Quit ();
+
+    return 0;
+
+}
+
+static void run (void) {
 
     SDL_Event event;
 
@@ -72,22 +87,6 @@ int main (void) {
     i32 sleepTime = 0;
 
     u32 deltaTicks = 0;
-
-    char *text = (char *) calloc (20, sizeof (char));
-
-    running = true;
-    animations_init ();
-
-    ui_init ();
-
-    TextBox *static_text = ui_textBox_create_static (100, 100, ui_rgba_color_create (100, 45, 67, 255),
-        "this is a static text!", RGBA_WHITE, NULL, false);
-    TextBox *volatile_text = ui_textBox_create_volatile (200, 200, ui_rgba_color_create (100, 45, 67, 255),
-        "this is a volatile text!", RGBA_WHITE, NULL, false);
-
-    // TODO: modify to the correct game state
-    game_state = game_state_new ();
-    game_manager = game_manager_new (game_state);
 
     while (running) {
         frameStart = SDL_GetTicks ();
@@ -116,16 +115,31 @@ int main (void) {
         }
     }
 
-    // if (multiplayer) multiplayer_stop ();
+}
 
-    // FIXME: I dont want these here!
-    // FIXME: cleanup
-    game_cleanUp ();
-    animations_end ();
-    ui_destroy ();
-    video_destroy_main ();
-    SDL_Quit ();
+/*** MAIN THREAD ***/
 
-    return 0;
+float deltaTime = 0;
+u32 fps = 0;
+
+static int main (void) {
+
+    if (!init ()) running = true;
+    else logMsg (stderr, ERROR, NO_TYPE, "Failed to init blackrock!");
+
+    // char *text = (char *) calloc (20, sizeof (char));
+
+    TextBox *static_text = ui_textBox_create_static (100, 100, ui_rgba_color_create (100, 45, 67, 255),
+        "this is a static text!", RGBA_WHITE, NULL, false);
+    TextBox *volatile_text = ui_textBox_create_volatile (200, 200, ui_rgba_color_create (100, 45, 67, 255),
+        "this is a volatile text!", RGBA_WHITE, NULL, false);
+
+    // TODO: modify to the correct game state
+    game_state = game_state_new ();
+    game_manager = game_manager_new (game_state);
+
+    run ();
+
+    return end ();
 
 }
