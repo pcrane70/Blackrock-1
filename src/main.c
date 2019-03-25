@@ -12,6 +12,7 @@
 #include "engine/input.h"
 #include "engine/renderer.h"
 #include "engine/animation.h"
+#include "engine/mythread.h"
 
 #include "utils/log.h"
 #include "utils/myUtils.h"
@@ -80,6 +81,41 @@ static int end (void) {
 
 }
 
+static pthread_t update_thread;
+
+void *update (void *args) {
+
+    thread_set_name ("update");
+
+    u32 timePerFrame = 1000 / FPS_LIMIT;
+    u32 frameStart = 0;
+    i32 sleepTime = 0;
+
+    float deltaTime = 0;
+    u32 deltaTicks = 0;
+    u32 fps = 0;
+
+    while (running) {
+        if (game_manager->currState->update)
+            game_manager->currState->update ();
+
+        // limit the FPS
+        sleepTime = timePerFrame - (SDL_GetTicks () - frameStart);
+        if (sleepTime > 0) SDL_Delay (sleepTime);
+
+        // count fps
+        deltaTime = SDL_GetTicks () - frameStart;
+        deltaTicks += deltaTime;
+        fps++;
+        if (deltaTicks >= 1000) {
+            // printf ("%s fps: %i\n", name, fps);
+            deltaTicks = 0;
+            fps = 0;
+        }
+    }
+    
+}
+
 static void run (void) {
 
     SDL_Event event;
@@ -94,10 +130,6 @@ static void run (void) {
         frameStart = SDL_GetTicks ();
 
         input_handle (event);
-
-        // TODO: create a separate thread
-        if (game_manager->currState->update)
-            game_manager->currState->update ();
 
         // rendering is done in the main thread
         render ();
@@ -143,6 +175,11 @@ int main (void) {
     // TODO: modify to the correct game state
     game_state = game_state_new ();
     game_manager = game_manager_new (game_state);
+
+    if (pthread_create (&update_thread, NULL, update, NULL)) {
+        logMsg (stderr, ERROR, NO_TYPE, "Failed to create update thread!");
+        running = false;
+    }
 
     run ();
 

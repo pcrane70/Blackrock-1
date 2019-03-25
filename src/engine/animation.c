@@ -141,7 +141,7 @@ void animator_play_animation (Animator *animator, Animation *animation) {
 
 /*** ANIM THREAD ***/
 
-static pthread_t animThread;
+static pthread_t anim_thread;
 
 void *animations_update (void *data) {
 
@@ -215,7 +215,7 @@ int animations_init (void) {
 
     animators = llist_init (animator_destroy_ref);
     if (animators) {
-        if (!pthread_create (&animThread, NULL, animations_update, NULL)) anim_init = true;
+        if (!pthread_create (&anim_thread, NULL, animations_update, NULL)) anim_init = true;
         else {
             #ifdef DEV
             logMsg (stderr, ERROR, NO_TYPE, "Failed to create animations thread.");
@@ -239,6 +239,6 @@ void animations_end (void) {
 
     llist_destroy (animators);
 
-    if (anim_init) pthread_join (animThread, NULL);
+    if (anim_init) pthread_join (anim_thread, NULL);
 
 }

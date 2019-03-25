@@ -1537,7 +1537,7 @@ void *updateGame (void *data) {
 
 extern bool inGame;
 extern bool wasInGame;
-extern pthread_t gameThread;
+// extern pthread_t gameThread;
 
 void startGame (void) {
 
