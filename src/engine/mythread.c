@@ -55,37 +55,83 @@ int thread_set_name (const char *name) {
 
 }
 
-typedef struct HubWorker {
+#pragma region HubWorker
 
-    // FIXME: handle portability
-    pthread_t thread;
+static HubWorker *hub_worker_new (void *(*work) (void *), void *args, const char *name) {
 
-    const char *name;
-    void *(*work) (void *);
-    void *args;
+    HubWorker *worker = (HubWorker *) malloc (sizeof (HubWorker));
+    if (worker) {
+        memset (worker, 0, sizeof (HubWorker));
 
-} HubWorker;
+        worker->name = (char *) calloc (strlen (name) + 1, sizeof (char));
+        strcpy ((char *) worker->name, (char *) name);
 
-typedef struct ThreadHub {
+        worker->job = work;
+        worker->args = args;
+    }
 
-    const char *name;           // thread hub name
+    return worker;
 
-    unsigned int n_workers;
-    HubWorker **workers;
+}
 
-} ThreadHub;
+// FIXME: handle portability for destroying all of our threads!!
+static void hub_worker_destroy (HubWorker *worker) {
 
-// inits a new thread hub
-int thread_hub_int (const char *name) {
+    if (worker) {
+        if (worker->name) free ((char *) worker->name);
+
+        free (worker);
+    }
+
+}
+
+static int hub_worker_init (HubWorker *worker) {
+
+    int retval = 1;
+
+    if (worker) {
+        #ifdef  OS_LINUX 
+            retval = pthread_create (&worker->thread, NULL, worker->job, worker->args);
+        #endif
+    }
+
+    return retval;
+
+}
+
+#pragma endregion
+
+#pragma region ThreadHub
+
+static ThreadHub *global_hub;
+
+static ThreadHub *thread_hub_new (const char *name) {
 
     ThreadHub *hub = (ThreadHub *) malloc (sizeof (ThreadHub));
     if (hub) {
         memset (hub, 0, sizeof (ThreadHub));
         hub->name = (char *) calloc (strlen (name) + 1, sizeof (char));
-        strcpy (hub->name, name);
+        strcpy ((char *) hub->name, (char *) name);
     }
 
+}
+
+// inits a new thread hub
+ThreadHub *thread_hub_int (const char *name) {  
+
+    ThreadHub *hub = NULL;
+    
+    if (name) hub = thread_hub_new (name);
+
     return hub;
+
+}
+
+// inits the global thread hub
+int thread_hub_init_global (void) {
+
+    global_hub = thread_hub_new ("global");
+    return (global_hub ? 0 : 1);
 
 }
 
@@ -95,60 +141,73 @@ int thread_hub_end (ThreadHub *hub) {
     int retval = 1;
 
     if (hub) {
+        if (hub->name) free ((char *) hub->name);
 
+        if (hub->n_workers > 0) 
+            for (int i = 0; i < hub->n_workers; i++) hub_worker_destroy (hub->workers[i]);
+
+        free (hub);
     }
 
     return retval;
 
 }
 
-static HubWorker *hub_worker_new (void *(*work) (void *), void *args, const char *name) {
-
-    HubWorker *worker = (HubWorker *) malloc (sizeof (HubWorker));
-    if (worker) {
-        memset (worker, 0, sizeof (HubWorker));
-
-        worker->name = (char *) calloc (strlen (name) + 1, sizeof (char));
-        strcpy (worker->name, name);
-
-        worker->work = work;
-        worker->args = args;
-    }
-
-    return worker;
-
-}
-
-static void hub_worker_destroy (HubWorker *worker) {
-
-    if (worker) {
-        if (worker->name) free (worker->name);
-
-        free (worker);
-    }
-
-}
-
-// adds a thread to the hub
-int thread_hub_add (ThreadHub *hub, void *(*work) (void *), void *args, const char *name) {
+static int thread_hub_add_worker (ThreadHub *hub, HubWorker *worker) {
 
     int retval = 1;
 
-    if (work && name) {
-        HubWorker *worker = hub_worker_new (work, args, name);
+    if (hub && worker) {
 
-        // if no hub provided, add the work to the global thread, but only if it exists...
-        // if (!hub) 
-
-        // if (pthread_create (&update_thread, NULL, update, NULL)) {
-        //     logMsg (stderr, ERROR, NO_TYPE, "Failed to create update thread!");
-        //     running = false;
-        // }
     }
 
     return retval;
 
 }
 
-// FIXME: removes a thread from the hub
-int thread_hub_remove (const char *name);
+// adds a worker to the hub
+// NULL hub to add to global
+int thread_hub_add (ThreadHub *hub, void *(*work) (void *), void *args, const char *worker_name) {
+
+    int retval = 1;
+
+    if (work && worker_name) {
+        HubWorker *worker = hub_worker_new (work, args, worker_name);
+
+        // if no hub provided, add the work to the global thread, but only if it exists...
+        ThreadHub *h = hub ? hub : global_hub;
+        if (h) 
+            if (thread_hub_add_worker (h, worker))
+                retval = hub_worker_init (worker);
+
+    }
+
+    return retval;
+
+}
+
+// FIXME:
+// removes a worker from the hub
+// NULL hub to remove from global
+int thread_hub_remove (ThreadHub *hub, const char *worker_name) {
+
+    int retval = 1;
+
+    if (worker_name) {
+        // if no hub provided, remove from the global hub
+        ThreadHub *h = hub ? hub : global_hub;
+        if (h) {
+            // search the worker
+            for (int i = 0; i < h->n_workers; i++) {
+                if (!strcmp (h->workers[i]->name, worker_name)) {
+                    // if (h->n_workers == 1) free ()
+                }
+            }
+        }
+    }
+
+    return retval;
+
+}
+
+#pragma endregion
