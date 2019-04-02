@@ -21,7 +21,7 @@
 #include "utils/objectPool.h"
 
 #include "utils/myUtils.h"
-#include "utils/dlist.h"
+#include "collections/dlist.h"
 
 #include "ui/gameUI.h"  // for the message log
 

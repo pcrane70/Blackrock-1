@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "utils/dlist.h"
+#include "collections/dlist.h"
 
 DoubleList *dlist_init (void (*destroy)(void *data), 
     int (*compare)(void *one, void *two)) {

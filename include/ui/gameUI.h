@@ -5,7 +5,7 @@
 
 #include "game/item.h"
 
-#include "utils/dlist.h"
+#include "collections/dlist.h"
 
 #define NO_COLOR        0x00000000
 #define WHITE           0xFFFFFFFF

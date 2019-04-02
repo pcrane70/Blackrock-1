@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "utils/dlist.h"
+#include "collections/dlist.h"
 
 #define CONFIG_MAX_LINE_LEN     128
 

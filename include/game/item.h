@@ -1,7 +1,7 @@
 #ifndef ITEM_H
 #define ITEM_H
 
-#include "utils/dlist.h"
+#include "collections/dlist.h"
 #include "utils/objectPool.h"
 
 #define ITEMS_PIXEL_SIZE        16

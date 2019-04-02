@@ -9,8 +9,8 @@
 #include "game/map/room.h"
 #include "game/map/map.h"
 
-#include "utils/llist.h"
-#include "utils/dlist.h"
+#include "collections/llist.h"
+#include "collections/dlist.h"
 #include "utils/myUtils.h"
 
 static Segment *segment_new (void) {

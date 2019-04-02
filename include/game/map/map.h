@@ -7,7 +7,7 @@
 
 #include "game/game.h"
 
-#include "utils/llist.h"
+#include "collections/llist.h"
 
 typedef struct Coord {
 

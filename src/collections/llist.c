@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "utils/llist.h"
+#include "collections/llist.h"
 
 static ListNode *llist_node_create (void *data) {
 

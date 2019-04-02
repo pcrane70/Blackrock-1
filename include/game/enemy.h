@@ -5,7 +5,7 @@
 
 #include "game/entity.h"
 
-#include "utils/llist.h"
+#include "collections/llist.h"
 
 #define N_MONSTER_TYPES       9
 

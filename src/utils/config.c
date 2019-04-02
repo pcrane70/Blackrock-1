@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "utils/dlist.h"
+#include "collections/dlist.h"
 #include "utils/config.h"
 
 static void ConfigKeyValuePair_destroy (void *ptr) {

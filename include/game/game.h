@@ -7,8 +7,8 @@
 
 #include "engine/sprites.h"
 
-#include "utils/llist.h"
-#include "utils/dlist.h"
+#include "collections/llist.h"
+#include "collections/dlist.h"
 #include "utils/objectPool.h"
 
 /*** GAME MANAGER ***/
