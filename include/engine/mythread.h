@@ -48,6 +48,6 @@ extern int thread_hub_end (ThreadHub *hub);
 extern int thread_hub_add (ThreadHub *hub, void *(*work) (void *), void *args, const char *worker_name);
 
 // removes a worker from the hub
-extern int thread_hub_remove (const char *worker_name);
+extern int thread_hub_remove (ThreadHub *hub, const char *worker_name);
 
 #endif
