@@ -2092,20 +2092,20 @@ DoubleList *getLocalLBData (void) {
     DoubleList *lbData = NULL;
 
     // check if we have a .conf file
-    localLBConfig = parseConfigFile ("./data/localLB.cfg");
-    if (localLBConfig != NULL) {
-        lbData = getLBData (localLBConfig);
+    // localLBConfig = parseConfigFile ("./data/localLB.cfg");
+    // if (localLBConfig != NULL) {
+    //     lbData = getLBData (localLBConfig);
 
-        // insert the current player score at the end no matter what
-        // dlist_insert_after (lbData, NULL, playerLBEntry);
+    //     // insert the current player score at the end no matter what
+    //     // dlist_insert_after (lbData, NULL, playerLBEntry);
 
-        // then sort the list
-        // lbData->start = mergeSort (LIST_START (lbData));
-    } 
+    //     // then sort the list
+    //     // lbData->start = mergeSort (LIST_START (lbData));
+    // } 
 
-    else {
-        // FIXME: we don't have a local leaderboard, so create one
-    }
+    // else {
+    //     // FIXME: we don't have a local leaderboard, so create one
+    // }
 
     // return the list for display
     return lbData;
@@ -2202,7 +2202,7 @@ Config *createNewLBCfg (DoubleList *lbData) {
 void updateLBFile (const char *filename, Config *cfg, bool globalLB) {   
 
     // write out the cfg file
-    writeConfigFile (filename, cfg);
+    // writeConfigFile (filename, cfg);
 
     /* if (globalLB) {
         if (!connectedToServer) {
@@ -2256,12 +2256,12 @@ void destroyLeaderBoard (DoubleList *lb) {
 void cleanLeaderBoardData (void) {
 
     // delete config data
-    if (localLBConfig) clearConfig (localLBConfig);
-    if (globalLBConfig) clearConfig (globalLBConfig);
+    // if (localLBConfig) clearConfig (localLBConfig);
+    // if (globalLBConfig) clearConfig (globalLBConfig);
 
-    // delete parsed data
-    if (localLBData) destroyLeaderBoard (localLBData);
-    if (globalLBData) destroyLeaderBoard (globalLBData);
+    // // delete parsed data
+    // if (localLBData) destroyLeaderBoard (localLBData);
+    // if (globalLBData) destroyLeaderBoard (globalLBData);
 
 }
 

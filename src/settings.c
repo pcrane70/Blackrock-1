@@ -35,9 +35,9 @@ static Settings *settings_fill (Config *cfg) {
 
     Settings *settings = settings_new ();
     if (settings) {
-        ConfigEntity *entity = getEntityWithId (cfg, 1);
+        ConfigEntity *entity = config_get_entity_with_id (cfg, 1);
 
-        char *window = getEntityValue (entity, "window");
+        char *window = config_get_entity_value (entity, "window");
         if (window) {
             int window_int = atoi (window);
             window_int ? settings->window = true : false;
@@ -47,9 +47,9 @@ static Settings *settings_fill (Config *cfg) {
         else settings->window = SETTINGS_DEFAULT_WINDOW;
 
         Resolution str_to_res (char *str);
-        settings->resolution =  str_to_res (getEntityValue (entity, "resolution"));
+        settings->resolution =  str_to_res (config_get_entity_value (entity, "resolution"));
 
-        char *scale = getEntityValue (entity, "scale");
+        char *scale = config_get_entity_value (entity, "scale");
         if (scale) {
             settings->scale = atoi (scale);
             free (scale);
@@ -57,7 +57,7 @@ static Settings *settings_fill (Config *cfg) {
 
         else settings->scale = SETTINGS_DEFAULT_SCALE;
 
-        char *mute = getEntityValue (entity, "mute");
+        char *mute = config_get_entity_value (entity, "mute");
         if (mute) {
             int mute_int = atoi (mute);
             mute_int ? settings->mute = true : false;
@@ -66,7 +66,7 @@ static Settings *settings_fill (Config *cfg) {
 
         else settings->mute = SETTINGS_DEFAULT_MUTE;
 
-        settings->serverIp = getEntityValue (entity, "serverIP");
+        settings->serverIp = config_get_entity_value (entity, "serverIP");
     }
 
     return settings;
@@ -99,7 +99,7 @@ char *res_to_str (const Resolution res) {}
 
 Settings *settings_load (void) {
 
-    Config *config = parseConfigFile (createString ("%s%s", CONFIG_PATH, settingsConfig));
+    Config *config = config_parse_file (createString ("%s%s", CONFIG_PATH, settingsConfig));
     if (!config) {
         // this could be because we are on a new machine and we do not have settings yet
         // the file is corrupted 
@@ -111,7 +111,7 @@ Settings *settings_load (void) {
 
     else {
         Settings *retval = settings_fill (config);
-        clearConfig (config);
+        config_destroy (config);
         return retval;
     } 
 

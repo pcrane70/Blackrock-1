@@ -13,6 +13,20 @@
 #include "utils/dlist.h"
 #include "utils/myUtils.h"
 
+static Segment *segment_new (void) {
+
+    Segment *seg = (Segment *) malloc (sizeof (Segment));
+    if (seg) memset (seg, 0, sizeof (Segment));
+    return seg;
+
+}
+
+static void segment_delete (void *data) {
+
+    if (data) free (data);
+
+}
+
 #pragma region DUNGEON
 
 static Coord dungeon_get_free_spot (Dungeon *dungeon) {
@@ -246,9 +260,10 @@ static void dungeon_get_segments (DoubleList *segments, Coord from, Coord to, Ro
 
 static void dungeon_carve_segments (DoubleList *hallways, u8 **mapCells) {
 
+    Segment *seg = NULL;
     ListElement *ptr = LIST_START (hallways);
     while (ptr != NULL) {
-        Segment *seg = (Segment *) ptr->data;
+        seg = (Segment *) ptr->data;
 
         if (seg->hasWayPoint) {
             Coord p1 = seg->start;
@@ -309,7 +324,7 @@ static void dungeon_create (Dungeon *dungeon) {
     }
 
     // join all the rooms with corridors
-    DoubleList *hallways = dlist_init (free);
+    DoubleList *hallways = dlist_init (segment_delete, NULL);
 
     Room *ptr = firstRoom->next, *preptr = firstRoom;
     while (ptr != NULL) {
@@ -319,7 +334,7 @@ static void dungeon_create (Dungeon *dungeon) {
         Coord fromPt = dungeon_random_room_point (from);
         Coord toPt = dungeon_random_room_point (to);
 
-        DoubleList *segments = dlist_init (free);
+        DoubleList *segments = dlist_init (segment_delete, NULL);
 
         // break the proposed hallway into segments
         dungeon_get_segments (segments, fromPt, toPt, firstRoom);
