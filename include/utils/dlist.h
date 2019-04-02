@@ -1,5 +1,5 @@
-#ifndef DLIST_H
-#define DLIST_H
+#ifndef _DLIST_H_
+#define _DLIST_H_
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -20,6 +20,7 @@ typedef struct List {
     ListElement *end;
 
     void (*destroy)(void *data);
+    int (*compare)(void *one, void *two);
 
 } DoubleList;
 
@@ -31,7 +32,9 @@ typedef struct List {
 #define LIST_DATA(element) ((element)->data)
 #define LIST_NEXT(element) ((element)->next)
 
-extern DoubleList *dlist_init (void (*destroy)(void *data));
+// compare must return 0 if one < two otherwise return 1
+extern DoubleList *dlist_init (void (*destroy)(void *data),
+    int (*compare)(void *one, void *two));
 extern void dlist_reset (DoubleList *);
 // only gets rid of the List elemenst, but the data is kept
 extern void dlist_clean (DoubleList *);
@@ -46,8 +49,8 @@ extern void *dlist_search (DoubleList *, void *data);
 extern bool dlist_is_in_list (DoubleList *, void *data);
 ListElement *dlist_get_ListElement (DoubleList *, void *data);
 
-// FIXME:
-// Sorting
-// extern ListElement *mergeSort (ListElement *head);
+// merge sort
+// return 0 on succes 1 on error
+extern int dlist_sort (DoubleList *list);
 
 #endif

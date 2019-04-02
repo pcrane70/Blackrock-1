@@ -1,17 +1,18 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "utils/dlist.h"
 
-DoubleList *dlist_init (void (*destroy)(void *data)) {
+DoubleList *dlist_init (void (*destroy)(void *data), 
+    int (*compare)(void *one, void *two)) {
 
     DoubleList *list = (DoubleList *) malloc (sizeof (DoubleList));
 
     if (list) {
-        list->size = 0;
+        memset (list, 0, sizeof (DoubleList));
         list->destroy = destroy;
-        list->start = NULL;
-        list->end = NULL;
+        list->compare = compare; 
     }
 
     return list;
@@ -58,7 +59,10 @@ void dlist_destroy (DoubleList *list) {
 
             while (LIST_SIZE (list) > 0) {
                 data = dlist_remove_element (list, NULL);
-                if (data != NULL && list->destroy != NULL) list->destroy (data);
+                if (data) {
+                    if (list->destroy) list->destroy (data);
+                    else free (data);
+                }
             }
         }
 
@@ -82,9 +86,9 @@ bool dlist_insert_after (DoubleList *list, ListElement *element, void *data) {
             if (LIST_SIZE (list) == 0) list->end = new;
             else list->start->prev = new;
         
-            new->next = list->start;
-            new->prev = NULL;
-            list->start = new;
+        new->next = list->start;
+        new->prev = NULL;
+        list->start = new;
         }
 
         else {
@@ -210,10 +214,8 @@ ListElement *dlist_get_ListElement (DoubleList *list, void *data) {
 
 /*** SORTING ***/
 
-// FIXME: we need to sort generic data
-
 // Split a doubly linked list (DLL) into 2 DLLs of half sizes 
-/* ListElement *split (ListElement *head) { 
+static ListElement *dllist_split (ListElement *head) { 
 
     ListElement *fast = head, *slow = head; 
 
@@ -228,9 +230,10 @@ ListElement *dlist_get_ListElement (DoubleList *list, void *data) {
     return temp; 
 
 }  
-  
+
 // Function to merge two linked lists 
-ListElement *merge (ListElement *first, ListElement *second)  { 
+static ListElement *dllist_merge (int (*compare)(void *one, void *two), 
+    ListElement *first, ListElement *second)  { 
 
     // If first linked list is empty 
     if (!first) return second; 
@@ -238,37 +241,48 @@ ListElement *merge (ListElement *first, ListElement *second)  {
     // If second linked list is empty 
     if (!second) return first; 
 
-    u32 firstScore = ((LBEntry *) first->data)->score;
-    u32 secondScore = ((LBEntry *) second->data)->score;
-  
     // Pick the smallest value 
-    if (firstScore < secondScore)  { 
-        first->next = merge (first->next, second); 
+    if (!compare (first->data, second->data)) {
+        first->next = dllist_merge (compare, first->next, second); 
         first->next->prev = first; 
         first->prev = NULL; 
         return first; 
-    } 
+    }
 
-    else { 
-        second->next = merge (first,second->next); 
+    else {
+        second->next = dllist_merge (compare, first, second->next); 
         second->next->prev = second; 
         second->prev = NULL; 
         return second; 
-    } 
+    }
 
 } 
-  
-ListElement *mergeSort (ListElement *head) {
+
+// merge sort
+ListElement *dlist_merge_sort (ListElement *head, int (*compare)(void *one, void *two)) {
 
     if (!head || !head->next) return head;
 
-    ListElement *second = split (head);
+    ListElement *second = dllist_split (head);
 
     // recursivly sort each half
-    head = mergeSort (head);
-    second = mergeSort (second);
+    head = dlist_merge_sort (head, compare);
+    second = dlist_merge_sort (second, compare);
 
-    // Merge the two sorted halves 
-    return merge (head, second);
+    // merge the two sorted halves 
+    return dllist_merge (compare, head, second);
 
-} */
+}
+
+int dlist_sort (DoubleList *list) {
+
+    int retval = 1;
+
+    if (list && list->compare) {
+        list->start = dlist_merge_sort (list->start, list->compare);
+        retval = 0;
+    }
+
+    return retval;
+
+}
