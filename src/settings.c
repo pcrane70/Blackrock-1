@@ -66,7 +66,7 @@ static Settings *settings_fill (Config *cfg) {
 
         else settings->mute = SETTINGS_DEFAULT_MUTE;
 
-        settings->serverIp = config_get_entity_value (entity, "serverIP");
+        settings->serverIp = config_get_entity_value (entity, "mute");
     }
 
     return settings;

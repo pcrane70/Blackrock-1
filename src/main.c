@@ -17,7 +17,7 @@
 #include "utils/log.h"
 #include "utils/myUtils.h"
 
-bool running = false;
+bool running = true;
 bool inGame = false;
 bool wasInGame = false;
 
@@ -96,6 +96,8 @@ void *update (void *args) {
     u32 fps = 0;
 
     while (running) {
+        frameStart = SDL_GetTicks ();
+
         if (game_manager->currState->update)
             game_manager->currState->update ();
 
@@ -108,7 +110,7 @@ void *update (void *args) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            // printf ("%s fps: %i\n", name, fps);
+            printf ("update fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }
@@ -124,14 +126,15 @@ static void run (void) {
     u32 frameStart = 0;
     i32 sleepTime = 0;
 
+    float deltaTime = 0;
     u32 deltaTicks = 0;
+    u32 fps = 0;
 
     while (running) {
         frameStart = SDL_GetTicks ();
 
         input_handle (event);
 
-        // rendering is done in the main thread
         render ();
 
         // limit the FPS
@@ -153,17 +156,9 @@ static void run (void) {
 
 /*** MAIN THREAD ***/
 
-float deltaTime = 0;
-u32 fps = 0;
-
 int main (void) {
 
-    running = true;
-
-    if (init ()) {
-        logMsg (stderr, ERROR, NO_TYPE, "Failed to init blackrock!");
-        running = false;
-    }
+    running = !init () ? true : false;
 
     // char *text = (char *) calloc (20, sizeof (char));
 
