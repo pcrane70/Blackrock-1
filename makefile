@@ -42,7 +42,7 @@ OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJE
 all: directories $(TARGET)
 
 run: 
-	./$(TARGETDIR)/$(TARGET)
+	LD_PRELOAD=./libs/libSDL2_image-2.0.so.0.2.1 ./$(TARGETDIR)/$(TARGET)
 
 remake: clean all
 
