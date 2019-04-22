@@ -8,8 +8,6 @@
 #define DEFAULT_SCREEN_WIDTH    1280    
 #define DEFAULT_SCREEN_HEIGHT   720
 
-#define FPS_LIMIT   30
-
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
