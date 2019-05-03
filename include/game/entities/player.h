@@ -3,7 +3,7 @@
 
 #include "blackrock.h"
 
-#include "game/entity.h"
+#include "game/entities/entity.h"
 
 typedef enum PlayerState {
 

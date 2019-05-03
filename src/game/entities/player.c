@@ -1,11 +1,13 @@
-#include "blackrock.h"
+#include <stdlib.h>
 
-#include "game/game.h"
-#include "game/player.h"
+#include "blackrock.h"
 
 #include "cengine/input.h"
 #include "cengine/sprites.h"
 #include "cengine/animation.h"
+
+#include "game/game.h"
+#include "game/entities/player.h"
 
 #include "utils/myUtils.h"
 

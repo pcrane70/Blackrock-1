@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "game/entity.h"
+#include "game/entities/entity.h"
 
 char *entity_get_genre_name (Genre genre) {
 

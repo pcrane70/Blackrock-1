@@ -1,9 +1,9 @@
-#ifndef ENEMY_H
-#define ENEMY_H
+#ifndef _ENEMY_H_
+#define _ENEMY_H_
 
 #include "blackrock.h"
 
-#include "game/entity.h"
+#include "game/entities/entity.h"
 #include "game/world.h"
 
 #include "collections/llist.h"

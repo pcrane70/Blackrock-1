@@ -7,8 +7,8 @@
 #include "blackrock.h"
 
 #include "game/game.h"
-#include "game/entity.h"
-#include "game/enemy.h"
+#include "game/entities/entity.h"
+#include "game/entities/enemy.h"
 
 #include "cengine/animation.h"
 

@@ -16,7 +16,7 @@
 
 #include "game/game.h"
 
-#include "collections/llist.h"
+#include "collections/dlist.h"
 
 #ifdef DEV
     #include "utils/log.h"
@@ -65,7 +65,7 @@ void animation_set_speed (Animation *animation, u32 speed) {
 
 /*** ANIMATOR ***/
 
-LList *animators = NULL;
+DoubleList *animators = NULL;
 
 Animator *animator_new (u32 objectID) {
 
@@ -81,7 +81,7 @@ Animator *animator_new (u32 objectID) {
         new_animator->animations = NULL;
         new_animator->timer = timer_new ();
 
-        llist_insert_next (animators, llist_end (animators), new_animator);
+        dlist_insert_after (animators, dlist_end (animators), new_animator);
     }
     
     return new_animator;
@@ -101,7 +101,7 @@ void animator_destroy (Animator *animator) {
 
         timer_destroy (animator->timer);
 
-        void *data = llist_remove (animators, llist_get_list_node (animators, animator));
+        void *data = dlist_remove_element (animators, dlist_get_element (animators, animator));
         if (data) free (data);
         else free (animator);
     }
@@ -112,6 +112,18 @@ static void animator_destroy_ref (void *data) {
     
     if (data) animator_destroy ((Animator *) data);
     
+}
+
+static int animator_comparator (void *one, void *two) {
+
+    if (one && two) {
+        Animator *anim_one = (Animator *) one;
+        Animator *anim_two = (Animator *) two;
+
+        if (anim_one->goID < anim_two->goID) return -1;
+        else if (anim_one->goID == anim_two->goID) return 0;
+        else return 1;
+    }
 }
 
 void animator_set_default_animation (Animator *animator, Animation *animation) {
@@ -159,12 +171,12 @@ void *animations_update (void *data) {
     while (running) {
         frameStart = SDL_GetTicks ();
 
-        if (llist_size (animators) > 0) {
+        if (dlist_size (animators) > 0) {
              // update all animations
             Animator *animator = NULL;
             Graphics *graphics = NULL;
-            for (ListNode *node = dlist_start (animators); node != NULL; node = node->next) {
-                animator = (Animator *) node->data;
+            for (ListElement *le = dlist_start (animators); le != NULL; le = le->next) {
+                animator = (Animator *) le->data;
                 graphics = (Graphics *) game_object_get_component (game_object_get_by_id (animator->goID), GRAPHICS_COMP);
 
                 animator->currFrame = (int) (((animator->timer->ticks / animator->currAnimation->speed) %
@@ -189,10 +201,10 @@ void *animations_update (void *data) {
         if (sleepTime > 0) SDL_Delay (sleepTime);
 
         // update animators timers
-        if (llist_size (animators) > 0) {
+        if (dlist_size (animators) > 0) {
             Animator *animator = NULL;
-            for (ListNode *node = dlist_start (animators); node != NULL; node = node->next) {
-                animator = (Animator *) node->data;
+            for (ListElement *le = dlist_start (animators); le; le = le->next) {
+                animator = (Animator *) le->data;
                 animator->timer->ticks = SDL_GetTicks () - animator->timer->startTicks;
             }
         }
@@ -214,7 +226,7 @@ int animations_init (void) {
 
     int errors = 0;
 
-    animators = llist_init (animator_destroy_ref);
+    animators = dlist_init (animator_destroy_ref, animator_comparator);
     if (animators) {
         if (!pthread_create (&anim_thread, NULL, animations_update, NULL)) anim_init = true;
         else {
@@ -238,7 +250,7 @@ int animations_init (void) {
 
 void animations_end (void) {
 
-    llist_destroy (animators);
+    dlist_destroy (animators);
 
     if (anim_init) pthread_join (anim_thread, NULL);
 

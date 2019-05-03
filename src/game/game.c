@@ -14,8 +14,8 @@
 #include "game/camera.h"
 
 #include "game/world.h"
-#include "game/player.h"
-#include "game/enemy.h"
+#include "game/entities/player.h"
+#include "game/entities/enemy.h"
 #include "game/item.h"
 #include "game/map/map.h"
 
