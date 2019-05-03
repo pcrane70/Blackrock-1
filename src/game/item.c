@@ -9,8 +9,8 @@
 #include "game/game.h"
 #include "game/item.h"
 
-#include "engine/renderer.h"
-#include "engine/sprites.h"
+#include "cengine/renderer.h"
+#include "cengine/sprites.h"
 
 #include "utils/myUtils.h"
 #include "utils/log.h"

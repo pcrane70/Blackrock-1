@@ -14,17 +14,17 @@
 #include "game/item.h"
 #include "game/map/map.h"
 
-#include "engine/renderer.h"
-#include "engine/textures.h"
-#include "engine/animation.h"
-
-#include "utils/objectPool.h"
-
-#include "utils/myUtils.h"
-#include "collections/dlist.h"
+#include "cengine/renderer.h"
+#include "cengine/textures.h"
+#include "cengine/animation.h"
 
 #include "ui/gameUI.h"  // for the message log
 
+#include "utils/objectPool.h"
+
+#include "collections/dlist.h"
+
+#include "utils/myUtils.h"
 #include "utils/config.h"     // for getting the data
 
 #include "cerver/client.h"
@@ -266,11 +266,27 @@ GameObject *game_object_new (const char *name, const char *tag) {
 
 }
 
+// this is used to avoid go destruction when destroying go's children
+static void game_object_destroy_dummy (void *ptr) {}
+
+static void game_object_comparator (void *one, void *two) {
+
+    if (one && two) {
+        GameObject *go_one = (GameObject *) one;
+        GameObject *go_two = (GameObject *) two;
+
+        if (go_one->id < go_two->id) return -1;
+        else if (go_one->id == go_two->id) return 0;
+        else return 1;
+    }
+
+}
+
 void game_object_add_child (GameObject *parent, GameObject *child) {
 
     if (parent && child) {
-        if (!parent->children) parent->children = llist_init (NULL);
-        llist_insert_next (parent->children, llist_end (parent->children), child);
+        if (!parent->children) parent->children = dlist_init (game_object_destroy_dummy, game_object_comparator);
+        dlist_insert_after (parent->children, dlist_end (parent->children), child);
     }
 
 }
@@ -280,14 +296,11 @@ GameObject *game_object_remove_child (GameObject *parent, GameObject *child) {
     if (parent && child) {
         if (parent->children) { 
             GameObject *go = NULL;
-            ListNode *n = ldlist_start (parent->children);
-            while (n != NULL) { 
-                go = (GameObject *) n->data;
-                if (go->id == child->id) break;
-                n = n->next;
+            for (ListElement *le = dlist_start (parent->children); le; le = le->next) {
+                go = (GameObject *) le->data;
+                if (go->id == child->id) 
+                    return (GameObject *) dlist_remove_element (parent->children, le);
             }
-
-            if (n) return (GameObject *) llist_remove (parent->children, n);
         }
     }
 
@@ -295,11 +308,7 @@ GameObject *game_object_remove_child (GameObject *parent, GameObject *child) {
 
 }
 
-GameObject *game_object_get_by_id (u32 id) {
-
-    if (id <= curr_max_objs) return gameObjects[id];
-
-}
+GameObject *game_object_get_by_id (u32 id) { if (id <= curr_max_objs) return gameObjects[id]; }
 
 // mark as inactive or reusable the game object
 void game_object_destroy (GameObject *go) {
@@ -499,12 +508,12 @@ static u8 game_init (void) {
         // spawn items
 
         // init player(s)
-        llist_insert_next (world->players, ldlist_start (world->players), player_init ());
+        llist_insert_next (world->players, dlist_start (world->players), player_init ());
 
         // spawn players
         GameObject *go = NULL;
         Transform *transform = NULL;
-        for (ListNode *n = ldlist_start (world->players); n != NULL; n = n->next) {
+        for (ListNode *n = dlist_start (world->players); n != NULL; n = n->next) {
             go = (GameObject *) n->data;
             transform = (Transform *) game_object_get_component (go, TRANSFORM_COMP);
             Coord spawnPoint = map_get_free_spot (world->game_map);
@@ -514,7 +523,7 @@ static u8 game_init (void) {
         }
 
         // update camera
-        GameObject *main_player = (GameObject *) (ldlist_start (world->players)->data );
+        GameObject *main_player = (GameObject *) (dlist_start (world->players)->data );
         transform = (Transform *) game_object_get_component (main_player, TRANSFORM_COMP);
         world->game_camera->center = transform->position;
 

@@ -10,10 +10,10 @@
 
 #include "game/game.h"
 
-#include "engine/mythread.h"
-#include "engine/timer.h"
-#include "engine/sprites.h"
-#include "engine/animation.h"
+#include "cengine/thread.h"
+#include "cengine/timer.h"
+#include "cengine/sprites.h"
+#include "cengine/animation.h"
 
 #include "collections/llist.h"
 
@@ -162,7 +162,7 @@ void *animations_update (void *data) {
              // update all animations
             Animator *animator = NULL;
             Graphics *graphics = NULL;
-            for (ListNode *node = ldlist_start (animators); node != NULL; node = node->next) {
+            for (ListNode *node = dlist_start (animators); node != NULL; node = node->next) {
                 animator = (Animator *) node->data;
                 graphics = (Graphics *) game_object_get_component (game_object_get_by_id (animator->goID), GRAPHICS_COMP);
 
@@ -190,7 +190,7 @@ void *animations_update (void *data) {
         // update animators timers
         if (llist_size (animators) > 0) {
             Animator *animator = NULL;
-            for (ListNode *node = ldlist_start (animators); node != NULL; node = node->next) {
+            for (ListNode *node = dlist_start (animators); node != NULL; node = node->next) {
                 animator = (Animator *) node->data;
                 animator->timer->ticks = SDL_GetTicks () - animator->timer->startTicks;
             }

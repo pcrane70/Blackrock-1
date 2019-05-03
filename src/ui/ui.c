@@ -7,10 +7,10 @@
 #include "blackrock.h"
 #include "ui/ui.h"
 
-#include "engine/renderer.h"
-#include "engine/sprites.h"
-#include "engine/textures.h"
-#include "engine/input.h"
+#include "cengine/renderer.h"
+#include "cengine/sprites.h"
+#include "cengine/textures.h"
+#include "cengine/input.h"
 
 #include "utils/log.h"
 #include "utils/myUtils.h"

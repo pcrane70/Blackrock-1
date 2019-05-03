@@ -5,8 +5,8 @@
 
 #include "game/camera.h"
 
-#include "engine/renderer.h"
-#include "engine/sprites.h"
+#include "cengine/renderer.h"
+#include "cengine/sprites.h"
 
 #include "utils/log.h"
 #include "utils/myUtils.h"

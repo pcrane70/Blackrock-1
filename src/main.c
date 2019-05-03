@@ -9,10 +9,10 @@
 
 #include "game/game.h"
 
-#include "engine/input.h"
-#include "engine/renderer.h"
-#include "engine/animation.h"
-#include "engine/mythread.h"
+#include "cengine/input.h"
+#include "cengine/renderer.h"
+#include "cengine/animation.h"
+#include "cengine/thread.h"
 
 #include "utils/log.h"
 #include "utils/myUtils.h"

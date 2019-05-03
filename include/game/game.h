@@ -1,13 +1,12 @@
-#ifndef GAME_H_
-#define GAME_H_
+#ifndef _GAME_H_
+#define _GAME_H_
 
 #include "blackrock.h"
 
 #include "vector2d.h"
 
-#include "engine/sprites.h"
+#include "cengine/sprites.h"
 
-#include "collections/llist.h"
 #include "collections/dlist.h"
 #include "utils/objectPool.h"
 
@@ -84,7 +83,7 @@ typedef struct GameObject {
     char *tag;
     void *components[COMP_COUNT];
 
-    LList *children;
+    DoubleList *children;
     void (*update)(void *data);
 
 } GameObject;

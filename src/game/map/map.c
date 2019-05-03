@@ -492,7 +492,7 @@ static CaveRoom *cave_room_create (LList *roomTiles, u32 **map) {
         room->edgeTiles = llist_init (free);
 
         Coord *tile = NULL;
-        for (ListNode *n = ldlist_start (room->tiles); n != NULL; n = n->next) {
+        for (ListNode *n = dlist_start (room->tiles); n != NULL; n = n->next) {
             tile = llist_data (n);
             for (u8 x = tile->x - 1; x <= tile->x + 1; x++) {
                 for (u8 y = tile->y - 1; y <= tile->y + 1; y++) {

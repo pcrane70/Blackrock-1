@@ -10,7 +10,7 @@
 #include "game/entity.h"
 #include "game/enemy.h"
 
-#include "engine/animation.h"
+#include "cengine/animation.h"
 
 #include "collections/llist.h"
 #include "utils/log.h"
@@ -182,7 +182,7 @@ void enemies_disconnect_db (void) {
 EnemyData *enemy_data_get_by_id (u32 id) {
 
     EnemyData *edata = NULL;
-    for (ListNode *n = ldlist_start (enemyData); n != NULL; n = n->next) {
+    for (ListNode *n = dlist_start (enemyData); n != NULL; n = n->next) {
         edata = (EnemyData *) n->data;
         if (edata->dbId == id) return edata;
     }

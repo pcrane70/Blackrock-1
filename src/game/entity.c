@@ -64,7 +64,10 @@ char *entity_get_class_name (CharClass charClass) {
 LivingEntity *entity_new (void) {
 
     LivingEntity *entity = (LivingEntity *) malloc (sizeof (LivingEntity));
-    if (entity) entity->name = NULL;
+    if (entity) {
+        memset (entity, 0, sizeof (entity));
+        entity->name = NULL;
+    } 
 
     return entity;
 

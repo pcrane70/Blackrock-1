@@ -4,8 +4,8 @@
 
 #include "blackrock.h"
 
-#include "engine/sprites.h"
-#include "engine/textures.h"
+#include "cengine/sprites.h"
+#include "cengine/textures.h"
 
 /*** SPRITES ***/
 

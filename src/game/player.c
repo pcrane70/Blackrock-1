@@ -3,9 +3,9 @@
 #include "game/game.h"
 #include "game/player.h"
 
-#include "engine/input.h"
-#include "engine/sprites.h"
-#include "engine/animation.h"
+#include "cengine/input.h"
+#include "cengine/sprites.h"
+#include "cengine/animation.h"
 
 #include "utils/myUtils.h"
 
