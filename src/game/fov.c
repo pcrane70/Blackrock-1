@@ -89,7 +89,7 @@
 
 //     DoubleList *gos = getObjectsAtPos (x, y);
 //     if (gos != NULL) {
-//         for (ListElement *e = LIST_START (gos); e != NULL; e = e->next) {
+//         for (ListElement *e = dlist_start (gos); e != NULL; e = e->next) {
 //             if (((Physics *) getComponent ((GameObject *) LIST_DATA (e), PHYSICS))->blocksSight) {
 //                 free (gos);
 //                 return true;

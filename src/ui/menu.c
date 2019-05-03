@@ -45,7 +45,7 @@
 
 //         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
 //         launchView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, BLACK, true, renderLaunch);
-//         dlist_insert_after (menuScreen->views, LIST_START (menuScreen->views), launchView);
+//         dlist_insert_after (menuScreen->views, dlist_start (menuScreen->views), launchView);
 
 //         // menuScreen->activeView = launchView;
 //         activeMenuView = LAUNCH_VIEW;
@@ -124,7 +124,7 @@
 
 //         UIRect bgRect = { 0, 0, (16 * BG_WIDTH), (16 * BG_HEIGHT) };
 //         loginView = ui_newView (bgRect, BG_WIDTH, BG_HEIGHT, tileset, 0, 0x4B6584FF, true, renderLogin);
-//         dlist_insert_after (menuScreen->views, LIST_START (menuScreen->views), loginView);
+//         dlist_insert_after (menuScreen->views, dlist_start (menuScreen->views), loginView);
 
 //         activeMenuView = LOGIN_VIEW;
 
@@ -192,7 +192,7 @@
 
 //     UIRect menu = { (16 * FULL_SCREEN_LEFT), (16 * FULL_SCREEN_TOP), (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
 //     UIView *mainMenu = ui_newView (menu, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, MAIN_MENU_COLOR, true, renderMainMenu);
-//     dlist_insert_after (menuScreen->views, LIST_END (menuScreen->views), mainMenu);
+//     dlist_insert_after (menuScreen->views, dlist_end (menuScreen->views), mainMenu);
 
 //     // FIXME:
 //     // menuScreen->activeView = MAIN_MENU_VIEW; 
@@ -238,7 +238,7 @@
 //     if (multiMenu == NULL) {
 //         UIRect menu = { (16 * MULTI_MENU_LEFT), (16 * MULTI_MENU_TOP), (16 * MULTI_MENU_WIDTH), (16 * MULTI_MENU_HEIGHT) };
 //         multiMenu = ui_newView (menu, MULTI_MENU_WIDTH, MULTI_MENU_HEIGHT, tileset, 0, MULTI_MENU_COLOR, true, renderMultiplayerMenu);
-//         dlist_insert_after (menuScreen->views, LIST_END (menuScreen->views), multiMenu);
+//         dlist_insert_after (menuScreen->views, dlist_end (menuScreen->views), multiMenu);
 
 //         // menuScreen->activeView = MULTI_MENU_VIEW;
 //         activeMenuView = MULTI_MENU_VIEW;
@@ -405,7 +405,7 @@
 //     if (!lobbyMenu) {
 //         UIRect lobby_menu = { 0, 0, (16 * LOBBY_MENU_WIDTH), (16 * LOBBY_MENU_HEIGHT) };
 //         lobbyMenu = ui_newView (lobby_menu, LOBBY_MENU_WIDTH, LOBBY_MENU_HEIGHT, tileset, 0, LOBBY_MENU_COLOR, true, renderLobbyMenu);
-//         dlist_insert_after (menuScreen->views, LIST_END (menuScreen->views), lobbyMenu);
+//         dlist_insert_after (menuScreen->views, dlist_end (menuScreen->views), lobbyMenu);
 
 //         // menuScreen->activeView = MULTI_MENU_VIEW;
 //         activeMenuView = LOBBY_MENU_VIEW;
@@ -457,7 +457,7 @@
 
 //         UIRect charMenu = { (16 * CHAR_CREATION_LEFT), (16 * CHAR_CREATION_TOP), (16 * CHAR_CREATION_WIDTH), (16 * CHAR_CREATION_HEIGHT) };
 //         characterMenu = ui_newView (charMenu, CHAR_CREATION_WIDTH, CHAR_CREATION_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacterMenu);
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), characterMenu);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), characterMenu);
 
 //         menuScreen->activeView = characterMenu;
 //     }

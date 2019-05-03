@@ -261,7 +261,7 @@ static void dungeon_get_segments (DoubleList *segments, Coord from, Coord to, Ro
 static void dungeon_carve_segments (DoubleList *hallways, u8 **mapCells) {
 
     Segment *seg = NULL;
-    ListElement *ptr = LIST_START (hallways);
+    ListElement *ptr = dlist_start (hallways);
     while (ptr != NULL) {
         seg = (Segment *) ptr->data;
 
@@ -341,7 +341,7 @@ static void dungeon_create (Dungeon *dungeon) {
 
         // traverse the segment's list and skip adding any segments
         // that join rooms that are already joined
-        for (ListElement *e = LIST_START (segments); e != NULL; e = e->next) {
+        for (ListElement *e = dlist_start (segments); e != NULL; e = e->next) {
             i32 rm1 = ((Segment *) (e->data))->roomFrom;
             i32 rm2 = ((Segment *) (e->data))->roomTo;
 
@@ -349,7 +349,7 @@ static void dungeon_create (Dungeon *dungeon) {
             if (hallways->size == 0) uSeg = (Segment *) e->data;
             else {
                 bool unique = true;
-                for (ListElement *h = LIST_START (hallways); h != NULL; h = h->next) {
+                for (ListElement *h = dlist_start (hallways); h != NULL; h = h->next) {
                     Segment *seg = (Segment *) (h->data);
                     if (((seg->roomFrom == rm1) && (seg->roomTo == rm2)) ||
                     ((seg->roomTo == rm1) && (seg->roomFrom == rm2))) {
@@ -492,7 +492,7 @@ static CaveRoom *cave_room_create (LList *roomTiles, u32 **map) {
         room->edgeTiles = llist_init (free);
 
         Coord *tile = NULL;
-        for (ListNode *n = llist_start (room->tiles); n != NULL; n = n->next) {
+        for (ListNode *n = ldlist_start (room->tiles); n != NULL; n = n->next) {
             tile = llist_data (n);
             for (u8 x = tile->x - 1; x <= tile->x + 1; x++) {
                 for (u8 y = tile->y - 1; y <= tile->y + 1; y++) {

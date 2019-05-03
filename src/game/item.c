@@ -511,10 +511,10 @@ GameObject *item_create (u32 dbID) {
 // DoubleList *getItemsAtPos (u8 x, u8 y) {
 
 //     Position *pos = NULL;
-//     if (items == NULL || (LIST_SIZE (items) == 0)) return NULL;
+//     if (items == NULL || (dlist_size (items) == 0)) return NULL;
 
 //     DoubleList *retVal = dlist_init (free);
-//     for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+//     for (ListElement *e = dlist_start (items); e != NULL; e = e->next) {
 //         pos = (Position *) getGameComponent ((Item *) e->data, POSITION);
 //         // inventory items do NOT have a pos comp
 //         if (pos != NULL) {
@@ -685,7 +685,7 @@ GameObject *item_create (u32 dbID) {
 //     // get a list of items nearby the player
 //     DoubleList *objects = getItemsAtPos (main_player->pos->x, main_player->pos->y);
 
-//     if (objects == NULL || (LIST_SIZE (objects) <= 0)) {
+//     if (objects == NULL || (dlist_size (objects) <= 0)) {
 //         if (objects != NULL) free (objects);
 //         logMessage ("There are no items here!", WARNING_COLOR);
         
@@ -693,7 +693,7 @@ GameObject *item_create (u32 dbID) {
 
 //     // we only pick one item each time
 //     else {
-//         pickUp ((Item *) dlist_remove_element (objects, (LIST_START (objects))));
+//         pickUp ((Item *) dlist_remove_element (objects, (dlist_start (objects))));
 //         if (objects) dlist_clean (objects);
 //     } 
 
@@ -705,10 +705,10 @@ GameObject *item_create (u32 dbID) {
 
 //     if (currentLoot != NULL) {
 //         // we only pick one item each time
-//         if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0)) {
+//         if ((currentLoot->lootItems != NULL) && (dlist_size (currentLoot->lootItems) > 0)) {
 //             Item *item = NULL;
 //             u8 count = 0;
-//             for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
+//             for (ListElement *e = dlist_start (currentLoot->lootItems); e != NULL; e = e->next) {
 //                 if (count == lootYIdx) {
 //                     item = (Item *) dlist_remove_element (currentLoot->lootItems, e);
 //                     break;

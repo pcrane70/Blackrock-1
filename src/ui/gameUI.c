@@ -50,7 +50,7 @@
 //     u32 fullColor;
 //     u32 fadedColor;
 //     for (u8 layer = GROUND_LAYER; layer <= TOP_LAYER; layer++) {
-//         for (ListElement *ptr = LIST_START (gameObjects); ptr != NULL; ptr = ptr->next) {
+//         for (ListElement *ptr = dlist_start (gameObjects); ptr != NULL; ptr = ptr->next) {
 //             go = (GameObject *) ptr->data;
 //             p = (Position *) getComponent (go, POSITION);
 //             if (p != NULL && p->layer == layer) {
@@ -88,7 +88,7 @@
 //     Item *item = NULL;
 //     Position *itemPos = NULL;
 //     Graphics *itemGra = NULL;
-//     for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+//     for (ListElement *e = dlist_start (items); e != NULL; e = e->next) {
 //         item = (Item *) e->data;
 //         itemPos = getGameComponent (item, POSITION);
 //         if (itemPos != NULL) {
@@ -173,10 +173,10 @@
 //     m->fgColor = color;
 
 //     // add message to the log
-//     dlist_insert_after (messageLog, LIST_END (messageLog), m);
+//     dlist_insert_after (messageLog, dlist_end (messageLog), m);
 
 //     // remove the oldest message
-//     if (LIST_SIZE (messageLog) > 15)
+//     if (dlist_size (messageLog) > 15)
 //         deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
 
 // }
@@ -190,8 +190,8 @@
 //     if (messageLog == NULL) return; // we don't have any messages to display
 
 //     // get the last 5 messages from the log
-//     ListElement *e = LIST_END (messageLog);
-//     i32 msgCount = LIST_SIZE (messageLog);
+//     ListElement *e = dlist_end (messageLog);
+//     i32 msgCount = dlist_size (messageLog);
 //     u32 row = 4;
 //     u32 col = 1;
 
@@ -212,7 +212,7 @@
 
 // void cleanMessageLog (void) {
 
-//     while (LIST_SIZE (messageLog) > 0) 
+//     while (dlist_size (messageLog) > 0) 
 //         deleteMessage ((Message *) dlist_remove_element (messageLog, NULL));
 
 //     free (messageLog);
@@ -292,8 +292,8 @@
 //     LootRect *lr = NULL;
 
 //     if (activeLootRects != NULL) {
-//         if (LIST_SIZE (activeLootRects) > 0) {
-//             for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//         if (dlist_size (activeLootRects) > 0) {
+//             for (ListElement *e = dlist_start (activeLootRects); e != NULL; e = e->next) {
 //                 lr = (LootRect *) e->data;
 //                 if (lr->bgRect != NULL) free (lr->bgRect);
 //                 if (lr->imgRect != NULL) free (lr->imgRect);
@@ -336,8 +336,8 @@
 // void updateLootUI (u8 yIdx) {
 
 //     u8 count = 0;
-//     if (activeLootRects != NULL && (LIST_SIZE (activeLootRects) > 0)) {
-//         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//     if (activeLootRects != NULL && (dlist_size (activeLootRects) > 0)) {
+//         for (ListElement *e = dlist_start (activeLootRects); e != NULL; e = e->next) {
 //             if (count == yIdx) {
 //                 pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
 //                 break;
@@ -347,14 +347,14 @@
 //         }
 //     }
 
-//     if (lootYIdx >= LIST_SIZE (activeLootRects)) lootYIdx -= 1;
+//     if (lootYIdx >= dlist_size (activeLootRects)) lootYIdx -= 1;
 
 // }
 
 // void renderLootRects (Console *console) {
 
 //     u8 count = 0;
-//     for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//     for (ListElement *e = dlist_start (activeLootRects); e != NULL; e = e->next) {
 //         if (count == lootYIdx) drawLootRect (console, (LootRect *) e->data, BLACK);
 //         else drawLootRect (console, (LootRect *) e->data, WHITE);
         
@@ -371,7 +371,7 @@
 
 //         putStringAt (console, "Loot", 12, 2, LOOT_TEXT, 0x00000000);
 
-//         if ((currentLoot->lootItems != NULL) && (LIST_SIZE (currentLoot->lootItems) > 0))
+//         if ((currentLoot->lootItems != NULL) && (dlist_size (currentLoot->lootItems) > 0))
 //             renderLootRects (console);   
 
 //         // gold
@@ -389,8 +389,8 @@
 //     lootView = NULL;
 
 //     // deactivate the loot rects and send them to the pool
-//     if (activeLootRects != NULL && LIST_SIZE (activeLootRects) > 0) {
-//         for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) 
+//     if (activeLootRects != NULL && dlist_size (activeLootRects) > 0) {
+//         for (ListElement *e = dlist_start (activeLootRects); e != NULL; e = e->next) 
 //             pool_push (lootRectsPool, dlist_remove_element (activeLootRects, e));
 
 //         dlist_reset (activeLootRects);
@@ -419,16 +419,16 @@
 //         lootView = ui_newView (lootRect, LOOT_WIDTH, LOOT_HEIGHT, tileset, 0, 0x000000FF, true, renderLoot);
 //     }
 
-//     dlist_insert_after (activeScene->views, LIST_END (activeScene->views), lootView);
+//     dlist_insert_after (activeScene->views, dlist_end (activeScene->views), lootView);
 
 //     lootYIdx = 0;
 
-//     if (currentLoot->lootItems != NULL && LIST_SIZE (currentLoot->lootItems) > 0) {
+//     if (currentLoot->lootItems != NULL && dlist_size (currentLoot->lootItems) > 0) {
 //         LootRect *lr = NULL;
 //         u8 y = 0;
-//         for (ListElement *e = LIST_START (currentLoot->lootItems); e != NULL; e = e->next) {
+//         for (ListElement *e = dlist_start (currentLoot->lootItems); e != NULL; e = e->next) {
 //             lr = createLootRect (y, (Item *) e->data);
-//             dlist_insert_after (activeLootRects, LIST_END (activeLootRects), lr);
+//             dlist_insert_after (activeLootRects, dlist_end (activeLootRects), lr);
 //             y++;
 //         }
 //     }
@@ -459,7 +459,7 @@
 
 //         hideLoot ();
 
-//         activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//         activeView = (UIView *) (dlist_end (activeScene->views))->data;
 //     } 
 
 // }
@@ -469,7 +469,7 @@
 //     Item *retVal = NULL;
 
 //     u8 count = 0;
-//     for (ListElement *e = LIST_START (activeLootRects); e != NULL; e = e->next) {
+//     for (ListElement *e = dlist_start (activeLootRects); e != NULL; e = e->next) {
 //         if (count == lootYIdx) {
 //             LootRect *lr = (LootRect *) e->data;
 //             if (lr->item != NULL) {
@@ -676,7 +676,7 @@
 //         inventoryView = ui_newView (inv, INVENTORY_WIDTH, INVENTORY_HEIGHT, tileset, 0, NO_COLOR, true, renderInventory);
 //     }
 
-//     dlist_insert_after (activeScene->views, LIST_END (activeScene->views), inventoryView);
+//     dlist_insert_after (activeScene->views, dlist_end (activeScene->views), inventoryView);
 
 //     if (inventoryRects == NULL) {
 //         inventoryRects = initInventoryRects ();
@@ -735,7 +735,7 @@
 
 //         hideInventory ();
 
-//         activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//         activeView = (UIView *) (dlist_end (activeScene->views))->data;
 //     }
     
 // }
@@ -971,7 +971,7 @@
 //         characterView = ui_newView (c, CHARACTER_WIDTH, CHARACTER_HEIGHT, tileset, 0, NO_COLOR, true, renderCharacter);
 //     }
 
-//     dlist_insert_after (activeScene->views, LIST_END (activeScene->views), characterView);
+//     dlist_insert_after (activeScene->views, dlist_end (activeScene->views), characterView);
 
 //     if (characterRects == NULL) {
 //         characterRects = initCharacterRects ();
@@ -1027,7 +1027,7 @@
 
 //         hideCharacter ();
 
-//         activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//         activeView = (UIView *) (dlist_end (activeScene->views))->data;
 //     } 
      
 // }
@@ -1441,7 +1441,7 @@
 //         // render the item stats
 //         UIRect lootRect = { (16 * TOOLTIP_LEFT), (16 * TOOLTIP_TOP), (16 * TOOLTIP_WIDTH), (16 * TOOLTIP_HEIGHT) };
 //         tooltipView = ui_newView (lootRect, TOOLTIP_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), tooltipView);
 
 //         if (lootView != NULL) updateLootPos (true);
 
@@ -1472,7 +1472,7 @@
 //         // FIXME: we are displaying the same window size as in the loot menu
 //         UIRect lootRect = { (16 * TTIP_INV_LEFT), (16 * TOOLTIP_TOP), (16 * TTIP_INV_WIDTH), (16 * TOOLTIP_HEIGHT) };
 //         tooltipView = ui_newView (lootRect, TTIP_INV_WIDTH, TOOLTIP_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), tooltipView);
 
 //         if (inventoryView) updateInventoryPos (true);
 //     }
@@ -1497,7 +1497,7 @@
 //             tooltipView = ui_newView (lootRect, TTIP_CHAR_WIDTH, TTIP_CHAR_HEIGHT, tileset, 0, NO_COLOR, true, renderTooltip);
 //         }
         
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), tooltipView);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), tooltipView);
 //     }  
 
 // }
@@ -1540,7 +1540,7 @@
 //         if (characterView) updateCharacterPos (false);
 //         if (inventoryView) updateInventoryPos (false);
 
-//         activeView = (UIView *) LIST_END (activeScene->views)->data;
+//         activeView = (UIView *) dlist_end (activeScene->views)->data;
 //     }
 
 // }
@@ -1570,7 +1570,7 @@
 //     if (pauseMenu == NULL) {
 //         UIRect pause = { (16 * PAUSE_LEFT), (16 * PAUSE_TOP), (16 * PAUSE_WIDTH), (16 * PAUSE_HEIGHT) };
 //         pauseMenu = ui_newView (pause, PAUSE_WIDTH, PAUSE_HEIGHT, tileset, 0, 0x000000FF, true, renderPauseMenu);
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), pauseMenu);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), pauseMenu);
 
 //         activeView = pauseMenu;
 //     }
@@ -1581,7 +1581,7 @@
 //             ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, pause));
 //             pauseMenu = NULL;
 
-//             activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//             activeView = (UIView *) (dlist_end (activeScene->views))->data;
 //         }
 //     }
 
@@ -1684,8 +1684,8 @@
 //         fprintf (stdout, "Cleaning in game views...\n");
 
 //         // FIXME:
-//         // while (LIST_SIZE (inGameScreen->views) > 0)
-//         //     destroyView ((UIView *) removeElement (inGameScreen->views, LIST_END (inGameScreen->views)));
+//         // while (dlist_size (inGameScreen->views) > 0)
+//         //     destroyView ((UIView *) removeElement (inGameScreen->views, dlist_end (inGameScreen->views)));
         
 //         free (inGameScreen->views);
 //         free (inGameScreen);
@@ -1721,7 +1721,7 @@
 //         ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, death));
 //         deathScreen = NULL;
 
-//         postGameScene->activeView = (UIView *) (LIST_END (postGameScene->views))->data;
+//         postGameScene->activeView = (UIView *) (dlist_end (postGameScene->views))->data;
 //     }
 
 // }
@@ -1746,7 +1746,7 @@
 //     if (scoreScreen == NULL) {
 //         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
 //         scoreScreen = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderScoreScreen);
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), scoreScreen);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), scoreScreen);
 
 //         if (!scoreImg) scoreImg = loadImageFromFile (scoreImgPath);
 
@@ -1764,7 +1764,7 @@
 //             ui_destroyView ((UIView *) dlist_remove_element (activeScene->views, death));
 //             scoreScreen = NULL;
 
-//             // activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//             // activeView = (UIView *) (dlist_end (activeScene->views))->data;
 //         }
 //     }
 
@@ -1815,9 +1815,9 @@
 //     // the list is sorted from the smallest to the biggest
 //     // only display the top 10 scores
 //     u8 i = 0;
-//     ListElement *e = LIST_END (lbData);
+//     ListElement *e = dlist_end (lbData);
 //     while (i < 10 && e != NULL) {
-//         dlist_insert_after (rects, LIST_END (rects), createLBRect (yIdx, (LBEntry *) e->data));
+//         dlist_insert_after (rects, dlist_end (rects), createLBRect (yIdx, (LBEntry *) e->data));
 
 //         yIdx += 3;
 //         i++;
@@ -1834,7 +1834,7 @@
 //         LBRect *rect = NULL;
 //         u8 count = 1;
 //         u8 yIdx = 11;
-//         for (ListElement *e = LIST_START (lbRects); e != NULL; e = e->next) {
+//         for (ListElement *e = dlist_start (lbRects); e != NULL; e = e->next) {
 //             rect = (LBRect *) e->data;
 
 //             if (count % 2 == 0) ui_drawRect (console, rect->bgRect, EVEN_ROW_COLOR, 0, NO_COLOR);
@@ -1862,7 +1862,7 @@
 //         localLBData = getLocalLBData ();
 //         if (localLBData != NULL) {
 //             lbRects = createLBUI (localLBData);
-//             fprintf (stdout, "Lb rects: %li!\n", LIST_SIZE (lbRects));
+//             fprintf (stdout, "Lb rects: %li!\n", dlist_size (lbRects));
 //         } 
 //         // FIXME: DISPLAY AN ERROR else 
 //     } 
@@ -1908,7 +1908,7 @@
 //     if (leaderBoardView == NULL) {
 //         UIRect bgRect = { 0, 0, (16 * FULL_SCREEN_WIDTH), (16 * FULL_SCREEN_HEIGHT) };
 //         leaderBoardView = ui_newView (bgRect, FULL_SCREEN_WIDTH, FULL_SCREEN_HEIGHT, tileset, 0, BLACK, true, renderLeaderboard);
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), leaderBoardView);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), leaderBoardView);
 //         postGameScene->activeView = leaderBoardView;
 
 //         // render local leaderboard by default
@@ -1923,7 +1923,7 @@
 //             leaderBoardView = NULL;
 
 //             // FIXME: do we need this?
-//             // activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//             // activeView = (UIView *) (dlist_end (activeScene->views))->data;
 //         }
 //     }
 
@@ -1933,8 +1933,8 @@
 
 //     if (lbRects != NULL) {
 //         LBRect *rect = NULL;
-//         while (LIST_SIZE (lbRects) > 0) {
-//             rect = (LBRect *) dlist_remove_element (lbRects, LIST_END (lbRects));
+//         while (dlist_size (lbRects) > 0) {
+//             rect = (LBRect *) dlist_remove_element (lbRects, dlist_end (lbRects));
 //             if (rect != NULL) {
 //                 free (rect->bgRect);
 //                 rect->entry = NULL;
@@ -1965,8 +1965,8 @@
 //         destroyLBUI ();
 
 //         // FIXME:
-//         while (LIST_SIZE (postGameScene->views) > 0) 
-//             ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, LIST_END (postGameScene->views)));
+//         while (dlist_size (postGameScene->views) > 0) 
+//             ui_destroyView ((UIView *) dlist_remove_element (postGameScene->views, dlist_end (postGameScene->views)));
         
 //         free (postGameScene->views);
 //         free (postGameScene);

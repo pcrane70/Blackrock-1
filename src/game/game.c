@@ -280,7 +280,7 @@ GameObject *game_object_remove_child (GameObject *parent, GameObject *child) {
     if (parent && child) {
         if (parent->children) { 
             GameObject *go = NULL;
-            ListNode *n = llist_start (parent->children);
+            ListNode *n = ldlist_start (parent->children);
             while (n != NULL) { 
                 go = (GameObject *) n->data;
                 if (go->id == child->id) break;
@@ -499,12 +499,12 @@ static u8 game_init (void) {
         // spawn items
 
         // init player(s)
-        llist_insert_next (world->players, llist_start (world->players), player_init ());
+        llist_insert_next (world->players, ldlist_start (world->players), player_init ());
 
         // spawn players
         GameObject *go = NULL;
         Transform *transform = NULL;
-        for (ListNode *n = llist_start (world->players); n != NULL; n = n->next) {
+        for (ListNode *n = ldlist_start (world->players); n != NULL; n = n->next) {
             go = (GameObject *) n->data;
             transform = (Transform *) game_object_get_component (go, TRANSFORM_COMP);
             Coord spawnPoint = map_get_free_spot (world->game_map);
@@ -514,7 +514,7 @@ static u8 game_init (void) {
         }
 
         // update camera
-        GameObject *main_player = (GameObject *) (llist_start (world->players)->data );
+        GameObject *main_player = (GameObject *) (ldlist_start (world->players)->data );
         transform = (Transform *) game_object_get_component (main_player, TRANSFORM_COMP);
         world->game_camera->center = transform->position;
 
@@ -708,7 +708,7 @@ DoubleList *getObjectsAtPos (u32 x, u32 y) {
 
     /* Position *pos = NULL;
     DoubleList *retVal = dlist_init (free);
-    for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+    for (ListElement *e = dlist_start (gameObjects); e != NULL; e = e->next) {
         pos = (Position *) getComponent ((GameObject *) e->data, POSITION);
         if (pos != NULL)
             if (pos->x == x && pos->y == y) dlist_insert_after (retVal, NULL, e->data);
@@ -738,7 +738,7 @@ bool canMove (Position pos, bool isPlayer) {
         // check for any other entity, like monsters
         GameObject *go = NULL;
         Position *p = NULL;
-        for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+        for (ListElement *e = dlist_start (gameObjects); e != NULL; e = e->next) {
             go = (GameObject *) e->data;
             p = (Position *) getComponent (go, POSITION);
             if (p->x == pos.x && p->y == pos.y) {
@@ -839,7 +839,7 @@ void cleanTargetMap (void) {
 // 13/08/2018 -- 22:27 -- I don't like neither of these!
 Position *getPos (i32 id) {
 
-    // for (ListElement *e = LIST_START (positions); e != NULL; e = e->next) {
+    // for (ListElement *e = dlist_start (positions); e != NULL; e = e->next) {
     //     Position *pos = (Position *) LIST_DATA (e);
     //     if (pos->objectId == id) return pos;
     // }
@@ -858,7 +858,7 @@ Position *getPos (i32 id) {
 
 void updateMovement (void) {
 
-    /* for (ListElement *e = LIST_START (movement); e != NULL; e = e->next) {
+    /* for (ListElement *e = dlist_start (movement); e != NULL; e = e->next) {
         Movement *mv = (Movement *) LIST_DATA (e);
 
         // determine if we are going to move this tick
@@ -1024,7 +1024,7 @@ DoubleList *generateLootItems (u32 *dropItems, u32 count) {
     //             default: break;
     //         }
 
-    //         if (item) dlist_insert_after (lootItems, LIST_END (lootItems), item);
+    //         if (item) dlist_insert_after (lootItems, dlist_end (lootItems), item);
     //     }
 
     //     return lootItems;
@@ -1068,7 +1068,7 @@ bool emptyLoot (Loot *loot) {
     bool noItems, noMoney;
 
     if (loot->lootItems != NULL) {
-      if (LIST_SIZE (loot->lootItems) <= 0) noItems = true;  
+      if (dlist_size (loot->lootItems) <= 0) noItems = true;  
     } 
     else noItems = true;
 
@@ -1154,13 +1154,13 @@ void destroyLoot (void) {
 
     // clean up active loot objects
     /* if (loot != NULL) {
-        if (LIST_SIZE (loot) > 0) {
+        if (dlist_size (loot) > 0) {
             Loot *lr = NULL;
-            for (ListElement *e = LIST_START (loot); e != NULL; e = e->next) {
+            for (ListElement *e = dlist_start (loot); e != NULL; e = e->next) {
                 lr = (Loot *) e->data;
                 if (lr->lootItems != NULL) {
-                    if (LIST_SIZE (lr->lootItems) > 0) {
-                        for (ListElement *le = LIST_START (lr->lootItems); le != NULL; le = le->next) 
+                    if (dlist_size (lr->lootItems) > 0) {
+                        for (ListElement *le = dlist_start (lr->lootItems); le != NULL; le = le->next) 
                             dlist_remove_element (lr->lootItems, le);
                         
                     }
@@ -1180,8 +1180,8 @@ void destroyLoot (void) {
             for (PoolMember *p = POOL_TOP (lootPool); p != NULL; p = p->next) {
                 lr = (Loot *) p->data;
                 if (lr->lootItems != NULL) {
-                    if (LIST_SIZE (lr->lootItems) > 0) {
-                        for (ListElement *le = LIST_START (lr->lootItems); le != NULL; le = le->next) 
+                    if (dlist_size (lr->lootItems) > 0) {
+                        for (ListElement *le = dlist_start (lr->lootItems); le != NULL; le = le->next) 
                             dlist_remove_element (lr->lootItems, le);
                     }
 
@@ -1471,9 +1471,9 @@ void clearOldLevel (void) {
     void *data = NULL;
 
     if (gameObjects != NULL) {
-        if (LIST_SIZE (gameObjects) > 0) {
+        if (dlist_size (gameObjects) > 0) {
             // send all of our objects and components to ther pools
-            for (ListElement *e = LIST_START (gameObjects); e != NULL; e = e->next) {
+            for (ListElement *e = dlist_start (gameObjects); e != NULL; e = e->next) {
                 data = dlist_remove_element (gameObjects, e);
                 if (data != NULL) destroyGO ((GameObject *) data);
             }
@@ -1482,9 +1482,9 @@ void clearOldLevel (void) {
     }
 
     if (items != NULL) {
-        if (LIST_SIZE (items) > 0) {
+        if (dlist_size (items) > 0) {
             // send the items to their pool
-            for (ListElement *e = LIST_START (items); e != NULL; e = e->next) {
+            for (ListElement *e = dlist_start (items); e != NULL; e = e->next) {
                 data = dlist_remove_element (items, e);
                 if (data != NULL) destroyItem ((Item *) data);
             }
@@ -2044,7 +2044,7 @@ DoubleList *getLBData (Config *config) {
     char *class = NULL;
     u8 c;
 
-    for (ListElement *e = LIST_START (localLBConfig->entities); e != NULL; e = e->next) {
+    for (ListElement *e = dlist_start (localLBConfig->entities); e != NULL; e = e->next) {
         entity = (ConfigEntity *) e->data;
         LBEntry *lbEntry = (LBEntry *) malloc (sizeof (LBEntry));
  
@@ -2078,7 +2078,7 @@ DoubleList *getLBData (Config *config) {
         // 26/09/2018 -- we are reversing the string for a better display in the UI
         lbEntry->reverseScore = reverseString (score);
 
-        dlist_insert_after (lbData, LIST_END (lbData), lbEntry);
+        dlist_insert_after (lbData, dlist_end (lbData), lbEntry);
         
         free (score);
     }
@@ -2100,7 +2100,7 @@ DoubleList *getLocalLBData (void) {
     //     // dlist_insert_after (lbData, NULL, playerLBEntry);
 
     //     // then sort the list
-    //     // lbData->start = mergeSort (LIST_START (lbData));
+    //     // lbData->start = mergeSort (dlist_start (lbData));
     // } 
 
     // else {
@@ -2128,7 +2128,7 @@ DoubleList *getGlobalLBData (void) {
     //     dlist_insert_after (globalData, NULL, playerLBEntry);
 
     //     // then sort the list
-    //     // globalData->start = mergeSort (LIST_START (globalData));
+    //     // globalData->start = mergeSort (dlist_start (globalData));
     // } 
 
     // we don't have a global lb file, so connect to the server
@@ -2153,7 +2153,7 @@ DoubleList *getGlobalLBData (void) {
                 dlist_insert_after (globalData, NULL, playerLBEntry);
 
                 // then sort the list
-                // globalData->start = mergeSort (LIST_START (globalData));
+                // globalData->start = mergeSort (dlist_start (globalData));
             } 
         } 
 
@@ -2174,7 +2174,7 @@ Config *createNewLBCfg (DoubleList *lbData) {
     // cfg->entities = dlist_init (free);
 
     // u8 count = 0;
-    // ListElement *e = LIST_END (lbData);
+    // ListElement *e = dlist_end (lbData);
     // LBEntry *entry = NULL;
     // while (count < 10 && e != NULL) {
     //     entry = (LBEntry *) e->data;
@@ -2187,7 +2187,7 @@ Config *createNewLBCfg (DoubleList *lbData) {
     //     setEntityValue (newEntity, "kills", entry->kills);
     //     setEntityValue (newEntity, "score", createString ("%i", entry->score));
 
-    //     dlist_insert_after (cfg->entities, LIST_START (cfg->entities), newEntity);
+    //     dlist_insert_after (cfg->entities, dlist_start (cfg->entities), newEntity);
 
     //     e = e->prev;
     //     count++;
@@ -2246,8 +2246,8 @@ void deleteLBEntry (LBEntry *entry) {
 
 void destroyLeaderBoard (DoubleList *lb) {
 
-    while (LIST_SIZE (lb) > 0) 
-        deleteLBEntry ((LBEntry *) dlist_remove_element (lb, LIST_END (lb)));
+    while (dlist_size (lb) > 0) 
+        deleteLBEntry ((LBEntry *) dlist_remove_element (lb, dlist_end (lb)));
         
     free (lb);
 

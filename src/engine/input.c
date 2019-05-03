@@ -137,12 +137,12 @@
 //     // check what is blocking the movement
 //     DoubleList *blockers = getObjectsAtPos (newPos.x, newPos.y);
 
-//     if (blockers == NULL || LIST_SIZE (blockers) <= 0) {
+//     if (blockers == NULL || dlist_size (blockers) <= 0) {
 //         free (blockers);
 //         return;
 //     }
 
-//     for (ListElement *e = LIST_START (blockers); e != NULL; e = e->next) {
+//     for (ListElement *e = dlist_start (blockers); e != NULL; e = e->next) {
 //         Combat *c = (Combat *) getComponent ((GameObject *) e->data, COMBAT);
 //         if (c != NULL) {
 //             fight (main_player->combat, c, true);
@@ -178,7 +178,7 @@
 
 // }
 
-// void moveInLoot (u8 newY) { if (newY >= 0 && (newY < LIST_SIZE (activeLootRects))) lootYIdx = newY; }
+// void moveInLoot (u8 newY) { if (newY >= 0 && (newY < dlist_size (activeLootRects))) lootYIdx = newY; }
 
 // void moveInCharacter (u8 newX, u8 newY, bool moveRight) {
 
@@ -220,13 +220,13 @@
 
 //     // switch the views in the list
 //     if ((characterView != NULL) && (inventoryView != NULL) || lootView != NULL) {
-//         void *prev = dlist_remove_element (activeScene->views, (LIST_END (activeScene->views))->prev);
-//         void *last = dlist_remove_element (activeScene->views, (LIST_END (activeScene->views)));
+//         void *prev = dlist_remove_element (activeScene->views, (dlist_end (activeScene->views))->prev);
+//         void *last = dlist_remove_element (activeScene->views, (dlist_end (activeScene->views)));
 
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), last);
-//         dlist_insert_after (activeScene->views, LIST_END (activeScene->views), prev);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), last);
+//         dlist_insert_after (activeScene->views, dlist_end (activeScene->views), prev);
 
-//         activeView = (UIView *) (LIST_END (activeScene->views))->data;
+//         activeView = (UIView *) (dlist_end (activeScene->views))->data;
 //     }
 
 // }
@@ -259,7 +259,7 @@
 //         DoubleList *gos = getObjectsAtPos (playerPos->x, playerPos->y);
 //         if (gos != NULL) {
 //             Event *ev = NULL;
-//             for (ListElement *e = LIST_START (gos); e != NULL; e = e ->next) {
+//             for (ListElement *e = dlist_start (gos); e != NULL; e = e ->next) {
 //                 ev = (Event *) getComponent ((GameObject *) e->data, EVENT);
 //                 // trigger just the first event we find
 //                 if (ev != NULL) {
@@ -268,7 +268,7 @@
 //                 }
 //             }
 
-//             if (LIST_SIZE (gos) > 0) dlist_clean (gos);
+//             if (dlist_size (gos) > 0) dlist_clean (gos);
 //             else free (gos);
 //         }
 //     }

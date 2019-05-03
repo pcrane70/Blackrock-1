@@ -162,7 +162,7 @@ void *animations_update (void *data) {
              // update all animations
             Animator *animator = NULL;
             Graphics *graphics = NULL;
-            for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
+            for (ListNode *node = ldlist_start (animators); node != NULL; node = node->next) {
                 animator = (Animator *) node->data;
                 graphics = (Graphics *) game_object_get_component (game_object_get_by_id (animator->goID), GRAPHICS_COMP);
 
@@ -190,7 +190,7 @@ void *animations_update (void *data) {
         // update animators timers
         if (llist_size (animators) > 0) {
             Animator *animator = NULL;
-            for (ListNode *node = llist_start (animators); node != NULL; node = node->next) {
+            for (ListNode *node = ldlist_start (animators); node != NULL; node = node->next) {
                 animator = (Animator *) node->data;
                 animator->timer->ticks = SDL_GetTicks () - animator->timer->startTicks;
             }

@@ -53,7 +53,7 @@ void render (void) {
 
     // render the views from back to front for the current screen
     // UIView *v = NULL;
-    // for (ListElement *e = LIST_START (scene->views); e != NULL; e = e->next) {
+    // for (ListElement *e = dlist_start (scene->views); e != NULL; e = e->next) {
     //     v = (UIView *) LIST_DATA (e);
     //     clearConsole (v->console);
     //     v->render (v->console);
