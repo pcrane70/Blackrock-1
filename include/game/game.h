@@ -239,23 +239,6 @@ extern bool recalculateFov;
 
 extern void retry (void);
 
-/*** WORLD ***/
-
-#include "game/camera.h"
-#include "game/map/map.h"
-
-struct _Camera;
-
-typedef struct World {
-
-    Map *game_map;
-    struct _Camera *game_camera;
-
-    LList *players;
-    LList *enemies;
-
-} World;
-
 /*** SCORE ***/
 
 typedef struct Score {

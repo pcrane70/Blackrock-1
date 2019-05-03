@@ -12,7 +12,8 @@
 
 #include "cengine/animation.h"
 
-#include "collections/llist.h"
+#include "collections/dlist.h"
+
 #include "utils/log.h"
 #include "utils/myUtils.h"
 
@@ -369,7 +370,7 @@ void enemies_spawn_all (World *world, u8 monNum) {
             transform->position.y = spawnPoint.y * 64;
 
             // add monster to list
-            llist_insert_next (world->enemies, llist_end (world->enemies), newMon);
+            dlist_insert_after (world->enemies, dlist_end (world->enemies), newMon);
 
             count++;
         }

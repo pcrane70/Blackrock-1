@@ -4,6 +4,7 @@
 #include "blackrock.h"
 
 #include "game/entity.h"
+#include "game/world.h"
 
 #include "collections/llist.h"
 

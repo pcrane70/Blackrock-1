@@ -1,7 +1,11 @@
 #ifndef _CENGINE_RENDERER_H_
 #define _CENGINE_RENDERER_H_
 
+#include <stdbool.h>
+
 #include <SDL2/SDL.h>
+
+#include "types/types.h"
 
 extern SDL_Window *main_window;
 extern SDL_Renderer *main_renderer;

@@ -6,17 +6,18 @@
 
 #include <assert.h>
 
+#include "cengine/renderer.h"
+#include "cengine/textures.h"
+#include "cengine/animation.h"
+
 #include "game/game.h"
 #include "game/camera.h"
 
+#include "game/world.h"
 #include "game/player.h"
 #include "game/enemy.h"
 #include "game/item.h"
 #include "game/map/map.h"
-
-#include "cengine/renderer.h"
-#include "cengine/textures.h"
-#include "cengine/animation.h"
 
 #include "ui/gameUI.h"  // for the message log
 
@@ -269,7 +270,7 @@ GameObject *game_object_new (const char *name, const char *tag) {
 // this is used to avoid go destruction when destroying go's children
 static void game_object_destroy_dummy (void *ptr) {}
 
-static void game_object_comparator (void *one, void *two) {
+static int game_object_comparator (void *one, void *two) {
 
     if (one && two) {
         GameObject *go_one = (GameObject *) one;
@@ -424,40 +425,6 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
 
 #pragma endregion
 
-#pragma region World
-
-World *world =  NULL;
-
-static World *world_create (void) {
-
-    World *new_world = (World *) malloc (sizeof (World));
-    if (new_world) {
-        new_world->game_map = NULL;
-        new_world->game_camera = camera_new (windowSize.width, windowSize.height);
-
-        new_world->players = llist_init (game_object_destroy_ref);
-        new_world->enemies = llist_init (game_object_destroy_ref);
-    }
-
-    return new_world;
-}
-
-static void world_destroy (World *world) {
-
-    if (world) {
-        if (world->game_map) map_destroy (world->game_map);
-        if (world->game_camera) camera_destroy (world->game_camera);
-
-        if (world->players) llist_destroy (world->players);
-        if (world->enemies) llist_destroy (world->enemies);
-
-        free (world);
-    }
-
-}
-
-#pragma endregion
-
 /*** GAME ***/
 
 #pragma region GAME 
@@ -508,13 +475,13 @@ static u8 game_init (void) {
         // spawn items
 
         // init player(s)
-        llist_insert_next (world->players, dlist_start (world->players), player_init ());
+        dlist_insert_after (world->players, dlist_start (world->players), player_init ());
 
         // spawn players
         GameObject *go = NULL;
         Transform *transform = NULL;
-        for (ListNode *n = dlist_start (world->players); n != NULL; n = n->next) {
-            go = (GameObject *) n->data;
+        for (ListElement *le = dlist_start (world->players); le != NULL; le = le->next) {
+            go = (GameObject *) le->data;
             transform = (Transform *) game_object_get_component (go, TRANSFORM_COMP);
             Coord spawnPoint = map_get_free_spot (world->game_map);
             // FIXME: fix wolrd scale!!!
