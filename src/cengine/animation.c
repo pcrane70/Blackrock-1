@@ -4,10 +4,12 @@
 
 #include <SDL2/SDL.h>
 
-#include "blackrock.h"
-#include "types/types.h"
-
 #include "myos.h"
+
+#include "blackrock.h"
+
+#include "types/types.h"
+#include "types/string.h"
 
 #include "cengine/thread.h"
 #include "cengine/timer.h"
@@ -18,13 +20,28 @@
 
 #include "collections/dlist.h"
 
+#include "utils/file.h"
+#include "utils/json.h"
+
 #ifdef DEV
     #include "utils/log.h"
 #endif
 
 static bool anim_init = false;
 
-/*** ANIMATION ***/
+/*** Animation Files ***/
+
+void animation_file_parse (const char *filename) {
+
+    if (filename) {
+        json_value *value = file_json_parse (filename);
+
+        // process json values
+    }
+
+}
+
+/*** Animation ***/
 
 Animation *animation_create (u8 n_frames, ...) {
 
@@ -33,6 +50,7 @@ Animation *animation_create (u8 n_frames, ...) {
 
     Animation *animation = (Animation *) malloc (sizeof (Animation));
     if (animation) {
+        animation->name = NULL;
         animation->speed = DEFAULT_ANIM_SPEED;
         animation->n_frames = n_frames;
         animation->frames = (IndividualSprite **) calloc (n_frames, sizeof (IndividualSprite *));
@@ -50,6 +68,7 @@ Animation *animation_create (u8 n_frames, ...) {
 void animation_destroy (Animation *animation) {
 
     if (animation) {
+        str_delete (animation->name);
         if (animation->frames) free (animation->frames);
 
         free (animation);
@@ -63,7 +82,7 @@ void animation_set_speed (Animation *animation, u32 speed) {
 
 }
 
-/*** ANIMATOR ***/
+/*** Animator ***/
 
 DoubleList *animators = NULL;
 

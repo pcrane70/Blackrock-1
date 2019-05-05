@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 
+#define _XOPEN_SOURCE 700
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "utils/json.h"
 
 // opens a file with the given modes and retur a file ptr

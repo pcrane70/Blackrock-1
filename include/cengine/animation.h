@@ -5,6 +5,9 @@
 
 #include "blackrock.h"
 
+#include "types/types.h"
+#include "types/string.h"
+
 #include "cengine/timer.h"
 #include "cengine/sprites.h"
 
@@ -12,6 +15,7 @@
 
 typedef struct Animation {
 
+    String *name;
     IndividualSprite **frames;
     u8 n_frames;
     u32 speed;
