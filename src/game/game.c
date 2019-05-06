@@ -328,7 +328,7 @@ void game_object_destroy (GameObject *go) {
         graphics_destroy ((Graphics *) go->components[GRAPHICS_COMP]);
         animator_destroy ((Animator *) go->components[ANIMATOR_COMP]);
 
-        player_destroy_comp ((Player *) go->components[PLAYER_COMP]);
+        player_comp_delete ((Player *) go->components[PLAYER_COMP]);
     }
 
 }
@@ -345,7 +345,7 @@ static void game_object_delete (GameObject *go) {
         graphics_destroy ((Graphics *) go->components[GRAPHICS_COMP]);
         animator_destroy ((Animator *) go->components[ANIMATOR_COMP]);
 
-        player_destroy_comp ((Player *) go->components[PLAYER_COMP]);
+        player_comp_delete ((Player *) go->components[PLAYER_COMP]);
 
         if (go->name) free (go->name);
         if (go->tag) free (go->tag);
@@ -372,7 +372,7 @@ void *game_object_add_component (GameObject *go, GameComponent component) {
                 break;
 
             case PLAYER_COMP: 
-                retval = go->components[component] = player_create_comp (go->id); 
+                retval = go->components[component] = player_comp_new (go->id); 
                 go->update = player_update;
                 break;
             case ENEMY_COMP:
@@ -409,7 +409,7 @@ void game_object_remove_component (GameObject *go, GameComponent component) {
                 break;
 
             case PLAYER_COMP: 
-                player_destroy_comp (go->components[component]);
+                player_comp_delete (go->components[component]);
                 go->update = NULL;
                 break;
             case ENEMY_COMP:
@@ -526,7 +526,7 @@ static void game_update (void) {
     for (u32 i = 0; i < curr_max_objs; i++) {
         if (gameObjects[i]->id != -1) {
             if (gameObjects[i]->update)
-                gameObjects[i]->update (NULL);
+                gameObjects[i]->update (gameObjects[i]);
         }
     }
 

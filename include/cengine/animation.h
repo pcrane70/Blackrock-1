@@ -30,7 +30,7 @@ extern DoubleList *animation_file_parse (const char *filename);
 extern Animation *animation_new (u8 n_frames, ...);
 // create an animation with the requested values
 extern Animation *animation_create (const char *name, u8 n_frames, DoubleList *anim_points, unsigned int speed);
-extern void animation_destroy (Animation *animation);
+extern void animation_delete (void *ptr);
 
 extern void animation_set_name (Animation *animation, const char *name);
 extern void animation_set_speed (Animation *animation, u32 speed);

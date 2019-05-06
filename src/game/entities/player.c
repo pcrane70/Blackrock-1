@@ -13,14 +13,10 @@
 
 #include "utils/myUtils.h"
 
+// TODO: do we still need this reference? how do we handle multiplayer?
 static Player *mainPlayer = NULL;
 
-static Transform *my_trans = NULL;
-static Graphics *my_graphics = NULL;
-static Animator *my_anim = NULL;
-
-static DoubleList *player_animations = NULL;
-
+// TODO: this should be modified by player class and race
 static u8 moveSpeed = 8;
 
 #pragma region CHARACTER
@@ -41,7 +37,7 @@ static GameObject ***character_init_inventory (void) {
 }
 
 // create an empty character
-Character *character_new (void) {
+static Character *character_new (void) {
 
     Character *new_character = (Character *) malloc (sizeof (Character));
     if (new_character) {
@@ -56,13 +52,15 @@ Character *character_new (void) {
 
         new_character->weapons = (GameObject **) calloc (2, sizeof (GameObject **));
         for (u8 i = 0; i < 2; i++) new_character->weapons[i] = NULL;
+
+        new_character->animations = NULL;
     }
 
     return new_character;
 
 }
 
-void character_destroy (Character *character) {
+static void character_destroy (Character *character) {
 
     if (character) {
         if (character->inventory) {
@@ -85,6 +83,8 @@ void character_destroy (Character *character) {
             for (u8 i = 0; i < EQUIPMENT_ELEMENTS; i++) character->equipment[i] = NULL;
             free (character->equipment);
         }
+
+        dlist_destroy (character->animations);
 
         free (character);
     }
@@ -133,7 +133,7 @@ PlayerProfile *main_player_profile = NULL;
 
 #pragma region PLAYER COMPONENT
 
-Player *player_create_comp (u32 goID) {
+Player *player_comp_new (u32 goID) {
 
     Player *new_player = (Player *) malloc (sizeof (Player));
     if (new_player) {
@@ -141,10 +141,21 @@ Player *player_create_comp (u32 goID) {
 
         new_player->currState = PLAYER_IDLE;
         new_player->profile = NULL;
-        new_player->character = NULL;
+        new_player->character = character_new ();
     }
 
     return new_player;
+
+}
+
+void player_comp_delete (Player *player) {
+
+    if (player) {
+        // TODO: destroy player profile
+        character_destroy (player->character);
+
+        free (player);
+    }
 
 }
 
@@ -152,16 +163,16 @@ GameObject *player_init (void) {
 
     GameObject *new_player_go = game_object_new ("player", "player");
     if (new_player_go) {
-        my_trans = (Transform *) game_object_add_component (new_player_go, TRANSFORM_COMP);
-        my_graphics = (Graphics *) game_object_add_component (new_player_go, GRAPHICS_COMP);
-        my_anim = (Animator *) game_object_add_component (new_player_go, ANIMATOR_COMP);
+        Transform *trans = (Transform *) game_object_add_component (new_player_go, TRANSFORM_COMP);
+        Graphics *graphics = (Graphics *) game_object_add_component (new_player_go, GRAPHICS_COMP);
+        Animator *anim = (Animator *) game_object_add_component (new_player_go, ANIMATOR_COMP);
         mainPlayer = (Player *) game_object_add_component (new_player_go, PLAYER_COMP);
 
-        graphics_set_sprite_sheet (my_graphics, 
+        graphics_set_sprite_sheet (graphics, 
             createString ("%s%s", ASSETS_PATH, "artwork/characters/adventurer-sheet.png"));
-        sprite_sheet_set_sprite_size (my_graphics->spriteSheet, 50, 37);
-        sprite_sheet_set_scale_factor (my_graphics->spriteSheet, 6);
-        sprite_sheet_crop (my_graphics->spriteSheet);
+        sprite_sheet_set_sprite_size (graphics->spriteSheet, 50, 37);
+        sprite_sheet_set_scale_factor (graphics->spriteSheet, 6);
+        sprite_sheet_crop (graphics->spriteSheet);
 
         // set up animations
         // player idle without sword
@@ -170,12 +181,10 @@ GameObject *player_init (void) {
         //     my_graphics->spriteSheet->individualSprites[2][0], my_graphics->spriteSheet->individualSprites[3][0]);
         // animation_set_speed (player_idle_anim, 300);  
 
-        // FIXME: destroy this when destroying the player!!
-        // TODO: move this inside the player component
-        player_animations = animation_file_parse ("./data/animations/player/player.json");
+        mainPlayer->character->animations = animation_file_parse ("./data/animations/player/player.json");
 
-        animator_set_current_animation (my_anim, animation_get_by_name (player_animations, "idle"));
-        animator_set_default_animation (my_anim, animation_get_by_name (player_animations, "idle"));
+        animator_set_current_animation (anim, animation_get_by_name (mainPlayer->character->animations, "idle"));
+        animator_set_default_animation (anim, animation_get_by_name (mainPlayer->character->animations, "idle"));
     }
 
     return new_player_go;
@@ -183,7 +192,13 @@ GameObject *player_init (void) {
 }
 
 // FIXME: normalize the vector when moving in diagonal!!
+// updates the main player
 void player_update (void *data) {
+
+    GameObject *player_go = (GameObject *) data;
+    Transform *trans = (Transform *) game_object_get_component (player_go, TRANSFORM_COMP);
+    Graphics *graphics = (Graphics *) game_object_get_component (player_go, GRAPHICS_COMP);
+    Animator *anim = (Animator *) game_object_get_component (player_go, ANIMATOR_COMP);
 
     mainPlayer->currState = PLAYER_IDLE;
 
@@ -191,13 +206,13 @@ void player_update (void *data) {
     Vector2D new_vel = { 0, 0 };
     if (input_is_key_down (SDL_SCANCODE_D)) {
         new_vel.x = moveSpeed;
-        my_graphics->flip = NO_FLIP;
+        graphics->flip = NO_FLIP;
         mainPlayer->currState = PLAYER_MOVING;
     }
 
     if (input_is_key_down (SDL_SCANCODE_A)) {
         new_vel.x = -moveSpeed;
-        my_graphics->flip = FLIP_HORIZONTAL;
+        graphics->flip = FLIP_HORIZONTAL;
         mainPlayer->currState = PLAYER_MOVING;
     }
 
@@ -214,25 +229,18 @@ void player_update (void *data) {
     if (input_is_key_down (SDL_SCANCODE_F)) mainPlayer->currState = PLAYER_ATTACK;
 
     switch (mainPlayer->currState) {
-        case PLAYER_IDLE: animator_set_current_animation (my_anim, animation_get_by_name (player_animations, "idle")); break;
+        case PLAYER_IDLE: 
+            animator_set_current_animation (anim, animation_get_by_name (mainPlayer->character->animations, "idle")); 
+            break;
         case PLAYER_MOVING: 
-            vector_add_equal (&my_trans->position, new_vel);
-            animator_set_current_animation (my_anim, animation_get_by_name (player_animations, "run"));
+            vector_add_equal (&trans->position, new_vel);
+            animator_set_current_animation (anim, animation_get_by_name (mainPlayer->character->animations, "run"));
             break;
         case PLAYER_ATTACK: 
-            animator_play_animation (my_anim, animation_get_by_name (player_animations, "attack"));
+            animator_play_animation (anim, animation_get_by_name (mainPlayer->character->animations, "attack"));
             break;
 
         default: break;
-    }
-
-}
-
-// FIXME: correctly clean up the player component
-void player_destroy_comp (Player *player) {
-
-    if (player) {
-        free (player);
     }
 
 }
@@ -258,27 +266,6 @@ void player_load_data (void) {
     classesConfig = parseConfigFile ("./data/classes.cfg");
     if (!classesConfig) 
         die ("Critical Error! No classes config!\n");
-
-}
-
-char *player_get_class_name (u8 c) {
-
-    char class[15];
-
-    switch (c) {
-        case WARRIOR: strcpy (class, "Warrior"); break;
-        case PALADIN: strcpy (class, "Paladin"); break;
-        case ROGUE: strcpy (class, "Rogue"); break;
-        case PRIEST: strcpy (class, "Priest"); break;
-        case DEATH_KNIGHT: strcpy (class, "Death Knight"); break;
-        case MAGE: strcpy (class, "Mage"); break;
-        default: break;    
-    }
-
-    char *retVal = (char *) calloc (strlen (class), sizeof (char));
-    strcpy (retVal, class);
-
-    return retVal;
 
 }
 

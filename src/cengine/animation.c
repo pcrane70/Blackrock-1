@@ -68,8 +68,7 @@ DoubleList *animation_file_parse (const char *filename) {
         json_value *value = file_json_parse (filename);
 
         if (value) {
-            // FIXME:
-            animations = dlist_init (NULL, NULL);
+            animations = dlist_init (animation_delete, NULL);
 
             // process json values into individual animations
             json_value *animations_array = value->u.object.values[0].value;
@@ -83,9 +82,6 @@ DoubleList *animation_file_parse (const char *filename) {
 
                 const char *name = anim_object->u.object.values[0].value->u.string.ptr;
                 int speed = anim_object->u.object.values[3].value->u.integer;
-
-                // animation_set_name (anim, name);
-                // animation_set_speed (anim, speed);
 
                 anim = animation_create (name, n_frames, anim_points, speed);
                 dlist_insert_after (animations, dlist_end (animations), anim);
@@ -146,9 +142,10 @@ Animation *animation_create (const char *name, u8 n_frames, DoubleList *anim_poi
 
 }
 
-void animation_destroy (Animation *animation) {
+void animation_delete (void *ptr) {
 
-    if (animation) {
+    if (ptr) {
+        Animation *animation = (Animation *) ptr;
         str_delete (animation->name);
         if (animation->frames) free (animation->frames);
 
@@ -219,7 +216,7 @@ void animator_destroy (Animator *animator) {
         if (animator->animations) {
             for (u8 i = 0; i < animator->n_animations; i++)
                 if (animator->animations[i])
-                    animation_destroy (animator->animations[i]);
+                    animation_delete (animator->animations[i]);
 
             free (animator->animations);
         }

@@ -5,6 +5,8 @@
 
 #include "game/entities/entity.h"
 
+#include "collections/dlist.h"
+
 typedef enum PlayerState {
 
     PLAYER_IDLE = 0,
@@ -37,6 +39,8 @@ typedef struct Character {
     GameObject **weapons;
     GameObject **equipment;
 
+    DoubleList *animations;
+
 } Character;
 
 typedef struct Player {
@@ -48,6 +52,9 @@ typedef struct Player {
     Character *character;
 
 } Player;
+
+extern Player *player_comp_new (u32 goID);
+extern void player_comp_delete (Player *player);
 
 #define MAIN_HAND       0
 #define OFF_HAND        1
@@ -66,10 +73,8 @@ typedef struct Player {
 // shoes        8
 // ring         9
 
-extern Player *player_create_comp (u32 goID);
 extern GameObject *player_init (void);
 extern void player_update (void *data);
-extern void player_destroy_comp (Player *player);
 
 extern GameObject *main_player_go;
 
