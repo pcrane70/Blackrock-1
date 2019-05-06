@@ -76,7 +76,7 @@ LivingEntity *entity_new (void) {
 void entity_destroy (LivingEntity *entity) {
 
     if (entity) {
-        if (entity->name) free (entity->name);
+        str_delete (entity->name);
         free (entity);
     }
 

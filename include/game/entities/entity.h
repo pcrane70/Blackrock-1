@@ -2,6 +2,7 @@
 #define ENTITY_H
 
 #include "blackrock.h"
+#include "types/string.h"
 
 typedef enum Genre {
 
@@ -67,7 +68,7 @@ typedef struct LivingEntity {
     Genre genre;
     CharRace race;
     CharClass cClass;
-    char *name;
+    String *name;
     u32 maxHealth;
     u32 currHealth;
     

@@ -7,6 +7,7 @@
 #include "game/world.h"
 
 #include "collections/llist.h"
+#include "collections/dlist.h"
 
 #define N_MONSTER_TYPES       9
 
@@ -34,13 +35,16 @@ typedef struct EnemyLoot {
 #define DB_COL_ENEMY_SPELL_POWER        11
 #define DB_COL_ENEMY_CRITICAL           12
 
-// basic enemy data
+// basic enemy data that we only need to load once
 typedef struct EnemyData {
 
     u32 dbId;
-    char *name;
+    String *name;
     double probability;
     EnemyLoot loot;
+
+    SpriteSheet *sprite_sheet;
+    DoubleList *animations;
 
 } EnemyData;
 
@@ -56,6 +60,7 @@ typedef struct Enemy {
 
     u32 dbID;
     LivingEntity *entity;
+    DoubleList *animations;
 
 } Enemy;
 

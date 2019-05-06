@@ -1,4 +1,9 @@
 {
+    "size": {
+        "w": 50,
+        "h": 37 
+    },
+    "scale": 6,
     "animations": [
         {
             "name": "idle",

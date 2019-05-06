@@ -15,6 +15,19 @@
 
 #define DEFAULT_ANIM_SPEED      100
 
+typedef struct AnimData {
+
+    unsigned int w, h;
+    int scale;
+    DoubleList *animations;
+
+} AnimData;
+
+extern void anim_data_delete (AnimData *data);
+
+// parses an animation json file into a list of animations
+extern AnimData *animation_file_parse (const char *filename);
+
 typedef struct Animation {
 
     String *name;
@@ -23,9 +36,6 @@ typedef struct Animation {
     u32 speed;
 
 } Animation;
-
-// parses an animation json file into a list of animations
-extern DoubleList *animation_file_parse (const char *filename);
 
 extern Animation *animation_new (u8 n_frames, ...);
 // create an animation with the requested values

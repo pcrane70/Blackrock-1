@@ -29,6 +29,21 @@
 
 static bool anim_init = false;
 
+static AnimData *anim_data_new (void) {
+
+    AnimData *anim_data = (AnimData *) malloc (sizeof (AnimData));
+    if (anim_data) {
+        memset (anim_data, 0, sizeof (AnimData));
+        anim_data->animations = dlist_init (animation_delete, NULL);
+    }
+
+    return anim_data;
+
+}
+
+// the animations list is used in the entity's component
+void anim_data_delete (AnimData *data) { if (data) free (data); }
+
 /*** Animation Files ***/
 
 // parse the array of anim points for a given animation and return them in a list
@@ -60,17 +75,19 @@ static DoubleList *animation_file_parse_anim_points (unsigned int n_points, json
 }
 
 // parses an animation json file into a list of animations
-DoubleList *animation_file_parse (const char *filename) {
+AnimData *animation_file_parse (const char *filename) {
 
-    DoubleList *animations = NULL;
+    AnimData *anim_data = NULL;
 
     if (filename) {
         json_value *value = file_json_parse (filename);
 
         if (value) {
-            animations = dlist_init (animation_delete, NULL);
+            anim_data = anim_data_new ();
 
             // process json values into individual animations
+            // FIXME: get size and scale
+
             json_value *animations_array = value->u.object.values[0].value;
             json_value *anim_object = NULL;
             Animation *anim = NULL;
@@ -84,14 +101,14 @@ DoubleList *animation_file_parse (const char *filename) {
                 int speed = anim_object->u.object.values[3].value->u.integer;
 
                 anim = animation_create (name, n_frames, anim_points, speed);
-                dlist_insert_after (animations, dlist_end (animations), anim);
+                dlist_insert_after (anim_data->animations, dlist_end (anim_data->animations), anim);
             }
 
             json_value_free (value);
         }
     }
 
-    return animations;
+    return anim_data;
 
 }
 

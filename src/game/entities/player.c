@@ -168,10 +168,12 @@ GameObject *player_init (void) {
         Animator *anim = (Animator *) game_object_add_component (new_player_go, ANIMATOR_COMP);
         mainPlayer = (Player *) game_object_add_component (new_player_go, PLAYER_COMP);
 
+        AnimData *anim_data = animation_file_parse ("./data/animations/player/player.json");
+
         graphics_set_sprite_sheet (graphics, 
             createString ("%s%s", ASSETS_PATH, "artwork/characters/adventurer-sheet.png"));
-        sprite_sheet_set_sprite_size (graphics->spriteSheet, 50, 37);
-        sprite_sheet_set_scale_factor (graphics->spriteSheet, 6);
+        sprite_sheet_set_sprite_size (graphics->spriteSheet, anim_data->w, anim_data->h);
+        sprite_sheet_set_scale_factor (graphics->spriteSheet, anim_data->scale);
         sprite_sheet_crop (graphics->spriteSheet);
 
         // set up animations
@@ -181,7 +183,7 @@ GameObject *player_init (void) {
         //     my_graphics->spriteSheet->individualSprites[2][0], my_graphics->spriteSheet->individualSprites[3][0]);
         // animation_set_speed (player_idle_anim, 300);  
 
-        mainPlayer->character->animations = animation_file_parse ("./data/animations/player/player.json");
+        mainPlayer->character->animations = anim_data->animations;
 
         animator_set_current_animation (anim, animation_get_by_name (mainPlayer->character->animations, "idle"));
         animator_set_default_animation (anim, animation_get_by_name (mainPlayer->character->animations, "idle"));

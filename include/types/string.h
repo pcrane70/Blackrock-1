@@ -20,4 +20,6 @@ extern void str_to_lower (String *string);
 
 extern int str_compare (const String *s1, const String *s2);
 
+extern char **str_split (String *string, const char delim, int *n_tokens);
+
 #endif

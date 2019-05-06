@@ -22,7 +22,7 @@ static sqlite3 *enemiesDb;
 
 #pragma region Enemy Data
 
-LList *enemyData = NULL;
+LList *enemy_data = NULL;
 
 static u8 enemy_loot_load (u32 monId, EnemyLoot *loot) {
 
@@ -93,10 +93,7 @@ static int enemy_data_load_all (void *data, int argc, char **argv, char **azColN
     EnemyData *edata = (EnemyData *) malloc (sizeof (EnemyData));
 
     edata->dbId = atoi (argv[0]);
-    char temp[20];
-    strcpy (temp, argv[1]);
-    edata->name = (char *) calloc (strlen (temp) + 1, sizeof (char));
-    strcpy (edata->name, temp);
+    edata->name = str_new (argv[1]);
     edata->probability = atof (argv[2]);
 
     if (enemy_loot_load (edata->dbId, &edata->loot)) {
@@ -105,7 +102,7 @@ static int enemy_data_load_all (void *data, int argc, char **argv, char **azColN
         #endif
     }
 
-    llist_insert_next (enemyData, llist_end (enemyData), edata);
+    llist_insert_next (enemy_data, llist_end (enemy_data), edata);
 
     return 0;
 
@@ -125,7 +122,7 @@ static void enemy_data_delete (void *data) {
 
 void enemy_data_delete_all (void) {
 
-    if (enemyData) llist_destroy (enemyData);
+    if (enemy_data) llist_destroy (enemy_data);
 
 }
 
@@ -148,7 +145,7 @@ u8 enemies_connect_db (void) {
         #endif
 
         // load basic enemy data into memory
-        enemyData = llist_init (enemy_data_delete);
+        enemy_data = llist_init (enemy_data_delete);
 
         char *err = 0;
         char *sql = "SELECT * FROM Monsters";
@@ -183,7 +180,7 @@ void enemies_disconnect_db (void) {
 EnemyData *enemy_data_get_by_id (u32 id) {
 
     EnemyData *edata = NULL;
-    for (ListNode *n = dlist_start (enemyData); n != NULL; n = n->next) {
+    for (ListNode *n = dlist_start (enemy_data); n != NULL; n = n->next) {
         edata = (EnemyData *) n->data;
         if (edata->dbId == id) return edata;
     }
@@ -230,20 +227,29 @@ static void enemy_add_transform (GameObject *enemy_go) {
 
 }
 
-// FIXME: we just need to load this once!!
 static void enemy_add_graphics (GameObject *enemy_go, u32 dbID) {
 
     if (enemy_go) {
         Graphics *graphics = game_object_add_component (enemy_go, GRAPHICS_COMP);
+
+        // get common graphics data
+        EnemyData *edata = enemy_data_get_by_id (dbID);
+        graphics_ref_sprite_sheet (graphics, edata->sprite_sheet);
     }
 
 }
 
-// FIXME: we just need to load this once!!
 static void enemy_add_animator (GameObject *enemy_go, u32 dbID) {
 
     if (enemy_go) {
-        Animator *animator = game_object_add_component (enemy_go, ANIMATOR_COMP);
+        Animator *anim = game_object_add_component (enemy_go, ANIMATOR_COMP);
+
+        // get common animator data
+        Enemy *enemy = (Enemy *) game_object_get_component (enemy_go, ENEMY_COMP);
+        enemy->animations = (enemy_data_get_by_id (dbID))->animations;
+
+        animator_set_current_animation (anim, animation_get_by_name (enemy->animations, "idle"));
+        animator_set_default_animation (anim, animation_get_by_name (enemy->animations, "idle"));
     }
 
 }
@@ -295,11 +301,11 @@ GameObject *enemy_create (u32 dbID) {
 
     GameObject *enemy_go = game_object_new (NULL, "enemy");
     if (enemy_go) {
+        enemy_add_enemy_comp (enemy_go, dbID);
+
         enemy_add_transform (enemy_go);
         enemy_add_graphics (enemy_go, dbID);
         enemy_add_animator (enemy_go, dbID);
-        
-        enemy_add_enemy_comp (enemy_go, dbID);
     }
 
     return enemy_go;
@@ -444,7 +450,7 @@ void enemies_spawn_all (World *world, u8 monNum) {
 
 // void cleanUpEnemies (void) {
 
-//     dlist_destroy (enemyData);
+//     dlist_destroy (enemy_data);
 //     
 
 // }
