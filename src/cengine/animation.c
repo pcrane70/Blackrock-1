@@ -31,91 +31,77 @@ static bool anim_init = false;
 
 /*** Animation Files ***/
 
-// static void process_object(json_value* value, int depth)
-// {
-//         int length, x;
-//         if (value == NULL) {
-//                 return;
-//         }
-//         length = value->u.object.length;
-//         for (x = 0; x < length; x++) {
-//                 print_depth_shift(depth);
-//                 printf("object[%d].name = %s\n", x, value->u.object.values[x].name);
-//                 process_value(value->u.object.values[x].value, depth+1);
-//         }
-// }
+// parse the array of anim points for a given animation and return them in a list
+static DoubleList *animation_file_parse_anim_points (unsigned int n_points, json_value *points_array) {
 
-// static void process_array(json_value* value, int depth)
-// {
-//         int length, x;
-//         if (value == NULL) {
-//                 return;
-//         }
-//         length = value->u.array.length;
-//         printf("array - length %d\n", length);
-//         // process_value(value->u.array.values[x], depth);
-//         for (x = 0; x < length; x++) {
-//                 process_value(value->u.array.values[x], depth);
-//         }
-// }
+    DoubleList *points = NULL;
 
-// static void process_value(json_value* value, int depth)
-// {
-//         int j;
-//         if (value == NULL) {
-//                 return;
-//         }
-//         if (value->type != json_object) {
-//                 print_depth_shift(depth);
-//         }
-//         switch (value->type) {
-//                 case json_none:
-//                         printf("none\n");
-//                         break;
-//                 case json_object:
-//                         process_object(value, depth+1);
-//                         break;
-//                 case json_array:
-//                         process_array(value, depth+1);
-//                         break;
-//                 case json_integer:
-//                         printf("int: %10" PRId64 "\n", value->u.integer);
-//                         break;
-//                 case json_double:
-//                         printf("double: %f\n", value->u.dbl);
-//                         break;
-//                 case json_string:
-//                         printf("string: %s\n", value->u.string.ptr);
-//                         break;
-//                 case json_boolean:
-//                         printf("bool: %d\n", value->u.boolean);
-//                         break;
-//         }
-// }
+    if (points_array) {
+        points = dlist_init (free, NULL);
 
+        IndividualSprite *p = NULL;
+        json_value *point_object = NULL;
+        for (unsigned int i = 0; i < n_points; i++) {
+            point_object = points_array->u.array.values[i];
+            if (point_object) {
+                p = (IndividualSprite *) malloc (sizeof (IndividualSprite));
+                memset (p, 0, sizeof (IndividualSprite));
+
+                p->col = point_object->u.object.values[0].value->u.integer;
+                p->row = point_object->u.object.values[1].value->u.integer;
+
+                dlist_insert_after (points, dlist_end (points), p);
+            }
+        }
+    }
+
+    return points;
+
+}
+
+// parses an animation json file into a list of animations
 DoubleList *animation_file_parse (const char *filename) {
+
+    DoubleList *animations = NULL;
 
     if (filename) {
         json_value *value = file_json_parse (filename);
 
-        // process json values into individual animations
-        json_value *animations_array = value->u.object.values[0].value;\
-        json_value *anim_object = NULL;
-        for (unsigned int i = 0; i < animations_array->u.array.length; i++) {
-            // anim_object = animations_array->u.array.values[i];
-            // printf ("Anim name: %s\n", anim_object->u.object.values ->u.object.values[0]->u.string.ptr);
-            // printf ("Anim n frames: %ld\n", animations_array->u.array.values[1]->u.integer);
-            // printf ("Anim speed: %ld\n", animations_array->u.array.values[3]->u.integer);
+        if (value) {
+            // FIXME:
+            animations = dlist_init (NULL, NULL);
+
+            // process json values into individual animations
+            json_value *animations_array = value->u.object.values[0].value;
+            json_value *anim_object = NULL;
+            Animation *anim = NULL;
+            for (unsigned int i = 0; i < animations_array->u.array.length; i++) {
+                anim_object = animations_array->u.array.values[i];
+
+                int n_frames = anim_object->u.object.values[1].value->u.integer;
+                DoubleList *anim_points = animation_file_parse_anim_points (n_frames, anim_object->u.object.values[2].value);
+
+                const char *name = anim_object->u.object.values[0].value->u.string.ptr;
+                int speed = anim_object->u.object.values[3].value->u.integer;
+
+                // animation_set_name (anim, name);
+                // animation_set_speed (anim, speed);
+
+                anim = animation_create (name, n_frames, anim_points, speed);
+                dlist_insert_after (animations, dlist_end (animations), anim);
+            }
+
+            json_value_free (value);
         }
     }
 
-    return NULL;
+    return animations;
 
 }
 
 /*** Animation ***/
 
-Animation *animation_create (u8 n_frames, ...) {
+Animation *animation_new (u8 n_frames, ...) {
 
     va_list valist;
     va_start (valist, n_frames);
@@ -137,6 +123,29 @@ Animation *animation_create (u8 n_frames, ...) {
 
 }
 
+// create an animation with the requested values
+Animation *animation_create (const char *name, u8 n_frames, DoubleList *anim_points, unsigned int speed) {
+
+    Animation *anim = (Animation *) malloc (sizeof (Animation));
+    if (anim) {
+        anim->name = str_create (name);
+        anim->speed = speed;
+
+        anim->n_frames = n_frames;
+        anim->frames = (IndividualSprite **) calloc (n_frames, sizeof (IndividualSprite *));
+        unsigned int i = 0;
+        for (ListElement *le = dlist_start (anim_points); le; le = le->next) {
+            anim->frames[i] = (IndividualSprite *) le->data;
+            i++;
+        }
+
+        dlist_clean (anim_points);
+    }
+
+    return anim;
+
+}
+
 void animation_destroy (Animation *animation) {
 
     if (animation) {
@@ -145,6 +154,12 @@ void animation_destroy (Animation *animation) {
 
         free (animation);
     }
+
+}
+
+void animation_set_name (Animation *animation, const char *name) {
+
+    if (animation && name) animation->name = str_new (name);
 
 }
 

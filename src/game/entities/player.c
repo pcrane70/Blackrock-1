@@ -9,6 +9,8 @@
 #include "game/game.h"
 #include "game/entities/player.h"
 
+#include "collections/dlist.h"
+
 #include "utils/myUtils.h"
 
 static Player *mainPlayer = NULL;
@@ -17,6 +19,7 @@ static Transform *my_trans = NULL;
 static Graphics *my_graphics = NULL;
 static Animator *my_anim = NULL;
 
+static DoubleList *player_animations = NULL;
 static Animation *player_idle_anim = NULL;
 static Animation *player_run_anim = NULL;
 static Animation *player_attack_anim = NULL;
@@ -170,21 +173,23 @@ GameObject *player_init (void) {
         //     my_graphics->spriteSheet->individualSprites[2][0], my_graphics->spriteSheet->individualSprites[3][0]);
         // animation_set_speed (player_idle_anim, 300);  
 
-        animation_file_parse ("/home/ermiry/Documents/ermiry/Games/Blackrock/Blackrock/data/animations/player/player.json");
+        // FIXME: destroy this when destroying the player!!
+        player_animations = animation_file_parse ("./data/animations/player/player.json");
 
         // idle with handed sword
-        player_idle_anim = animation_create (4, 
-            my_graphics->spriteSheet->individualSprites[6][4], my_graphics->spriteSheet->individualSprites[7][4],
-            my_graphics->spriteSheet->individualSprites[0][5], my_graphics->spriteSheet->individualSprites[1][5]);
-        animation_set_speed (player_idle_anim, 250);  
+        // player_idle_anim = animation_new (4, 
+        //     my_graphics->spriteSheet->individualSprites[6][4], my_graphics->spriteSheet->individualSprites[7][4],
+        //     my_graphics->spriteSheet->individualSprites[0][5], my_graphics->spriteSheet->individualSprites[1][5]);
+        // animation_set_speed (player_idle_anim, 250);  
+        player_idle_anim = (Animation *) (dlist_start (player_animations))->data;
 
-        player_run_anim = animation_create (6, 
+        player_run_anim = animation_new (6, 
             my_graphics->spriteSheet->individualSprites[0][1], my_graphics->spriteSheet->individualSprites[1][1], 
             my_graphics->spriteSheet->individualSprites[2][1], my_graphics->spriteSheet->individualSprites[3][1], 
             my_graphics->spriteSheet->individualSprites[4][1], my_graphics->spriteSheet->individualSprites[5][1]);
         animation_set_speed (player_run_anim, 150);
 
-        player_attack_anim = animation_create (6,
+        player_attack_anim = animation_new (6,
             my_graphics->spriteSheet->individualSprites[2][5], my_graphics->spriteSheet->individualSprites[3][5],
             my_graphics->spriteSheet->individualSprites[4][5], my_graphics->spriteSheet->individualSprites[5][5],
             my_graphics->spriteSheet->individualSprites[6][5], my_graphics->spriteSheet->individualSprites[7][5]);
