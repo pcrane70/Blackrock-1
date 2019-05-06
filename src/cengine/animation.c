@@ -31,13 +31,85 @@ static bool anim_init = false;
 
 /*** Animation Files ***/
 
-void animation_file_parse (const char *filename) {
+// static void process_object(json_value* value, int depth)
+// {
+//         int length, x;
+//         if (value == NULL) {
+//                 return;
+//         }
+//         length = value->u.object.length;
+//         for (x = 0; x < length; x++) {
+//                 print_depth_shift(depth);
+//                 printf("object[%d].name = %s\n", x, value->u.object.values[x].name);
+//                 process_value(value->u.object.values[x].value, depth+1);
+//         }
+// }
+
+// static void process_array(json_value* value, int depth)
+// {
+//         int length, x;
+//         if (value == NULL) {
+//                 return;
+//         }
+//         length = value->u.array.length;
+//         printf("array - length %d\n", length);
+//         // process_value(value->u.array.values[x], depth);
+//         for (x = 0; x < length; x++) {
+//                 process_value(value->u.array.values[x], depth);
+//         }
+// }
+
+// static void process_value(json_value* value, int depth)
+// {
+//         int j;
+//         if (value == NULL) {
+//                 return;
+//         }
+//         if (value->type != json_object) {
+//                 print_depth_shift(depth);
+//         }
+//         switch (value->type) {
+//                 case json_none:
+//                         printf("none\n");
+//                         break;
+//                 case json_object:
+//                         process_object(value, depth+1);
+//                         break;
+//                 case json_array:
+//                         process_array(value, depth+1);
+//                         break;
+//                 case json_integer:
+//                         printf("int: %10" PRId64 "\n", value->u.integer);
+//                         break;
+//                 case json_double:
+//                         printf("double: %f\n", value->u.dbl);
+//                         break;
+//                 case json_string:
+//                         printf("string: %s\n", value->u.string.ptr);
+//                         break;
+//                 case json_boolean:
+//                         printf("bool: %d\n", value->u.boolean);
+//                         break;
+//         }
+// }
+
+DoubleList *animation_file_parse (const char *filename) {
 
     if (filename) {
         json_value *value = file_json_parse (filename);
 
-        // process json values
+        // process json values into individual animations
+        json_value *animations_array = value->u.object.values[0].value;\
+        json_value *anim_object = NULL;
+        for (unsigned int i = 0; i < animations_array->u.array.length; i++) {
+            // anim_object = animations_array->u.array.values[i];
+            // printf ("Anim name: %s\n", anim_object->u.object.values ->u.object.values[0]->u.string.ptr);
+            // printf ("Anim n frames: %ld\n", animations_array->u.array.values[1]->u.integer);
+            // printf ("Anim speed: %ld\n", animations_array->u.array.values[3]->u.integer);
+        }
     }
+
+    return NULL;
 
 }
 

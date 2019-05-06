@@ -170,6 +170,8 @@ GameObject *player_init (void) {
         //     my_graphics->spriteSheet->individualSprites[2][0], my_graphics->spriteSheet->individualSprites[3][0]);
         // animation_set_speed (player_idle_anim, 300);  
 
+        animation_file_parse ("/home/ermiry/Documents/ermiry/Games/Blackrock/Blackrock/data/animations/player/player.json");
+
         // idle with handed sword
         player_idle_anim = animation_create (4, 
             my_graphics->spriteSheet->individualSprites[6][4], my_graphics->spriteSheet->individualSprites[7][4],

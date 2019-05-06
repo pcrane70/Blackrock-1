@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -21,7 +22,7 @@ String *str_new (const char *str) {
         if (str) {
             string->len = strlen (str);
             string->str = (char *) calloc (string->len + 1, sizeof (char));
-            char_copy (string->str, str);
+            char_copy (string->str, (char *) str);
         }
     }
 

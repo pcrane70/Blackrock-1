@@ -11,6 +11,8 @@
 #include "cengine/timer.h"
 #include "cengine/sprites.h"
 
+#include "collections/dlist.h"
+
 #define DEFAULT_ANIM_SPEED      100
 
 typedef struct Animation {
@@ -35,6 +37,8 @@ typedef struct Animator {
     Timer *timer;
 
 } Animator;
+
+extern DoubleList *animation_file_parse (const char *filename);
 
 extern Animation *animation_create (u8 n_frames, ...);
 extern void animation_destroy (Animation *animation);

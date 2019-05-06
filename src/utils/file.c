@@ -19,7 +19,7 @@ FILE *file_open (const char *filename, const char *modes, struct stat *filestatu
 
     if (filename) {
         memset (filestatus, 0, sizeof (struct stat));
-        if (!stat (filename, &filestatus)) 
+        if (!stat (filename, filestatus)) 
             fp = fopen (filename, modes);
 
         else logMsg (stderr, ERROR, NO_TYPE, createString ("File %s not found!", filename));
@@ -32,17 +32,17 @@ FILE *file_open (const char *filename, const char *modes, struct stat *filestatu
 // opens and reads a file into a buffer
 char *file_read (const char *filename, int *file_size) {
 
-    char *retval = NULL;
+    char *file_contents = NULL;
 
     if (filename) {
         struct stat filestatus;
         FILE *fp = file_open (filename, "rt", &filestatus);
         if (fp) {
             *file_size = filestatus.st_size;
-            char *file_contents = (char *) malloc (filestatus.st_size);
+            file_contents = (char *) malloc (filestatus.st_size);
 
             // read the entire file into the buffer
-            if (fread (file_contents, file_size, 1, fp) != 1) {
+            if (fread (file_contents, filestatus.st_size, 1, fp) != 1) {
                 logMsg (stderr, ERROR, NO_TYPE, "Failed to read file contents!");
                 free (file_contents);
             }
@@ -53,7 +53,7 @@ char *file_read (const char *filename, int *file_size) {
         else logMsg (stderr, ERROR, NO_TYPE, createString ("Unable to open file %s", filename));
     }
 
-    return retval;
+    return file_contents;
 
 }
 
