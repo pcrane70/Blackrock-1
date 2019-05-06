@@ -169,6 +169,25 @@ void animation_set_speed (Animation *animation, u32 speed) {
 
 }
 
+Animation *animation_get_by_name (DoubleList *animations, const char *name) {
+
+    Animation *retval = NULL;
+
+    if (animations && name) {
+        Animation *anim = NULL;
+        for (ListElement *le = dlist_start (animations); le; le = le->next) {
+            anim = (Animation *) le->data;
+            if (!strcmp (anim->name->str, name)) {
+                retval = anim;
+                break;
+            }
+        }
+    }
+
+    return retval;
+
+}
+
 /*** Animator ***/
 
 DoubleList *animators = NULL;

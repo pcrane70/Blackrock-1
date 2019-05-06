@@ -20,9 +20,6 @@ static Graphics *my_graphics = NULL;
 static Animator *my_anim = NULL;
 
 static DoubleList *player_animations = NULL;
-static Animation *player_idle_anim = NULL;
-static Animation *player_run_anim = NULL;
-static Animation *player_attack_anim = NULL;
 
 static u8 moveSpeed = 8;
 
@@ -174,29 +171,11 @@ GameObject *player_init (void) {
         // animation_set_speed (player_idle_anim, 300);  
 
         // FIXME: destroy this when destroying the player!!
+        // TODO: move this inside the player component
         player_animations = animation_file_parse ("./data/animations/player/player.json");
 
-        // idle with handed sword
-        // player_idle_anim = animation_new (4, 
-        //     my_graphics->spriteSheet->individualSprites[6][4], my_graphics->spriteSheet->individualSprites[7][4],
-        //     my_graphics->spriteSheet->individualSprites[0][5], my_graphics->spriteSheet->individualSprites[1][5]);
-        // animation_set_speed (player_idle_anim, 250);  
-        player_idle_anim = (Animation *) (dlist_start (player_animations))->data;
-
-        player_run_anim = animation_new (6, 
-            my_graphics->spriteSheet->individualSprites[0][1], my_graphics->spriteSheet->individualSprites[1][1], 
-            my_graphics->spriteSheet->individualSprites[2][1], my_graphics->spriteSheet->individualSprites[3][1], 
-            my_graphics->spriteSheet->individualSprites[4][1], my_graphics->spriteSheet->individualSprites[5][1]);
-        animation_set_speed (player_run_anim, 150);
-
-        player_attack_anim = animation_new (6,
-            my_graphics->spriteSheet->individualSprites[2][5], my_graphics->spriteSheet->individualSprites[3][5],
-            my_graphics->spriteSheet->individualSprites[4][5], my_graphics->spriteSheet->individualSprites[5][5],
-            my_graphics->spriteSheet->individualSprites[6][5], my_graphics->spriteSheet->individualSprites[7][5]);
-        animation_set_speed (player_attack_anim, 100);  
-
-        animator_set_current_animation (my_anim, player_idle_anim);
-        animator_set_default_animation (my_anim, player_idle_anim);
+        animator_set_current_animation (my_anim, animation_get_by_name (player_animations, "idle"));
+        animator_set_default_animation (my_anim, animation_get_by_name (player_animations, "idle"));
     }
 
     return new_player_go;
@@ -235,12 +214,14 @@ void player_update (void *data) {
     if (input_is_key_down (SDL_SCANCODE_F)) mainPlayer->currState = PLAYER_ATTACK;
 
     switch (mainPlayer->currState) {
-        case PLAYER_IDLE: animator_set_current_animation (my_anim, player_idle_anim); break;
+        case PLAYER_IDLE: animator_set_current_animation (my_anim, animation_get_by_name (player_animations, "idle")); break;
         case PLAYER_MOVING: 
             vector_add_equal (&my_trans->position, new_vel);
-            animator_set_current_animation (my_anim, player_run_anim);
+            animator_set_current_animation (my_anim, animation_get_by_name (player_animations, "run"));
             break;
-        case PLAYER_ATTACK: animator_play_animation (my_anim, player_attack_anim); break;
+        case PLAYER_ATTACK: 
+            animator_play_animation (my_anim, animation_get_by_name (player_animations, "attack"));
+            break;
 
         default: break;
     }
