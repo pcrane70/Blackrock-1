@@ -37,8 +37,9 @@ typedef struct SpriteSheet {
 
 } SpriteSheet;
 
-extern Sprite *sprite_load (const char *filename, SDL_Renderer *renderer);
+extern SpriteSheet *sprite_sheet_new (void);
 extern void sprite_destroy (Sprite *sprite);
+extern Sprite *sprite_load (const char *filename, SDL_Renderer *renderer);
 
 extern void sprite_sheet_destroy (SpriteSheet *spriteSheet);
 extern SpriteSheet *sprite_sheet_load (const char *filename, SDL_Renderer *renderer);

@@ -68,9 +68,14 @@ static int init (void) {
 
 static int end (void) {
 
+    game_manager->currState->onExit ();
+    game_manager_delete (game_manager);
+
     // if (multiplayer) multiplayer_stop ();
 
-    game_cleanUp ();
+    // TODO: do we want to call this when we exit the game state instead?
+    game_clean_up ();
+    
     animations_end ();
     ui_destroy ();
     video_destroy_main ();

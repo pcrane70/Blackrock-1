@@ -6,12 +6,14 @@
 
 #include "blackrock.h"
 
+#include "cengine/renderer.h"
+#include "cengine/animation.h"
+
 #include "game/game.h"
 #include "game/entities/entity.h"
 #include "game/entities/enemy.h"
 
-#include "cengine/animation.h"
-
+#include "collections/llist.h"
 #include "collections/dlist.h"
 
 #include "utils/log.h"
@@ -96,6 +98,12 @@ static int enemy_data_load_all (void *data, int argc, char **argv, char **azColN
     edata->name = str_new (argv[1]);
     edata->probability = atof (argv[2]);
 
+    edata->anim_data = animation_file_parse (argv[3]);
+    edata->sprite_sheet = sprite_sheet_load (argv[4], main_renderer);
+    sprite_sheet_set_sprite_size (edata->sprite_sheet, edata->anim_data->w, edata->anim_data->h);
+    sprite_sheet_set_scale_factor (edata->sprite_sheet, edata->anim_data->scale);
+    sprite_sheet_crop (edata->sprite_sheet);
+
     if (enemy_loot_load (edata->dbId, &edata->loot)) {
         #ifdef DEV
         logMsg (stderr, ERROR, GAME, createString ("Failed getting enemy loot. Enemy id: %i", edata->dbId));
@@ -112,8 +120,11 @@ static void enemy_data_delete (void *data) {
 
     if (data) {
         EnemyData *edata = (EnemyData *) data;
-        if (edata->name) free (edata->name);
+        str_delete (edata->name);
         if (edata->loot.drops) free (edata->loot.drops);
+
+        anim_data_delete (edata->anim_data);
+        sprite_sheet_destroy (edata->sprite_sheet);
 
         free (edata);
     }
@@ -170,12 +181,7 @@ u8 enemies_connect_db (void) {
 
 }
 
-void enemies_disconnect_db (void) {
-
-    sqlite3_close (enemiesDb);
-    enemy_data_delete_all ();
-
-}
+void enemies_disconnect_db (void) { sqlite3_close (enemiesDb); }
 
 EnemyData *enemy_data_get_by_id (u32 id) {
 
@@ -246,7 +252,7 @@ static void enemy_add_animator (GameObject *enemy_go, u32 dbID) {
 
         // get common animator data
         Enemy *enemy = (Enemy *) game_object_get_component (enemy_go, ENEMY_COMP);
-        enemy->animations = (enemy_data_get_by_id (dbID))->animations;
+        enemy->animations = (enemy_data_get_by_id (dbID))->anim_data->animations;
 
         animator_set_current_animation (anim, animation_get_by_name (enemy->animations, "idle"));
         animator_set_default_animation (anim, animation_get_by_name (enemy->animations, "idle"));

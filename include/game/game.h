@@ -54,10 +54,12 @@ typedef struct GameManager {
 extern GameManager *game_manager;
 
 extern GameManager *game_manager_new (GameState *initState);
+extern void game_manager_delete (GameManager *manager);
+
 extern State game_state_get_current (void);
 extern void game_state_change_state (GameState *newState);
 
-extern void game_cleanUp (void);
+extern void game_clean_up (void);
 
 // TODO: maybe add a function to register when we change to a state,
 // so that we can load many things with like an array of events?

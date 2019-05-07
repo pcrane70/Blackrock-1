@@ -507,6 +507,20 @@ static u8 game_init (void) {
 
 }
 
+// destroy all game data
+static u8 game_end (void) {
+
+    // FIXME: destroy world 
+    enemy_data_delete_all ();
+
+    enemies_disconnect_db ();
+
+    #ifdef DEV
+    logMsg (stdout, DEBUG_MSG, GAME, "Game end!");
+    #endif
+
+}
+
 #pragma endregion
 
 // TODO: this shouuld go at the bottom of the file
@@ -518,7 +532,7 @@ GameState *game_state = NULL;
 
 static void game_onEnter (void) { game_init (); }
 
-static void game_onExit (void) {}
+static void game_onExit (void) { game_end (); }
 
 static void game_update (void) {
 
@@ -559,7 +573,7 @@ static void game_render (void) {
 
 }
 
-void game_cleanUp (void) {
+void game_clean_up (void) {
 
     // clean up game objects
     for (u32 i = 0; i < curr_max_objs; i++) 
@@ -611,6 +625,15 @@ GameManager *game_manager_new (GameState *initState) {
     } 
 
     return new_game_manager;
+
+}
+
+void game_manager_delete (GameManager *manager) {
+
+    if (manager) {
+        if (manager->currState) free (manager->currState);
+        free (manager);
+    }
 
 }
 

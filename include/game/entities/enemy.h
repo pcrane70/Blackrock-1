@@ -3,6 +3,8 @@
 
 #include "blackrock.h"
 
+#include "cengine/animation.h"
+
 #include "game/entities/entity.h"
 #include "game/world.h"
 
@@ -44,7 +46,7 @@ typedef struct EnemyData {
     EnemyLoot loot;
 
     SpriteSheet *sprite_sheet;
-    DoubleList *animations;
+    AnimData *anim_data;
 
 } EnemyData;
 
@@ -65,6 +67,7 @@ typedef struct Enemy {
 } Enemy;
 
 extern u8 enemies_connect_db (void);
+extern void enemies_disconnect_db (void);
 
 extern Enemy *enemy_create_comp (u32 goID);
 extern void enemy_destroy_comp (Enemy *enemy);

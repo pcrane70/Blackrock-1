@@ -42,7 +42,14 @@ static AnimData *anim_data_new (void) {
 }
 
 // the animations list is used in the entity's component
-void anim_data_delete (AnimData *data) { if (data) free (data); }
+void anim_data_delete (AnimData *data) { 
+    
+    if (data) {
+        dlist_destroy (data->animations);
+        free (data); 
+    } 
+    
+}
 
 /*** Animation Files ***/
 
@@ -86,9 +93,13 @@ AnimData *animation_file_parse (const char *filename) {
             anim_data = anim_data_new ();
 
             // process json values into individual animations
-            // FIXME: get size and scale
+            json_value *size_object = value->u.object.values[0].value;
+            anim_data->w = size_object->u.object.values[0].value->u.integer;
+            anim_data->h = size_object->u.object.values[1].value->u.integer;
 
-            json_value *animations_array = value->u.object.values[0].value;
+            anim_data->scale = value->u.object.values[1].value->u.integer;
+
+            json_value *animations_array = value->u.object.values[2].value;
             json_value *anim_object = NULL;
             Animation *anim = NULL;
             for (unsigned int i = 0; i < animations_array->u.array.length; i++) {
