@@ -115,7 +115,7 @@ void *update (void *args) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            printf ("update fps: %i\n", fps);
+            // printf ("update fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }
@@ -151,7 +151,7 @@ static void run (void) {
         deltaTicks += deltaTime;
         fps++;
         if (deltaTicks >= 1000) {
-            // printf ("main fps: %i\n", fps);
+            printf ("main fps: %i\n", fps);
             deltaTicks = 0;
             fps = 0;
         }

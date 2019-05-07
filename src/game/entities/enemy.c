@@ -311,7 +311,7 @@ GameObject *enemy_create (u32 dbID) {
 
         enemy_add_transform (enemy_go);
         enemy_add_graphics (enemy_go, dbID);
-        enemy_add_animator (enemy_go, dbID);
+        // enemy_add_animator (enemy_go, dbID);
     }
 
     return enemy_go;
@@ -378,6 +378,7 @@ void enemies_spawn_all (World *world, u8 monNum) {
             transform = game_object_get_component (newMon, TRANSFORM_COMP);
             Coord spawnPoint = map_get_free_spot (world->game_map);
             // FIXME: fix wolrd scale!!!
+            // printf ("Spawn point %d - %d\n", spawnPoint.x, spawnPoint.y);
             transform->position.x = spawnPoint.x * 64;
             transform->position.y = spawnPoint.y * 64;
 

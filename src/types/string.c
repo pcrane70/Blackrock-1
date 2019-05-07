@@ -151,3 +151,40 @@ char **str_split (String *string, const char delim, int *n_tokens) {
     return result;
 
 }
+
+void str_remove_char (String *string, char garbage) {
+
+    char *src, *dst;
+    for (src = dst = string->str; *src != '\0'; src++) {
+        *dst = *src;
+        if (*dst != garbage) dst++;
+    }
+    *dst = '\0';
+
+}
+
+int str_contains (String *string, char *to_find) {
+
+    int slen = string->len;
+    int tFlen = strlen (to_find);
+    int found = 0;
+
+    if (slen >= tFlen) {
+        for (unsigned int s = 0, t = 0; s < slen; s++) {
+            do {
+                if (string->str[s] == to_find[t]) {
+                    if (++found == tFlen) return 0;
+                    s++;
+                    t++;
+                }
+                else { s -= found; found = 0; t = 0; }
+
+              } while(found);
+        }
+
+        return 1;
+    }
+
+    else return -1;
+
+}

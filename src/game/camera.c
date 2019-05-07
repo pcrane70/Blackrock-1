@@ -171,10 +171,10 @@ void camera_update (Camera *cam) {
 
     // camera input
     #ifdef DEV
-        if (input_is_key_down (SDL_SCANCODE_LEFT)) camera_pan (cam, -1, 0);
-        if (input_is_key_down (SDL_SCANCODE_RIGHT)) camera_pan (cam, 1, 0);
-        if (input_is_key_down (SDL_SCANCODE_UP)) camera_pan (cam, 0, -1);
-        if (input_is_key_down (SDL_SCANCODE_DOWN)) camera_pan (cam, 0, 1);
+        if (input_is_key_down (SDL_SCANCODE_LEFT)) camera_pan (cam, -15, 0);
+        if (input_is_key_down (SDL_SCANCODE_RIGHT)) camera_pan (cam, 15, 0);
+        if (input_is_key_down (SDL_SCANCODE_UP)) camera_pan (cam, 0, -15);
+        if (input_is_key_down (SDL_SCANCODE_DOWN)) camera_pan (cam, 0, 15);
     #endif
 
     // camera movement

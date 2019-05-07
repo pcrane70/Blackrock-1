@@ -470,7 +470,7 @@ static u8 game_init (void) {
             world->game_map->width, world->game_map->heigth, 100, .45);
 
         // spawn enemies
-        // enemies_spawn_all (world, random_int_in_range (5, 10));
+        enemies_spawn_all (world, random_int_in_range (5, 10));
 
         // spawn items
 

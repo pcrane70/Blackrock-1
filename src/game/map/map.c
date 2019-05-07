@@ -701,7 +701,7 @@ void map_destroy (Map *map) {
 Coord map_get_free_spot (Map *map) {
 
     if (map) {
-        srand ((unsigned) time (NULL));
+        // srand ((unsigned) time (NULL));
 
         if (map->dungeon) return dungeon_get_free_spot (map->dungeon);
         else return cave_get_free_spot (map->cave);
