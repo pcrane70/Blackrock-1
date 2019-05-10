@@ -203,6 +203,7 @@ Enemy *enemy_create_comp (u32 goID) {
 
     Enemy *enemy = (Enemy *) malloc (sizeof (Enemy));
     if (enemy) {
+        memset (enemy, 0, sizeof (Enemy));
         enemy->goID = goID;
         enemy->entity = entity_new ();
     }
@@ -215,17 +216,46 @@ void enemy_destroy_comp (Enemy *enemy) {
 
     if (enemy) {
         entity_destroy (enemy->entity);
+        dlist_destroy (enemy->animations);
         free (enemy);
     }
 
 }
 
-// TODO: 
-void enemy_update (void *data) {}
-
 #pragma endregion
 
 #pragma region Enemy
+
+void enemy_update (void *data) {
+
+    GameObject *enemy_go = (GameObject *) data;
+    Transform *trans = (Transform *) game_object_get_component (enemy_go, TRANSFORM_COMP);
+    Graphics *graphics = (Graphics *) game_object_get_component (enemy_go, GRAPHICS_COMP);
+    Animator *anim = (Animator *) game_object_get_component (enemy_go, ANIMATOR_COMP);
+    Enemy *enemy = (Enemy *) game_object_get_component (enemy_go, ENEMY_COMP);
+
+    enemy->curr_state = ENEMY_IDLE;
+
+    // TODO: handle movement
+    Vector2D new_vel = { 0, 0 };
+
+    // handle enemy logic based on state
+    switch (enemy->curr_state) {
+        case ENEMY_IDLE: 
+            animator_set_current_animation (anim, animation_get_by_name (enemy->animations, "idle")); 
+            break;
+        case ENEMY_MOVING: 
+            vector_add_equal (&trans->position, new_vel);
+            animator_set_current_animation (anim, animation_get_by_name (enemy->animations, "run"));
+            break;
+        case ENEMY_ATTACK: 
+            animator_play_animation (anim, animation_get_by_name (enemy->animations, "attack"));
+            break;
+
+        default: break;
+    }   
+
+}
 
 static void enemy_add_transform (GameObject *enemy_go) {
 
@@ -311,6 +341,7 @@ GameObject *enemy_create (u32 dbID) {
 
         enemy_add_transform (enemy_go);
         enemy_add_graphics (enemy_go, dbID);
+        // FIXME:
         // enemy_add_animator (enemy_go, dbID);
     }
 
@@ -398,42 +429,10 @@ void enemies_spawn_all (World *world, u8 monNum) {
 
 #pragma endregion
 
-// u8 addGraphicsToMon (u32 monId, Monster *monData, GameObject *mon) {
+/* u8 addMovementToMon (u32 monId, Monster *monData, GameObject *mon) {
 
     // get the db data
-    /* sqlite3_stmt *res;
-    char *sql = "SELECT * FROM Graphics WHERE Id = ?";
-
-    if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
-    else {
-        fprintf (stderr, "Error! Failed to execute statement: %s\n", sqlite3_errmsg (enemiesDb));
-        return 1;
-    } 
-
-    int step = sqlite3_step (res);
-
-    asciiChar glyph = (asciiChar) sqlite3_column_int (res, 1);
-    char *name = (char *) calloc (strlen (monData->name) + 1, sizeof (char));
-    strcpy (name, monData->name);
-    const char *c = sqlite3_column_text (res, 2);
-    char *colour = (char *) calloc (strlen (c) + 1, sizeof (char));
-    strcpy (colour, c);
-    u32 color = (u32) xtoi (colour);
-    Graphics g = { 0, glyph, color, 0x000000FF, false, false, name };
-    addComponent (mon, GRAPHICS, &g);
-
-    free (name);
-    free (colour);
-    sqlite3_finalize (res);
-
-    return 0; */
-
-// }
-
-// u8 addMovementToMon (u32 monId, Monster *monData, GameObject *mon) {
-
-    // get the db data
-    /* sqlite3_stmt *res;
+    sqlite3_stmt *res;
     char *sql = "SELECT * FROM Movement WHERE Id = ?";
 
     if (sqlite3_prepare_v2 (enemiesDb, sql, -1, &res, 0) == SQLITE_OK) sqlite3_bind_int (res, 1, monId);
@@ -451,13 +450,6 @@ void enemies_spawn_all (World *world, u8 monNum) {
 
     sqlite3_finalize (res);
 
-    return 0; */
+    return 0;
 
-// }
-
-// void cleanUpEnemies (void) {
-
-//     dlist_destroy (enemy_data);
-//     
-
-// }
+} */

@@ -5,8 +5,9 @@
 
 #include "cengine/animation.h"
 
-#include "game/entities/entity.h"
+#include "game/game.h"
 #include "game/world.h"
+#include "game/entities/entity.h"
 
 #include "collections/llist.h"
 #include "collections/dlist.h"
@@ -55,6 +56,15 @@ extern LList *enemyData;
 
 extern void enemy_data_delete_all (void);
 
+typedef enum EnemyState {
+
+    ENEMY_IDLE = 0,
+    ENEMY_MOVING,
+    ENEMY_FOLLOWING,
+    ENEMY_ATTACK,
+
+} EnemyState;
+
 // component for a game object
 typedef struct Enemy {
 
@@ -62,7 +72,9 @@ typedef struct Enemy {
 
     u32 dbID;
     LivingEntity *entity;
+    EnemyState curr_state;
     DoubleList *animations;
+    GameObject *target;
 
 } Enemy;
 
